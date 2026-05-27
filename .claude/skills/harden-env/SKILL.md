@@ -5,8 +5,6 @@ description: "Phase 4: Harden environment difficulty by eliminating answer leaks
 
 # Harden Environment — Difficulty & Fidelity Hardening
 
-> **See also**: [gotchas.md](gotchas.md) — 13 recurring pitfalls (bcrypt salt, SQLAlchemy index order, empty model tables, template-vs-route 404, build-time seed RUN, multi-subagent worktree clobber, …) with symptom + root cause + fix templates. Skim before authoring or reviewing.
-
 ## When to use
 
 - After Phase 3 (evolve-env) when each task in `tasks.jsonl` is walkable
@@ -152,6 +150,124 @@ After Phase 4:
 - Search returns diverse results from multiple sub-categories
 - Cross-field consistency verified
 - Byte-identical reset still passes
+
+---
+
+## Lessons learned — leak semantics + audit script (IMDb 2026-05-26)
+
+### Pattern 1: List-page leaks have nuance — chart ≠ search
+
+The skill says "answer NOT visible at search-result level". On IMDb's
+`/chart/top` page, the rating column IS visible by design — that's what
+makes it a chart. Tasks like "what's the rating of the Top 250 #1" are
+intentionally easy and the rating IS the answer surface. Not a leak.
+
+Distinguish three list-page categories:
+
+| Page type | Leak rule |
+|---|---|
+| **Curated chart / leaderboard** (Top 250, Box Office, Most Popular) | Whatever column the chart displays IS legitimate. Answers must come from a *different* field than what's columnated. |
+| **Search results** (`/search?q=`, `/find?q=`) | Strict no-leak rule applies — answer must be on detail page. |
+| **Genre / category browse** (`/genre/<slug>`) | Same as search — strict. |
+
+Write the rule into the task itself: "what's the rating of #1 on Top 250"
+is fine; "what's the runtime of #1 on Top 250" forces a detail click
+because runtime isn't a chart column.
+
+### Pattern 2: Stop words make distractor breadth queries return 0
+
+The skill says "search returns ≥6 results from multiple sub-categories".
+If you sanity-check with `q=the`, scored-search filters `the` as a stop
+word and returns 0 — looks like a catastrophic catalog gap when it's just
+the wrong probe.
+
+**Use non-stop-word probes**: `q=man`, `q=love`, `q=war`, `q=star`,
+`q=king`. These return 25-50 results each on a 392-title catalog.
+
+### Pattern 3: Run a standardized data-quality audit script per site
+
+After every seed regeneration, run a 10-question audit. The IMDb run
+caught 1854 garbage persons + an all-zero box office column + 47 still-
+empty profession fields by automating these checks rather than spot-checking.
+
+Audit template (see also `clone-website` Pattern 3, 4, 6):
+
+```python
+# Q1: titles with HTML entities still in DB
+n = Title.query.filter(Title.primary_title.like('%&%')).count()
+
+# Q2: persons with HTML entities in name/bio
+Person.query.filter(Person.name.like('%&%')).count()
+Person.query.filter(Person.bio.like('%&apos%')).count()
+
+# Q3: titles still showing original-language name (h1 vs ld.name mismatch)
+# walk scraped JSONs, flag mismatches
+
+# Q4: titles missing box office that should have it
+# spot-check 5 well-known movies have non-zero box_office_us
+
+# Q5: titles with year=None / rating=0 / no genres
+Title.query.filter(Title.year.is_(None)).count()
+Title.query.filter(Title.rating_avg == 0.0).count()
+
+# Q6: persons with no profession / no bio / no birth_year
+Person.query.filter(Person.primary_profession == '').count()
+
+# Q7: same-name persons (potential duplicates from redirects)
+db.session.query(Person.name, func.count(Person.id).label('n')) \
+    .group_by(Person.name).having(func.count(Person.id) > 1).all()
+
+# Q8: orphan persons (no credit) — scraped but never linked
+Person.query.filter(~Person.id.in_(db.session.query(Credit.person_id))).count()
+
+# Q9: missing posters / headshots
+Title.query.filter(Title.poster_path == '').count()
+Person.query.filter(Person.photo_path == '').count()
+
+# Q10: chart coverage
+Title.query.filter(Title.top_rank.isnot(None)).count()
+Title.query.filter(Title.popularity_rank.isnot(None)).count()
+```
+
+Save as `/tmp/audit_<site>.py` and re-run after every seed change. The
+IMDb run caught two production-blocking bugs (1854 garbage persons +
+all-zero box office) only because this audit was written, not because
+they showed up in route-level testing.
+
+### Pattern 4: Cross-field consistency check is one curl
+
+For each task's target entity, fetch the detail page and grep three
+fields that should all agree:
+
+```bash
+B=http://localhost:44019
+curl -s $B/title/tt0468569 | \
+    grep -oE '<title>[^<]+</title>|<h1>[^<]+</h1>|class="big">[0-9.]+'
+# Should print Dark Knight title, h1, and rating — all three consistent.
+```
+
+Skill Dimension D's "specs vs description vs features" is the typed
+version; this is the lightweight version that catches simple mismatches
+like h1=`Schindler's List` vs primary_title=`Schindler&apos;s List`.
+
+### Pattern 5: Distractor near-miss arithmetic
+
+For "X with constraint K" the skill wants `≥5 near-miss results` (match
+category, fail one constraint). Calculate as:
+
+```
+near_miss_count = (results where K relaxed) - (results where K satisfied)
+```
+
+For IMDb--10 (Crime 1990s ≥8.5):
+
+- full match (`crime + year:1990-1999 + rating>=8.5`): 14
+- relaxed rating (`crime + 1990-1999 + rating>=8.0`): 18 → 4 near-miss
+- cross-genre (`drama + 1990-1999 + rating>=8.5`): 23 — a different category of near-miss
+
+4 < 5 is borderline. To bump near-miss count, either widen the catalog
+(more 1990s crime titles) or relax the task's hardest constraint
+(rating>=8.0 instead of 8.5).
 
 ## Next step
 

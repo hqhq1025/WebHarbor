@@ -151,6 +151,110 @@ After Phase 3:
 - Byte-identical reset passes
 - All 15 sites still return 200
 
+---
+
+## Lessons learned — Playwright handwalk gotchas (IMDb 2026-05-26)
+
+### Pattern 1: `button[type=submit]` is too greedy — always scope to a form
+
+A page often has multiple submit buttons: a search button in the topbar, a
+login form button, an add-to-cart button. The selector
+`page.click('button[type=submit]')` picks the first one, which is usually
+the topbar search — not what your handwalk intended. The login flow then
+times out because submitting an empty search doesn't redirect.
+
+**Always scope to the form class**:
+
+```python
+await page.fill('.form input[name=email]', 'alice.j@test.com')
+await page.fill('.form input[name=password]', 'TestPass123!')
+await page.click('.form button[type=submit]')
+```
+
+Or use a unique anchor: `page.click('form#login button[type=submit]')`.
+
+### Pattern 2: One Playwright context per task — cookies bleed across tasks
+
+If you reuse a single `browser.new_context()` across multiple task
+handwalks, the first task's login cookies persist. The next task's
+`page.goto('/login')` redirects to `/` because the user is "already
+signed in", and your fill calls time out on missing form fields.
+
+**Use a fresh context per task**:
+
+```python
+for name, fn in [('t17', handwalk_t17), ('t7', handwalk_t7), ('t15', handwalk_t15)]:
+    ctx = await browser.new_context(viewport={...})
+    try:
+        results[name] = await fn(ctx)
+    finally:
+        await ctx.close()
+```
+
+Equivalent to fresh-browser-per-task without paying the full launch cost.
+
+### Pattern 3: Don't `docker run --rm` during evolve / harden
+
+`--rm` deletes the container the moment it exits — including on crashes.
+Mid-handwalk you may need to inspect logs, `docker exec` into the
+container, or save a memory dump. Once the container is gone, those
+options vanish.
+
+**For Phase 3 / 4 review work, run without `--rm`**:
+
+```bash
+docker run -d --name wh-test \
+  -p 8401:8101 -p 44000-44023:40000-40023 webharbor:dev
+```
+
+Stop with `docker stop wh-test` when done, then `docker rm wh-test`
+explicitly. Use `--rm` only in CI / Phase 5 final verification.
+
+### Pattern 4: Avoid `pkill -f` patterns that match your own bash
+
+Reflexive `pkill -f 'imdb.*40099'` looks innocent until you realize the
+shell that's running this `pkill` *also* has those words in its command
+line, so `pkill` kills its own bash process. The shell terminates with
+exit 144 mid-command.
+
+**Use a more specific pattern** that won't match the launching shell:
+
+```bash
+pkill -f 'python.*sites/imdb/app.py' 2>/dev/null
+# or kill by PID:
+SERVER_PID=$!
+kill $SERVER_PID 2>/dev/null
+```
+
+### Pattern 5: Login redirects in curl don't follow because POST→302→GET-to-/
+
+`curl -L -X POST -d 'email=...' /login` issues POST, gets 302 to `/`,
+then re-POSTs to `/` (curl preserves the method on `-L` by default for
+non-GET). `/` doesn't accept POST → 405.
+
+Either drop `-L` (and don't follow the redirect) or convert to GET on
+redirect:
+
+```bash
+# A) don't follow — just check cookie was set
+curl -s -c $CJ -o /dev/null -w "%{http_code}\n" \
+     -X POST -d 'email=...&password=...' http://localhost:44019/login
+
+# B) follow as GET (use --post301/--post302 if you DO want to repost)
+curl -s -c $CJ -L --post302 ... # only when you actually need to repost
+```
+
+### Pattern 6: Verifier locator bugs are silent — handwalk is the real test
+
+The verification curl script can claim a feature works because it grepped
+some text in the HTML. The Playwright handwalk catches things curl misses:
+a CSS class collision (`.big` matched both `.star.big` and the rating
+number), an accidentally invisible button, a form that submits but
+redirects to a stale page.
+
+Always handwalk the **2-3 hardest tasks** through Playwright even if all
+curl checks pass.
+
 ## Next step
 
 Proceed to **harden-env** (Phase 4) for systematic de-leaking and difficulty hardening.

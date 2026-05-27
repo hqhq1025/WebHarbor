@@ -223,3 +223,119 @@ on the final paper's author list. Quality matters: a review that says
 ```bash
 docker stop wh-review
 ```
+
+---
+
+## Lessons learned — pre-PR audit checklist (IMDb 2026-05-26)
+
+The contributor side of this skill applies just as much when *you* are
+about to open a PR. Use this 10-step audit before `gh pr create` — most of
+these are mechanical and take under 30 seconds each.
+
+### The 10-item pre-PR audit
+
+```bash
+SITE=imdb  # or whatever
+PR_ROOT=~/repos/WebHarbor-${SITE}-pr
+
+cd $PR_ROOT
+
+# 1. branch is based on origin/main, not local main
+git log --oneline origin/main..HEAD | head -5
+git log --oneline HEAD..origin/main | wc -l   # should be 0 (no missed commits)
+
+# 2. only your site's files (and the 3 registration files + README) appear
+git diff --cached --stat origin/main
+
+# 3. no secrets / tokens leaked
+grep -rEn 'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|hf_[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}' sites/$SITE/
+
+# 4. python syntax compiles
+python3 -m py_compile sites/$SITE/app.py sites/$SITE/seed_data.py sites/$SITE/_health.py
+
+# 5. all tasks.jsonl lines are valid JSON + have required 5 fields
+python3 -c "
+import json
+req = {'web_name', 'id', 'ques', 'web', 'upstream_url'}
+with open('sites/$SITE/tasks.jsonl') as f:
+    for i, l in enumerate(f, 1):
+        if not l.strip(): continue
+        d = json.loads(l)
+        miss = req - set(d.keys())
+        if miss: print(f'line {i}: missing {miss}')
+"
+
+# 6. all task IDs unique + single port
+python3 -c "
+import json; ids=set(); ports=set()
+for l in open('sites/$SITE/tasks.jsonl'):
+    d=json.loads(l); ids.add(d['id']); ports.add(d['web'])
+print(f'unique ids: {len(ids)}; single port: {len(ports)==1} ({ports})')
+"
+
+# 7. flask test_client shows all routes <500
+python3 -c "
+import sys; sys.path.insert(0,'sites/$SITE')
+from app import app
+with app.test_client() as c:
+    for p in ['/', '/_health', '/login']:   # add your routes
+        r = c.get(p); assert r.status_code < 500, f'{p}: {r.status_code}'
+print('all routes <500')
+"
+
+# 8. README/CONTRIBUTING port range + site list bumped
+grep -nE '40000-?40[0-9]+|[0-9]+ (sites|mirrors|local|distinct)' README.md
+
+# 9. no recon/scraper artifacts accidentally tracked
+git ls-files sites/$SITE/ | grep -E 'recon|scrape|inspect' && echo 'BAD: scraper files tracked'
+
+# 10. .assets-revision unchanged (will be bumped after HF merge)
+git diff --cached -- .assets-revision   # should be empty
+```
+
+If any check fails, fix and re-run. Don't `gh pr create` with unfixed audit
+items — review noise wastes everyone's time.
+
+### Common bugs the audit catches
+
+From IMDb run + general experience:
+
+| Bug | Caught by |
+|-----|-----------|
+| HTML entities in titles (`Schindler&apos;s`) | step 7 + visual check |
+| Box office all zero (lowercase testid keys) | step 7 visiting a known title |
+| 0-row seed DB (Dockerfile RUN trap) | seed-database Pattern 6 |
+| Hardcoded `/home/...` paths | `grep -rn '/home/' sites/$SITE/` |
+| `__pycache__` accidentally committed | step 2 |
+| Tasks reference dropped entities | step 7 + curl walk |
+| README still says "15 sites" | step 8 |
+| `.assets-revision` prematurely bumped | step 10 |
+
+### Worktree-from-origin/main is mandatory for clean PRs
+
+Repeating because it's the single biggest source of PR noise:
+
+```bash
+git fetch origin
+git worktree add ~/repos/WebHarbor-${SITE}-pr origin/main -b feat/${SITE}-mirror
+```
+
+If you skip this and branch from local main, every other in-flight PR's
+files show up in your diff. Reviewers can't tell what's yours; CI may
+fail because your PR claims to touch files you didn't touch.
+
+### Two-PR coordination workflow (from the contributor side)
+
+The seed-database skill describes this from the maintainer's view. From
+your view:
+
+1. Push HF asset PR first (`hf upload <upstream> --create-pr`) so you have
+   a URL to reference in the GitHub PR description
+2. `gh pr create` with the HF PR URL in the body
+3. Watch HF PR for merge → grab merge commit SHA
+4. On code PR branch: bump `.assets-revision` to that SHA → push
+5. Ping the maintainer on the code PR
+
+Don't rush step 4 — if the HF PR isn't merged yet, the code PR can't be
+fetched-and-built end-to-end by reviewers.
+

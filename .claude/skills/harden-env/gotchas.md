@@ -555,3 +555,924 @@ Subagents tend to comply when the limit is stated as a hard rule with
 "≤" rather than "please keep it short". When the polish target is huge
 (say 1000+ rows added across 5 tables), the cap is real — 250 words is a
 reasonable ceiling.
+
+---
+
+## 18. `pag.items` (or any dict key named like a dict method) silently breaks Jinja
+
+**Symptom**: a Jinja template using `{% for r in pag.items %}` crashes
+with `TypeError: 'builtin_function_or_method' object is not iterable`.
+The pagination helper returns a plain `dict` whose `items` key holds
+the list of rows.
+
+**Root cause**: Jinja's attribute resolution prefers Python's
+`dict.items` method over the `"items"` dict key. The for-loop iterates
+the bound method, not the list.
+
+**Fix**: return a `SimpleNamespace` (or any object that exposes the data
+as a real attribute, not a key):
+
+```python
+from types import SimpleNamespace
+def paginate(q, page, per_page=25):
+    ...
+    return SimpleNamespace(items=items, page=page, pages=pages, total=total)
+```
+
+**Other landmines in the same family**: `keys`, `values`, `get`, `pop`,
+`update`, `copy`, `clear`. Never use these as dict keys for anything you
+pass into a Jinja template. Or just use SimpleNamespace / dataclass from
+the start.
+
+Found in: discogs mirror, `templates/genre.html`, `marketplace.html`,
+`collection.html`, …
+
+---
+
+## 19. Jinja macros do not accept `**kwargs` — pass a dict explicitly
+
+**Symptom**: `{% macro pagination(pag, endpoint, **kwargs) %}` produces
+
+```
+jinja2.exceptions.TemplateSyntaxError: expected token 'name', got '**'
+```
+
+at template load time. Every page that imports the macro file 500s.
+
+**Root cause**: Jinja macros have strict positional/named param syntax.
+No `*args`, no `**kwargs`. The `**` is unparseable.
+
+**Fix**: change the variadic part to an explicit dict:
+
+```jinja
+{% macro pagination(pag, endpoint, params=None) %}
+  {% set params = params or {} %}
+  <a href="{{ url_for(endpoint, page=p, **params) }}">{{ p }}</a>
+{% endmacro %}
+```
+
+`**params` *inside* `url_for(...)` is fine — it's only the macro
+*signature* that rejects `**`. Caller becomes:
+
+```jinja
+{{ m.pagination(pag, 'search', params={'q': q, 'sort': sort}) }}
+```
+
+Found in: discogs mirror, `templates/_macros.html`.
+
+---
+
+## 20. `Release.query.get(rid)` looks up by PK — not by your public ID column
+
+**Symptom**: a form like `/sell` takes a user-typed `release_id` that
+matches the public URL ID (e.g. `/release/793593`). The POST handler
+silently 404s with `Pick a valid release.` even though the release page
+loads fine. Database inspection shows no row was created.
+
+**Root cause**: SQLAlchemy's `.query.get(rid)` looks up by **primary
+key** only. Public IDs (`discogs_id`, `imdb_tt`, `bgg_id`, …) live in
+indexed *non-PK* columns. If your PKs are `1..N` and the user types
+`793593`, the lookup misses.
+
+**Fix**: any route that accepts a user-typed public ID must check both:
+
+```python
+release = (Release.query.filter_by(discogs_id=rid).first()
+           or Release.query.get(rid))
+```
+
+**Where this trap hides**: routes that read `release_id` / `movie_id` /
+`book_id` from `request.form` and assume the form-renderer used the PK.
+If the form is rendered by *your* template (`<input type="hidden"
+name="release_id" value="{{ r.id }}">`), the PK assumption is safe. If
+the form is rendered manually by the user (the Discogs `/sell` page),
+or if the value transits through a JSON API, you need the dual lookup.
+
+**Audit** before opening a PR:
+
+```bash
+grep -n "request\.form\.get.*release_id.*type=int\|request\.form\.get.*movie_id.*type=int" sites/<site>/app.py
+# For each callsite: does the next lookup use .get(...) only? If so, fix it.
+```
+
+Found in: discogs mirror, `/sell` route. Caused Task #13 to silently
+fail Playwright validation.
+
+---
+
+## 21. `ORDER BY year ASC` puts NULL *first* in SQLite — "oldest" tasks see a year-less row
+
+**Symptom**: a task asks for "the oldest release by Artist X" and the
+agent sees a card with empty year metadata at the top. Subsequent
+real-dated rows are buried.
+
+**Root cause**: SQLite's default NULL ordering is `NULLS FIRST` for
+`ASC` and `NULLS FIRST` for `DESC`. Any "oldest" task returns the rows
+where `year IS NULL` first.
+
+**Fix**: chain `.nullslast()` on every year-based sort:
+
+```python
+q = q.order_by(Release.year.asc().nullslast())
+q = q.order_by(Release.year.desc().nullslast())
+```
+
+Same applies to `release_date`, `published_at`, `first_release_date`,
+or any nullable timestamp/year column you sort on.
+
+**Audit**:
+
+```bash
+grep -nE "\.(year|release_date|published_at|first_release_date|added_at)\.(asc|desc)\(\)" sites/<site>/app.py
+# Every match should be followed by .nullslast() unless you genuinely want NULL-first.
+```
+
+Found in: discogs mirror, `artist_detail`, `genre_detail`, `label_detail`,
+`master_detail`.
+
+---
+
+## 22. CoverArt Archive TLS is blocked from corp / Azure egress — use Wikipedia REST API as the cover fallback
+
+**Symptom**: every request to `coverartarchive.org` fails the TLS
+handshake mid-protocol:
+
+```
+OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to coverartarchive.org:443
+urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING]
+```
+
+Reproduces in `curl`, `python urllib`, `httpx`, and Playwright. Almost
+certainly a transparent middlebox / deep-packet inspector on the egress
+path. Switching User-Agent / IP version doesn't help.
+
+**Workaround that works in this env**: Wikipedia REST API for metadata
++ `upload.wikimedia.org` for image bytes. Both pass TLS clean.
+
+Recipe (see `sites/discogs/scraped_data/scrape_wikipedia.py`):
+
+```python
+def try_lookup(title, artist):
+    candidates = [
+        f"{title} ({artist} album)" if artist else None,
+        f"{title} (album)",
+        f"{title} ({artist} EP)" if artist else None,
+        title,
+    ]
+    for c in candidates:
+        if not c: continue
+        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(c.replace(' ', '_'))}?redirect=true"
+        data = fetch_json(url, retries=1)
+        if data and data.get("originalimage", {}).get("source"):
+            return data
+    return None
+```
+
+Hit rate on a 7,000-release catalog: ~5% (323/7042). Don't try to
+stretch the same N covers across M releases to hide the gap — fall back
+to a generic `no-cover.svg` placeholder and the agent never knows.
+
+Use `originalimage.source` over `thumbnail.source` — the latter is
+downsized to 330px.
+
+Found in: discogs mirror, Wikipedia cover-fetch pipeline.
+
+---
+
+## 23. Discogs public API hard-throttles at ~25 req/min — IP-level shadow block, not per-token
+
+**Symptom**: after ~50 successful `/database/search` calls at any
+spacing, every subsequent request from the same IP returns `HTTP 429
+Too Many Requests` for **5–15 minutes**. The retry loop with
+exponential backoff *adds* to the load, deepening the block.
+
+We started a scraper, got 500 results from genre=rock (the first
+SEARCHES entry), then stalled at 429 for 30+ minutes.
+
+**Root cause**: Discogs's documented limit is 25/min for unauthenticated
+calls, but the *enforcement* is IP-based and shadow-blocks for much
+longer than the rate window suggests. On a shared corp / Azure egress
+IP, other tenants' traffic counts against you.
+
+**Fixes (combine all three)**:
+
+1. **Genre rotation, not sequential pages**: shuffle the search-combo
+   list so the first minute hits *every* genre once, instead of 5 pages
+   of one genre. `random.shuffle(combos); for (g,s) in combos: ...`
+
+2. **Polite spacing — 12s+ between requests, not 2.5s**. The
+   theoretical 25/min == 2.4s/req only works on a quiet IP. On shared
+   egress, budget 5x.
+
+3. **Add a second data source**. Discogs is good for community
+   signals (have/want, prices, marketplace) but you can't rely on it
+   for catalog breadth. Fall back to MusicBrainz (1 req/sec, no IP
+   block, structured tags) for the bulk of the data:
+
+   - `https://musicbrainz.org/ws/2/release-group/?query=tag:"jazz"+AND+primarytype:Album+AND+status:Official&fmt=json&limit=100`
+   - Rotate 30+ tags for diversity. ~2400 releases in 6 minutes.
+   - Mint synthetic IDs (`90_000_001+`) for the `discogs_id` column so
+     MB-sourced rows blend cleanly with API-sourced ones.
+
+**Anti-pattern**: don't put the scraper in a tight retry loop that
+treats 429 as transient. The 429 has a long memory; back-to-back
+retries make it worse.
+
+Found in: discogs mirror, `scraped_data/scrape_discogs.py`. Final
+catalog: 500 from Discogs (Rock only) + 3,520 from MusicBrainz across
+30 tags = 4,020 unique. Plus another scrape pass after IP cooldown to
+get to 3,522 Discogs + 3,520 MB = 7,042 total.
+
+
+## 24. The "API endpoint trap" — agents inflate route count with /api/ /graphql /healthz etc that GUI agents can't use
+
+**Symptom**: Final task push includes thousands of ques like
+`"On /api/v1/properties/search?city=berlin&limit=3&min_rating=7, parse the JSON 'count' and report it."` —
+WebVoyager-style agents drive a real browser, they don't type `/api/` paths nor parse JSON.
+
+**Root cause**: When an agent is told "add R10 surface", its default instinct is to expose REST mirrors / GraphQL stubs / sitemap.xml / .well-known / OAI-PMH / healthz — all the "machine-facing" plumbing a real production site has. Easy to generate, fills the route count, but **useless for benchmarks**.
+
+**Numbers from a real cleanup pass** (15 vanilla sites, 2026-05-27):
+- google_flights: 1447 API-style tasks (21% of the file)
+- apple: 1037 (18%)
+- bbc_news: 1007 (14%)
+- huggingface: 860 (14%)
+- 15-site total: **14,468 deleted** (14.3% of 101k)
+
+**Fix template** (in cleanup script):
+
+```python
+API_RE = re.compile(
+    r"\b(GET|POST|PUT|PATCH|DELETE)\s+/"
+    r"|/api[/\b]"
+    r"|/graphql"
+    r"|/healthz"
+    r"|/sitemap"
+    r"|/robots\.txt"
+    r"|/\.well-known"
+    r"|/webhook"
+    r"|/jsonld"
+    r"|/openapi"
+    r"|parse the JSON|parse the XML"
+    r"|\?format=json|\?format=xml"
+    r"|fetch the endpoint"
+    r"|OAI-PMH"
+    r"|as JSON|as XML"
+    r"|in JSON format|in XML format"
+    r"|curl\s",
+    re.IGNORECASE,
+)
+```
+
+Run as a post-build pass on every site. Backup `tasks.jsonl.preapi`.
+
+**Prevention rule for new agents**: in their prompt, lead with **"绝对不准新增 /api/, /graphql, /healthz, /sitemap, /webhook, /.well-known, /jsonld, /openapi 路由"** AND **"task 必须是 GUI 自然语言不准 'parse the JSON' / 'GET /api'"**. Agents will still add a few — that's why you also run the regex cleanup.
+
+## 25. The "in-memory data dict" trap — bypasses byte-id reset, can't be queried via GUI tasks
+
+**Symptom**: A helper module `_r4_r10_routes.py` declares:
+
+```python
+R4_CARDS = [
+    {"id": 1, "slug": "aurora_over_the_norwegian_fjords", ...},
+    {"id": 2, "slug": "lavender_field_at_sunset_in_provence", ...},
+    # 24 hardcoded entries total
+]
+```
+
+Routes do `R4_CARDS[card_id - 1]` instead of `db.session.query(Card).get(card_id)`. Site appears to work — until you:
+
+- Run byte-id reset check — passes (data isn't in DB so no drift)
+- ...but means the data isn't covered by reset either; it's static code
+- A task asks "how many image cards have CC-BY license" — the answer is hardcoded in Python, not queryable
+- An agent that grep'd the DB for the answer finds nothing
+- Worst: 24 cards is way too few to feel real
+
+**Detection**:
+
+```bash
+# Find suspicious in-memory data tables (>=10 items) in helper modules
+grep -rE "^[A-Z][A-Z0-9_]+\s*=\s*\[" sites/<site>/*.py | \
+  grep -v "app.py" | grep -v "_recompute_taxonomy" | \
+  grep -v "_tasks.py" | grep -v "generate_.*_tasks.py"
+# False positives: task generators (build-time), seed builders.
+# Real hits: route-handler-adjacent files like _r10_extend.py
+```
+
+Per `seed-database` SKILL: page content **must** live in SQLAlchemy tables, seeded once, queried at runtime.
+
+**Fix template**:
+
+1. Define ORM models for the content (`ImageCard`, `VideoCard`, etc.)
+2. Move the hardcoded list into a `seed_<feature>()` function gated by `Model.query.count() > 0`
+3. Replace `R4_CARDS[i]` → `ImageCard.query.get(i)` in handlers
+4. Drop the hardcoded list from the helper module
+
+**Found in this pass**: google_search R4/R5/R6/R10 (24 image / 24 video / 16 paper / 12 snippet / 10 PAA / 8 KP all in-memory), wolfram R11 (16 page families × ~12 items each in helper module). Both rewritten to use 9-16 new SQLAlchemy tables.
+
+## 26. The "shared marketing template" trap — N routes, 1 template, fake visual surface count
+
+**Symptom**: 20+ routes all call `render_template('info_page.html', page=page)` with different `page` data passed in. Route count looks high (200+), template count is moderate (60+), but **the same hero/grid/CTA layout shows for every "page"**.
+
+**Real example — github**:
+- 12 routes share `info_page.html`: /pricing, /features/copilot, /features/actions, /features/codespaces, /resources/security, ...
+- 8 routes share `simple_landing.html`: /contact-sales, /enterprise, /education, /features/code-scanning, /features/secret-scanning, ...
+
+On the real upstream site each of those is a distinct landing page with its own hero, screenshot carousel, customer logo wall, pricing table, FAQ accordion. Sharing one template visually flattens 20 pages into 1.
+
+**Same pattern — wolfram_alpha**:
+- Initial pass added 36 routes for 16 page families (examples / widgets / blog / community / jobs / store / mathworld / etc.) all rendering `r10/vertical.html` — a single generic 2-column layout. blog post and job posting were visually identical.
+
+**Detection**:
+
+```bash
+# Routes per template per site
+python3 -c "
+import re, collections
+src = open('sites/<site>/app.py').read()
+hits = collections.Counter(re.findall(r\"render_template\(['\\\"]([^'\\\"]+)\", src))
+for tpl, n in hits.most_common(8):
+    print(f'{n}\t{tpl}')
+"
+# Anything ≥6 routes per template warrants a closer look.
+```
+
+**Fix**: per page family, write a **distinct template** with the real upstream's visual hooks. Examples:
+
+| Family | Real-site visual cue | Template |
+|---|---|---|
+| pricing | three-column comparison table + ✓ matrix + FAQ accordion | `pricing.html` |
+| feature/copilot | AI animation hero + IDE-integration logos | `feature_copilot.html` |
+| feature/actions | pipeline diagram + YAML code block + matrix | `feature_actions.html` |
+| enterprise | customer logo wall + testimonial pull-quotes + sales CTA | `enterprise.html` |
+| pub/notebook | In[]/Out[] cell strip + execute button | `notebook_pub.html` |
+| forum/topic | OP card + threaded replies + upvote arrows | `community_topic.html` |
+| store/product | product image grid + add-to-cart + price | `store_product.html` |
+| job/detail | sidebar filter + apply-now CTA | `job_detail.html` |
+
+**Smoke after split**: pick 5 visually-different page families, grep each rendered HTML for a CSS class that's only in that template (`.r11-bp-hero`, `.r11-ct-op`, `.r11-sp-buttons`, `.r11-jd-tag`, `.r11-nb-cells`). Must be present on its own page and **absent on the other four**. If two share a class, the templates weren't actually split.
+
+## 27. The "entry-link 断链" trap — routes exist but nothing links to them
+
+**Symptom**: A subagent adds `/search/images/tools`, `/search/images/preview/<id>`, `/scholar/results` — all return 200 if you GET them directly. But:
+
+- `/images` is 404 (no hub)
+- The index page doesn't have an `<a href="/search/images/tools">` anywhere
+- The natural search results page doesn't show an "Images" tab linking to it
+- A GUI agent that lands on `/` cannot navigate to the new pages
+
+The tasks that reference these routes are unsolvable.
+
+**Detection**:
+
+```python
+from bs4 import BeautifulSoup
+page = client.get('/').data.decode()
+links = {a['href'] for a in BeautifulSoup(page, 'html.parser').find_all('a', href=True)}
+for new_hub in ['/images', '/videos', '/scholar', '/myaccount', '/orders', '/help']:
+    if new_hub not in str(links) and not any(l.startswith(new_hub) for l in links):
+        print(f"BROKEN ENTRY: {new_hub} unreachable from /")
+```
+
+Or check the rendered nav/tab bar:
+
+```bash
+grep -oE 'href="[^"]+"' sites/<site>/templates/base.html sites/<site>/templates/index.html | sort -u
+# Then diff against `grep '@app.route' sites/<site>/app.py | grep -oP "'/[^']+'"`
+```
+
+**Fix**: when you add a hub URL, also patch `base.html` (global nav) or the appropriate parent page (e.g. `search.html` for `/images`, `account.html` for `/myaccount`). Add an `<a href="/new-hub">Label</a>` somewhere visible. Ideally inside the nav/tab bar component so it appears on every page.
+
+**Smoke**: from `/`, you should be able to reach every new top-level GUI page via ≤2 clicks (page links). Walk the link graph in BFS — if a route isn't in the closure, it's orphaned.
+
+**Found in this pass**: google_search R4/R5/R6/R10 — all 30+ routes were orphaned until a root-cause fix wired `<a href>` into `base.html` tab bar + `index.html` + `search.html`.
+
+## 28. The "task literal duplicate" trap — generator multiplies same句式 1000x
+
+**Symptom**: 994 tasks all have ques `"On the Cambridge Dictionary entry for X..."` differing only in the word X. 100 tasks have **byte-identical ques** because the generator wrote the same line 100 times without varying anything.
+
+**Detection**:
+
+```python
+from collections import Counter
+import json
+counts = Counter()
+for ln in open(f"sites/<site>/tasks.jsonl"):
+    counts[json.loads(ln)["ques"]] += 1
+for q, n in counts.most_common(10):
+    if n > 5:
+        print(f"{n}x {q[:80]}")
+```
+
+**Fix in two passes**:
+
+1. **Literal dedup**: keep first occurrence of each ques (case-insensitive). Removed 10,151 rows across 15 sites.
+2. **5-token prefix cap @ 5**: tokenize the first 5 words of each ques, keep at most 5 rows per prefix. Removed another 30,770 rows.
+
+Combined: 101k → 44k (−57%) without touching real GUI tasks.
+
+**Prevention in generator**: when programmatically expanding a task template, change at least 2 dimensions per row (entity + operation, not just entity). And cap output per template at the start: `min(generate(N), 5)`.
+
+## 29. Test client run skips the seed-copy step — fake-503 in audits
+
+**Symptom**: `python3 -c "from app import app; c=app.test_client(); print(c.get('/').status_code)"` returns 500 with
+"`sqlite3.OperationalError: no such table: sports`".
+But the actual deployed app works fine.
+
+**Root cause**: At first request, the Flask app reaches for `instance/<site>.db`. In docker, the entrypoint **copies** `instance_seed/<site>.db → instance/<site>.db` before serving. The test_client doesn't trigger that copy — it gets the 0-byte empty `instance/<site>.db` that the app creates on `db.create_all()`. Models exist; tables don't.
+
+**Fix template** in any local smoke harness:
+
+```python
+import shutil, pathlib
+sd = pathlib.Path("sites/<site>")
+inst = sd / "instance"; inst.mkdir(exist_ok=True)
+for sb in (sd / "instance_seed").glob("*.db"):
+    target = inst / sb.name
+    if not target.exists() or target.stat().st_size == 0:
+        shutil.copy2(sb, target)
+# now import app and test
+```
+
+**Prevention**: documentation in CONTRIBUTING.md and `evolve-env/SKILL.md` should mention this explicitly.
+
+## 30. Image asset utilization — 800 files on disk, 9 `<img>` tags in templates
+
+**Symptom**: `find sites/<site>/static/images -type f | wc -l` returns 800+. `grep -rh "<img" sites/<site>/templates | wc -l` returns 9. The mirror has a treasure trove of real photos but the templates barely reference them.
+
+**Real numbers** (post-deepen, 2026-05-27):
+- google_map: 818 files / 9 refs (1.1% utilization) — for a maps site this is fatal
+- arxiv: 108 files / 3 refs (2.8%) — paper figures + author headshots invisible
+- google_flights: 420 / 19 (4.5%)
+- espn: 426 / 20 (4.7%)
+- huggingface: 714 / 23 (3.2%)
+
+**Why this happens**: agents focus on data fields (title, price, count) and forget templates need visual content. Hero photo, thumbnail strip, gallery, lightbox — all skipped.
+
+**Fix template**:
+
+1. Add an `image_path` column to the dominant model (`Place`, `Paper`, `Recipe`, `Property`) if not already there.
+2. Seed real upstream image URLs from your existing `static/images/<entity>/*.jpg` by md5-deriving a deterministic mapping `entity.slug → image_path`.
+3. In detail templates, add `<img src="{{ item.image_path }}" alt="{{ item.name }}">` hero + `{% for p in item.photos %}<img>...{% endfor %}` gallery.
+4. In list/grid pages, show thumbnail per card.
+5. Target ≥40% utilization (template `<img>` refs / disk files).
+
+## 31. Concurrent subagent file race (extended) — APPEND-ONLY discipline
+
+**Symptom**: subagent A and subagent B both edit `app.py`. Their Edit tool calls race; one fails with "file modified since read". Or both commit, one rebase-conflicts on push.
+
+This was hit repeatedly in this pass (R2/R3 backfill + mid-rounds touching same app.py).
+
+**Fixes that worked**:
+
+1. **APPEND-ONLY**: tell each subagent to write its block at end of file or between sentinel comments (`# === R11 GUI deepen BEGIN/END ===`). Never edit existing code blocks. Diff is then a pure addition, conflicts are syntactic at most.
+2. **Atomic file replace**: in seed/build scripts, write to `<file>.tmp` then `os.replace(<file>.tmp, <file>)`. Avoids partial writes.
+3. **`git pull --rebase` immediately before commit**, plus catch the rebase conflict and abort cleanly with a clear error to the orchestrator.
+4. **Per-site agents only**: never two agents on the same site simultaneously. Cross-site parallelism is safe; same-site parallelism is not.
+5. **Blueprint-style registration**: agent A writes `gui_deepen.py` exporting `register(app)`, agent B writes `r11_extend.py` exporting `register_r11(app)`. `app.py` does `gui_deepen.register(app); r11_extend.register_r11(app)`. Each agent's code is in its own file.
+
+## 32. `seed_data.py` top-level `from app import` + late-import in app_context = circular import
+
+**Symptom**: `python3 -c "from app import app"` (fresh process, REPL, smoke test) fails with:
+
+```
+ImportError: cannot import name 'seed_extended_catalog' from partially initialized module 'seed_data' (most likely due to a circular import)
+```
+
+Docker startup works fine because the entrypoint path doesn't trip the cycle, but any local test harness / `pytest` / `python3 -c ...` will break.
+
+**Root cause**:
+
+```python
+# seed_data.py top of file
+from app import app, db, Category, Recipe, User, Review   # ← top-level
+
+# app.py somewhere
+with app.app_context():
+    from seed_data import seed_extended_catalog   # ← late-import inside context
+    seed_extended_catalog()
+```
+
+When anything imports `seed_data` first (test harness, sibling module), Python starts loading it, sees `from app import ...`, starts loading `app`, which hasn't yet defined `db/Category/...` (those are below the `db = SQLAlchemy(app)` line). seed_data's import hits a partially-initialized module and raises.
+
+**Fix** (real one used in allrecipes, commit `e34bf1e`):
+
+Move the `from app import ...` **inside** the seed function as a late import:
+
+```python
+# seed_data.py — fixed
+def _bind_app_symbols():
+    """Late-import app symbols and write them into this module's globals."""
+    global app, db, Category, Recipe, User, Review
+    from app import app as _app, db as _db, Category as _Cat, Recipe as _R, User as _U, Review as _Rv
+    app, db, Category, Recipe, User, Review = _app, _db, _Cat, _R, _U, _Rv
+
+def seed_extended_catalog():
+    _bind_app_symbols()   # ← bind at call time, not import time
+    # ... use Category/Recipe/User/Review here
+```
+
+All helpers within `seed_data.py` reference the names via globals (already in scope after `_bind_app_symbols()` writes them). No `try/except ImportError` — that would mask the cycle; just relocate the import.
+
+**Verification**:
+- `python3 -c "import seed_data"` clean
+- `python3 -c "from app import app; c=app.test_client(); print(c.get('/').status_code)"` → 200
+- byte-id reset still ✅
+
+**Prevention rule**: never `from app import ...` at module level in `seed_data.py`, `evolve_*.py`, `r*_extend.py`, `gui_deepen.py`, or any file that `app.py` itself imports. Always late-import.
+
+## 33. Hub URL inventory — core user-facing pages silently missing
+
+**Symptom**: site appears polished (76+ templates / 5000+ tasks) but smoke-testing a small list of "what every real user expects" returns 404 for several:
+
+- amazon: `/orders` 404, `/help` 404
+- booking: `/myaccount` 404
+- coursera: `/browse` 404
+- google_map: `/your-places/saved` 404
+
+These are core hubs on the real upstream. Users rely on them. Their absence blocks substantial workflow chains ("check my order history", "edit account preferences", "browse all data-science courses").
+
+**Per-site-type expected hub URLs**:
+
+| Site type | Hub URLs |
+|---|---|
+| E-commerce | `/`, `/cart`, `/orders`, `/orders/<id>`, `/wishlist`, `/account`, `/account/addresses`, `/account/payments`, `/help`, `/help/category/<slug>`, `/help/contact` |
+| Booking / travel | `/`, `/searchresults`, `/myaccount`, `/myaccount/payments`, `/myaccount/genius`, `/myaccount/inbox`, `/help` |
+| Course / learning | `/`, `/browse`, `/browse/<subject>`, `/specializations`, `/professional-certificates`, `/degrees`, `/help-center`, `/account`, `/my-courses` |
+| Search engine | `/`, `/images`, `/videos`, `/scholar`, `/news`, `/maps`, `/settings`, `/settings/search`, `/settings/safesearch` |
+| Map / places | `/`, `/maps`, `/your-places`, `/your-places/saved`, `/your-places/visited`, `/your-places/lists`, `/your-places/maps`, `/trips`, `/contribute` |
+| Marketplace / dev | `/`, `/explore`, `/pricing`, `/features/<slug>`, `/enterprise`, `/education`, `/marketplace`, `/account`, `/settings`, `/notifications` |
+| News / sport | `/`, `/section/<slug>`, `/topics/<slug>`, `/account`, `/preferences`, `/saved`, `/podcasts`, `/newsletters` |
+| Dictionary | `/`, `/dictionary/english/<word>`, `/grammar`, `/thesaurus`, `/translate`, `/about`, `/plus`, `/account`, `/vocab/list/<id>` |
+
+Smoke test (after seed-copy from §29):
+
+```python
+import shutil, pathlib, importlib.util, sys
+sd = pathlib.Path("sites/<site>")
+inst = sd / "instance"; inst.mkdir(exist_ok=True)
+for sb in (sd / "instance_seed").glob("*.db"):
+    target = inst / sb.name
+    if not target.exists() or target.stat().st_size == 0:
+        shutil.copy2(sb, target)
+for k in list(sys.modules):
+    if k.startswith(("app", "seed_", "_r", "gui_", "airport_extras")):
+        sys.modules.pop(k, None)
+sys.path.insert(0, str(sd))
+spec = importlib.util.spec_from_file_location("app", sd / "app.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+c = m.app.test_client()
+for url in EXPECTED_HUBS:
+    r = c.get(url, follow_redirects=False)
+    if r.status_code in (404, 500):
+        print(f"BAD: {url} = {r.status_code}")
+```
+
+**Fix per missing hub**:
+
+1. Identify the matching real upstream URL (e.g. `amazon.com/gp/your-account/order-history` → mirror `/orders`)
+2. Build the template family (`orders_list.html`, `order_detail.html`, `order_track.html`)
+3. Wire the route handler with ORM query on Order/User
+4. Add a link in the global nav / account dropdown
+5. Add ≥5 GUI tasks targeting the new hub
+
+This pass added 5 hubs (amazon /orders + /help, booking /myaccount, coursera /browse, google_map /your-places/saved) — each got 6-14 new routes and 30-60 new tasks.
+
+## 34. Image utilization recipe — going from 1% to 50%+
+
+**Symptom**: `static/images/` has 800+ real photos, templates have <20 `<img>` references. Visual mirror feels barren.
+
+**Real numbers from this pass** (after fix):
+- google_map: 1.1% → **54.2%** utilization (443/818 files referenced)
+- arxiv: 2.8% → **58-60%** (140/243 reachable)
+
+**Schema patterns**:
+
+```python
+# Single-image entity (Recipe, Product, Article)
+class Recipe(db.Model):
+    image_path = db.Column(db.String(200))  # static/images/recipes/<slug>.jpg
+
+# Multi-image entity (Paper figures, Place photos, Property rooms)
+class PaperFigure(db.Model):
+    __tablename__ = 'paper_figures'
+    id = db.Column(db.Integer, primary_key=True)
+    paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))
+    position = db.Column(db.Integer)        # 1, 2, 3, ...
+    kind = db.Column(db.String(30))         # 'figure' / 'table' / 'equation'
+    filename = db.Column(db.String(120))
+    caption = db.Column(db.String(500))
+    w = db.Column(db.Integer)
+    h = db.Column(db.Integer)
+    paper = db.relationship('Paper', backref='figures')
+
+# Avatar/headshot entity
+class AuthorImage(db.Model):
+    author_name = db.Column(db.String(120), primary_key=True)
+    kind = db.Column(db.String(30))         # 'headshot' / 'banner' / 'institution_logo'
+    filename = db.Column(db.String(120))
+
+# Brand/logo entity (for marketplace sellers, conferences)
+class ConferenceImage(db.Model):
+    conf = db.Column(db.String(30))
+    year = db.Column(db.Integer)
+    filename = db.Column(db.String(120))
+    accent_color = db.Column(db.String(7))  # for hero gradient
+```
+
+**Mapping recipe**:
+
+```python
+import hashlib
+def deterministic_filename(slug, kind, n_files=24):
+    h = hashlib.md5(f"{slug}_{kind}".encode()).hexdigest()
+    idx = int(h[:8], 16) % n_files + 1
+    return f"{kind}_{idx:03d}.jpg"
+# stable across seeds, distributes files evenly
+```
+
+**Template patterns**:
+
+```html
+<!-- Hero photo on detail page -->
+<img src="/static/images/places/{{ place.image_path }}"
+     alt="{{ place.name }}" class="hero-photo">
+
+<!-- 5-mosaic gallery -->
+<div class="photo-mosaic">
+  {% for photo in place.photos[:5] %}
+    <img src="/static/images/places/{{ photo.filename }}" alt="{{ photo.caption }}">
+  {% endfor %}
+</div>
+
+<!-- Thumbnail strip in list pages -->
+{% for paper in papers %}
+  <a href="/abs/{{ paper.arxiv_id }}">
+    <img src="/static/images/covers/{{ paper.cover_filename }}"
+         class="result-thumb">
+    {{ paper.title }}
+  </a>
+{% endfor %}
+```
+
+**Tasks targeting image fields** (mandatory part of the deepen):
+
+```
+"On the paper /abs/1706.03762, open the third figure and report its caption."
+"What is the institution banner shown on author Bo Pang's profile?"
+"On NeurIPS 2024 conference page, what accent color is used in the hero gradient?"
+"On the place /place/eiffel-tower, how many photos are in the visitor gallery?"
+"On /recipe/lasagna-bolognese, what does the hero photo show?"
+```
+
+These tasks force agents to actually look at images, not just data fields. They also unlock the visual modality of the benchmark.
+
+## 35. POST interaction patterns — going from 11 to 40+ form endpoints
+
+**Symptom**: site has 80+ GET routes but only 10-15 POST. Real users do far more than browse — they save, vote, comment, follow, edit, submit.
+
+**Real numbers from this pass**:
+- espn: 11 POST → 41 (+30)
+- cambridge: 14 POST → 36 (+22)
+- booking: added 11 POST in /myaccount
+- google_map: added 15 POST (Q&A / edit / report / check-in / save / rating)
+
+**Feature families that reliably add many POSTs**:
+
+| Family | Example POST routes |
+|---|---|
+| Save / bookmark | `/place/<id>/save`, `/article/<id>/save`, `/job/<id>/bookmark` |
+| Vote / rating | `/poll/<id>/vote`, `/example/<id>/upvote`, `/comment/<id>/upvote` |
+| Comment / reply | `/article/<id>/comment`, `/comment/<id>/reply`, `/question/<id>/answer` |
+| Follow / subscribe | `/team/<slug>/follow`, `/author/<id>/follow`, `/alert/subscribe` |
+| Edit-suggest / report | `/word/<id>/suggest-edit`, `/place/<id>/report`, `/photo/<id>/report` |
+| User content create | `/list/create`, `/deck/create`, `/quiz/start`, `/post/new` |
+| User content edit | `/list/<id>/rename`, `/list/<id>/add-item`, `/profile/update` |
+| Forms with stages | `/quiz/<id>/submit-answer`, `/quiz/<id>/skip`, `/quiz/<id>/restart` |
+| Workflow actions | `/order/<id>/cancel`, `/order/<id>/return`, `/booking/<id>/modify` |
+| Account / preferences | `/account/preferences/update`, `/account/password/change`, `/account/2fa/enable` |
+| Cart / wishlist | `/cart/add/<id>`, `/cart/remove/<id>`, `/wishlist/<id>/move-to-cart` |
+| Game-like (sports) | `/lineup/save`, `/trade/propose`, `/bracket/<id>/pick/<game>`, `/draft/pick` |
+
+**Pattern per POST**:
+
+1. GET page (`/feature/form`) renders the form
+2. POST handler validates + writes DB + redirects with flash
+3. New DB table or column for the write target
+4. ≥3 tasks per POST referencing the form (`"On the X form, set Y to Z and submit; verify the confirmation message"`)
+
+**Anti-pattern**: a POST that returns a status JSON without redirect. Real users don't see JSON — they see a confirmation page. Always redirect (302) to a result page on success.
+
+## 36. MarketingPage + MarketingPageSection schema (for sites with many distinct landing pages)
+
+For sites with 15+ visually-distinct marketing/landing pages (github features/pricing/enterprise/education, Apple buy-config/services, Coursera business/government), use the section-based schema:
+
+```python
+class MarketingPage(db.Model):
+    __tablename__ = 'marketing_pages'
+    slug = db.Column(db.String(60), primary_key=True)
+    title = db.Column(db.String(200))
+    eyebrow = db.Column(db.String(80))
+    subtitle = db.Column(db.String(500))
+    hero_image_path = db.Column(db.String(200))
+    meta_description = db.Column(db.String(300))
+
+class MarketingPageSection(db.Model):
+    __tablename__ = 'marketing_page_sections'
+    id = db.Column(db.Integer, primary_key=True)
+    page_slug = db.Column(db.String(60), db.ForeignKey('marketing_pages.slug'))
+    position = db.Column(db.Integer)
+    kind = db.Column(db.String(40))      # hero / grid / table / faq / cta / logo_wall / diagram / code / testimonial / timeline
+    json_data = db.Column(db.Text)        # JSON blob; structure depends on kind
+    page = db.relationship('MarketingPage', backref='sections')
+```
+
+**Template strategy**: each distinct page (not each section kind) gets its own template. Each template can pick which section kinds it uses:
+
+- `pricing.html` uses `hero + table + faq + cta`
+- `feature_copilot.html` uses `hero + diagram + logo_wall + testimonial + cta`
+- `enterprise.html` uses `hero + stats + logo_wall + testimonial + cta`
+
+Each template has inline CSS expressing its visual identity — pricing has 3-column comparison, Copilot has AI animation hero, Enterprise has client logo wall. **No shared "vertical.html"**.
+
+Real-pass: github's 21 pages all migrated to this schema (commit `7da5723`). Each template has a distinct content md5 verified by smoke test.
+
+## 37. Subagent stalls mid-deepen — the "Now I'll write the seed data..." cliff
+
+**Symptom**: Background subagent reaches "stalled: no progress for 600s" with last visible output being mid-sentence:
+- `"Now I'll write the seed data sections..."`
+- `"Now I'll write the deepen extension. First, the SQL extension script:"`
+- `"Now let me add the seed data sections and the new seed functions. First let me find where to put them."`
+
+Each was a partial-progress state where app.py had 500-900 new lines added (routes + POST endpoints), but 0 new templates and 0 new tasks. Not committed.
+
+**Why this happens**: large deepen prompts (≥3 distinct work blocks: routes + templates + seed + tasks) seem to exhaust the agent's working memory mid-task. The stream watchdog kills the process while the agent is "thinking" about the next block. Real example from this pass: phet/osu/nba all stalled at the same checkpoint despite being given different sites.
+
+**Detection (post-stall)**:
+
+```bash
+# What did the agent actually do before dying?
+cd /home/v-haoqiwang/repos/WebHarbor
+git status sites/<site>/                  # uncommitted changes left behind?
+git diff --stat sites/<site>/             # how big?
+grep -c '^@app.route' sites/<site>/app.py # routes count vs baseline
+find sites/<site>/templates -name '*.html' | wc -l  # template count vs baseline
+wc -l sites/<site>/tasks.jsonl            # tasks count vs baseline
+```
+
+If app.py grew substantially but templates/tasks didn't move and nothing is committed → the agent died at the cliff.
+
+**Finisher prompt template**:
+
+```
+Site: sites/<site>/
+**情况**: Previous agent stalled at "Now I'll write seed/templates/tasks...".
+**当前**: app.py modified (+routes/+POST), 0 new templates, 0 new tasks, uncommitted.
+
+**任务**:
+1. git status to confirm modifications still present
+2. grep app.py for render_template('xxx') calls referencing missing templates
+3. Build each missing template with distinct inline-CSS visual style
+4. Generate 1500+ GUI tasks (id: Site--gui_<page>_<NNN>)
+5. Test client smoke 20 URLs → 200
+6. byte-id reset: cp instance_seed/<site>.db instance/<site>.db → md5 equal
+7. git pull --rebase origin main; commit; push fork
+
+**强制**: 5-token cap @5 / 0 API / PINNED bcrypt + md5 seed + normalize_seed_db_layout
+**报告**: ≤200 words.
+```
+
+**Prevention for new deepen prompts**:
+
+1. **Cap each agent's scope at 2 work blocks** (routes+templates OR seed+tasks), not 4 at once.
+2. **Encourage append-only blueprint pattern**: agent writes `_deepen_extend.py` exporting `register(app)`, then `app.py` does `_deepen_extend.register(app)` — this localizes the work to one file and reduces the agent's surface area.
+3. **Tell the agent to commit early** ("commit + push after Step 3 even if not done; we'll resume").
+
+Found in: phet_simulations (a52058...), osu (a802ca...), nba (a2aad3...). All recovered via finisher prompt.
+
+## 38. `image_path` column referencing non-existent files
+
+**Symptom**: site has `static/images/<entity>/<file>.jpg` directory with N real files, but the DB `Model.image_path` column is populated with synthetic filenames like `C0000<id>-photo.jpg` that don't match any real on-disk file. Templates render `<img src="/static/images/cars/{{ vehicle.image_path }}">` → 404 for every image. Visual surface is broken.
+
+**Real example — carmax**: 741 Vehicle rows with `image_path` like `C0001234-photo.jpg`, but only 123 real stock-image prefixes on disk. Image utilization measured 0% despite 748 photo files present.
+
+**Detection**:
+
+```python
+import pathlib, sqlite3
+con = sqlite3.connect("sites/<site>/instance_seed/<site>.db")
+img_paths = [r[0] for r in con.execute("SELECT image_path FROM Vehicle WHERE image_path IS NOT NULL")]
+existing = {p.name for p in pathlib.Path("sites/<site>/static/images/vehicles").rglob("*.jpg")}
+broken = [p for p in img_paths if p not in existing]
+print(f"broken: {len(broken)} / total: {len(img_paths)}")
+```
+
+If >50% broken → run a deterministic remap.
+
+**Fix recipe — deterministic md5 remap**:
+
+```python
+import hashlib
+real_prefixes = sorted({p.stem.split("-")[0] for p in
+                        pathlib.Path("static/images/vehicles").rglob("*.jpg")})
+# 123 unique stock prefixes
+for vehicle in Vehicle.query.all():
+    h = int(hashlib.md5(str(vehicle.id).encode()).hexdigest()[:8], 16)
+    chosen_prefix = real_prefixes[h % len(real_prefixes)]
+    # Pick a hero photo of that prefix
+    candidates = sorted(pathlib.Path("static/images/vehicles").rglob(f"{chosen_prefix}-*.jpg"))
+    vehicle.image_path = candidates[h % len(candidates)].name
+db.session.commit()
+```
+
+Run as a one-shot in `seed_deepen()` gated by a row-count check (so it doesn't bump byte-id on re-seed).
+
+**Verification**:
+
+```python
+broken_after = [...]  # repeat detection
+assert len(broken_after) == 0
+# Image utilization = 100% on the deepened surface
+```
+
+Pattern is general: any time templates use `{{ item.image_path }}` for a path that should point at a real file, validate the path exists. If not, remap deterministically onto the real asset set.
+
+## 39. `_pinned_pbkdf2(email, pw)` — alternative to PINNED bcrypt
+
+**Context**: §1 documented PINNED bcrypt hashes. Some sites prefer pbkdf2 (Flask-Login default, no native dep). The same byte-id problem applies — **pbkdf2 with random salt** breaks reset.
+
+**Fix B (pbkdf2 with deterministic salt)**:
+
+```python
+import hashlib, hmac, base64
+def _pinned_pbkdf2(email: str, password: str) -> str:
+    """Deterministic pbkdf2 hash: salt = md5(email)[:16], iterations pinned."""
+    salt = hashlib.md5(email.encode()).hexdigest()[:16].encode()
+    hash_bytes = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000)
+    return f"pbkdf2:sha256:600000${salt.decode()}${base64.b64encode(hash_bytes).decode()}"
+```
+
+Use during seed:
+
+```python
+for u in USERS:
+    user = User(email=u["email"], password_hash=_pinned_pbkdf2(u["email"], "TestPass123!"))
+    db.session.add(user)
+```
+
+Verification: `User.query.get(1).password_hash` returns the same string across reseeds. Login still works because `check_password_hash` is salt-agnostic at verify time.
+
+Found used in: imdb (commit `a1e31f2`), ted (commit `f346c8a`), recreation_gov (commit `c5bc12d`).
+
+## 40. SVG generation as image fallback for high utilization
+
+**Context**: §34 said target 40-50% image utilization. What if `static/images/<site>/` doesn't have enough real photos for every entity?
+
+**Solution**: generate deterministic SVGs for missing assets. Two patterns:
+
+### Pattern A: pre-generate at seed time
+
+```python
+# sites/<site>/generate_svgs.py
+import hashlib, pathlib
+OUT = pathlib.Path("static/images/avatars")
+OUT.mkdir(parents=True, exist_ok=True)
+for slug in slugs:
+    h = hashlib.md5(slug.encode()).hexdigest()
+    color = "#" + h[:6]
+    initial = slug[0].upper()
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <rect width="200" height="200" fill="{color}"/>
+  <text x="100" y="120" font-size="80" text-anchor="middle" fill="white">{initial}</text>
+</svg>'''
+    (OUT / f"{slug}.svg").write_text(svg)
+```
+
+Run once. Template: `<img src="/static/images/avatars/{{ user.slug }}.svg">`.
+
+### Pattern B: route-generated at request time
+
+```python
+@app.route("/static-gen/<kind>/<slug>.svg")
+def static_gen(kind, slug):
+    h = hashlib.md5(slug.encode()).hexdigest()
+    color = "#" + h[:6]
+    label = slug[:2].upper()
+    svg = f'<svg ...>...</svg>'  # parameterized by kind
+    return svg, 200, {"Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400"}
+```
+
+Template: `<img src="/static-gen/avatar/{{ author.slug }}.svg">`. No disk footprint, deterministic.
+
+**Real examples**:
+- berkeley: 76 SVGs generated via `generate_svgs.py` (campus/headshot/banner/fund/library/sport) → 73.7% utilization
+- phys_org: `/static-gen/{avatar,podcast,banner,video}/<slug>.svg` route → 40.5% utilization
+
+**Visual identity tip**: vary `kind` to control svg style — avatar gets initials, podcast gets a circle+microphone, banner gets a gradient strip. Each SVG type has a distinct visual aesthetic so they don't look identical.
+
+### When to choose A vs B
+
+- **Pattern A (pre-generate)**: when you want the asset to ship with the HF dataset (visible in `ls static/images/`). Easier to inspect. Bigger disk footprint.
+- **Pattern B (route-generated)**: when you have 10k+ entities and don't want 10k SVG files. Lower disk footprint. Slightly higher CPU per request.
+
+Both achieve >40% image utilization in templates without needing real photos.
