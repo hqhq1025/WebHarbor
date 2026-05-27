@@ -18,7 +18,7 @@
     <tbody>
     {% for f in files %}
       <tr>
-        <td><img src="{{ url_for('static', filename='images/' + f.filename) }}"
+        <td><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + f.filename) }}"
                  alt="" style="width:40px;height:40px;object-fit:cover;border-radius:3px;"></td>
         <td><a href="{{ url_for('file_view', wiki_slug=wiki.slug, filename=f.filename) }}">{{ f.filename }}</a></td>
         <td>{{ f.display_name }}</td>
