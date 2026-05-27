@@ -102,9 +102,22 @@
 
     <section>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom: 14px;gap:12px;">
+        {# Build a query string that drops any existing `view` param so the
+           List / Map toggle actually switches view (Flask's args.get picks
+           the first value, so appending `&view=list` to `view=map` would
+           not flip the view). #}
+        {%- set _qs_parts = [] -%}
+        {%- for k, vs in request.args.lists() -%}
+          {%- if k != 'view' -%}
+            {%- for v in vs -%}
+              {%- set _ = _qs_parts.append(k ~ '=' ~ v|urlencode) -%}
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- set _qs_no_view = _qs_parts|join('&') -%}
         <div style="display:flex;gap:6px;">
-          <a class="btn sm {% if view != 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ request.query_string.decode('utf-8') }}{% if request.query_string %}&{% endif %}view=list">List</a>
-          <a class="btn sm {% if view == 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ request.query_string.decode('utf-8') }}{% if request.query_string %}&{% endif %}view=map">Map</a>
+          <a class="btn sm {% if view != 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ _qs_no_view }}{% if _qs_no_view %}&{% endif %}view=list">List</a>
+          <a class="btn sm {% if view == 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ _qs_no_view }}{% if _qs_no_view %}&{% endif %}view=map">Map</a>
           <a class="btn sm ghost" href="{{ url_for('search_draw') }}">Draw on map</a>
         </div>
         <form method="get" action="{{ url_for('search') }}" style="display:flex;gap:6px;align-items:center;">
