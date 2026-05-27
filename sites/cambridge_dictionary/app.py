@@ -6786,3 +6786,16 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=False)
 
 # This is intentionally empty - context processor added below
+
+
+# --- perf: long-term cache for /static/ assets (added 2026-05-27) ---
+@app.after_request
+def _add_static_cache_headers(resp):
+    try:
+        if request.path.startswith('/static/'):
+            resp.headers.setdefault('Cache-Control', 'public, max-age=86400, immutable')
+    except Exception:
+        pass
+    return resp
+# --- end perf ---
+
