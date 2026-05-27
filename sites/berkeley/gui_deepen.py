@@ -44,7 +44,11 @@ def fund_photo(slug):
     return f"fund_{_det_idx('fu_' + slug, 10):03d}.svg"
 
 def library_photo(slug):
-    return f"library_{_det_idx('li_' + slug, 6):03d}.svg"
+    # Real per-branch Wikimedia photos harvested 2026-05-27. Each slug has a
+    # corresponding library-{slug}.jpg file in static/images/. Two unmatched
+    # branches (east-asian, berkeley-business-long) fall back to copies of
+    # doe / bancroft on disk so the slug → file mapping is total.
+    return f"library-{slug}.jpg"
 
 def sport_photo(slug):
     return f"sport_{_det_idx('sp_' + slug, 8):03d}.svg"
