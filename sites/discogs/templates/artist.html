@@ -5,7 +5,7 @@
 {% block content %}
 <div class="profile-head">
   {% if a.image_path %}
-    <img src="{{ url_for('static', filename=a.image_path) }}" alt="{{ a.name }}"
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename=a.image_path) }}" alt="{{ a.name }}"
          style="width: 120px; height: 120px; object-fit: cover; border-radius: 4px;">
   {% else %}
     <div class="avatar avatar-md" style="background: hsl({{ a.id * 13 % 360 }}, 50%, 45%);">

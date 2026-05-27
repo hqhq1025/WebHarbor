@@ -31,7 +31,7 @@
       <tr style="border-bottom: 1px solid #eee;">
         <td style="padding: 6px;">
           <a href="{{ url_for('release_detail', rid=c.release.discogs_id or c.release.id) }}">
-            <img src="{{ c.release.cover_url }}" style="width: 50px; height: 50px; object-fit: cover;">
+            <img loading="lazy" decoding="async" src="{{ c.release.cover_url }}" style="width: 50px; height: 50px; object-fit: cover;">
           </a>
         </td>
         <td style="padding: 6px;">

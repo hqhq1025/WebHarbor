@@ -5,7 +5,7 @@
 {% block content %}
 <div class="rel-hero">
   <div class="cover">
-    <img src="{{ r.cover_url }}" alt="{{ r.title }}">
+    <img loading="lazy" decoding="async" src="{{ r.cover_url }}" alt="{{ r.title }}">
     {% if r.image_path %}<p class="tiny muted" style="margin-top: 6px;">Image courtesy Wikipedia</p>{% endif %}
   </div>
   <div class="meta">
