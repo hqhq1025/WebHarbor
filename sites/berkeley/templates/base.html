@@ -294,13 +294,16 @@
     <div class="container">
       <ul>
         <li><a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}class="active"{% endif %}>About</a></li>
-        <li><a href="{{ url_for('admissions') }}" {% if request.endpoint == 'admissions' %}class="active"{% endif %}>Admissions</a></li>
+        <li><a href="{{ url_for('admissions') }}" {% if request.endpoint and request.endpoint.startswith('admissions') %}class="active"{% endif %}>Admissions</a></li>
         <li><a href="{{ url_for('academics') }}" {% if request.endpoint in ['academics','programs','program_detail'] %}class="active"{% endif %}>Academics</a></li>
         <li><a href="{{ url_for('research') }}" {% if request.endpoint in ['research','research_center'] %}class="active"{% endif %}>Research</a></li>
-        <li><a href="{{ url_for('news') }}" {% if request.endpoint in ['news','news_article'] %}class="active"{% endif %}>News</a></li>
-        <li><a href="{{ url_for('events') }}" {% if request.endpoint in ['events','event_detail'] %}class="active"{% endif %}>Events</a></li>
-        <li><a href="{{ url_for('faculty') }}" {% if request.endpoint in ['faculty','faculty_profile'] %}class="active"{% endif %}>Faculty</a></li>
-        <li><a href="{{ url_for('departments') }}" {% if request.endpoint in ['departments','department_detail'] %}class="active"{% endif %}>Departments</a></li>
+        <li><a href="{{ url_for('library_index') }}" {% if request.endpoint and request.endpoint.startswith('library') %}class="active"{% endif %}>Library</a></li>
+        <li><a href="{{ url_for('athletics_index') }}" {% if request.endpoint and request.endpoint.startswith('athletics') %}class="active"{% endif %}>Athletics</a></li>
+        <li><a href="{{ url_for('giving_index') }}" {% if request.endpoint and request.endpoint.startswith('giving') %}class="active"{% endif %}>Giving</a></li>
+        <li><a href="{{ url_for('alumni_index') }}" {% if request.endpoint and request.endpoint.startswith('alumni') %}class="active"{% endif %}>Alumni</a></li>
+        <li><a href="{{ url_for('students_index') }}" {% if request.endpoint and request.endpoint.startswith('student') %}class="active"{% endif %}>Students</a></li>
+        <li><a href="{{ url_for('news') }}" {% if request.endpoint in ['news','news_article','news_category'] %}class="active"{% endif %}>News</a></li>
+        <li><a href="{{ url_for('events') }}" {% if request.endpoint in ['events','event_detail','event_rsvp','event_signup','event_suggest'] %}class="active"{% endif %}>Events</a></li>
       </ul>
     </div>
   </nav>
@@ -339,6 +342,8 @@
           <li><a href="{{ url_for('departments') }}">Departments</a></li>
           <li><a href="{{ url_for('academics') }}">Schools & Colleges</a></li>
           <li><a href="{{ url_for('admissions') }}">Admissions</a></li>
+          <li><a href="{{ url_for('financial_aid_index') }}">Financial Aid</a></li>
+          <li><a href="{{ url_for('library_index') }}">Library</a></li>
         </ul>
       </div>
       <div>
@@ -347,14 +352,23 @@
           <li><a href="{{ url_for('research') }}">Research Centers</a></li>
           <li><a href="{{ url_for('faculty') }}">Faculty Directory</a></li>
           <li><a href="{{ url_for('news') }}?category=Research">Research News</a></li>
+          <li><a href="{{ url_for('strategic_plan') }}">Strategic Plan</a></li>
         </ul>
       </div>
       <div>
         <h4>Campus</h4>
         <ul>
           <li><a href="{{ url_for('events') }}">Events</a></li>
-          <li><a href="{{ url_for('news') }}">Berkeley News</a></li>
-          <li><a href="{{ url_for('about') }}">About Berkeley</a></li>
+          <li><a href="{{ url_for('athletics_index') }}">Athletics</a></li>
+          <li><a href="{{ url_for('students_index') }}">Student Services</a></li>
+          <li><a href="{{ url_for('alumni_index') }}">Alumni</a></li>
+          <li><a href="{{ url_for('giving_index') }}">Give to Berkeley</a></li>
+          <li><a href="{{ url_for('leadership_index') }}">Leadership</a></li>
+          <li><a href="{{ url_for('about_history') }}">Our History</a></li>
+          <li><a href="{{ url_for('diversity') }}">Equity & Inclusion</a></li>
+          <li><a href="{{ url_for('careers') }}">Careers</a></li>
+          <li><a href="{{ url_for('contact') }}">Contact</a></li>
+          <li><a href="{{ url_for('newsletter') }}">Newsletter</a></li>
           {% if current_user.is_authenticated %}
           <li><a href="{{ url_for('account') }}">My Account</a></li>
           {% else %}

@@ -4609,6 +4609,10 @@ def seed():
                 username=username,
                 full_name=full_name,
                 role=role,
+                # Pin created_at to a snapshot so byte-identical reset holds.
+                # Without this the default datetime.utcnow fires at seed time
+                # and shifts per build (gotcha #3).
+                created_at=datetime(2026, 5, 1, 9, 0, 0),
             )
             # Pinned bcrypt hash for 'test1234'. Using set_password() here would
             # call bcrypt.generate_password_hash, which mixes a random salt on

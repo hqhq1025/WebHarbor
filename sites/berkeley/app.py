@@ -739,9 +739,32 @@ def server_error(e):
 # ─── Startup ──────────────────────────────────────────────────────────────────
 
 with app.app_context():
+    # Register deepen models BEFORE create_all so all tables are made
+    import gui_deepen
+    gui_deepen.register(app, db)
     db.create_all()
     from seed_data import seed
     seed()
+    gui_deepen.seed_extras()
+
+    # Normalize index order + VACUUM so rebuilds match byte-for-byte
+    # (gotcha #2 — SQLAlchemy emits CREATE INDEX from a Python set whose
+    # iteration order depends on object id() and changes per process)
+    from sqlalchemy import text
+    _conn = db.engine.connect()
+    _idx_rows = _conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for _name, _ in _idx_rows:
+        _conn.execute(text(f"DROP INDEX IF EXISTS {_name}"))
+    for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
+        if _sql:
+            _conn.execute(text(_sql))
+    _conn.commit()
+    _conn.close()
+    # VACUUM must run outside a transaction
+    with db.engine.connect() as _v:
+        _v.execute(text("VACUUM"))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=40016, debug=False)
