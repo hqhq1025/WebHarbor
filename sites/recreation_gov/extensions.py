@@ -42,6 +42,77 @@ def _pin_hash(email: str, password: str) -> str:
 # ---------------------------------------------------------------------------
 # Reference data (drives lotteries / permits / tours / destinations etc.)
 # ---------------------------------------------------------------------------
+
+# Per-slug real Wikipedia photos (harvested 2026-05-27, see scrape-real-images
+# skill). Overlays the placeholder file used in the spec tuples so each
+# permit / tour / destination renders a distinct landmark photo instead of
+# the same mt-whitney / aquatic-park-cove / desolation-lake reused across rows.
+PERMIT_REAL_PHOTOS = {
+    "desolation-wilderness-overnight-permit": "wiki-desolation-wilderness.webp",
+    "inyo-mt-whitney-trail-permit": "wiki-mt-whitney-trail.webp",
+    "yosemite-wilderness-permit": "wiki-yosemite-wilderness.webp",
+    "yellowstone-fishing-permit": "wiki-yellowstone-fishing.webp",
+    "canyonlands-overnight-permit": "wiki-canyonlands-overnight.webp",
+    "aravaipa-canyon-permit": "wiki-aravaipa-canyon.webp",
+    "chilkoot-trail-permit": "wiki-chilkoot-trail.webp",
+    "apostle-islands-camping-permit": "wiki-apostle-islands.webp",
+    "mt-st-helens-climbing-permit": "wiki-mt-st-helens.webp",
+    "cumberland-island-camping-permit": "wiki-cumberland-island.webp",
+    "mt-whitney-day-permit": "wiki-mt-whitney.webp",
+    "paria-canyon-overnight-permit": "wiki-paria-canyon.webp",
+    "rock-castle-gorge-permit": "wiki-rock-castle-gorge.webp",
+    "fire-island-driving-permit": "wiki-fire-island.webp",
+    "subway-zion-canyoneering-permit": "wiki-zion-subway.webp",
+    "hunting-okefenokee-permit": "wiki-okefenokee-hunting.webp",
+}
+TOUR_REAL_PHOTOS = {
+    "yosemite-grand-tour-bus": "wiki-yosemite-valley-tour.webp",
+    "alcatraz-day-tour": "wiki-alcatraz-day.webp",
+    "carlsbad-kings-palace-tour": "wiki-carlsbad-caverns.webp",
+    "mesa-verde-balcony-house": "wiki-mesa-verde.webp",
+    "wind-cave-fairgrounds-tour": "wiki-wind-cave.webp",
+    "sf-maritime-hyde-street-tour": "wiki-sf-maritime.webp",
+    "fort-point-history-tour": "wiki-fort-point.webp",
+    "voyageurs-day-cruise": "wiki-voyageurs.webp",
+    "statue-of-liberty-crown-tour": "wiki-statue-liberty.webp",
+    "independence-hall-tour": "wiki-independence-hall.webp",
+    "dry-tortugas-ferry-day-trip": "wiki-dry-tortugas.webp",
+    "glacier-bay-cruise": "wiki-glacier-bay.webp",
+    "jenny-lake-shuttle-boat": "wiki-jenny-lake.webp",
+    "channel-islands-island-packers": "wiki-channel-islands.webp",
+    "biscayne-heritage-tour": "wiki-biscayne.webp",
+    "lewis-clark-caverns-tour": "wiki-lewis-clark-caverns.webp",
+    "campbell-creek-science-tour": "wiki-campbell-creek.webp",
+    "zion-canyon-shuttle-narrated": "wiki-zion-canyon.webp",
+}
+DESTINATION_REAL_PHOTOS = {
+    "yosemite-national-park": "wiki-yosemite.webp",
+    "yellowstone-national-park": "wiki-yellowstone.webp",
+    "grand-teton-national-park": "wiki-grand-teton.webp",
+    "rocky-mountain-national-park": "wiki-rocky-mountain.webp",
+    "zion-national-park": "wiki-zion.webp",
+    "grand-canyon-national-park": "wiki-grand-canyon.webp",
+    "glacier-national-park": "wiki-glacier.webp",
+    "olympic-national-park": "wiki-olympic.webp",
+    "acadia-national-park": "wiki-acadia.webp",
+    "great-smoky-mountains-national-park": "wiki-great-smoky.webp",
+    "joshua-tree-national-park": "wiki-joshua-tree.webp",
+    "death-valley-national-park": "wiki-death-valley.webp",
+    "arches-national-park": "wiki-arches.webp",
+    "bryce-canyon-national-park": "wiki-bryce-canyon.webp",
+    "denali-national-park": "wiki-denali.webp",
+    "haleakala-national-park": "wiki-haleakala.webp",
+    "everglades-national-park": "wiki-everglades.webp",
+    "crater-lake-national-park": "wiki-crater-lake.webp",
+    "mount-rainier-national-park": "wiki-mt-rainier.webp",
+    "vermilion-cliffs-national-monument": "wiki-vermilion-cliffs.webp",
+    "muir-woods-national-monument": "wiki-muir-woods.webp",
+    "vermilion-bears-ears": "wiki-bears-ears.webp",
+    "inyo-national-forest": "wiki-inyo-forest.webp",
+    "tongass-national-forest": "wiki-tongass.webp",
+    "okefenokee-refuge": "wiki-okefenokee.webp",
+}
+
 LOTTERY_SPECS = [
     ("the-wave-coyote-buttes-north-lottery", "The Wave (Coyote Buttes North) Lottery", "BLM", "Vermilion Cliffs National Monument", "AZ", "Kanab", 9, "2026-06-15", "2026-09-15", 0.04, "real-desolation-hero.webp"),
     ("half-dome-cable-route-lottery", "Half Dome Cable Route Preseason Lottery", "NPS", "Yosemite National Park", "CA", "Yosemite Valley", 12, "2026-03-01", "2026-04-30", 0.18, "real-yosemite-site-pass-hero.jpeg"),
@@ -980,6 +1051,7 @@ def seed_extensions() -> None:
 
     if Permit.query.count() == 0:
         for slug, name, activity, agency, parent, state, location, fee, hero, desc in PERMIT_SPECS:
+            hero = PERMIT_REAL_PHOTOS.get(slug, hero)
             db.session.add(Permit(slug=slug, name=name, activity=activity, agency=agency,
                                   parent_area=parent, state=state, location=location,
                                   fee=Decimal(str(fee)), hero_image=hero, description=desc))
@@ -987,6 +1059,7 @@ def seed_extensions() -> None:
 
     if Tour.query.count() == 0:
         for idx, (slug, name, agency, parent, state, location, price, hero, desc) in enumerate(TOUR_SPECS):
+            hero = TOUR_REAL_PHOTOS.get(slug, hero)
             db.session.add(Tour(slug=slug, name=name, agency=agency, parent_area=parent, state=state,
                                 location=location, price=Decimal(str(price)), hero_image=hero,
                                 description=desc, duration_minutes=60 + (idx % 5) * 30,
@@ -996,6 +1069,7 @@ def seed_extensions() -> None:
 
     if Destination.query.count() == 0:
         for slug, name, kind, agency, state, desc, hero in DESTINATION_SPECS:
+            hero = DESTINATION_REAL_PHOTOS.get(slug, hero)
             things = [
                 {"title": "Featured tours", "body": f"Reserve guided tours and ranger programs within {name}."},
                 {"title": "Backcountry permits", "body": f"Apply for wilderness and overnight permits inside {name}."},
