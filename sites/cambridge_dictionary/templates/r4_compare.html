@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if mode == 'translate-index' %}Multi-language lookup
+  {% elif mode == 'translate-detail' %}{{ word.headword }} — multi-language translations
+  {% elif mode == 'cognate-index' %}Cognate tree explorer
+  {% else %}Cognate tree of {{ word.headword }}
+  {% endif %} | Cambridge Dictionary
+{% endblock %}
+{% block content %}
+<div class="container r4-compare-page" data-r4-release="{{ release }}" data-r4-mode="{{ mode }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    {% if mode.startswith('translate') %}
+      <a href="{{ url_for('r4_lookup_translate_index') }}">Multi-language lookup</a>
+      {% if mode == 'translate-detail' %} &rsaquo; <span>{{ word.headword }}</span>{% endif %}
+    {% else %}
+      <a href="{{ url_for('r4_cognate_tree_index') }}">Cognate tree</a>
+      {% if mode == 'cognate-detail' %} &rsaquo; <span>{{ word.headword }}</span>{% endif %}
+    {% endif %}
+  </nav>
+
+  {% if mode == 'translate-index' %}
+    <header class="r4-compare-header">
+      <h1 class="r4-headline">Multi-language lookup</h1>
+      <p class="r4-intro">Compare a headword side-by-side across {{ langs|length }} languages: {% for lng in langs %}{{ lang_label[lng] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+      <p class="r4-meta">Total entries with translation data: <strong>{{ total }}</strong>. Showing the first {{ words|length }} alphabetically.</p>
+    </header>
+    <ul class="r4-translate-grid">
+      {% for w in words %}
+        <li class="r4-translate-card">
+          <a href="{{ url_for('r4_lookup_translate_detail', slug=w.slug) }}" class="r4-translate-link">
+            <span class="r4-word-headword">{{ w.headword }}</span>
+            <span class="r4-word-pos">{{ w.pos }}</span>
+            {% if w.level %}<span class="entry-level level-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+            <span class="r4-translate-slug">/r4/lookup-translate/{{ w.slug }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+  {% elif mode == 'translate-detail' %}
+    <header class="r4-compare-header">
+      <h1 class="r4-headline">Translations of <em>{{ word.headword }}</em></h1>
+      <div class="r4-word-meta">
+        <span class="entry-pos">{{ word.pos }}</span>
+        {% if word.level %}<span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>{% endif %}
+        {% if word.register %}<span class="register-tag">{{ word.register }}</span>{% endif %}
+      </div>
+    </header>
+    <table class="r4-translate-table">
+      <thead><tr><th>Language</th><th>Translation</th><th>Provider</th></tr></thead>
+      <tbody>
+        {% for row in table %}
+          <tr>
+            <th>{{ row.label }}</th>
+            <td class="r4-translate-text">{% if row.text %}{{ row.text }}{% else %}<span class="r4-empty">—</span>{% endif %}</td>
+            <td class="r4-translate-provider">{% if row.provider %}{{ row.provider }}{% else %}<span class="r4-empty">—</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <nav class="r4-cross-links">
+      <a class="r4-jump" href="{{ url_for('word_detail', slug=word.slug) }}">Entry page</a>
+      <a class="r4-jump" href="{{ url_for('r4_cognate_tree_detail', slug=word.slug) }}">Cognate tree</a>
+      <a class="r4-jump" href="{{ url_for('r4_lookup_translate_index') }}">&laquo; All translation entries</a>
+    </nav>
+
+  {% elif mode == 'cognate-index' %}
+    <header class="r4-compare-header">
+      <h1 class="r4-headline">Cognate tree explorer</h1>
+      <p class="r4-intro">Browse words with a populated derivationally-related root list. Each detail page renders a 2-level tree: root cognates plus same-prefix peers.</p>
+      <p class="r4-meta">Total entries with root data: <strong>{{ total }}</strong>. Showing the first {{ words|length }} alphabetically.</p>
+    </header>
+    <ul class="r4-cognate-grid">
+      {% for w in words %}
+        <li class="r4-cognate-card">
+          <a href="{{ url_for('r4_cognate_tree_detail', slug=w.slug) }}" class="r4-cognate-link">
+            <span class="r4-word-headword">{{ w.headword }}</span>
+            <span class="r4-word-pos">{{ w.pos }}</span>
+            <span class="r4-cognate-slug">/r4/cognate-tree/{{ w.slug }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+  {% else %}{# cognate-detail #}
+    <header class="r4-compare-header">
+      <h1 class="r4-headline">Cognate tree of <em>{{ word.headword }}</em></h1>
+      <div class="r4-word-meta">
+        <span class="entry-pos">{{ word.pos }}</span>
+        {% if word.level %}<span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>{% endif %}
+      </div>
+    </header>
+    <ol class="r4-cognate-tree">
+      {% for node in tree %}
+        <li class="r4-cognate-node">
+          <a class="r4-node-link" href="{{ url_for('word_detail', slug=node.word.slug) }}">
+            <span class="r4-node-headword">{{ node.word.headword }}</span>
+            <span class="r4-node-pos">{{ node.word.pos }}</span>
+          </a>
+          {% if node.peers %}
+            <ul class="r4-cognate-peers">
+              {% for p in node.peers %}
+                <li class="r4-peer">
+                  <a href="{{ url_for('word_detail', slug=p.slug) }}">{{ p.headword }}</a>
+                  <span class="r4-peer-pos">{{ p.pos }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+    <nav class="r4-cross-links">
+      <a class="r4-jump" href="{{ url_for('word_detail', slug=word.slug) }}">Entry page</a>
+      <a class="r4-jump" href="{{ url_for('r4_lookup_translate_detail', slug=word.slug) }}">Translations</a>
+      <a class="r4-jump" href="{{ url_for('r4_cognate_tree_index') }}">&laquo; All cognate entries</a>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

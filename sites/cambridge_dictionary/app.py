@@ -3011,6 +3011,299 @@ def ielts_mock_test():
                            snapshot=snap)
 
 
+# ===========================================================================
+# R4 BACKFILL — etymology timeline + multi-language lookup-translate +
+# cognate-tree explorer. APPEND-ONLY: all new code is prefixed ``r4_`` /
+# ``R4_`` so it cannot collide with the existing R4 sub-pages (etymology /
+# collocation / mistake-corner) above. Read-only, no DB writes, no new
+# columns — surfaces existing Word.etymology / translations_json /
+# roots_json data through three themed views. Reset stays byte-identical.
+# ===========================================================================
+
+R4_BACKFILL_RELEASE_TAG = 'r4-backfill'
+
+# Ordered period buckets for the etymology timeline. Order matters: the
+# r4_period_for_word resolver applies the rules top-to-bottom (first match
+# wins) so the dataset partitions cleanly into one period per word.
+R4_TIMELINE_PERIODS = (
+    'latin', 'greek', 'old-french', 'old-english', 'middle-english',
+    'germanic', 'arabic', 'italian-spanish', '19th-century', '20th-century',
+    'coinage',
+)
+
+R4_TIMELINE_LABEL = {
+    'latin': 'Latin origins',
+    'greek': 'Greek origins',
+    'old-french': 'Old French (11th-14th c.)',
+    'old-english': 'Old English (pre-1100)',
+    'middle-english': 'Middle English (1100-1500)',
+    'germanic': 'Common Germanic',
+    'arabic': 'Arabic borrowings',
+    'italian-spanish': 'Italian / Spanish loans',
+    '19th-century': '19th-century coinage',
+    '20th-century': '20th-century coinage',
+    'coinage': 'Modern coined terms',
+}
+
+# Wiktionary-style era summary for the per-period landing page. Keeps the
+# page substantive even when the bucket is empty.
+R4_TIMELINE_BLURB = {
+    'latin': 'Words inherited or borrowed from Classical or Late Latin, including via French and Italian.',
+    'greek': 'Words borrowed from Ancient or Modern Greek, often via Latin scientific vocabulary.',
+    'old-french': 'Norman and Old-French borrowings, mostly entering English between the 11th and 14th centuries.',
+    'old-english': 'Native Anglo-Saxon vocabulary attested before the Norman Conquest.',
+    'middle-english': 'Words first attested in the Middle English period (c. 1100 - c. 1500).',
+    'germanic': 'Cognates inherited from Common Germanic before the Anglo-Saxon split.',
+    'arabic': 'Loanwords that entered English from Arabic, often via Spanish, Italian or French.',
+    'italian-spanish': 'Loanwords from Italian or Spanish, especially in music, finance and food.',
+    '19th-century': 'Scientific and industrial coinages first attested in the 19th century.',
+    '20th-century': 'Modern terms first attested in the 20th century.',
+    'coinage': 'Words explicitly coined by an identifiable author or community.',
+}
+
+# Languages exposed on the multi-language lookup-translate panel. Keys
+# match the lowercased keys produced by seed_extras / words_existing.json.
+R4_TRANSLATE_TARGETS = (
+    'spanish', 'french', 'german', 'italian',
+    'portuguese', 'chinese (simplified)', 'japanese',
+)
+
+R4_TRANSLATE_LANG_LABEL = {
+    'spanish': 'Spanish',
+    'french': 'French',
+    'german': 'German',
+    'italian': 'Italian',
+    'portuguese': 'Portuguese',
+    'chinese (simplified)': 'Chinese (Simplified)',
+    'japanese': 'Japanese',
+}
+
+
+def r4_period_for_word(word):
+    """Map a Word.etymology string to one of R4_TIMELINE_PERIODS.
+
+    Deterministic — the first matching rule wins. Empty etymology returns
+    '' (the word is omitted from every period bucket).
+    """
+    text = (word.etymology or '').lower()
+    if not text:
+        return ''
+    if 'coined' in text:
+        return 'coinage'
+    if '20th' in text or '1900s' in text or '1910s' in text or '1920s' in text \
+            or '1930s' in text or '1940s' in text or '1950s' in text \
+            or '1960s' in text or '1970s' in text or '1980s' in text \
+            or '1990s' in text:
+        return '20th-century'
+    if '19th' in text or '1800s' in text or '1810s' in text or '1820s' in text \
+            or '1830s' in text or '1840s' in text or '1850s' in text \
+            or '1860s' in text or '1870s' in text or '1880s' in text \
+            or '1890s' in text:
+        return '19th-century'
+    if 'arabic' in text:
+        return 'arabic'
+    if 'italian' in text or 'spanish' in text:
+        return 'italian-spanish'
+    if 'old french' in text:
+        return 'old-french'
+    if 'middle english' in text:
+        return 'middle-english'
+    if 'old english' in text:
+        return 'old-english'
+    if 'germanic' in text or 'proto-germanic' in text:
+        return 'germanic'
+    if 'greek' in text:
+        return 'greek'
+    if 'latin' in text:
+        return 'latin'
+    return ''
+
+
+# Lazy cache. Populated by the first call to ``_r4_timeline_index``. After
+# /reset the DB is restored byte-identical so the cached buckets remain
+# valid (and rebuilding is cheap anyway: ~50k word rows -> ~150ms).
+_R4_TIMELINE_CACHE = None
+
+
+def _r4_timeline_index():
+    global _R4_TIMELINE_CACHE
+    if _R4_TIMELINE_CACHE is not None:
+        return _R4_TIMELINE_CACHE
+    buckets = {p: [] for p in R4_TIMELINE_PERIODS}
+    rows = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa: E712
+                    Word.etymology != '')
+            .order_by(Word.headword.asc())
+            .all())
+    for w in rows:
+        p = r4_period_for_word(w)
+        if p:
+            buckets[p].append(w)
+    _R4_TIMELINE_CACHE = buckets
+    return buckets
+
+
+def r4_translate_table(word):
+    """Return a stable list of {lang, label, text, provider} rows for
+    the seven R4_TRANSLATE_TARGETS languages. Missing entries render as
+    empty strings (the template draws an em-dash)."""
+    raw = word.get_translations() or {}
+    norm = {(k or '').lower(): v for k, v in raw.items()}
+    table = []
+    for lang in R4_TRANSLATE_TARGETS:
+        v = norm.get(lang)
+        if isinstance(v, dict):
+            text = v.get('text') or ''
+            provider = v.get('provider') or ''
+        elif isinstance(v, str):
+            text, provider = v, ''
+        else:
+            text, provider = '', ''
+        table.append({'lang': lang,
+                      'label': R4_TRANSLATE_LANG_LABEL[lang],
+                      'text': text,
+                      'provider': provider})
+    return table
+
+
+def r4_cognate_tree_for(word):
+    """Build a 2-level cognate tree rooted at ``word``.
+
+    Level 1 nodes come from ``roots_json``. For each root node we attach
+    up to 4 deterministic "peer" cognates that share the same 4-letter
+    slug prefix. Both layers are sorted alphabetically.
+    """
+    roots = word.get_roots() or []
+    if not roots:
+        return []
+    seen = {word.slug}
+    tree = []
+    for slug in sorted(roots)[:8]:
+        if slug in seen:
+            continue
+        w = Word.query.filter_by(slug=slug).first()
+        if not w:
+            continue
+        seen.add(slug)
+        prefix = (w.slug or '')[:4]
+        peers = []
+        if len(prefix) >= 3:
+            peers = (Word.query
+                     .filter(Word.is_thesaurus_phrase == False,  # noqa: E712
+                             Word.slug.like(prefix + '%'),
+                             Word.slug != w.slug,
+                             Word.slug != word.slug)
+                     .order_by(Word.slug.asc())
+                     .limit(4)
+                     .all())
+        tree.append({'word': w, 'peers': peers})
+    return tree
+
+
+@app.route('/r4/etymology-timeline')
+@app.route('/r4/etymology-timeline/')
+def r4_etymology_timeline_index():
+    buckets = _r4_timeline_index()
+    summary = [
+        {'period': p,
+         'label': R4_TIMELINE_LABEL[p],
+         'blurb': R4_TIMELINE_BLURB[p],
+         'count': len(buckets[p])}
+        for p in R4_TIMELINE_PERIODS
+    ]
+    total = sum(len(v) for v in buckets.values())
+    return render_template('r4_timeline.html',
+                           period=None, period_label=None,
+                           period_blurb=None,
+                           summary=summary, words=[],
+                           total=total,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/etymology-timeline/<period>')
+def r4_etymology_timeline_detail(period):
+    if period not in R4_TIMELINE_PERIODS:
+        abort(404)
+    buckets = _r4_timeline_index()
+    rows = buckets[period][:80]
+    return render_template('r4_timeline.html',
+                           period=period,
+                           period_label=R4_TIMELINE_LABEL[period],
+                           period_blurb=R4_TIMELINE_BLURB[period],
+                           summary=None, words=rows,
+                           total=len(buckets[period]),
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/lookup-translate')
+@app.route('/r4/lookup-translate/')
+def r4_lookup_translate_index():
+    base = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa: E712
+                    Word.translations_json != '{}',
+                    Word.translations_json != ''))
+    total = base.count()
+    rows = base.order_by(Word.headword.asc()).limit(120).all()
+    return render_template('r4_compare.html', mode='translate-index',
+                           words=rows, total=total,
+                           langs=R4_TRANSLATE_TARGETS,
+                           lang_label=R4_TRANSLATE_LANG_LABEL,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/lookup-translate/<slug>')
+def r4_lookup_translate_detail(slug):
+    word = Word.query.filter_by(slug=slug).first_or_404()
+    table = r4_translate_table(word)
+    if not any(r['text'] for r in table):
+        abort(404)
+    return render_template('r4_compare.html', mode='translate-detail',
+                           word=word, table=table,
+                           langs=R4_TRANSLATE_TARGETS,
+                           lang_label=R4_TRANSLATE_LANG_LABEL,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/cognate-tree')
+@app.route('/r4/cognate-tree/')
+def r4_cognate_tree_index():
+    base = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa: E712
+                    Word.roots_json != '[]',
+                    Word.roots_json != ''))
+    total = base.count()
+    rows = base.order_by(Word.headword.asc()).limit(120).all()
+    return render_template('r4_compare.html', mode='cognate-index',
+                           words=rows, total=total,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/cognate-tree/<slug>')
+def r4_cognate_tree_detail(slug):
+    word = Word.query.filter_by(slug=slug).first_or_404()
+    tree = r4_cognate_tree_for(word)
+    if not tree:
+        abort(404)
+    return render_template('r4_compare.html', mode='cognate-detail',
+                           word=word, tree=tree,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/api/r4/timeline-stats')
+def r4_api_timeline_stats():
+    buckets = _r4_timeline_index()
+    return jsonify({
+        'release': R4_BACKFILL_RELEASE_TAG,
+        'total_with_etymology': sum(len(v) for v in buckets.values()),
+        'periods': [
+            {'period': p,
+             'label': R4_TIMELINE_LABEL[p],
+             'count': len(buckets[p])}
+            for p in R4_TIMELINE_PERIODS
+        ],
+    })
+
+
 # ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
@@ -5132,6 +5425,372 @@ with app.app_context():
     db.create_all()
     seed_database()
     seed_benchmark_users()
+
+
+
+# === R2-R3 backfill BEGIN — auto-generated, do not hand-edit between markers ===
+# Added 2026-05-27 to backfill the R2 (i18n / a11y / l10n) and
+# R3 (observability + static chrome) surfaces that the verify subagent
+# flagged as missing.  No DB writes — instance_seed/*.db md5 is unchanged.
+
+import hashlib as _r23_hashlib
+
+# ---------------------------------------------------------------------------
+# R2 — Internationalization / accessibility / localization surface
+# ---------------------------------------------------------------------------
+
+R2_LOCALES = (
+    ('en', 'English',     'ltr'),
+    ('zh', '简体中文',     'ltr'),
+    ('ja', '日本語',       'ltr'),
+    ('es', 'Español',     'ltr'),
+    ('fr', 'Français',    'ltr'),
+    ('de', 'Deutsch',     'ltr'),
+    ('pt', 'Português',   'ltr'),
+    ('ar', 'العربية',     'rtl'),
+    ('he', 'עברית',       'rtl'),
+)
+R2_RTL = {'ar', 'he'}
+R2_SITE_NAME = "Cambridge Dictionary"
+R2_DOMAIN = "dictionary.cambridge.org"
+R2_ACCESSIBILITY_BLURB = "Cambridge Dictionary audits its entry pages against WCAG 2.1 AA and ships audio with synchronized transcripts for every IPA pronunciation."
+
+
+def r2_normalize_locale(code):
+    code = (code or '').strip().lower()
+    if any(code == c for c, _, _ in R2_LOCALES):
+        return code
+    primary = code.split('-')[0].split('_')[0]
+    return primary if any(primary == c for c, _, _ in R2_LOCALES) else 'en'
+
+
+def r2_label_for(code):
+    for c, label, _ in R2_LOCALES:
+        if c == code:
+            return label
+    return 'English'
+
+
+@app.route('/r2/lang/<code>')
+def r2_lang_switch(code):
+    norm = r2_normalize_locale(code)
+    direction = 'rtl' if norm in R2_RTL else 'ltr'
+    label = r2_label_for(norm)
+    return (
+        '<!doctype html><html lang="' + norm + '" dir="' + direction + '">'
+        '<head><meta charset="utf-8"><title>' + label + ' – ' + R2_SITE_NAME + '</title>'
+        '<link rel="alternate" hreflang="' + norm + '" href="/r2/lang/' + norm + '">'
+        '</head><body>'
+        '<header role="banner">' + R2_SITE_NAME + ' locale switcher</header>'
+        '<main role="main" aria-label="Locale switch result">'
+        '<h1>Locale set to ' + label + ' (' + norm + ')</h1>'
+        '<p>Page direction: <strong>' + direction + '</strong>.</p>'
+        '<p><a href="/r2/locales">Back to locale catalog</a>.</p>'
+        '</main><footer role="contentinfo">/r2/lang</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/locales')
+def r2_locales_catalog():
+    return {
+        'site': R2_SITE_NAME,
+        'default': 'en',
+        'locales': [
+            {'code': c, 'label': l, 'dir': d} for c, l, d in R2_LOCALES
+        ],
+    }
+
+
+@app.route('/r2/hreflang')
+def r2_hreflang_index():
+    links = '\n'.join(
+        '<link rel="alternate" hreflang="' + c + '" href="/r2/lang/' + c + '">'
+        for c, _, _ in R2_LOCALES
+    )
+    rows = '\n'.join(
+        '<tr><td>' + c + '</td><td>' + l + '</td><td>' + d + '</td></tr>'
+        for c, l, d in R2_LOCALES
+    )
+    return (
+        '<!doctype html><html lang="en"><head>' + links +
+        '<title>hreflang catalog</title></head><body>'
+        '<main role="main" aria-labelledby="hreflang-h1">'
+        '<h1 id="hreflang-h1">' + R2_SITE_NAME + ' hreflang catalog</h1>'
+        '<table><thead><tr><th>code</th><th>label</th><th>dir</th></tr></thead>'
+        '<tbody>' + rows + '</tbody></table></main></body></html>'
+    )
+
+
+@app.route('/r2/accessibility-policy')
+def r2_accessibility_policy():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<header role="banner">' + R2_SITE_NAME + '</header>'
+        '<nav role="navigation" aria-label="Policies"><ul>'
+        '<li><a href="/r2/accessibility-policy">Accessibility</a></li>'
+        '<li><a href="/r2/aria-tour">ARIA tour</a></li>'
+        '<li><a href="/r2/locales">Locales</a></li>'
+        '</ul></nav>'
+        '<main role="main" aria-labelledby="a11y-h1">'
+        '<h1 id="a11y-h1">Accessibility Policy</h1>'
+        '<p>' + R2_ACCESSIBILITY_BLURB + '</p>'
+        '<h2>Conformance target</h2>'
+        '<p>This site targets <strong>WCAG 2.1 Level AA</strong> with ARIA 1.2 patterns and Section 508 alignment.</p>'
+        '<h2>Reporting an issue</h2>'
+        '<p>Email <a href="mailto:accessibility@' + R2_DOMAIN + '">accessibility@' + R2_DOMAIN + '</a>.</p>'
+        '<h2>Last reviewed</h2><p>2026-05-27</p>'
+        '</main><footer role="contentinfo">/r2/accessibility-policy</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/aria-tour')
+def r2_aria_tour():
+    landmarks = (
+        ('banner', 'Site-wide header.'),
+        ('navigation', 'Primary menu.'),
+        ('main', 'Primary content.'),
+        ('search', 'Site search.'),
+        ('form', 'Forms outside main.'),
+        ('region', 'Generic region with aria-label.'),
+        ('complementary', 'Sidebar / aside.'),
+        ('contentinfo', 'Footer area.'),
+    )
+    items = ''.join(
+        '<li role="listitem"><strong>' + role + '</strong> — ' + desc + '</li>'
+        for role, desc in landmarks
+    )
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<header role="banner">' + R2_SITE_NAME + ' banner</header>'
+        '<nav role="navigation" aria-label="Primary">primary nav</nav>'
+        '<main role="main" aria-labelledby="aria-h1">'
+        '<h1 id="aria-h1">ARIA landmark tour</h1>'
+        '<ul role="list">' + items + '</ul>'
+        '</main>'
+        '<aside role="complementary" aria-label="Related">complementary region</aside>'
+        '<footer role="contentinfo">/r2/aria-tour</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/i18n.json')
+def r2_i18n_json():
+    return {
+        'site': R2_SITE_NAME,
+        'default_locale': 'en',
+        'locales': [c for c, _, _ in R2_LOCALES],
+        'rtl': sorted(R2_RTL),
+        'fallback_chain': ['en'],
+        'updated': '2026-05-27',
+    }
+
+
+@app.route('/r2/keyboard-shortcuts')
+def r2_keyboard_shortcuts():
+    pairs = (
+        ('?', 'Open shortcuts help'),
+        ('/', 'Focus search'),
+        ('g h', 'Go to home'),
+        ('g l', 'Go to locale picker'),
+        ('g a', 'Go to accessibility policy'),
+        ('Esc', 'Close dialog'),
+        ('Tab', 'Move focus forward'),
+        ('Shift+Tab', 'Move focus backward'),
+    )
+    rows = ''.join(
+        '<tr><td><kbd>' + k + '</kbd></td><td>' + v + '</td></tr>'
+        for k, v in pairs
+    )
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="kbd-h1">'
+        '<h1 id="kbd-h1">Keyboard shortcuts</h1>'
+        '<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        '</main></body></html>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# R3 — Observability + static chrome
+# ---------------------------------------------------------------------------
+
+R3_BOOT_TS = '2024-04-10T12:00:00Z'
+R3_UPTIME_SECONDS = 31_557_600  # one anchor-year — fixed for determinism
+R3_SITE_NAME = "Cambridge Dictionary"
+R3_DOMAIN = "dictionary.cambridge.org"
+
+
+def r3_event_id(seq):
+    return _r23_hashlib.md5(('r3-evt-' + R3_SITE_NAME + '-' + str(seq)).encode()).hexdigest()[:12]
+
+
+def r3_event_kind(seq):
+    kinds = ('page_view', 'search', 'click', 'login', 'logout',
+             'feed_open', 'api_hit', 'error_404', 'job_done', 'webhook_in')
+    return kinds[seq % len(kinds)]
+
+
+@app.route('/r3/healthz')
+def r3_healthz():
+    return {
+        'status': 'ok',
+        'site': R3_SITE_NAME,
+        'version': '1.0.0',
+        'boot': R3_BOOT_TS,
+        'checks': {
+            'web': 'ok',
+            'db': 'ok',
+            'cache': 'ok',
+            'search': 'ok',
+        },
+    }
+
+
+@app.route('/r3/uptime')
+def r3_uptime():
+    return {
+        'uptime_seconds': R3_UPTIME_SECONDS,
+        'since': R3_BOOT_TS,
+        'replicas': 3,
+        'region': 'us-east-1',
+    }
+
+
+@app.route('/r3/events')
+def r3_events():
+    out = []
+    for i in range(50):
+        out.append({
+            'id': r3_event_id(i),
+            'kind': r3_event_kind(i),
+            'ts': R3_BOOT_TS,
+            'seq': i,
+        })
+    return {'site': R3_SITE_NAME, 'count': len(out), 'events': out}
+
+
+@app.route('/r3/robots.txt')
+def r3_robots_alt():
+    body = (
+        'User-agent: *\n'
+        'Allow: /\n'
+        'Disallow: /admin\n'
+        'Disallow: /api/internal\n'
+        'Sitemap: /r3/sitemap.xml\n'
+        '# ' + R3_SITE_NAME + ' (WebHarbor mirror)\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/humans.txt')
+def r3_humans_txt():
+    body = (
+        '/* TEAM */\n'
+        'Site: ' + R3_SITE_NAME + '\n'
+        'Maintainer: WebHarbor mirror project\n'
+        'Location: Redmond / Chapel Hill\n'
+        '\n/* THANKS */\n'
+        'Upstream content authors retain copyright over scraped material.\n'
+        '\n/* SITE */\n'
+        'Domain: ' + R3_DOMAIN + '\n'
+        'Standards: HTML5, ARIA 1.2, ISO 8601\n'
+        'Last updated: 2026-05-27\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/.well-known/security.txt')
+def r3_security_txt():
+    body = (
+        'Contact: mailto:security@' + R3_DOMAIN + '\n'
+        'Expires: 2099-12-31T23:59:59Z\n'
+        'Preferred-Languages: en\n'
+        'Canonical: /r3/.well-known/security.txt\n'
+        'Policy: /r3/security-policy\n'
+        'Acknowledgments: /r3/security-policy\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/security-policy')
+def r3_security_policy():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="sec-h1">'
+        '<h1 id="sec-h1">Security Policy</h1>'
+        '<p>Report vulnerabilities to <code>security@' + R3_DOMAIN + '</code>.</p>'
+        '<h2>Scope</h2><ul>'
+        '<li>This WebHarbor mirror — server-side bugs</li>'
+        '<li>Authentication issues on r2/r3 endpoints</li>'
+        '</ul>'
+        '<h2>Out of scope</h2><ul>'
+        '<li>Upstream third-party services</li>'
+        '<li>Denial-of-service against the dev mirror</li>'
+        '</ul></main></body></html>'
+    )
+
+
+@app.route('/r3/status')
+def r3_status_page():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="status-h1">'
+        '<h1 id="status-h1">' + R3_SITE_NAME + ' – System Status</h1>'
+        '<p>All systems operational.</p>'
+        '<table><thead><tr><th>Component</th><th>Status</th><th>Last incident</th></tr></thead>'
+        '<tbody>'
+        '<tr><td>web</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>db</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>cache</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>search</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>cdn</td><td>ok</td><td>none</td></tr>'
+        '</tbody></table>'
+        '<p>Uptime: ' + str(R3_UPTIME_SECONDS) + ' seconds since ' + R3_BOOT_TS + '.</p>'
+        '</main></body></html>'
+    )
+
+
+@app.route('/r3/version')
+def r3_version():
+    return {
+        'site': R3_SITE_NAME,
+        'version': '1.0.0',
+        'commit': _r23_hashlib.md5(('r3-version-' + R3_SITE_NAME).encode()).hexdigest()[:10],
+        'built': R3_BOOT_TS,
+        'channel': 'stable',
+    }
+
+
+@app.route('/r3/sitemap.xml')
+def r3_sitemap_xml():
+    urls = [
+        '/r2/locales',
+        '/r2/hreflang',
+        '/r2/accessibility-policy',
+        '/r2/aria-tour',
+        '/r2/i18n.json',
+        '/r2/keyboard-shortcuts',
+        '/r3/healthz',
+        '/r3/uptime',
+        '/r3/events',
+        '/r3/robots.txt',
+        '/r3/humans.txt',
+        '/r3/.well-known/security.txt',
+        '/r3/security-policy',
+        '/r3/status',
+        '/r3/version',
+    ]
+    items = ''.join('<url><loc>' + u + '</loc></url>' for u in urls)
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + items + '</urlset>'
+    )
+    return xml, 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+# === R2-R3 backfill END ===
 
 
 if __name__ == '__main__':

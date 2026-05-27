@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{% if period %}{{ period_label }}{% else %}Etymology timeline{% endif %} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container r4-timeline-page" data-r4-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('etymology_index') }}">Etymology</a> &rsaquo;
+    <a href="{{ url_for('r4_etymology_timeline_index') }}">Timeline</a>
+    {% if period %} &rsaquo; <span>{{ period_label }}</span>{% endif %}
+  </nav>
+
+  {% if not period %}
+    <header class="r4-timeline-header">
+      <h1 class="r4-headline">Etymology timeline</h1>
+      <p class="r4-intro">A Wiktionary-style breakdown of where each headword in this dictionary first entered English. Pick a period to see the words attested in that bucket.</p>
+      <p class="r4-meta">Total entries with etymology data: <strong>{{ total }}</strong>. Buckets: {{ summary|length }}.</p>
+    </header>
+
+    <ul class="r4-period-grid">
+      {% for s in summary %}
+        <li class="r4-period-card">
+          <a class="r4-period-link" href="{{ url_for('r4_etymology_timeline_detail', period=s.period) }}">
+            <span class="r4-period-name">{{ s.label }}</span>
+            <span class="r4-period-count">{{ s.count }} words</span>
+            <span class="r4-period-blurb">{{ s.blurb }}</span>
+            <span class="r4-period-slug">/r4/etymology-timeline/{{ s.period }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <header class="r4-timeline-header">
+      <h1 class="r4-headline">{{ period_label }}</h1>
+      <p class="r4-intro">{{ period_blurb }}</p>
+      <p class="r4-meta">Bucket key: <code>{{ period }}</code>. Total words in this period: <strong>{{ total }}</strong>. Showing the first {{ words|length }} alphabetically.</p>
+    </header>
+
+    {% if words %}
+      <ol class="r4-period-words">
+        {% for w in words %}
+          <li class="r4-period-word">
+            <a href="{{ url_for('etymology_detail', slug=w.slug) }}" class="r4-word-link">
+              <span class="r4-word-headword">{{ w.headword }}</span>
+              <span class="r4-word-pos">{{ w.pos }}</span>
+              {% if w.level %}<span class="entry-level level-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+              <span class="r4-word-etym">{{ w.etymology[:160] }}{% if w.etymology|length > 160 %}…{% endif %}</span>
+            </a>
+            <span class="r4-word-jumps">
+              <a class="r4-jump" href="{{ url_for('r4_lookup_translate_detail', slug=w.slug) }}">translate</a>
+              <a class="r4-jump" href="{{ url_for('r4_cognate_tree_detail', slug=w.slug) }}">cognates</a>
+            </span>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="r4-empty">No words bucketed under <code>{{ period }}</code> in this snapshot.</p>
+    {% endif %}
+
+    <nav class="r4-period-jumps">
+      <span>Other periods:</span>
+      {% for s in (summary or []) %}{% endfor %}
+      <a class="r4-period-jump" href="{{ url_for('r4_etymology_timeline_index') }}">&laquo; All periods</a>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}
