@@ -52,6 +52,38 @@ bcrypt = Bcrypt(app)
 login_mgr = LoginManager(app)
 login_mgr.login_view = 'login'
 login_mgr.login_message = 'Please sign in to continue.'
+
+
+# >>> silent-fail-fix: unauthorized_handler
+@login_mgr.unauthorized_handler
+def _unauthorized_silent_fail_fix():
+    """Return JSON 401 for AJAX/JSON requests so fetch().then(r=>r.json())
+    surfaces the auth requirement instead of choking on HTML 302→/login.
+    Falls back to the normal redirect for browser navigations.
+
+    Pairs with the fetch-wrapper in static/js/main.js which detects this and
+    redirects the user to /login. Root cause docs: gotcha #49."""
+    from flask import request, jsonify, redirect, url_for
+    accept = request.headers.get('Accept', '') or ''
+    wants_json = (
+        request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in accept
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
+    next_url = request.full_path if request.query_string else request.path
+    try:
+        login_url = url_for('login', next=next_url)
+    except Exception:
+        login_url = '/login?next=' + next_url
+    if wants_json:
+        return jsonify({
+            'error': 'login_required',
+            'message': 'Sign in to continue.',
+            'redirect': login_url,
+        }), 401
+    return redirect(login_url)
+# <<< silent-fail-fix
 csrf = CSRFProtect(app)
 
 
