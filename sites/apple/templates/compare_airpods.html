@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Compare AirPods models - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/airpods/">AirPods</a><span class="sep">›</span><span class="current">Compare</span></nav>
+<section style="text-align:center;padding:48px 20px 12px;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">Compare AirPods</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:660px;margin:0 auto 24px;">Active Noise Cancellation, Personalised Spatial Audio, hearing aid features and more across the AirPods family.</p>
+</section>
+<div style="overflow-x:auto;max-width:1300px;margin:0 auto 64px;padding:0 20px;">
+  <table style="width:100%;border-collapse:collapse;min-width:880px;">
+    <thead>
+      <tr>
+        <th style="width:160px;"></th>
+        {% for r in rows %}
+        <th style="padding:18px 12px;text-align:center;vertical-align:top;min-width:180px;">
+          <div style="font-weight:600;font-size:17px;">{{ r.name }}</div>
+          <div style="margin-top:8px;font-weight:600;">${{ "%.2f"|format(r.price) }}</div>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for label, key in [('Chip','chip'), ('Noise control','anc'), ('Battery','battery'), ('Personalised Spatial Audio','spatial_audio'), ('Transparency mode','transparency'), ('Hearing aid features','hearing_aid')] %}
+      <tr style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;color:#6e6e73;font-weight:500;">{{ label }}</th>
+        {% for r in rows %}
+        <td style="padding:14px 12px;text-align:center;">{{ r[key] }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<aside class="r6-why-compare"><h3>Why people compare</h3><ul>
+  <li>AirPods Pro 3 are the first AirPods with clinical-grade hearing aid features.</li>
+  <li>AirPods 4 with ANC sit at $179 and ship with Adaptive Audio.</li>
+  <li>AirPods Max are the only over-ear option with the H1 chip.</li>
+</ul></aside>
+{% endblock %}

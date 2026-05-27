@@ -12508,6 +12508,14 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# ---------------------------------------------------------------------------
+# GUI deepening (May 2026): 25+ new render_template surfaces backfilling
+# pages on apple.com that the mirror was missing.  No DB writes; no API.
+# ---------------------------------------------------------------------------
+from apple_deepen import register_gui_deepen as _register_gui_deepen
+_register_gui_deepen(app, db)
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)

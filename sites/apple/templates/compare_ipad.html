@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Compare iPad models - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/ipad/">iPad</a><span class="sep">›</span><span class="current">Compare</span></nav>
+<section style="text-align:center;padding:48px 20px 12px;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">Compare iPad models</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:660px;margin:0 auto 24px;">Choose between the M5-powered iPad Pro, the M3 iPad Air, the A17 Pro iPad mini, and iPad.</p>
+</section>
+<div style="overflow-x:auto;max-width:1400px;margin:0 auto 64px;padding:0 20px;">
+  <table style="width:100%;border-collapse:collapse;min-width:880px;">
+    <thead>
+      <tr>
+        <th style="width:160px;"></th>
+        {% for r in rows %}
+        <th style="padding:18px 12px;text-align:center;vertical-align:top;min-width:180px;">
+          <div style="font-weight:600;font-size:17px;">{{ r.name }}</div>
+          <div style="margin-top:8px;font-weight:600;">From ${{ "%.2f"|format(r.price) }}</div>
+          <div style="margin-top:10px;">{% if r.slug in ['ipad-pro-13','ipad-pro-11','ipad-air','ipad'] %}<a href="/shop/buy-ipad/{{ r.slug }}" style="display:inline-block;padding:8px 16px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Buy</a>{% endif %}</div>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for label, key in [('Chip','chip'), ('Display','display'), ('Storage','storage_top'), ('Weight','weight'), ('Battery','battery'), ('Apple Pencil','pencil')] %}
+      <tr style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;color:#6e6e73;font-weight:500;">{{ label }}</th>
+        {% for r in rows %}
+        <td style="padding:14px 12px;text-align:center;">{{ r[key] }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<aside class="r6-why-compare"><h3>Why people compare</h3><ul>
+  <li>iPad Pro is the first iPad with Apple M5 and a Tandem OLED display.</li>
+  <li>iPad Air with Apple M3 starts at $599 in both 11" and 13" sizes.</li>
+  <li>iPad (10th gen) is the most affordable model at $349 and pairs with Apple Pencil (USB-C).</li>
+</ul></aside>
+{% endblock %}

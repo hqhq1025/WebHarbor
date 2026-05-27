@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Apple Card monthly payment calculator{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/financing">Financing</a><span class="sep">›</span><span class="current">Monthly payment calculator</span></nav>
+<section style="max-width:760px;margin:48px auto 0;padding:0 20px;text-align:center;">
+  <h1 style="font-size:44px;font-weight:700;margin:0 0 8px;">Monthly payment calculator</h1>
+  <p style="color:#6e6e73;font-size:19px;margin:0 0 28px;">See your monthly payment with Apple Card Monthly Installments at 0% APR, or with a standard credit purchase.</p>
+</section>
+<section style="max-width:760px;margin:0 auto 16px;padding:0 20px;">
+  <form method="POST" action="/financing/calculator" style="background:#f5f5f7;border-radius:18px;padding:24px;">
+    <label style="display:block;margin:0 0 16px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Product</span>
+      <select name="product" onchange="this.form.price.value = this.options[this.selectedIndex].dataset.price" style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+        {% for label, price in preset_products %}
+          <option data-price="{{ price }}" value="{{ label }}" {% if label == product_label %}selected{% endif %}>{{ label }} — ${{ "%.2f"|format(price) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="display:block;margin:0 0 16px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Purchase price (USD)</span>
+      <input type="number" step="0.01" name="price" value="{{ "%.2f"|format(product_price) }}" style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+    </label>
+    <label style="display:block;margin:0 0 16px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Number of months</span>
+      <select name="months" style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+        {% for m in [6, 12, 18, 24, 30, 36] %}
+          <option value="{{ m }}" {% if m == months %}selected{% endif %}>{{ m }} months</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" style="padding:10px 22px;border-radius:980px;background:#0071e3;color:#fff;border:0;cursor:pointer;font-weight:500;">Calculate</button>
+  </form>
+</section>
+<section style="max-width:760px;margin:24px auto 64px;padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+  <div style="background:#fff;border:1px solid #d2d2d7;border-radius:18px;padding:22px;">
+    <div style="color:#6e6e73;font-size:13px;text-transform:uppercase;">Apple Card Monthly Installments</div>
+    <div style="font-size:32px;font-weight:700;margin:6px 0;">${{ "%.2f"|format(monthly_zero) }}/mo.</div>
+    <div style="color:#6e6e73;">{{ months }} months at 0% APR. Final total: <strong>${{ "%.2f"|format(monthly_zero * months) }}</strong>.</div>
+  </div>
+  <div style="background:#fff;border:1px solid #d2d2d7;border-radius:18px;padding:22px;">
+    <div style="color:#6e6e73;font-size:13px;text-transform:uppercase;">Standard variable APR</div>
+    <div style="font-size:32px;font-weight:700;margin:6px 0;">${{ "%.2f"|format(monthly_apr) }}/mo.</div>
+    <div style="color:#6e6e73;">{{ months }} months at {{ apr_pct }}% APR. Final total: <strong>${{ "%.2f"|format(monthly_apr * months) }}</strong>.</div>
+  </div>
+</section>
+<aside class="r6-you-may-like"><h3>Related</h3><div class="r6-cards">
+  <a href="/apple-card"><p class="r6-name">About Apple Card</p></a>
+  <a href="/apple-card/apply"><p class="r6-name">Apply for Apple Card</p></a>
+  <a href="/trade-in"><p class="r6-name">Trade in for credit</p></a>
+  <a href="/education/students"><p class="r6-name">Education Pricing</p></a>
+</div></aside>
+{% endblock %}

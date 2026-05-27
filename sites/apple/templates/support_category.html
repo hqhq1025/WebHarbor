@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ cfg.name }} - Apple Support{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/support">Support</a><span class="sep">›</span><span class="current">{{ cfg.name }}</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">{{ cfg.name }}</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:720px;margin:0 auto 24px;">Get help with your {{ cfg.name|lower }}. Search articles, contact a Specialist, or book a Genius Bar visit.</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:26px;font-weight:700;margin:0 0 12px;">Top tasks</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+    {% for task in cfg.top_tasks %}
+    <a href="/support/contact" style="display:block;background:#f5f5f7;border-radius:14px;padding:18px;color:#0071e3;text-decoration:none;font-weight:500;">{{ task }} →</a>
+    {% endfor %}
+  </div>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:26px;font-weight:700;margin:0 0 12px;">Popular articles</h2>
+  <ul style="font-size:17px;line-height:1.9;list-style:none;padding:0;">
+    {% for a in cfg.articles %}
+    <li style="border-bottom:1px solid #d2d2d7;padding:8px 0;"><a href="/support/article/{{ a|lower|replace(' ','-') }}" style="color:#0071e3;text-decoration:none;">{{ a }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+<section style="max-width:1100px;margin:32px auto 48px;padding:0 20px;">
+  <h2 style="font-size:22px;font-weight:700;">All Support categories</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    {% for s in all_slugs %}
+    <a href="/support/category/{{ s }}" style="padding:8px 16px;border-radius:980px;border:1px solid #d2d2d7;text-decoration:none;color:#1d1d1f;{% if s == slug %}background:#1d1d1f;color:#fff;{% endif %}">{{ s.replace('-', ' ').title() }}</a>
+    {% endfor %}
+  </div>
+</section>
+<aside class="r6-you-may-like"><h3>Talk to us</h3><div class="r6-cards">
+  <a href="/support/contact"><p class="r6-name">Contact Apple Support</p></a>
+  <a href="/support/genius-bar/booking"><p class="r6-name">Book a Genius Bar visit</p></a>
+  <a href="/support/repair"><p class="r6-name">Start a repair</p></a>
+</div></aside>
+{% endblock %}

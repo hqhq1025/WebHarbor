@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}iCloud+ storage plans - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/services/icloud">iCloud+</a><span class="sep">›</span><span class="current">Storage plans</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">Pick a plan. Upgrade when you need to.</h1>
+  <p style="color:#6e6e73;font-size:21px;max-width:760px;margin:0 auto 24px;">Every Apple Account comes with 5 GB free. Upgrade to iCloud+ for more storage and privacy features.</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <table style="width:100%;border-collapse:collapse;background:#fff;">
+    <thead><tr style="border-bottom:2px solid #d2d2d7;text-align:left;">
+      <th style="padding:14px 12px;">Plan</th>
+      <th style="padding:14px 12px;text-align:right;">Monthly</th>
+      <th style="padding:14px 12px;">Best for</th>
+    </tr></thead>
+    <tbody>
+      {% for p in plans %}
+      <tr style="border-bottom:1px solid #d2d2d7;">
+        <td style="padding:14px 12px;font-weight:600;">{{ p.size }}</td>
+        <td style="padding:14px 12px;text-align:right;"><strong>${{ "%.2f"|format(p.monthly) }}/mo.</strong></td>
+        <td style="padding:14px 12px;color:#424245;">{{ p.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+<aside class="r6-why-compare"><h3>Why people compare</h3><ul>
+  <li>2 TB plan unlocks unlimited HomeKit Secure Video cameras and is shared across Family Sharing.</li>
+  <li>50 GB is the most popular paid plan for iPhone backups and a typical photo library.</li>
+  <li>12 TB is the maximum tier for pros with very large photo and video libraries.</li>
+</ul></aside>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Apply for Apple Card{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/apple-card">Apple Card</a><span class="sep">›</span><span class="current">Apply</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">{{ cfg.headline }}</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:720px;margin:0 auto 24px;">See if you're approved in seconds with no impact to your credit score. Apply now to use Apple Card with Apple Pay across every Apple device.</p>
+</section>
+<section style="max-width:760px;margin:0 auto 24px;padding:0 20px;">
+  {% if message %}
+    {% if message[0] == 'success' %}
+      <div style="background:#e8f7ee;border-left:4px solid #1d6a37;padding:14px 18px;border-radius:8px;margin-bottom:16px;">{{ message[1] }}</div>
+    {% else %}
+      <div style="background:#fde8ec;border-left:4px solid #b00020;padding:14px 18px;border-radius:8px;margin-bottom:16px;">{{ message[1] }}</div>
+    {% endif %}
+  {% endif %}
+  <form method="POST" action="/apple-card/apply" style="background:#f5f5f7;border-radius:18px;padding:24px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+    <label style="display:block;margin:0 0 14px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Full legal name</span>
+      <input type="text" name="name" required style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+    </label>
+    <label style="display:block;margin:0 0 14px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Last 4 digits of SSN</span>
+      <input type="text" name="ssn4" required minlength="4" maxlength="4" pattern="[0-9]{4}" style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+    </label>
+    <label style="display:block;margin:0 0 14px;">
+      <span style="display:block;color:#6e6e73;font-size:13px;">Annual income (USD)</span>
+      <input type="text" name="income" required pattern="[0-9]+" style="width:100%;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;">
+    </label>
+    <p style="color:#6e6e73;font-size:13px;margin:8px 0;">By submitting you agree that Goldman Sachs Bank USA may pull a soft credit check. APR range: {{ cfg.apr_range }}.</p>
+    <button type="submit" style="padding:12px 22px;border-radius:980px;background:#0071e3;color:#fff;border:0;cursor:pointer;font-weight:500;">Continue</button>
+  </form>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:28px;font-weight:700;">Why Apple Card</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+    {% for h in cfg.highlights %}
+    <article style="background:#f5f5f7;border-radius:14px;padding:20px;">
+      <h3 style="margin:0 0 6px;font-size:18px;">{{ h.name }}</h3>
+      <p style="margin:0;color:#424245;font-size:15px;">{{ h.desc }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+<section style="max-width:1100px;margin:32px auto 48px;padding:0 20px;">
+  <h2 style="font-size:24px;font-weight:700;">Apple Card Monthly Installments — eligible products</h2>
+  <ul style="font-size:17px;line-height:1.7;color:#1d1d1f;padding-left:20px;">
+    {% for item in cfg.monthly_installment_eligible %}<li>{{ item }}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

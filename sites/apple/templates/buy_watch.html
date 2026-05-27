@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Buy {{ cfg.name }} - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb" aria-label="Breadcrumb">
+  <a href="/">Apple</a><span class="sep">›</span>
+  <a href="/watch/">Watch</a><span class="sep">›</span>
+  <span class="current" aria-current="page">Buy {{ cfg.name }}</span>
+</nav>
+
+<section class="buy-hero" style="max-width:1100px;margin:32px auto 8px;padding:0 20px;display:grid;grid-template-columns:300px 1fr;gap:32px;">
+  <div style="background:#f5f5f7;border-radius:18px;padding:24px;text-align:center;">
+    <img src="{{ cfg.image }}" alt="{{ cfg.name }}" style="max-width:100%;max-height:240px;object-fit:contain;" onerror="this.style.display='none'">
+  </div>
+  <div>
+    <h1 style="font-size:40px;font-weight:700;margin:0 0 6px;">Buy {{ cfg.name }}</h1>
+    <p style="color:#6e6e73;font-size:21px;margin:0 0 12px;">{{ cfg.subtitle }}</p>
+    <p style="margin:0;font-size:14px;color:#6e6e73;">From <strong>${{ "%.2f"|format(cfg.base_price) }}</strong> or <strong>${{ "%.2f"|format(cfg.base_price / 12) }}/mo.</strong> for 12 mo.</p>
+  </div>
+</section>
+
+<form id="buy-form" method="POST" action="/cart/add/0" style="max-width:1100px;margin:24px auto;padding:0 20px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+  <section class="buy-section" data-dim="case" style="margin:28px 0;">
+    <h2 style="font-size:22px;font-weight:700;">Case</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;" role="radiogroup">
+      {% for c in cfg.case %}
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;">
+        <span><input type="radio" name="case" value="{{ c.label }}" data-delta="{{ c.delta }}" {% if loop.first %}checked{% endif %}> {{ c.label }}</span>
+        <span style="color:#6e6e73;">{% if c.delta > 0 %}+${{ "%.2f"|format(c.delta) }}{% else %}Included{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="buy-section" data-dim="band" style="margin:28px 0;">
+    <h2 style="font-size:22px;font-weight:700;">Band</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;" role="radiogroup">
+      {% for b in cfg.band %}
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;">
+        <span><input type="radio" name="band" value="{{ b.label }}" data-delta="{{ b.delta }}" {% if loop.first %}checked{% endif %}> {{ b.label }}</span>
+        <span style="color:#6e6e73;">{% if b.delta > 0 %}+${{ "%.2f"|format(b.delta) }}{% else %}Included{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="buy-section" data-dim="connectivity" style="margin:28px 0;">
+    <h2 style="font-size:22px;font-weight:700;">Connectivity</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;" role="radiogroup">
+      {% for n in cfg.connectivity %}
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;">
+        <span><input type="radio" name="connectivity" value="{{ n.id }}" data-delta="{{ n.delta }}" {% if loop.first %}checked{% endif %}> {{ n.label }}</span>
+        <span style="color:#6e6e73;">{% if n.delta > 0 %}+${{ "%.2f"|format(n.delta) }}{% else %}Included{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="buy-section" data-dim="applecare" style="margin:28px 0;">
+    <h2 style="font-size:22px;font-weight:700;">AppleCare+ coverage</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;" role="radiogroup">
+      {% for ac in cfg.applecare %}
+      <label style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;">
+        <span><input type="radio" name="applecare" value="{{ ac.id }}" data-delta="{{ ac.two_year }}" {% if loop.first %}checked{% endif %}> {{ ac.label }}</span>
+        <span style="color:#6e6e73;">{% if ac.monthly > 0 %}${{ "%.2f"|format(ac.monthly) }}/mo. or ${{ "%.2f"|format(ac.two_year) }} for 2 years{% else %}—{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="buy-section" style="margin:32px 0;">
+    <h2 style="font-size:22px;font-weight:700;">Tech Specs</h2>
+    <table style="width:100%;border-collapse:collapse;">
+      <tr style="border-top:1px solid #d2d2d7;"><td style="padding:10px;"><strong>Chip</strong></td><td>{{ cfg.chip }}</td></tr>
+      <tr style="border-top:1px solid #d2d2d7;"><td style="padding:10px;"><strong>Display</strong></td><td>{{ cfg.display }}</td></tr>
+      <tr style="border-top:1px solid #d2d2d7;"><td style="padding:10px;"><strong>Battery</strong></td><td>{{ cfg.battery }}</td></tr>
+    </table>
+  </section>
+
+  <div class="r5-sticky-cta" id="r5-sticky-cta">
+    <span class="r5-cta-price">Total: <span id="buy-total">${{ "%.2f"|format(cfg.base_price) }}</span></span>
+    <button type="submit" class="r5-cta-btn">Add to Bag</button>
+  </div>
+</form>
+
+<script>
+(function(){
+  const f = document.getElementById('buy-form');
+  if(!f) return;
+  const total = document.getElementById('buy-total');
+  const base = {{ cfg.base_price }};
+  function recompute(){
+    let d = 0;
+    f.querySelectorAll('input[type=radio]:checked').forEach(r => { d += parseFloat(r.dataset.delta || '0'); });
+    if(total) total.textContent = '$' + (base + d).toFixed(2);
+  }
+  f.addEventListener('change', recompute);
+  recompute();
+})();
+</script>
+{% endblock %}

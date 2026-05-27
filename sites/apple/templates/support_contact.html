@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Contact Apple Support{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/support">Support</a><span class="sep">›</span><span class="current">Contact Apple Support</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">Contact Apple Support</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:720px;margin:0 auto 24px;">Pick how you want to talk to us. Chat opens instantly; phone callbacks usually arrive within two minutes.</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Chat with a Specialist</h2>
+    <p style="color:#6e6e73;margin:0 0 12px;">Average wait: 30 seconds. Open 24/7 in English.</p>
+    <a href="/support/contact?channel=chat" style="display:inline-block;padding:10px 20px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Start chat</a>
+  </article>
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Call us</h2>
+    <p style="color:#6e6e73;margin:0 0 12px;">1-800-MY-APPLE. Mon–Fri 5am–8pm PT, weekends 6am–8pm PT.</p>
+    <a href="tel:+18006927753" style="display:inline-block;padding:10px 20px;border-radius:980px;border:1px solid #d2d2d7;color:#1d1d1f;text-decoration:none;">1-800-692-7753</a>
+  </article>
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="font-size:22px;font-weight:700;margin:0 0 6px;">Genius Bar reservation</h2>
+    <p style="color:#6e6e73;margin:0 0 12px;">Same-day appointments at most stores. Free hardware diagnostics.</p>
+    <a href="/support/genius-bar/booking" style="display:inline-block;padding:10px 20px;border-radius:980px;border:1px solid #d2d2d7;color:#1d1d1f;text-decoration:none;">Book a visit</a>
+  </article>
+</section>
+<section style="max-width:1100px;margin:32px auto 64px;padding:0 20px;">
+  <h2 style="font-size:24px;font-weight:700;">Or pick a product category</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    {% for slug, cfg in categories.items() %}
+    <a href="/support/category/{{ slug }}" style="padding:10px 18px;border-radius:980px;border:1px solid #d2d2d7;text-decoration:none;color:#1d1d1f;">{{ cfg.name }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

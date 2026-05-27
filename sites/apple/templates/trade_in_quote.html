@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Trade-in quote for {{ quote.name }} - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/trade-in">Trade In</a><span class="sep">›</span><span class="current">{{ quote.name }}</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:44px;font-weight:700;margin:0 0 6px;">{{ quote.name }} trade-in quote</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:720px;margin:0 auto 24px;">Choose the condition that best matches your device. The estimate is locked for 14 days once you start the trade-in.</p>
+</section>
+<section style="max-width:760px;margin:0 auto 24px;padding:0 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="margin:0 0 4px;font-size:18px;">Excellent</h2>
+    <p style="color:#6e6e73;margin:0 0 10px;font-size:13px;">Fully functional, near-flawless screen and back.</p>
+    <p style="font-size:32px;font-weight:700;margin:0;">${{ "%.2f"|format(quote.excellent) }}</p>
+  </article>
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="margin:0 0 4px;font-size:18px;">Good</h2>
+    <p style="color:#6e6e73;margin:0 0 10px;font-size:13px;">Light scratches, normal wear, no cracks.</p>
+    <p style="font-size:32px;font-weight:700;margin:0;">${{ "%.2f"|format(quote.good) }}</p>
+  </article>
+  <article style="background:#f5f5f7;border-radius:18px;padding:22px;text-align:center;">
+    <h2 style="margin:0 0 4px;font-size:18px;">Fair</h2>
+    <p style="color:#6e6e73;margin:0 0 10px;font-size:13px;">Cracked screen, dents, or battery issues.</p>
+    <p style="font-size:32px;font-weight:700;margin:0;">${{ "%.2f"|format(quote.fair) }}</p>
+  </article>
+</section>
+<section style="max-width:760px;margin:0 auto 24px;padding:0 20px;text-align:center;">
+  <a href="/trade-in/quote" style="display:inline-block;padding:12px 24px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Start your trade-in</a>
+  <a href="/trade-in/mail-in" style="display:inline-block;padding:12px 24px;border-radius:980px;border:1px solid #d2d2d7;color:#1d1d1f;text-decoration:none;margin-left:8px;">Ship a kit to me</a>
+</section>
+<section style="max-width:1100px;margin:32px auto 64px;padding:0 20px;">
+  <h2 style="font-size:22px;font-weight:700;">Other {{ device|capitalize }} models</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+    {% for slug, q in family %}
+    <a href="/trade-in/{{ device }}/{{ slug }}/quote" style="padding:8px 16px;border-radius:980px;border:1px solid #d2d2d7;text-decoration:none;color:#1d1d1f;{% if slug == model %}background:#1d1d1f;color:#fff;{% endif %}">{{ q.name }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Swift Playgrounds Curriculum - Apple Education{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/education-pricing">Education</a><span class="sep">›</span><span class="current">Swift Playgrounds Curriculum</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:52px;font-weight:700;margin:0 0 8px;">{{ cfg.headline }}</h1>
+  <p style="color:#6e6e73;font-size:21px;max-width:760px;margin:0 auto 24px;">{{ cfg.subheadline }}</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:28px;font-weight:700;margin:0 0 14px;">Curriculum tracks</h2>
+  <table style="width:100%;border-collapse:collapse;background:#fff;">
+    <thead><tr style="border-bottom:2px solid #d2d2d7;text-align:left;">
+      <th style="padding:12px;">Track</th>
+      <th style="padding:12px;">Audience</th>
+      <th style="padding:12px;">Duration</th>
+      <th style="padding:12px;">Outcome</th>
+    </tr></thead>
+    <tbody>
+      {% for t in cfg.tracks %}
+      <tr style="border-bottom:1px solid #d2d2d7;">
+        <td style="padding:12px;font-weight:600;">{{ t.name }}</td>
+        <td style="padding:12px;">{{ t.audience }}</td>
+        <td style="padding:12px;">{{ t.duration }}</td>
+        <td style="padding:12px;color:#424245;">{{ t.outcome }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

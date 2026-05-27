@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Everyone Can Create - Apple Education{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/education-pricing">Education</a><span class="sep">›</span><span class="current">Everyone Can Create</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:52px;font-weight:700;margin:0 0 8px;">{{ cfg.headline }}</h1>
+  <p style="color:#6e6e73;font-size:21px;max-width:760px;margin:0 auto 24px;">{{ cfg.subheadline }}</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:28px;font-weight:700;margin:0 0 14px;">Curriculum modules</h2>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+    {% for m in cfg.modules %}
+    <article style="background:#f5f5f7;border-radius:18px;padding:24px;">
+      <h3 style="margin:0 0 6px;font-size:22px;">{{ m.name }}</h3>
+      <p style="margin:0 0 6px;color:#6e6e73;font-size:13px;">{{ m.lessons }} lessons · {{ m.level }}</p>
+      <p style="margin:0;color:#424245;">{{ m.outcome }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:28px;font-weight:700;margin:0 0 14px;">Free downloads</h2>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="border-bottom:2px solid #d2d2d7;text-align:left;">
+      <th style="padding:12px;">Resource</th>
+      <th style="padding:12px;text-align:right;">Size</th>
+    </tr></thead>
+    <tbody>
+      {% for d in cfg.downloads %}
+      <tr style="border-bottom:1px solid #d2d2d7;">
+        <td style="padding:12px;">{{ d.name }}</td>
+        <td style="padding:12px;text-align:right;">{{ d.size_mb }} MB</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

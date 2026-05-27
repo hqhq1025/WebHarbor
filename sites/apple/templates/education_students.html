@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Education Pricing for Students - Apple{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/education-pricing">Education</a><span class="sep">›</span><span class="current">Students</span></nav>
+<section style="max-width:980px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:52px;font-weight:700;margin:0 0 8px;">{{ cfg.headline }}</h1>
+  <p style="color:#6e6e73;font-size:21px;max-width:700px;margin:0 auto 24px;">{{ cfg.subheadline }}</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:28px;font-weight:700;margin:0 0 14px;">Education Pricing</h2>
+  <table style="width:100%;border-collapse:collapse;background:#fff;">
+    <thead>
+      <tr style="border-bottom:2px solid #d2d2d7;text-align:left;">
+        <th style="padding:12px;">Product</th>
+        <th style="padding:12px;text-align:right;">Education Price</th>
+        <th style="padding:12px;text-align:right;">Regular Price</th>
+        <th style="padding:12px;text-align:right;">You Save</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in cfg.savings %}
+      <tr style="border-bottom:1px solid #d2d2d7;">
+        <td style="padding:12px;">{{ r.product }}</td>
+        <td style="padding:12px;text-align:right;"><strong>${{ "%.2f"|format(r.edu_price) }}</strong></td>
+        <td style="padding:12px;text-align:right;color:#6e6e73;text-decoration:line-through;">${{ "%.2f"|format(r.regular) }}</td>
+        <td style="padding:12px;text-align:right;color:#1d6a37;">−${{ "%.2f"|format(r.save) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:24px;background:#f5f5f7;border-radius:18px;">
+  <h2 style="font-size:24px;font-weight:700;margin:0 0 8px;">Free gifts and add-ons</h2>
+  <ul style="margin:0;padding-left:20px;color:#424245;font-size:17px;line-height:1.7;">
+    {% for g in cfg.gifts %}
+    <li>{{ g }}</li>
+    {% endfor %}
+  </ul>
+</section>
+<section style="max-width:1100px;margin:32px auto 64px;padding:0 20px;display:flex;gap:14px;flex-wrap:wrap;">
+  <a href="/education-pricing/eligibility" style="padding:12px 22px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Check eligibility</a>
+  <a href="/mac/compare" style="padding:12px 22px;border-radius:980px;border:1px solid #d2d2d7;color:#1d1d1f;text-decoration:none;">Compare Mac models</a>
+</section>
+{% endblock %}

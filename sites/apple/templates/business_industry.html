@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Apple at Work — {{ cfg.name }}{% endblock %}
+{% block content %}
+<nav class="r6-breadcrumb"><a href="/">Apple</a><span class="sep">›</span><a href="/business">Apple at Work</a><span class="sep">›</span><span class="current">{{ cfg.name }}</span></nav>
+<section style="max-width:1100px;margin:48px auto 12px;padding:0 20px;text-align:center;">
+  <h1 style="font-size:52px;font-weight:700;margin:0 0 8px;">{{ cfg.headline }}</h1>
+  <p style="color:#6e6e73;font-size:21px;max-width:760px;margin:0 auto 24px;">{{ cfg.subheadline }}</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:32px;font-weight:700;margin:0 0 16px;">Use cases</h2>
+  <ul style="font-size:18px;line-height:1.7;color:#1d1d1f;padding-left:20px;">
+    {% for uc in cfg.use_cases %}
+    <li>{{ uc }}</li>
+    {% endfor %}
+  </ul>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:24px;background:#f5f5f7;border-radius:18px;">
+  <h2 style="font-size:24px;font-weight:700;margin:0 0 8px;">Case study</h2>
+  <p style="margin:0;font-size:17px;color:#424245;">{{ cfg.case_study }}</p>
+</section>
+<section style="max-width:1100px;margin:32px auto;padding:0 20px;">
+  <h2 style="font-size:32px;font-weight:700;margin:0 0 16px;">Recommended products</h2>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+    {% for p in cfg.products %}
+    <div style="background:#fff;border:1px solid #d2d2d7;border-radius:14px;padding:18px;text-align:center;">
+      <div style="font-weight:600;">{{ p }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section style="max-width:1100px;margin:32px auto 64px;padding:0 20px;display:flex;gap:14px;flex-wrap:wrap;">
+  <a href="/business/quote" style="padding:12px 22px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Get a custom quote</a>
+  <a href="/business-program" style="padding:12px 22px;border-radius:980px;border:1px solid #d2d2d7;color:#1d1d1f;text-decoration:none;">Apple Business Manager</a>
+</section>
+{% endblock %}
