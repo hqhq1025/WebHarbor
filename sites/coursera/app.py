@@ -7,6 +7,7 @@ from functools import wraps
 from flask import (Flask, render_template, request, redirect, url_for,
                    flash, jsonify, session, abort, g)
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import joinedload
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
                          login_required, current_user)
 from flask_wtf import FlaskForm
@@ -424,6 +425,10 @@ def _score_course(c, tokens):
 def search_courses(q='', level=None, course_type=None, duration=None,
                    min_rating=None, free=None, credit=None, certificate=None,
                    category=None, sort='popular'):
+    # NOTE: do NOT eager-load partner here — this function scans the entire
+    # catalog for scoring/filtering, and joinedload would multiply each row
+    # by partner columns. Partner is fetched lazily; the route slices results
+    # to one page before rendering, so only ~24 partner SELECTs fire.
     query = Course.query
     text_relevance = {}   # course.id → text_score, drives sort tie-break
 
@@ -1329,16 +1334,46 @@ def search():
     certificate = request.args.get('certificate', '')
     category = request.args.get('category', '')
     sort = request.args.get('sort', 'popular')
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (TypeError, ValueError):
+        page = 1
+    PAGE_SIZE = 24
 
-    results = search_courses(q=q, level=level, course_type=course_type,
-                             duration=duration, min_rating=min_rating,
-                             free=free, credit=credit, certificate=certificate,
-                             category=category, sort=sort)
+    # Fast browse path: when there's neither a text query nor any filter,
+    # bypass the in-Python scorer entirely and page at the DB level.
+    # This is what stops `/search` from serialising the entire 23k-row
+    # catalog (48 MB / 2.7 s) on a plain "All Courses" request.
+    any_filter = bool(level or course_type or duration or min_rating
+                      or free == '1' or credit == '1' or certificate == '1'
+                      or category)
+    if not q and not any_filter:
+        base = Course.query.options(joinedload(Course.partner))
+        if sort == 'newest':
+            base = base.order_by(Course.sort_date.desc(), Course.id.asc())
+        elif sort == 'rating':
+            base = base.order_by(Course.rating.desc(), Course.id.asc())
+        else:  # 'popular' (default)
+            base = base.order_by(Course.enrolled_count.desc(), Course.id.asc())
+        total = base.with_entities(Course.id).count()
+        results = base.limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE).all()
+    else:
+        all_results = search_courses(
+            q=q, level=level, course_type=course_type,
+            duration=duration, min_rating=min_rating,
+            free=free, credit=credit, certificate=certificate,
+            category=category, sort=sort)
+        total = len(all_results)
+        start = (page - 1) * PAGE_SIZE
+        results = all_results[start:start + PAGE_SIZE]
+
+    n_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     return render_template('search.html', results=results, q=q, level=level,
                            course_type=course_type, duration=duration,
                            min_rating=min_rating, free=free, credit=credit,
                            certificate=certificate, category=category, sort=sort,
-                           total=len(results))
+                           total=total, page=page, n_pages=n_pages,
+                           page_size=PAGE_SIZE)
 
 # ─── Routes: Course detail ────────────────────────────────────────────────────
 

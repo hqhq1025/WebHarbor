@@ -161,6 +161,9 @@
 
     {# ---- Results grid ---- #}
     {% if results %}
+    <div class="results-meta" style="margin:8px 0 12px;color:#4b5563;font-size:14px;">
+      Showing {{ ((page - 1) * page_size) + 1 }}&ndash;{{ ((page - 1) * page_size) + (results|length) }} of {{ '{:,}'.format(total) }} results
+    </div>
     <div class="results-list" role="list">
       {% for c in results %}
       <a href="{{ url_for('course_detail', slug=c.slug) }}" class="result-card"
@@ -215,6 +218,46 @@
       </a>
       {% endfor %}
     </div>
+    {# ---- Pagination ---- #}
+    {% if n_pages > 1 %}
+    {% set base_qs = [] %}
+    {% if q %}{% set _ = base_qs.append('query=' ~ q|urlencode) %}{% endif %}
+    {% if level %}{% set _ = base_qs.append('level=' ~ level|urlencode) %}{% endif %}
+    {% if course_type %}{% set _ = base_qs.append('type=' ~ course_type|urlencode) %}{% endif %}
+    {% if duration %}{% set _ = base_qs.append('duration=' ~ duration|urlencode) %}{% endif %}
+    {% if min_rating %}{% set _ = base_qs.append('min_rating=' ~ min_rating|urlencode) %}{% endif %}
+    {% if free == '1' %}{% set _ = base_qs.append('free=1') %}{% endif %}
+    {% if credit == '1' %}{% set _ = base_qs.append('credit=1') %}{% endif %}
+    {% if certificate == '1' %}{% set _ = base_qs.append('certificate=1') %}{% endif %}
+    {% if category %}{% set _ = base_qs.append('category=' ~ category|urlencode) %}{% endif %}
+    {% if sort and sort != 'popular' %}{% set _ = base_qs.append('sort=' ~ sort|urlencode) %}{% endif %}
+    {% set base_q = '&'.join(base_qs) %}
+    <nav class="results-pagination" aria-label="Pagination" style="display:flex;gap:6px;align-items:center;justify-content:center;margin:24px 0;flex-wrap:wrap;">
+      {% if page > 1 %}
+      <a class="page-link" rel="prev" href="/search?{{ base_q }}{% if base_q %}&{% endif %}page={{ page - 1 }}" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;color:#1f2937;">&lsaquo; Previous</a>
+      {% endif %}
+      {% set window_start = [1, page - 2]|max %}
+      {% set window_end = [n_pages, page + 2]|min %}
+      {% if window_start > 1 %}
+      <a class="page-link" href="/search?{{ base_q }}{% if base_q %}&{% endif %}page=1" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;color:#1f2937;">1</a>
+      {% if window_start > 2 %}<span style="padding:0 4px;color:#6b7280;">&hellip;</span>{% endif %}
+      {% endif %}
+      {% for p in range(window_start, window_end + 1) %}
+        {% if p == page %}
+        <span class="page-link page-current" aria-current="page" style="padding:8px 12px;border:1px solid #0056d3;background:#0056d3;color:#fff;border-radius:4px;">{{ p }}</span>
+        {% else %}
+        <a class="page-link" href="/search?{{ base_q }}{% if base_q %}&{% endif %}page={{ p }}" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;color:#1f2937;">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if window_end < n_pages %}
+      {% if window_end < n_pages - 1 %}<span style="padding:0 4px;color:#6b7280;">&hellip;</span>{% endif %}
+      <a class="page-link" href="/search?{{ base_q }}{% if base_q %}&{% endif %}page={{ n_pages }}" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;color:#1f2937;">{{ n_pages }}</a>
+      {% endif %}
+      {% if page < n_pages %}
+      <a class="page-link" rel="next" href="/search?{{ base_q }}{% if base_q %}&{% endif %}page={{ page + 1 }}" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:4px;text-decoration:none;color:#1f2937;">Next &rsaquo;</a>
+      {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <div class="no-results">
       <p>No courses found{% if q %} for "{{ q }}"{% endif %}. Try a different search or remove some filters.</p>
