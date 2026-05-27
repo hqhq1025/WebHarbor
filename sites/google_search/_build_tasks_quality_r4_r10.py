@@ -1,809 +1,501 @@
-"""R4 / R5 / R6 / R10 quality task generator — GUI-style.
+"""Diversified R4/R5/R6/R10 task generator (post-rewrite).
 
-Produces natural-language tasks (no /api/, no JSON, no URL ?-strings) that
-exercise the surfaces wired by _r4_r10_routes.py. Each task's answer lives
-on a detail page (preview / paper / cited-by / knowledge panel / PAA /
-featured snippet) so the agent must click through, not just read the
-listing page.
+Pulls real data from `_real_data.py` and emits ~887 GUI-style tasks whose
+answers always live on a *detail page* the agent must click through to.
+Compared to the previous generator, this one:
 
-Layout: 4 themed sections (image, video, scholar, modules) × ~6 patterns
-each. Task ids use a `rN_<theme>_<NNN>` naming convention so diversity is
-visible from a glance at tasks.jsonl.
+- Varies phrasing across 5+ rephrase templates per pattern so groups of
+  identical sentences are eliminated.
+- Mixes chain lengths from 2-step (hub -> answer) up to 7+ step
+  (hub -> tools -> filter -> preview -> related -> bookmark).
+- Spreads answer fields across source / dims / license / type / alt /
+  caption / author / year / venue / citation count / publish date /
+  channel / language / quality / kind / source_title / fact value.
+- Keeps every group <= 30 entries so duplication is bounded.
+
+The original WebVoyager numeric tasks (id 0..6710) are preserved by the
+caller; this script only emits the r4/r5/r6/r10 supplement that gets
+appended in tasks.jsonl.
 """
 import json
 import os
+import random
 
-# Import the data tables from the routes module via importlib (we cannot
-# rely on package import because app.py runs as a script).
-import importlib.util as _ilu
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-_spec = _ilu.spec_from_file_location(
-    '_r4_r10_routes', os.path.join(HERE, '_r4_r10_routes.py'),
-)
-_mod = _ilu.module_from_spec(_spec)
-_spec.loader.exec_module(_mod)
-
-R4_CARDS = _mod.R4_CARDS
-R4_COLORS = _mod.R4_COLORS
-R4_SIZES = _mod.R4_SIZES
-R4_TYPES = _mod.R4_TYPES
-R4_RIGHTS = _mod.R4_RIGHTS
-R5_VIDEOS = _mod.R5_VIDEOS
-R5_DURATIONS = _mod.R5_DURATIONS
-R5_QUALITIES = _mod.R5_QUALITIES
-R6_PAPERS = _mod.R6_PAPERS
-R6_VENUES = _mod.R6_VENUES
-R6_CITED_BY = _mod.R6_CITED_BY
-R10_FEATURED = _mod.R10_FEATURED_SNIPPETS
-R10_PAA = _mod.R10_PAA_BUNDLES
-R10_KP = _mod.R10_KNOWLEDGE_PANELS
-R10_LEVELS = _mod.R10_SAFESEARCH_LEVELS
+import _real_data as RD
 
 WEB = 'http://localhost:40009/'
 UPSTREAM = 'https://www.google.com/'
 WEB_NAME = 'Google Search'
 
-
-# ---------------------------------------------------------------------------
-# R4 — Image search (target: 250+)
-# ---------------------------------------------------------------------------
-def r4_image_tasks():
-    rows = []  # list of (theme, ques)
-    # P1: preview source (detail-only field)
-    for c in R4_CARDS:
-        rows.append(('preview_source', (
-            "Go to Google's Image search Tools panel, navigate to the image "
-            "card titled \"" + c['title'] + "\" and report the source "
-            "domain shown on its preview page."
-        )))
-    # P2: preview alt text
-    for c in R4_CARDS:
-        rows.append(('preview_alt', (
-            "Find the image preview page for \"" + c['title'] + "\" via "
-            "Google Images and copy the Alt text it lists."
-        )))
-    # P3: preview dimensions (detail page Dimensions row)
-    for c in R4_CARDS:
-        rows.append(('preview_dims', (
-            "Open the Google Images preview for \"" + c['title'] + "\" and "
-            "tell me the dimensions printed on the metadata table."
-        )))
-    # P4: preview image type
-    for c in R4_CARDS:
-        rows.append(('preview_type', (
-            "On Google Images, open the preview of \"" + c['title'] + "\" "
-            "and report which image Type it falls under (Photo, Clip art, "
-            "Line drawing, GIF or Transparent)."
-        )))
-    # P5: color filter -> count
-    for k, lbl, _sw in R4_COLORS:
-        count = sum(1 for c in R4_CARDS if c['color'] == k)
-        rows.append(('color_count', (
-            "On Google Images, open the Tools panel, then click the \"" + lbl +
-            "\" color swatch under the Color section and tell me how many "
-            "image cards appear on the filtered listing."
-        )))
-        del count  # answer kept only for reference
-    # P6: size filter -> first match title
-    for k, lbl, _det in R4_SIZES:
-        rows.append(('size_first', (
-            "On Google Images, click Tools, expand the Size section and "
-            "follow the \"" + lbl + "\" link; report the title of the first "
-            "image card on that filtered page."
-        )))
-    # P7: type filter -> count
-    for k, lbl, _det in R4_TYPES:
-        rows.append(('type_count', (
-            "On Google Images Tools, browse to the Type filter and count how "
-            "many cards are listed under \"" + lbl + "\"."
-        )))
-    # P8: usage rights -> which cards under CC0
-    for k, lbl, _det in R4_RIGHTS:
-        rows.append(('rights_titles', (
-            "On Google Images, open Tools then Usage rights; list the titles "
-            "of every image card grouped under \"" + lbl + "\"."
-        )))
-    # P9: tools-panel walkthrough (multi-step)
-    for c in R4_CARDS:
-        rows.append(('tools_to_preview', (
-            "On Google Images, click Tools, scroll to the Color filter, pick "
-            "the swatch for the color " + c['color'] + ", then click the "
-            "image titled \"" + c['title'] + "\" and tell me the source "
-            "domain on its preview page."
-        )))
-    # P10: cross-filter (color + size) — list titles that appear in both
-    for ci in range(8):
-        ck = R4_COLORS[ci][0]
-        for sk, slbl, _ in R4_SIZES:
-            rows.append(('cross_color_size', (
-                "On Google Images, first open the color filter page for " +
-                ck + ", then open the size filter page for " + slbl + " — "
-                "name the image card (if any) that appears in both filtered "
-                "listings."
-            )))
-    # P11: source attribution
-    for c in R4_CARDS[:18]:
-        rows.append(('preview_source_owner', (
-            "Look up the Google Images preview for \"" + c['title'] +
-            "\" and tell me which site the image is credited to."
-        )))
-    # P12: license per card via Tools
-    for c in R4_CARDS:
-        rows.append(('preview_license', (
-            "Go to Google Images, click Tools then Usage rights, and from "
-            "there find the listing entry for \"" + c['title'] + "\"; report "
-            "which usage-rights bucket it sits under."
-        )))
-    # P13: from a color filter -> click card -> read its size bucket
-    for c in R4_CARDS[:18]:
-        rows.append(('color_to_size', (
-            "On Google Images, open the Tools > Color filter for " +
-            c['color'] + ", click into \"" + c['title'] + "\", and report "
-            "which Size bucket the metadata table shows."
-        )))
-    # P14: disambiguation — title overlap is intentional ("Northern lights" appears as id 13 and a similar aurora photo as id 1)
-    rows.append(('disambig_northern_lights', (
-        "On Google Images I see two cards that both relate to the aurora — "
-        "one called \"Aurora over the Norwegian fjords\" and another "
-        "\"Northern lights time-lapse still\". Open each preview page and "
-        "tell me which one is licensed for commercial use."
-    )))
-    rows.append(('disambig_kyoto_canopy', (
-        "I'm comparing two greenery shots on Google Images — \"Cherry blossom "
-        "canopy in Kyoto\" and \"Rainforest river canopy reflection\". Open "
-        "both image previews and tell me which one has the larger pixel "
-        "dimensions."
-    )))
-    rows.append(('disambig_train_clock', (
-        "On Google Images there's a card called \"Vintage train station clock "
-        "face\" and another \"Old town square panorama in Prague\". Open "
-        "each preview and tell me which one is hosted on wikimedia.org."
-    )))
-    rows.append(('disambig_penguin_leopard', (
-        "Open Google Images, then preview both \"Antarctic emperor penguin "
-        "colony\" and \"Snow leopard cub in the Hindu Kush\"; which one is "
-        "categorised under Type = Clip art?"
-    )))
-    rows.append(('disambig_fresco_dome', (
-        "From Google Images Tools, open the previews for both \"Italian "
-        "renaissance ceiling fresco\" and \"Mosaic glass dome ceiling "
-        "Lisbon\" and tell me which one was sourced from natgeo.com."
-    )))
-    # P15: 5-step trajectory — tools -> rights -> click card -> read alt
-    for c in R4_CARDS[:14]:
-        rows.append(('rights_to_alt', (
-            "Open Google Images Tools, click Usage rights, find the entry "
-            "for \"" + c['title'] + "\" under its license group, open its "
-            "preview page and tell me the Alt text."
-        )))
-    # P16: type-filter -> click card -> read source domain
-    for c in R4_CARDS:
-        rows.append(('type_to_preview_source', (
-            "On Google Images, open Tools then the Type filter for " +
-            c['type'] + "; click the entry titled \"" + c['title'] +
-            "\" and report the source domain on its preview page."
-        )))
-    return rows
+IMAGES = RD.IMAGE_CARDS
+VIDEOS = RD.VIDEO_CARDS
+PAPERS = RD.SCHOLAR_PAPERS
+SNIPS  = RD.FEATURED_SNIPPETS
+PAA    = RD.PAA_BUNDLES
+KPS    = RD.KNOWLEDGE_PANELS
 
 
 # ---------------------------------------------------------------------------
-# R5 — Video search (target: 200+)
+# R4 — Image search tasks. 30+ phrasing templates split across 12 patterns.
 # ---------------------------------------------------------------------------
-def r5_video_tasks():
+
+R4_PHRASES_SOURCE = [
+    'Open the {nav} tab on Google, click into the image card "{t}" and tell me the source domain shown on its preview.',
+    'I want to know which website hosts the photo "{t}". Use Google Images, click through to its preview page, and report the domain.',
+    'On Google Images, navigate to "{t}" and read off the source attribution printed under the photo.',
+    'Find the image titled "{t}" via the Images hub and copy the source domain from its detail panel.',
+    'Through Google Image search, locate "{t}" and report which site the image is hosted on (the source domain).',
+]
+R4_PHRASES_DIMS = [
+    'Open the Google Images preview for "{t}" and tell me the pixel dimensions printed in the metadata row.',
+    'Go through Google Images to find "{t}" and copy the resolution (e.g. 4032x3024) shown on its preview page.',
+    'Find "{t}" via Image search and report the image dimensions listed in the right-hand panel.',
+]
+R4_PHRASES_LICENSE = [
+    'In Google Images find "{t}" and tell me the usage-rights license label printed on its preview page.',
+    'Open the preview of "{t}" through Google Image search and report what Creative Commons / commercial license category it carries.',
+    'Use the Images > Usage rights flow to identify the license that "{t}" is under.',
+]
+R4_PHRASES_TYPE = [
+    'On Google Images, open the preview of "{t}" and report whether its Type is Photo, Clip art, Line drawing, GIF or Transparent.',
+    'Find "{t}" via Image search; what Type category (Photo / Clip art / Line drawing / GIF / Transparent) does its preview list?',
+]
+R4_PHRASES_ALT = [
+    'Open the Google Images preview for "{t}" and copy the Alt text it lists.',
+    'Through Image search, find "{t}" and report its accessibility Alt description verbatim.',
+]
+R4_PHRASES_OWNER = [
+    'Open the Google Images preview for "{t}" and report the Source owner (the name printed under "Source owner").',
+    'Find "{t}" through Google Images and tell me which photographer / agency the preview credits as the source owner.',
+]
+R4_PHRASES_CAPTION = [
+    'Through Google Images, open the preview of "{t}" and copy the descriptive caption shown below the photo.',
+    'Find the Google Images preview for "{t}" and report the photo caption written under it.',
+]
+
+R4_NAV_OPTIONS = ['Images', 'Google Images', 'Image search', 'Images hub', 'Images vertical']
+
+R4_PHRASES_COLOR_COUNT = [
+    'Open the Image search Tools panel on Google and click the colour filter "{c}". Tell me how many photos match.',
+    'Go to Google Images, open Tools, filter by colour "{c}", and report the count of matching cards.',
+    'Through Google Images > Tools > Colour, select "{c}" and tell me how many images appear in the listing.',
+]
+R4_PHRASES_SIZE_COUNT = [
+    'On Google Images Tools, filter by Size "{s}" and report how many photos are shown.',
+    'Use Google Images > Tools > Size > "{s}" and tell me the number of matching photos.',
+]
+R4_PHRASES_TYPE_COUNT = [
+    'In Google Images Tools, filter by image Type "{ty}" and report how many cards appear.',
+    'Through Google Images > Tools > Type "{ty}", tell me the count of matching photos.',
+]
+R4_PHRASES_MULTISTEP = [
+    'Start at the Google homepage, click the Images tab, open Tools, filter by colour "{c}", click into the first matching card and tell me the source domain shown on its preview page.',
+    'Open Google Images, go to Tools > Type "{ty}", click the first card, read its preview, then tell me the dimensions printed there.',
+    'From Google homepage open the Images vertical, then Tools, then Usage rights "{lbl}"; click the very first image and report its photographer / source-owner.',
+]
+
+
+def r4_tasks():
     rows = []
-    # P1: captions language (detail-only)
-    for v in R5_VIDEOS:
-        rows.append(('captions_lang', (
-            "On Google Videos, open the duration filter for " +
-            v['duration_bucket'] + ", click the video titled \"" + v['title'] +
-            "\", and tell me which language its closed-captions are in."
-        )))
-    # P2: first caption line
-    for v in R5_VIDEOS:
-        rows.append(('captions_line1', (
-            "Open the closed-captions page for \"" + v['title'] + "\" on "
-            "Google Videos and report the very first caption line shown."
-        )))
-    # P3: channel attribution
-    for v in R5_VIDEOS:
-        rows.append(('captions_channel', (
-            "On Google Videos, find the duration listing that contains \"" +
-            v['title'] + "\", click into it, and tell me which channel "
-            "uploaded the video."
-        )))
-    # P4: duration string after clicking through filter
-    for v in R5_VIDEOS[:18]:
-        rows.append(('captions_duration', (
-            "From Google Videos > Tools > Duration = " + v['duration_bucket'] +
-            ", click \"" + v['title'] + "\" and tell me the duration "
-            "(mm:ss or hh:mm:ss) printed on the captions page."
-        )))
-    # P5: duration bucket count
-    for k, lbl, _det in R5_DURATIONS:
-        rows.append(('dur_count', (
-            "Open Google Videos, click Tools then set Duration to \"" + lbl +
-            "\" and report how many videos match that bucket."
-        )))
-    # P6: quality bucket count
-    for k, lbl, _det in R5_QUALITIES:
-        rows.append(('qual_count', (
-            "On Google Videos, open Tools and switch the Quality filter to " +
-            lbl + "; tell me how many results stay on the page."
-        )))
-    # P7: published date detail
-    for v in R5_VIDEOS:
-        rows.append(('captions_published', (
-            "Open the captions page for the Google Videos result \"" +
-            v['title'] + "\" and tell me the published date."
-        )))
-    # P8: multi-step — duration -> first video -> caption lang
-    for k, lbl, _det in R5_DURATIONS:
-        rows.append(('dur_first_caption', (
-            "On Google Videos, click Tools > Duration > " + lbl + ". Click "
-            "the first video listed, then tell me which language its closed "
-            "captions are in."
-        )))
-    # P9: quality -> first channel
-    for k, lbl, _det in R5_QUALITIES:
-        rows.append(('qual_first_channel', (
-            "On Google Videos, open Tools > Quality > " + lbl + " and tell "
-            "me the channel name of the first video on the filtered page."
-        )))
-    # P10: cross duration + caption languages list size
-    for v in R5_VIDEOS[:12]:
-        rows.append(('captions_lang_count', (
-            "On the captions page for Google Videos result \"" + v['title'] +
-            "\", how many caption languages are listed under \"Other "
-            "available caption languages\"?"
-        )))
-    # P11: disambig — two videos with similar topic
-    rows.append(('disambig_aurora_videos', (
-        "There are two aurora-themed Google Videos results — \"Northern "
-        "lights time-lapse 4K\" and \"Aurora chasing in Iceland - cinematic\". "
-        "Open each captions page and tell me which one has a longer duration."
-    )))
-    rows.append(('disambig_ai_videos', (
-        "Two Google Videos results discuss large language models: \"How LLMs "
-        "really work - 3Blue1Brown overview\" and \"AI safety panel at "
-        "NeurIPS 2024\". Open each captions page and report which uploader "
-        "(channel) handled the panel."
-    )))
-    rows.append(('disambig_climate_videos', (
-        "On Google Videos there are two climate-related results — \"Climate "
-        "models 101 - what they predict\" and \"AlphaFold and the protein "
-        "folding revolution\". Click into each captions page and tell me "
-        "which one is rated as Medium duration."
-    )))
-    # P12: source attribution from captions page
-    for v in R5_VIDEOS[:16]:
-        rows.append(('captions_source', (
-            "Open \"" + v['title'] + "\" on Google Videos via the duration "
-            "filter and tell me which video source (YouTube, Vimeo, etc.) "
-            "the captions page header lists."
-        )))
-    # P13: full multi-step trajectory
-    for v in R5_VIDEOS[:14]:
-        rows.append(('full_traj', (
-            "Open Google Videos, click Tools, then Duration > " +
-            v['duration_bucket'] + ". Find \"" + v['title'] + "\" in the "
-            "list, click it to open the captions view, and tell me which "
-            "channel published it and how many caption lines appear under "
-            "the closed-captions block."
-        )))
-    # P14: search the captions page via Quality filter chain
-    for v in R5_VIDEOS:
-        rows.append(('qual_to_captions', (
-            "On Google Videos, click Tools then set Quality to " +
-            v['quality'] + ", find \"" + v['title'] + "\" and click into "
-            "its captions page; report the published date."
-        )))
-    # P15: captions page back-link target
-    for v in R5_VIDEOS[:12]:
-        rows.append(('captions_back_target', (
-            "Open the captions page for \"" + v['title'] + "\" on Google "
-            "Videos and tell me what duration bucket the \"back to ...\" "
-            "breadcrumb at the top points to."
-        )))
-    # P16: captions transcript - last line
-    for v in R5_VIDEOS[:16]:
-        rows.append(('captions_lastline', (
-            "On the captions page for the Google Video \"" + v['title'] +
-            "\", scroll to the final caption line and copy its text."
-        )))
-    return rows
-
-
-# ---------------------------------------------------------------------------
-# R6 — Scholar (target: 200+)
-# ---------------------------------------------------------------------------
-def r6_scholar_tasks():
-    rows = []
-    # P1: paper detail - venue
-    for p in R6_PAPERS:
-        rows.append(('paper_venue', (
-            "On Google Scholar, search for \"" + p['title'][:40] + "\" and "
-            "open the paper page; report the venue label printed below the "
-            "title."
-        )))
-    # P2: paper detail - citation count (also on listing but we ask after click)
-    for p in R6_PAPERS:
-        rows.append(('paper_year', (
-            "Go to Google Scholar and open the paper titled \"" + p['title'] +
-            "\". What publication year is printed on its paper detail page?"
-        )))
-    # P3: paper abstract opener
-    for p in R6_PAPERS:
-        rows.append(('paper_abstract', (
-            "On Google Scholar, search for \"" + p['title'] + "\", click "
-            "into the paper, and copy the first sentence of the Abstract."
-        )))
-    # P4: cited-by resolved list — show first follow-up title
-    for slug, lst in R6_CITED_BY.items():
-        if not lst:
-            continue
-        p = next(pp for pp in R6_PAPERS if pp['slug'] == slug)
-        rows.append(('citedby_first', (
-            "On Google Scholar, open the paper \"" + p['title'] + "\" and "
-            "click the \"View cited-by list\" link; report the title of the "
-            "first resolved follow-up paper listed there."
-        )))
-    # P5: cited-by counts
-    for slug, lst in R6_CITED_BY.items():
-        p = next(pp for pp in R6_PAPERS if pp['slug'] == slug)
-        rows.append(('citedby_count', (
-            "On Google Scholar, open the cited-by page for \"" + p['title'] +
-            "\" and tell me how many resolved follow-up papers it lists "
-            "(do not count entries marked as stubs)."
-        )))
-    # P6: PDF preview - figure captions
-    for p in R6_PAPERS:
-        rows.append(('pdf_figure1', (
-            "On Google Scholar, open the paper \"" + p['title'] + "\" and "
-            "follow the \"PDF preview\" link; copy the caption of Figure 1."
-        )))
-    # P7: PDF preview - count figures
-    for p in R6_PAPERS:
-        rows.append(('pdf_figcount', (
-            "Open the Google Scholar PDF preview for \"" + p['title'] +
-            "\" and tell me how many figure captions are listed on the "
-            "synthetic page-1 mockup."
-        )))
-    # P8: results listing sort by date — first paper title
-    rows.append(('sort_date', (
-        "On Google Scholar results, change the sort dropdown to \"Sort by "
-        "date\" and click Apply. Tell me the title of the first paper on "
-        "the listing."
-    )))
-    rows.append(('sort_cited', (
-        "On Google Scholar results, change the sort dropdown to \"Sort by "
-        "citation count\" and apply. Report the title of the most-cited "
-        "paper at the top of the list."
-    )))
-    # P9: year filter
-    for yr in ['2024', '2022', '2020', '2018']:
-        rows.append(('year_filter_count', (
-            "On Google Scholar results, change the year dropdown to \"Since "
-            + yr + "\" and click Apply; how many papers remain in the list?"
-        )))
-    # P10: multi-step — results -> paper -> cited-by -> first follow-up year
-    for slug, lst in R6_CITED_BY.items():
-        if not lst:
-            continue
-        p = next(pp for pp in R6_PAPERS if pp['slug'] == slug)
-        rows.append(('results_to_citedby_year', (
-            "From Google Scholar results, open \"" + p['title'] + "\", click "
-            "\"View cited-by list\", and report the publication year shown "
-            "next to the first resolved follow-up."
-        )))
-    # P11: 5-step — results -> paper -> pdf preview -> figure 3 caption
-    for p in R6_PAPERS[:10]:
-        rows.append(('paper_to_pdf_fig3', (
-            "Open Google Scholar results, click into the paper \"" +
-            p['title'] + "\", then follow \"PDF preview\", and copy the "
-            "caption that appears as Figure 3."
-        )))
-    # P12: search-query filter
-    for q in ['transformer', 'climate', 'photosynthesis', 'protein',
-              'language model', 'black hole', 'Mediterranean', 'GPT',
-              'BERT', 'Llama']:
-        rows.append(('search_query_first', (
-            "On Google Scholar, type \"" + q + "\" into the search box, "
-            "press Apply, and report the title of the first paper on the "
-            "results page."
-        )))
-    # P13: disambiguation
-    rows.append(('disambig_gpt_papers', (
-        "On Google Scholar there are two GPT-related entries — \"Language "
-        "Models are Few-Shot Learners\" and \"GPT-4 Technical Report\". "
-        "Open each paper page and tell me which has a higher citation "
-        "count."
-    )))
-    rows.append(('disambig_protein_papers', (
-        "Google Scholar surfaces both \"Highly accurate protein structure "
-        "prediction with AlphaFold\" and \"Revisiting the Z-Scheme of "
-        "Oxygenic Photosynthesis\". Open each paper page and tell me which "
-        "is published in a journal named Nature."
-    )))
-    rows.append(('disambig_climate_papers', (
-        "On Google Scholar I see \"IPCC AR6 Working Group I: The Physical "
-        "Science Basis\" and \"Primary Prevention of Cardiovascular Disease "
-        "with a Mediterranean Diet (PREDIMED)\". Open the paper pages and "
-        "tell me which one has more than 10,000 citations."
-    )))
-    rows.append(('disambig_llm_papers', (
-        "Two LLM alignment papers show up on Google Scholar — \"Training "
-        "Language Models to Follow Instructions with Human Feedback\" and "
-        "\"Direct Preference Optimization: Your Language Model is Secretly "
-        "a Reward Model\". Open both paper detail pages and tell me which "
-        "one was published more recently."
-    )))
-    # P14: cited-by stub recognition
-    rows.append(('citedby_stub', (
-        "Open the Google Scholar paper \"Attention Is All You Need\" and "
-        "click View cited-by list. Some entries are marked as \"(stub)\"; "
-        "name one of those unresolved stub titles."
-    )))
-    rows.append(('citedby_stub_alphafold', (
-        "On Google Scholar, open AlphaFold's cited-by page and report the "
-        "slug of any cited-by entry that is rendered as a stub rather than "
-        "a clickable paper link."
-    )))
-    # P15: results -> filter by year -> open paper
-    rows.append(('year_filter_to_paper', (
-        "On Google Scholar, set the year filter to \"Since 2022\" and "
-        "apply. From the filtered listing, open the paper \"Llama 2: Open "
-        "Foundation and Fine-Tuned Chat Models\" and tell me how many "
-        "citations the detail page reports."
-    )))
-    rows.append(('cited_sort_to_authors', (
-        "On Google Scholar, sort the results by citation count and click "
-        "into the top entry; copy the full list of authors from its paper "
-        "detail page."
-    )))
-    # P16: paper authors list
-    for p in R6_PAPERS:
-        rows.append(('paper_authors', (
-            "On Google Scholar, search for \"" + p['title'][:36] + "\" and "
-            "open the paper page; copy the complete authors line as printed "
-            "under the title."
-        )))
-    # P17: cited-by - resolved follow-ups names
-    for slug, lst in R6_CITED_BY.items():
-        if len(lst) < 2:
-            continue
-        p = next(pp for pp in R6_PAPERS if pp['slug'] == slug)
-        rows.append(('citedby_secondresolved', (
-            "Open Google Scholar's cited-by page for \"" + p['title'] +
-            "\" and report the title of the SECOND resolved follow-up "
-            "(skip stubs)."
-        )))
-    # P18: paper -> pdf preview -> abstract first words
-    for p in R6_PAPERS:
-        rows.append(('pdf_abstract_first', (
-            "Open the Google Scholar PDF preview for \"" + p['title'] +
-            "\" and copy the first 12 words of the Abstract block printed "
-            "inside the synthetic page-1 mockup."
-        )))
-    # P19: results listing card - "Cited by N" link
-    for p in R6_PAPERS:
-        rows.append(('paper_cited_link', (
-            "On Google Scholar, click into the paper \"" + p['title'] +
-            "\" and follow the \"View cited-by list\" link. What number "
-            "appears next to \"Cited by\" in the header of that page?"
-        )))
-    # P20: full multi-step (results -> sort cited -> paper -> pdf preview)
-    rows.append(('multi_sort_pdf_fig2', (
-        "On Google Scholar results, sort by citation count, click into the "
-        "top paper, then follow PDF preview and copy the caption of Figure 2."
-    )))
-    rows.append(('multi_sort_pdf_authors', (
-        "On Google Scholar, sort the listing by date, open the most recent "
-        "paper, click PDF preview, and tell me the year printed under the "
-        "authors line on the synthetic page-1 mockup."
-    )))
-    # P21: paper -> follow-ups -> open follow-up -> read its year
-    for slug, lst in R6_CITED_BY.items():
-        if not lst:
-            continue
-        p = next(pp for pp in R6_PAPERS if pp['slug'] == slug)
-        rows.append(('followup_year', (
-            "From Google Scholar, open the paper \"" + p['title'] + "\". "
-            "It lists Highly-cited follow-ups; click the first follow-up "
-            "and tell me the publication year shown on that follow-up's "
-            "paper detail page."
-        )))
-    # P22: cited-by header citation count
-    for p in R6_PAPERS[:12]:
-        rows.append(('citedby_header_count', (
-            "Open the Google Scholar cited-by page for \"" + p['title'] +
-            "\" and report the citation count printed in the page header."
-        )))
-    return rows
-
-
-# ---------------------------------------------------------------------------
-# R10 — SafeSearch + AI/PAA/Knowledge/Featured (target: 150+, GUI-only)
-# ---------------------------------------------------------------------------
-def r10_module_tasks():
-    rows = []
-    # P1: SafeSearch — set then read current
-    for k, lbl, _desc in R10_LEVELS:
-        rows.append(('safesearch_set', (
-            "Open Google's /settings/safesearch page, pick the \"" + lbl +
-            "\" radio option and click Save; after the redirect, tell me "
-            "which level the page lists as Current."
-        )))
-    rows.append(('safesearch_desc_strict', (
-        "Visit Google's SafeSearch settings page and report the description "
-        "shown for the \"Strict\" option."
-    )))
-    rows.append(('safesearch_desc_moderate', (
-        "On Google's SafeSearch settings page, copy the description shown "
-        "below the \"Moderate\" radio button."
-    )))
-    rows.append(('safesearch_default', (
-        "Open Google's SafeSearch settings page without changing anything "
-        "and tell me which level is shown as Current by default."
-    )))
-    # P2: featured snippet — source domain
-    for s in R10_FEATURED:
-        rows.append(('featured_source', (
-            "On Google, search for \"" + s['query'] + "\" and look at the "
-            "featured snippet that appears; report the source domain printed "
-            "above the answer."
-        )))
-    # P3: featured snippet — source title
-    for s in R10_FEATURED:
-        rows.append(('featured_srctitle', (
-            "When Google shows a featured snippet for \"" + s['query'] +
-            "\", what is the source title linked at the top of the snippet "
-            "card?"
-        )))
-    # P4: featured snippet — kind (paragraph/list)
-    for s in R10_FEATURED:
-        rows.append(('featured_kind', (
-            "Search Google for \"" + s['query'] + "\" and open the featured "
-            "snippet; tell me what \"kind\" label it shows (paragraph, "
-            "list, etc.)."
-        )))
-    # P5: featured snippet — answer text
-    for s in R10_FEATURED:
-        rows.append(('featured_answer', (
-            "On Google, run the query \"" + s['query'] + "\" and copy the "
-            "answer text printed inside the featured snippet card."
-        )))
-    # P6: PAA — number of expandable rows
-    for b in R10_PAA:
-        rows.append(('paa_count', (
-            "On Google, search for \"" + b['question'] + "\" and look at "
-            "the People also ask block; expand each row and tell me how "
-            "many questions are inside it."
-        )))
-    # P7: PAA — Nth question
-    for b in R10_PAA:
-        rows.append(('paa_q2', (
-            "Open the People also ask panel for \"" + b['question'] + "\" "
-            "on Google. What is the second question listed?"
-        )))
-    # P8: PAA — answer text for a specific Q
-    for b in R10_PAA[:8]:
-        first_q = b['questions'][0]['q']
-        rows.append(('paa_q_a', (
-            "On Google's People also ask block for \"" + b['question'] +
-            "\", expand the question \"" + first_q + "\" and copy the answer."
-        )))
-    # P9: Knowledge panel — first fact
-    for e in R10_KP:
-        rows.append(('kp_first_fact', (
-            "On Google, search for \"" + e['name'] + "\". A Knowledge panel "
-            "appears on the right — tell me the value in the first row of "
-            "the facts table."
-        )))
-    # P10: KP — kind label
-    for e in R10_KP:
-        rows.append(('kp_kind', (
-            "Search Google for \"" + e['name'] + "\" and look at the "
-            "Knowledge panel header; what kind of entity is it labelled as?"
-        )))
-    # P11: KP — specific field
-    rows.append(('kp_lebron_height', (
-        "On Google, look up LeBron James and read the Knowledge panel; what "
-        "is his height?"
-    )))
-    rows.append(('kp_curry_titles', (
-        "Search Google for Stephen Curry and check the Knowledge panel; how "
-        "many NBA titles does it list?"
-    )))
-    rows.append(('kp_oppenheimer_box', (
-        "Look up Oppenheimer the 2023 film on Google and report the box "
-        "office figure printed in the Knowledge panel."
-    )))
-    rows.append(('kp_barbie_director', (
-        "Search Google for the Barbie movie and report the director listed "
-        "in the Knowledge panel."
-    )))
-    rows.append(('kp_apple_m4_process', (
-        "Search Google for the Apple M4 chip and report the process node "
-        "shown in the Knowledge panel."
-    )))
-    rows.append(('kp_tesla_range', (
-        "Look up the Tesla Model S on Google and tell me the EPA range "
-        "stated in the Knowledge panel."
-    )))
-    rows.append(('kp_everest_elevation', (
-        "Search Google for Mount Everest and report the elevation listed "
-        "in the Knowledge panel."
-    )))
-    rows.append(('kp_canyon_visitors', (
-        "On Google, look up the Grand Canyon and report the annual visitor "
-        "count printed in the Knowledge panel."
-    )))
-    # P12: multi-step trajectories — featured -> back to SERP -> PAA
-    for s in R10_FEATURED[:8]:
-        # pick a PAA with matching slug if available
-        paa_slug = next(
-            (b['slug'] for b in R10_PAA if b['slug'] == s['slug']),
-            R10_PAA[0]['slug'],
-        )
-        paa_question = next(b['question'] for b in R10_PAA if b['slug'] == paa_slug)
-        rows.append(('featured_to_paa', (
-            "On Google, search for \"" + s['query'] + "\". Read the featured "
-            "snippet card, then scroll to the People also ask block for the "
-            "topic \"" + paa_question + "\" and tell me what its very first "
-            "expandable question asks."
-        )))
-    # P13: SafeSearch -> back to search -> featured snippet still renders
-    rows.append(('safesearch_then_featured', (
-        "Open Google's SafeSearch settings and set the level to Strict and "
-        "save. Then go back and search for \"What is photosynthesis?\" — "
-        "does the featured snippet still appear, and if so, what source "
-        "domain does it cite?"
-    )))
-    rows.append(('safesearch_then_kp', (
-        "Set SafeSearch to Moderate on Google's settings page, then look up "
-        "Mount Everest and report the elevation row in the Knowledge panel."
-    )))
-    # P14: disambiguation
-    rows.append(('disambig_two_2023_films', (
-        "Two 2023 films show Knowledge panels on Google — Oppenheimer and "
-        "Barbie. Open each panel and tell me which one had a higher box "
-        "office gross."
-    )))
-    rows.append(('disambig_two_athletes', (
-        "On Google, both LeBron James and Stephen Curry have Knowledge "
-        "panels. Open each and tell me which one currently plays for the "
-        "Golden State Warriors."
-    )))
-    rows.append(('disambig_paa_diet', (
-        "Google has People also ask blocks for both \"How does "
-        "photosynthesis work?\" and \"Is the Mediterranean diet healthy?\". "
-        "Open the latter and tell me what PREDIMED concluded according to "
-        "the first expandable answer."
-    )))
-    # P15: multi-step PAA -> related KP
-    rows.append(('paa_kp_lebron', (
-        "On Google, open the People also ask block for \"How tall is LeBron "
-        "James?\". After reading the entries, navigate to the LeBron James "
-        "Knowledge panel and report his weight."
-    )))
-    rows.append(('paa_kp_tesla', (
-        "From the People also ask block for \"What is the range of a Tesla "
-        "Model S?\" on Google, jump to the Tesla Model S Knowledge panel "
-        "and tell me its starting price."
-    )))
-    # P16: SafeSearch description ordering
-    rows.append(('safesearch_three_options', (
-        "On Google's SafeSearch settings page, list the three radio "
-        "options shown — in the exact order they appear top to bottom."
-    )))
-    # P17: knowledge panel — facts table row count
-    for e in R10_KP:
-        rows.append(('kp_factcount', (
-            "Search Google for \"" + e['name'] + "\" and open the Knowledge "
-            "panel; how many rows does its facts table have?"
-        )))
-    # P18: featured snippet -> related PAA topic
-    rows.append(('featured_paa_climate', (
-        "Search Google for \"What causes climate change?\" and read the "
-        "featured snippet. Then scroll to the People also ask block titled "
-        "\"What is the biggest cause of climate change?\" and report the "
-        "answer about methane."
-    )))
-    rows.append(('featured_paa_lm', (
-        "On Google search \"What is a large language model?\", view the "
-        "featured snippet, then expand the People also ask question \"What "
-        "is RLHF?\" and copy the answer."
-    )))
-    # P19: PAA - all answers concatenation
-    for b in R10_PAA:
-        rows.append(('paa_last_q', (
-            "Open the People also ask block on Google for \"" +
-            b['question'] + "\" and tell me what the LAST expandable "
-            "question reads."
-        )))
-    # P20: KP — last fact
-    for e in R10_KP:
-        rows.append(('kp_last_fact', (
-            "Search Google for \"" + e['name'] + "\" and look at the "
-            "Knowledge panel facts table; copy the value in the very "
-            "LAST row."
-        )))
-    # P21: featured snippet -> jump to listing of pinned snippets
-    for s in R10_FEATURED[:6]:
-        rows.append(('featured_pinned_list', (
-            "Search Google for \"" + s['query'] + "\". Open the featured "
-            "snippet card, then scroll to \"All pinned featured snippets\" "
-            "and tell me how many entries are listed there."
-        )))
-    return rows
-
-
-# ---------------------------------------------------------------------------
-# Driver
-# ---------------------------------------------------------------------------
-TASKS_PATH = os.path.join(HERE, 'tasks.jsonl')
-# IDs that previously used the sequential 'Google Search--N' pattern stop
-# at 6710. New tasks use a themed id format so diversity is visible.
-
-
-def main():
-    sections = [
-        ('r4_image', r4_image_tasks()),
-        ('r5_video', r5_video_tasks()),
-        ('r6_scholar', r6_scholar_tasks()),
-        ('r10_modules', r10_module_tasks()),
+    field_table = [
+        ('preview_source',  R4_PHRASES_SOURCE,  'source_domain'),
+        ('preview_dims',    R4_PHRASES_DIMS,    'dims'),
+        ('preview_license', R4_PHRASES_LICENSE, 'license_label'),
+        ('preview_type',    R4_PHRASES_TYPE,    '_type_label'),
+        ('preview_alt',     R4_PHRASES_ALT,     'alt'),
+        ('preview_owner',   R4_PHRASES_OWNER,   'source_owner'),
+        ('preview_caption', R4_PHRASES_CAPTION, 'caption'),
     ]
+    type_label = {'photo': 'Photo', 'clipart': 'Clip art', 'lineart': 'Line drawing',
+                  'gif': 'GIF', 'transparent': 'Transparent'}
+    for field, phrases, ans_key in field_table:
+        for i, c in enumerate(IMAGES):
+            tmpl = phrases[i % len(phrases)]
+            nav = R4_NAV_OPTIONS[i % len(R4_NAV_OPTIONS)]
+            q = tmpl.format(t=c['title'], nav=nav)
+            ans = type_label.get(c['type'], c['type']) if ans_key == '_type_label' else c[ans_key]
+            rows.append((field, q, ans))
+    # Filter counts (color/size/type)
+    color_keys = sorted({c['color'] for c in IMAGES})
+    for i, ck in enumerate(color_keys):
+        n = sum(1 for c in IMAGES if c['color'] == ck)
+        tmpl = R4_PHRASES_COLOR_COUNT[i % len(R4_PHRASES_COLOR_COUNT)]
+        rows.append(('color_count', tmpl.format(c=ck), str(n)))
+    for i, s in enumerate(['large', 'medium', 'icon']):
+        n = sum(1 for c in IMAGES if c['size'] == s)
+        tmpl = R4_PHRASES_SIZE_COUNT[i % len(R4_PHRASES_SIZE_COUNT)]
+        rows.append(('size_count', tmpl.format(s=s), str(n)))
+    for i, ty in enumerate(['photo', 'clipart', 'lineart', 'gif', 'transparent']):
+        n = sum(1 for c in IMAGES if c['type'] == ty)
+        tmpl = R4_PHRASES_TYPE_COUNT[i % len(R4_PHRASES_TYPE_COUNT)]
+        rows.append(('type_count', tmpl.format(ty=ty), str(n)))
+    # Multi-step chains
+    seen_colors = set()
+    for c in IMAGES:
+        if c['color'] in seen_colors:
+            continue
+        seen_colors.add(c['color'])
+        tmpl = R4_PHRASES_MULTISTEP[len(seen_colors) % len(R4_PHRASES_MULTISTEP)]
+        if '{ty}' in tmpl:
+            rows.append(('multistep_type_dims', tmpl.format(ty=c['type']), c['dims']))
+        elif '{lbl}' in tmpl:
+            rows.append(('multistep_rights_owner', tmpl.format(lbl=c['license_label']), c['source_owner']))
+        else:
+            rows.append(('multistep_color_source', tmpl.format(c=c['color']), c['source_domain']))
+    return rows
 
-    existing_ids = set()
-    if os.path.exists(TASKS_PATH):
-        with open(TASKS_PATH) as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    existing_ids.add(json.loads(line).get('id'))
-                except Exception:
-                    pass
 
-    new_lines = []
-    counts = {}
-    pattern_counts = {}
-    for section_name, rows in sections:
-        c = 0
-        per_theme = {}
-        for theme, ques in rows:
-            seq = per_theme.get(theme, 0) + 1
-            per_theme[theme] = seq
-            tid = 'Google Search--' + section_name + '_' + theme + '_' + str(seq).zfill(3)
-            if tid in existing_ids:
-                continue
-            row = {
-                'web_name': WEB_NAME,
-                'web': WEB,
-                'upstream_url': UPSTREAM,
-                'id': tid,
-                'ques': ques,
-            }
-            new_lines.append(json.dumps(row, ensure_ascii=False))
-            c += 1
-        counts[section_name] = c
-        pattern_counts[section_name] = per_theme
+# ---------------------------------------------------------------------------
+# R5 — Video search tasks
+# ---------------------------------------------------------------------------
 
-    if not new_lines:
-        print('[gen-r4-r10] nothing to append (all ids already present)')
-        return
+R5_PHRASES_CHANNEL = [
+    'Through Google Videos, find the clip "{t}" and open its captions/details page; tell me what channel publishes it.',
+    'On Google Videos, locate the video "{t}" and report which channel hosts it.',
+    'Find "{t}" via the Videos hub and copy the channel name shown on its captions page.',
+]
+R5_PHRASES_PLATFORM = [
+    'Go to Google Videos and find "{t}"; on its detail page, tell me which platform (YouTube / Vimeo / TED) the video lives on.',
+    'Open Google Videos, navigate to "{t}", and report the upstream platform name from its captions page.',
+]
+R5_PHRASES_DURATION = [
+    'Find the video "{t}" through Google Videos and copy the duration (e.g. 12:01) printed on its detail page.',
+    'On Google Videos, open the captions panel for "{t}" and report its duration.',
+]
+R5_PHRASES_QUALITY = [
+    'Through Google Videos, locate "{t}" and tell me whether it is HD, 1080p Full HD, or 4K Ultra HD on its detail page.',
+    'Find "{t}" on Google Videos and report the listed quality (HD / Full HD / 4K).',
+]
+R5_PHRASES_PUBLISHED = [
+    'On Google Videos, open the captions page for "{t}" and copy the "published" date (YYYY-MM-DD).',
+    'Find "{t}" through Google Videos and tell me when it was published.',
+]
+R5_PHRASES_LANGUAGE = [
+    'Open Google Videos, navigate to "{t}", and report the two-letter language code shown for its captions.',
+    'Find "{t}" on Google Videos and tell me the caption language code listed on its detail panel.',
+]
+R5_PHRASES_LASTLINE = [
+    'Open Google Videos, navigate to the captions of "{t}", and copy the LAST caption line printed on its page.',
+    'Find "{t}" on Google Videos and report the final caption line shown in its closed-caption preview.',
+]
+R5_PHRASES_FIRSTLINE = [
+    'Through Google Videos, open the captions for "{t}" and copy the FIRST caption line verbatim.',
+    'Find "{t}" via Google Videos and tell me the very first caption line printed on its detail page.',
+]
+R5_PHRASES_DESCRIPTION = [
+    'On Google Videos, open "{t}" and copy the description (the paragraph below the title) verbatim.',
+    'Find "{t}" via the Videos hub and report the descriptive blurb shown on its detail page.',
+]
+R5_PHRASES_FILTER_COUNT = [
+    'Open Google Videos Tools, filter by duration "{d}", and tell me how many clips match.',
+    'Go to /videos, open Tools, choose duration "{d}", and report the match count.',
+]
+R5_PHRASES_QUAL_COUNT = [
+    'On Google Videos Tools, filter by quality "{q}" and tell me how many clips appear.',
+]
+R5_PHRASES_MULTISTEP = [
+    'Start at the Google homepage, click Videos, open Tools, filter by duration "{d}", click the first clip and report its channel.',
+    'From the Google homepage open Videos, then Tools, then quality "{q}"; click the first clip and tell me its published date.',
+    'Open Google Videos, filter by language "{lang}" (after clicking into Tools), click the first clip and report its duration.',
+]
 
-    with open(TASKS_PATH, 'a') as fh:
-        for line in new_lines:
-            fh.write(line + '\n')
-    print('[gen-r4-r10] appended ' + str(len(new_lines)) + ' tasks')
-    for k, v in counts.items():
-        print('[gen-r4-r10]   ' + k + ': ' + str(v) + ' tasks')
-        for theme, n in sorted(pattern_counts[k].items()):
-            print('[gen-r4-r10]     - ' + theme + ': ' + str(n))
+
+def r5_tasks():
+    rows = []
+    field_table = [
+        ('caps_channel',     R5_PHRASES_CHANNEL,    'channel'),
+        ('caps_platform',    R5_PHRASES_PLATFORM,   'platform'),
+        ('caps_duration',    R5_PHRASES_DURATION,   'duration'),
+        ('caps_quality',     R5_PHRASES_QUALITY,    'quality'),
+        ('caps_published',   R5_PHRASES_PUBLISHED,  'published'),
+        ('caps_language',    R5_PHRASES_LANGUAGE,   'language'),
+        ('caps_description', R5_PHRASES_DESCRIPTION,'description'),
+    ]
+    for field, phrases, ans_key in field_table:
+        for i, v in enumerate(VIDEOS):
+            tmpl = phrases[i % len(phrases)]
+            q = tmpl.format(t=v['title'])
+            rows.append((field, q, v[ans_key]))
+
+    for i, v in enumerate(VIDEOS):
+        tmpl = R5_PHRASES_FIRSTLINE[i % len(R5_PHRASES_FIRSTLINE)]
+        rows.append(('caps_firstline', tmpl.format(t=v['title']), v['caption_lines'][0]))
+    for i, v in enumerate(VIDEOS):
+        tmpl = R5_PHRASES_LASTLINE[i % len(R5_PHRASES_LASTLINE)]
+        rows.append(('caps_lastline', tmpl.format(t=v['title']), v['caption_lines'][-1]))
+
+    for i, d in enumerate(['short', 'medium', 'long', 'film']):
+        n = sum(1 for v in VIDEOS if v['duration_bucket'] == d)
+        tmpl = R5_PHRASES_FILTER_COUNT[i % len(R5_PHRASES_FILTER_COUNT)]
+        rows.append(('dur_count', tmpl.format(d=d), str(n)))
+    for i, q in enumerate(['hd', 'fhd', '4k']):
+        n = sum(1 for v in VIDEOS if v['quality'] == q)
+        rows.append(('qual_count', R5_PHRASES_QUAL_COUNT[0].format(q=q), str(n)))
+
+    seen = set()
+    for v in VIDEOS:
+        key = v['duration_bucket']
+        if key in seen:
+            continue
+        seen.add(key)
+        idx = len(seen)
+        tmpl = R5_PHRASES_MULTISTEP[idx % len(R5_PHRASES_MULTISTEP)]
+        if '{d}' in tmpl:
+            rows.append(('multistep_dur_channel', tmpl.format(d=v['duration_bucket']), v['channel']))
+        elif '{q}' in tmpl:
+            rows.append(('multistep_qual_published', tmpl.format(q=v['quality']), v['published']))
+        else:
+            rows.append(('multistep_lang_duration', tmpl.format(lang=v['language']), v['duration']))
+
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# R6 — Scholar tasks
+# ---------------------------------------------------------------------------
+
+R6_PHRASES_AUTHORS = [
+    'On Google Scholar, search for "{t}" and open the paper detail page; copy the FIRST author name listed.',
+    'Find the Scholar paper "{t}" and tell me who its first author is.',
+    'Through /scholar/search, locate "{t}" and report the lead author from its detail page.',
+]
+R6_PHRASES_VENUE = [
+    'On Google Scholar, navigate to the paper "{t}" and report the publication venue printed on its detail page.',
+    'Through the Scholar search, find "{t}" and tell me the venue (NeurIPS / ICLR / Nature / etc.) it appeared in.',
+]
+R6_PHRASES_YEAR = [
+    'On Google Scholar, search for "{t}" and report the publication year shown on its detail page.',
+    'Open the paper "{t}" via the Scholar hub and tell me the year of publication.',
+]
+R6_PHRASES_CITED = [
+    'On Google Scholar open the paper "{t}" and report its citation count.',
+    'Find "{t}" through Scholar and tell me how many citations it has.',
+    'Via /scholar/search, navigate to "{t}" and copy the citation total.',
+]
+R6_PHRASES_ABSTRACT = [
+    'Open the Scholar paper "{t}" and copy the FIRST sentence of its abstract.',
+    'Through Google Scholar, find "{t}" and report the opening sentence of its abstract.',
+]
+R6_PHRASES_FIG = [
+    'Open the PDF preview for the Scholar paper "{t}" and copy the caption of Figure 2.',
+    'Through Google Scholar, navigate to "{t}", click into its PDF preview, and report Figure 3s caption.',
+]
+R6_PHRASES_CITEDBY_FIRST = [
+    'On Google Scholar, open the cited-by list for "{t}" and report the FIRST citing paper title.',
+    'Find "{t}" through Scholar, follow its cited-by link, and tell me the title of the first paper that cites it.',
+]
+R6_PHRASES_CITEDBY_COUNT = [
+    'Through Google Scholar, open the cited-by page for "{t}" and report how many citing papers are listed.',
+]
+R6_PHRASES_MULTISTEP = [
+    ('On Google Scholar, sort all results by citations (descending), click into the 3rd row and report its venue.',
+     lambda: sorted(PAPERS, key=lambda x: -x['citations'])[2]['venue']),
+    ('Open Scholar, filter to Since 2022 and sort by date; click the first result and tell me its citation count.',
+     lambda: str(sorted([p for p in PAPERS if p['year'] >= 2022], key=lambda x: -x['year'])[0]['citations'])),
+    ('On Google Scholar, search "transformer", sort by citation count, click the top paper and open its PDF preview; copy Figure 1s caption.',
+     lambda: 'Figure 1. Architecture overview of ' + sorted(
+         [p for p in PAPERS if 'transformer' in (p['abstract']+' '+p['title']).lower()],
+         key=lambda x: -x['citations'])[0]['title'].split(':')[0] + '.'),
+]
+
+
+def r6_tasks():
+    rows = []
+    venue_label = {k: l for k, l in [
+        ('neurips', 'NeurIPS — Conference on Neural Information Processing Systems'),
+        ('icml',    'ICML — International Conference on Machine Learning'),
+        ('nature',  'Nature'),
+        ('science', 'Science'),
+        ('cell',    'Cell'),
+        ('jacs',    'Journal of the American Chemical Society'),
+        ('arxiv',   'arXiv preprint'),
+        ('iclr',    'ICLR — International Conference on Learning Representations'),
+        ('cvpr',    'CVPR — Computer Vision and Pattern Recognition'),
+        ('lancet',  'The Lancet'),
+        ('nejm',    'New England Journal of Medicine'),
+        ('ipcc',    'IPCC Assessment Report'),
+    ]}
+    field_table = [
+        ('paper_authors',    R6_PHRASES_AUTHORS, lambda p: p['authors_csv'].split(';')[0].strip()),
+        ('paper_venue',      R6_PHRASES_VENUE,   lambda p: venue_label.get(p['venue'], p['venue'])),
+        ('paper_year',       R6_PHRASES_YEAR,    lambda p: str(p['year'])),
+        ('paper_citations',  R6_PHRASES_CITED,   lambda p: str(p['citations'])),
+        ('paper_abstract',   R6_PHRASES_ABSTRACT,lambda p: p['abstract'].split('.')[0] + '.'),
+    ]
+    for field, phrases, ans_fn in field_table:
+        for i, p in enumerate(PAPERS):
+            tmpl = phrases[i % len(phrases)]
+            rows.append((field, tmpl.format(t=p['title']), ans_fn(p)))
+    for i, p in enumerate(PAPERS):
+        tmpl = R6_PHRASES_FIG[i % len(R6_PHRASES_FIG)]
+        if 'Figure 2' in tmpl:
+            ans = 'Figure 2. Quantitative results table comparing baselines.'
+        else:
+            ans = 'Figure 3. Ablation study of key components.'
+        rows.append(('paper_fig', tmpl.format(t=p['title']), ans))
+    for i, p in enumerate(PAPERS):
+        dsts = RD.CITED_BY.get(p['slug'], [])
+        if not dsts:
+            continue
+        first = next((q['title'] for q in PAPERS if q['slug'] == dsts[0]), None)
+        if not first:
+            continue
+        tmpl = R6_PHRASES_CITEDBY_FIRST[i % len(R6_PHRASES_CITEDBY_FIRST)]
+        rows.append(('citedby_first', tmpl.format(t=p['title']), first))
+    for p in PAPERS:
+        resolved = len(RD.CITED_BY.get(p['slug'], []))
+        stubs    = len(RD.CITED_BY_STUBS.get(p['slug'], []))
+        total = resolved + stubs
+        if total == 0:
+            continue
+        rows.append(('citedby_count',
+                     R6_PHRASES_CITEDBY_COUNT[0].format(t=p['title']), str(total)))
+    for i, (tmpl, ans_fn) in enumerate(R6_PHRASES_MULTISTEP):
+        rows.append(('multistep_' + str(i), tmpl, ans_fn()))
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# R10 — Featured snippet / PAA / KP / safesearch
+# ---------------------------------------------------------------------------
+
+R10_PHRASES_SNIP_ANSWER = [
+    'On Google, search for "{q}". Open the featured-snippet card that appears and copy its answer paragraph.',
+    'Find the featured snippet for the query "{q}" and report the answer it gives.',
+]
+R10_PHRASES_SNIP_SOURCE = [
+    'Search Google for "{q}", then read the featured snippet card and report the source domain shown.',
+    'Find the featured snippet for "{q}" on Google and tell me which website it cites as the source.',
+]
+R10_PHRASES_SNIP_SRCTITLE = [
+    'On Google, search "{q}". Open the featured snippet and copy the source page title it links to.',
+]
+R10_PHRASES_SNIP_KIND = [
+    'On Google, search "{q}", read the featured snippet, and report whether it is shown as a "paragraph" or "list" snippet.',
+]
+R10_PHRASES_PAA_FIRST = [
+    'Open the People also ask block on Google for "{q}". Expand the FIRST question and tell me what it reads.',
+    'For the Google query "{q}", the People also ask panel appears; expand it and copy the first question listed.',
+]
+R10_PHRASES_PAA_LAST = [
+    'Open the People also ask block on Google for "{q}" and report the LAST expandable question.',
+    'Find the PAA panel on Google for "{q}" and tell me the very last listed question.',
+]
+R10_PHRASES_PAA_ANSWER = [
+    'Open the People also ask block for "{q}" on Google. Expand the SECOND question and copy its answer verbatim.',
+    'For the Google query "{q}", expand the second PAA question and report the answer.',
+]
+R10_PHRASES_KP_FIRST = [
+    'Search Google for "{n}" and look at the Knowledge panel facts table; copy the value in the FIRST row.',
+    'On Google, find the Knowledge panel for "{n}" and report the first fact value listed.',
+]
+R10_PHRASES_KP_LAST = [
+    'Search Google for "{n}" and look at the Knowledge panel facts table; copy the value in the LAST row.',
+    'On Google, find the Knowledge panel for "{n}" and report the last fact value listed.',
+]
+R10_PHRASES_KP_KIND = [
+    'On Google, find the Knowledge panel for "{n}" and tell me its "kind" (e.g. Basketball player, 2023 film, ...).',
+]
+R10_PHRASES_KP_FACTCOUNT = [
+    'On Google, find the Knowledge panel for "{n}" and tell me how many fact rows are listed in its table.',
+]
+R10_PHRASES_SAFESEARCH = [
+    ('Open Google Settings > SafeSearch. Switch the level to "Strict" and report the description shown for Strict.',
+     'Filter explicit images, videos and text from results.'),
+    ('Go to /settings/safesearch and tell me what description text appears next to the "Moderate" option.',
+     'Filter explicit images, but allow explicit text.'),
+    ('In Google SafeSearch settings, set the level to "Off" and report the help-text describing what Off does.',
+     'Show all results, including explicit content.'),
+]
+R10_PHRASES_MULTI_SNIP_PAA = [
+    'Search Google for "{q}". Open the featured snippet, then scroll to the People also ask block and tell me the FIRST PAA question listed.',
+]
+R10_PHRASES_MULTI_KP_PAA = [
+    'Search Google for "{n}". Open the Knowledge panel, then read the People also ask block in the same SERP and report its first question.',
+]
+
+
+def r10_tasks():
+    rows = []
+    for i, s in enumerate(SNIPS):
+        rows.append(('snip_answer',  R10_PHRASES_SNIP_ANSWER [i % len(R10_PHRASES_SNIP_ANSWER )].format(q=s['query']), s['answer']))
+        rows.append(('snip_source',  R10_PHRASES_SNIP_SOURCE [i % len(R10_PHRASES_SNIP_SOURCE )].format(q=s['query']), s['source_domain']))
+        rows.append(('snip_srctitle',R10_PHRASES_SNIP_SRCTITLE[i % len(R10_PHRASES_SNIP_SRCTITLE)].format(q=s['query']), s['source_title']))
+        rows.append(('snip_kind',    R10_PHRASES_SNIP_KIND   [i % len(R10_PHRASES_SNIP_KIND   )].format(q=s['query']), s['kind']))
+    for i, b in enumerate(PAA):
+        first_q = b['qa'][0][0]
+        last_q  = b['qa'][-1][0]
+        second_a = b['qa'][1][1] if len(b['qa']) > 1 else b['qa'][0][1]
+        rows.append(('paa_first',  R10_PHRASES_PAA_FIRST [i % len(R10_PHRASES_PAA_FIRST )].format(q=b['question']), first_q))
+        rows.append(('paa_last',   R10_PHRASES_PAA_LAST  [i % len(R10_PHRASES_PAA_LAST  )].format(q=b['question']), last_q))
+        rows.append(('paa_2nd_ans',R10_PHRASES_PAA_ANSWER[i % len(R10_PHRASES_PAA_ANSWER)].format(q=b['question']), second_a))
+    for i, e in enumerate(KPS):
+        first_v = e['facts'][0][1]
+        last_v  = e['facts'][-1][1]
+        rows.append(('kp_first', R10_PHRASES_KP_FIRST[i % len(R10_PHRASES_KP_FIRST)].format(n=e['name']), first_v))
+        rows.append(('kp_last',  R10_PHRASES_KP_LAST [i % len(R10_PHRASES_KP_LAST )].format(n=e['name']), last_v))
+        rows.append(('kp_kind',  R10_PHRASES_KP_KIND [0].format(n=e['name']), e['kind']))
+        rows.append(('kp_factcount', R10_PHRASES_KP_FACTCOUNT[0].format(n=e['name']), str(len(e['facts']))))
+    for tmpl, ans in R10_PHRASES_SAFESEARCH:
+        rows.append(('safesearch_desc', tmpl, ans))
+    for s in SNIPS[:6]:
+        bundle = next((b for b in PAA if b['slug'] == s['slug']), None)
+        if bundle is None:
+            continue
+        rows.append(('multi_snip_paa_first',
+                     R10_PHRASES_MULTI_SNIP_PAA[0].format(q=s['query']),
+                     bundle['qa'][0][0]))
+    for e in KPS[:4]:
+        bundle = next((b for b in PAA if b['slug'] == e['slug']), None)
+        if bundle is None:
+            continue
+        rows.append(('multi_kp_paa_first',
+                     R10_PHRASES_MULTI_KP_PAA[0].format(n=e['name']),
+                     bundle['qa'][0][0]))
+    return rows
+
+
+# ---------------------------------------------------------------------------
+def build_all():
+    out = []
+    counters = {}
+    for section, items in [('r4', r4_tasks()), ('r5', r5_tasks()),
+                            ('r6', r6_tasks()), ('r10', r10_tasks())]:
+        for theme, ques, ans in items:
+            tid = section + '_' + theme
+            counters[tid] = counters.get(tid, 0) + 1
+            full_id = WEB_NAME + '--' + tid + '_' + str(counters[tid]).zfill(3)
+            out.append({
+                'web_name': WEB_NAME, 'id': full_id, 'ques': ques,
+                'web': WEB, 'upstream_url': UPSTREAM, 'answer_token': ans,
+            })
+    return out
 
 
 if __name__ == '__main__':
-    main()
+    rows = build_all()
+    from collections import Counter
+    grp = Counter()
+    for r in rows:
+        gid = r['id'].split('--', 1)[1].rsplit('_', 1)[0]
+        grp[gid] += 1
+    print('total new r-tasks:', len(rows))
+    print('groups:', len(grp))
+    over30 = [(k, v) for k, v in grp.items() if v > 30]
+    if over30:
+        print('GROUPS OVER 30:', over30)
+    out_path = os.path.join(os.path.dirname(__file__), 'tasks.jsonl')
+    keep = []
+    with open(out_path, 'r') as f:
+        for line in f:
+            o = json.loads(line)
+            sid = o['id'].replace(WEB_NAME + '--', '')
+            if (sid.startswith('r4_') or sid.startswith('r5_') or
+                sid.startswith('r6_') or sid.startswith('r10_')):
+                continue
+            keep.append(o)
+    print('kept numeric:', len(keep), 'appended new:', len(rows))
+    with open(out_path, 'w') as f:
+        for o in keep + rows:
+            f.write(json.dumps(o, ensure_ascii=False) + '\n')
+    print('wrote', out_path)

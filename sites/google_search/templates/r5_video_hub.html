@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Google Videos{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 24px auto; padding: 0 16px;">
+  <div style="display:flex; align-items:baseline; gap:24px; border-bottom: 1px solid #e8eaed; padding-bottom: 10px;">
+    <h1 style="font-size: 26px; margin: 0;">Google Videos</h1>
+    <nav style="display:flex; gap:16px; font-size: 14px;">
+      <a href="/" style="color:#5f6368; text-decoration:none;">All</a>
+      <a href="/images" style="color:#5f6368; text-decoration:none;">Images</a>
+      <a href="/videos" style="color:#1a73e8; text-decoration:none; font-weight:600;">Videos</a>
+      <a href="/search?tbm=news" style="color:#5f6368; text-decoration:none;">News</a>
+      <a href="/search?tbm=shopping" style="color:#5f6368; text-decoration:none;">Shopping</a>
+      <a href="/scholar/search" style="color:#5f6368; text-decoration:none;">Scholar</a>
+    </nav>
+  </div>
+
+  <form action="/search" method="get" style="margin: 18px 0 14px;">
+    <input type="hidden" name="tbm" value="videos">
+    <input type="search" name="q" placeholder="Search Google Videos"
+           style="width:100%; padding:10px 14px; border:1px solid #dadce0; border-radius:24px; font-size:15px;"
+           aria-label="Search Google Videos">
+  </form>
+
+  <div style="display:flex; gap:12px; align-items:center; margin-bottom: 14px;">
+    <a href="/search/videos/filters" style="padding:6px 14px; border:1px solid #dadce0; border-radius:16px; text-decoration:none; color:#1a73e8; font-size:13px;">Tools</a>
+    <span class="muted" style="font-size:13px;">{{ videos|length }} curated clips from real YouTube / Vimeo / TED upstream URLs.</span>
+  </div>
+
+  <h2 style="font-size: 14px; color:#5f6368; margin: 16px 0 6px;">Filter by duration</h2>
+  <div style="display:flex; gap:6px;">
+    {% for key, label, det in durations %}
+    <a href="/search/videos/duration/{{ key }}" style="padding:4px 10px; border:1px solid #dadce0; border-radius:14px; text-decoration:none; color:#202124; font-size:12px;">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 14px; color:#5f6368; margin: 16px 0 6px;">Filter by quality</h2>
+  <div style="display:flex; gap:6px;">
+    {% for key, label, det in qualities %}
+    <a href="/search/videos/quality/{{ key }}" style="padding:4px 10px; border:1px solid #dadce0; border-radius:14px; text-decoration:none; color:#202124; font-size:12px;">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 16px; margin-top: 26px;">All curated videos</h2>
+  <ul style="list-style:none; padding:0;">
+    {% for v in videos %}
+    <li style="border-bottom:1px solid #e8eaed; padding:10px 0;">
+      <a href="/search/videos/captions/{{ v.id }}" style="text-decoration:none; color:#1a73e8; font-weight:600;">{{ v.title }}</a>
+      <div class="muted" style="font-size:12px; margin-top:2px;">{{ v.channel }} &middot; {{ v.source }} &middot; {{ v.duration }} &middot; {{ v.quality }} &middot; published {{ v.published }}</div>
+      <div style="font-size:13px; margin-top:4px;">{{ v.description }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

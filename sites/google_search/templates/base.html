@@ -60,7 +60,9 @@
     <div class="top-header-right">
         <a class="top-nav-link" href="{{ url_for('trending') }}">Trending</a>
         <a class="top-nav-link" href="{{ url_for('doodles') }}">Doodles</a>
-        <a class="top-nav-link" href="{{ url_for('search', q='images', tbm='images') }}">Images</a>
+        <a class="top-nav-link" href="/images">Images</a>
+        <a class="top-nav-link" href="/videos">Videos</a>
+        <a class="top-nav-link" href="/scholar/search">Scholar</a>
         <a class="top-nav-link" href="{{ url_for('r7_locales') }}"
            title="{{ hl|default('en') }}-{{ gl|default('US') }} — change locale">
             {{ hl|default('en')|upper }}-{{ gl|default('US')|upper }}

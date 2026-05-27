@@ -33,6 +33,7 @@ with appmod.app.app_context():
     )
     appmod.seed_benchmark_users()
     appmod.seed_result_feedback()
+    appmod.seed_r4_r10_tables()
 
 # Normalize indexes + VACUUM for byte-id rebuild
 appmod.normalize_seed_db_layout()

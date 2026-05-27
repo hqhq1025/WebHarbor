@@ -263,6 +263,116 @@ class TrendingTerm(db.Model):
     trend_direction = db.Column(db.String(10), default='up')
 
 
+# ---------- R4-R10 surface models (real-data-backed) ------------------------
+# Filled from `_real_data.py` at seed time (sources captured via Tavily on
+# real upstream domains). Runtime routes ONLY query these tables — never
+# read `_real_data.py` directly — so byte-id reset checks remain honest.
+
+class ImageCard(db.Model):
+    __tablename__ = 'image_card'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    query_text = db.Column(db.String(200), nullable=False, index=True)
+    title = db.Column(db.String(300), nullable=False)
+    source_domain = db.Column(db.String(80), nullable=False, index=True)
+    source_url = db.Column(db.String(500), nullable=False)
+    source_owner = db.Column(db.String(200), nullable=False, default='')
+    dims = db.Column(db.String(20), nullable=False, default='')
+    color = db.Column(db.String(20), nullable=False, default='', index=True)
+    size = db.Column(db.String(20), nullable=False, default='', index=True)
+    type = db.Column(db.String(20), nullable=False, default='', index=True)
+    license = db.Column(db.String(20), nullable=False, default='', index=True)
+    license_label = db.Column(db.String(80), nullable=False, default='')
+    alt = db.Column(db.Text, nullable=False, default='')
+    caption = db.Column(db.Text, nullable=False, default='')
+
+
+class VideoCard(db.Model):
+    __tablename__ = 'video_card'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(300), nullable=False)
+    channel = db.Column(db.String(120), nullable=False, default='', index=True)
+    platform = db.Column(db.String(40), nullable=False, default='', index=True)
+    platform_domain = db.Column(db.String(80), nullable=False, default='')
+    upstream_url = db.Column(db.String(500), nullable=False, default='')
+    duration = db.Column(db.String(20), nullable=False, default='')
+    duration_bucket = db.Column(db.String(20), nullable=False, default='', index=True)
+    quality = db.Column(db.String(20), nullable=False, default='', index=True)
+    published = db.Column(db.String(20), nullable=False, default='')
+    language = db.Column(db.String(10), nullable=False, default='', index=True)
+    description = db.Column(db.Text, nullable=False, default='')
+    captions_json = db.Column(db.Text, nullable=False, default='[]')
+
+
+class ScholarPaper(db.Model):
+    __tablename__ = 'scholar_paper'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(400), nullable=False)
+    authors_csv = db.Column(db.Text, nullable=False, default='')
+    venue = db.Column(db.String(40), nullable=False, default='', index=True)
+    year = db.Column(db.Integer, nullable=False, default=0, index=True)
+    citations = db.Column(db.Integer, nullable=False, default=0, index=True)
+    abstract = db.Column(db.Text, nullable=False, default='')
+    pdf_url = db.Column(db.String(500), nullable=False, default='')
+
+
+class ScholarCitation(db.Model):
+    __tablename__ = 'scholar_citation'
+    id = db.Column(db.Integer, primary_key=True)
+    src_slug = db.Column(db.String(80), nullable=False, index=True)
+    dst_slug = db.Column(db.String(80), nullable=False, index=True)
+    dst_title = db.Column(db.String(400), nullable=False, default='')
+    resolved = db.Column(db.Boolean, nullable=False, default=True)
+    rank = db.Column(db.Integer, nullable=False, default=0)
+
+
+class FeaturedSnippet(db.Model):
+    __tablename__ = 'featured_snippet'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    query_text = db.Column(db.String(300), nullable=False, index=True)
+    answer = db.Column(db.Text, nullable=False, default='')
+    kind = db.Column(db.String(20), nullable=False, default='paragraph')
+    source_domain = db.Column(db.String(80), nullable=False, default='')
+    source_url = db.Column(db.String(500), nullable=False, default='')
+    source_title = db.Column(db.String(300), nullable=False, default='')
+
+
+class PaaBundle(db.Model):
+    __tablename__ = 'paa_bundle'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    question = db.Column(db.String(300), nullable=False, index=True)
+
+
+class PaaQuestionRow(db.Model):
+    __tablename__ = 'paa_question_row'
+    id = db.Column(db.Integer, primary_key=True)
+    bundle_slug = db.Column(db.String(80), nullable=False, index=True)
+    rank = db.Column(db.Integer, nullable=False, default=0)
+    question = db.Column(db.String(300), nullable=False)
+    answer = db.Column(db.Text, nullable=False, default='')
+
+
+class KnowledgePanel(db.Model):
+    __tablename__ = 'knowledge_panel'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    kind = db.Column(db.String(80), nullable=False, default='')
+
+
+class KnowledgePanelFact(db.Model):
+    __tablename__ = 'knowledge_panel_fact'
+    id = db.Column(db.Integer, primary_key=True)
+    panel_slug = db.Column(db.String(80), nullable=False, index=True)
+    rank = db.Column(db.Integer, nullable=False, default=0)
+    label = db.Column(db.String(80), nullable=False)
+    value = db.Column(db.String(400), nullable=False, default='')
+
+
 @login_mgr.user_loader
 def load_user(uid):
     return db.session.get(User, int(uid))
@@ -3323,6 +3433,92 @@ def init_db():
         from seed_data import seed_database
         seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQuery,
                       Doodle, GoogleApp, TrendingTerm, KnowledgeFact, bcrypt)
+        seed_r4_r10_tables()
+
+
+def seed_r4_r10_tables():
+    """Idempotently seed R4/R5/R6/R10 tables from `_real_data.py`.
+
+    Returns immediately if any row already exists (first row id == 1).
+    Deterministic insertion order — sorted by slug — so byte-id rebuilds
+    produce identical SQLite files.
+    """
+    if ImageCard.query.first() is not None:
+        return
+    import _real_data as rd
+
+    # ImageCard
+    for rec in rd.IMAGE_CARDS:
+        db.session.add(ImageCard(
+            slug=rec['slug'], query_text=rec['query'], title=rec['title'],
+            source_domain=rec['source_domain'], source_url=rec['source_url'],
+            source_owner=rec['source_owner'], dims=rec['dims'],
+            color=rec['color'], size=rec['size'], type=rec['type'],
+            license=rec['license'], license_label=rec['license_label'],
+            alt=rec['alt'], caption=rec['caption'],
+        ))
+
+    # VideoCard
+    for rec in rd.VIDEO_CARDS:
+        db.session.add(VideoCard(
+            slug=rec['slug'], title=rec['title'], channel=rec['channel'],
+            platform=rec['platform'], platform_domain=rec['platform_domain'],
+            upstream_url=rec['upstream_url'], duration=rec['duration'],
+            duration_bucket=rec['duration_bucket'], quality=rec['quality'],
+            published=rec['published'], language=rec['language'],
+            description=rec['description'],
+            captions_json=json.dumps(rec['caption_lines'], ensure_ascii=False),
+        ))
+
+    # ScholarPaper
+    for rec in rd.SCHOLAR_PAPERS:
+        db.session.add(ScholarPaper(
+            slug=rec['slug'], title=rec['title'], authors_csv=rec['authors_csv'],
+            venue=rec['venue'], year=rec['year'], citations=rec['citations'],
+            abstract=rec['abstract'], pdf_url=rec['pdf_url'],
+        ))
+
+    # ScholarCitation — resolved + stubs
+    for src, dsts in sorted(rd.CITED_BY.items()):
+        for rank, dst in enumerate(dsts):
+            db.session.add(ScholarCitation(
+                src_slug=src, dst_slug=dst, dst_title='',
+                resolved=True, rank=rank,
+            ))
+    for src, stubs in sorted(rd.CITED_BY_STUBS.items()):
+        for rank, (title, slug) in enumerate(stubs):
+            db.session.add(ScholarCitation(
+                src_slug=src, dst_slug=slug, dst_title=title,
+                resolved=False, rank=1000 + rank,
+            ))
+
+    # FeaturedSnippet
+    for rec in rd.FEATURED_SNIPPETS:
+        db.session.add(FeaturedSnippet(
+            slug=rec['slug'], query_text=rec['query'], answer=rec['answer'],
+            kind=rec['kind'], source_domain=rec['source_domain'],
+            source_url=rec['source_url'], source_title=rec['source_title'],
+        ))
+
+    # PaaBundle + PaaQuestionRow
+    for rec in rd.PAA_BUNDLES:
+        db.session.add(PaaBundle(slug=rec['slug'], question=rec['question']))
+        for rank, (q, a) in enumerate(rec['qa']):
+            db.session.add(PaaQuestionRow(
+                bundle_slug=rec['slug'], rank=rank, question=q, answer=a,
+            ))
+
+    # KnowledgePanel + KnowledgePanelFact
+    for rec in rd.KNOWLEDGE_PANELS:
+        db.session.add(KnowledgePanel(
+            slug=rec['slug'], name=rec['name'], kind=rec['kind'],
+        ))
+        for rank, (label, value) in enumerate(rec['facts']):
+            db.session.add(KnowledgePanelFact(
+                panel_slug=rec['slug'], rank=rank, label=label, value=value,
+            ))
+
+    db.session.commit()
 
 
 def normalize_seed_db_layout():
@@ -4130,7 +4326,18 @@ _r4_spec = _r4_ilu.spec_from_file_location(
 )
 _r4_mod = _r4_ilu.module_from_spec(_r4_spec)
 _r4_spec.loader.exec_module(_r4_mod)
-_r4_mod.register_all(app)
+_r4_mod.register_all(app, {
+    'db': db,
+    'ImageCard': ImageCard,
+    'VideoCard': VideoCard,
+    'ScholarPaper': ScholarPaper,
+    'ScholarCitation': ScholarCitation,
+    'FeaturedSnippet': FeaturedSnippet,
+    'PaaBundle': PaaBundle,
+    'PaaQuestionRow': PaaQuestionRow,
+    'KnowledgePanel': KnowledgePanel,
+    'KnowledgePanelFact': KnowledgePanelFact,
+})
 
 
 if __name__ == '__main__':

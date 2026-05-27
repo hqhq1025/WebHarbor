@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Google Images{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 24px auto; padding: 0 16px;">
+  <div style="display:flex; align-items:baseline; gap:24px; border-bottom: 1px solid #e8eaed; padding-bottom: 10px;">
+    <h1 style="font-size: 26px; margin: 0;">Google Images</h1>
+    <nav style="display:flex; gap:16px; font-size: 14px;">
+      <a href="/" style="color:#5f6368; text-decoration:none;">All</a>
+      <a href="/images" style="color:#1a73e8; text-decoration:none; font-weight:600;">Images</a>
+      <a href="/videos" style="color:#5f6368; text-decoration:none;">Videos</a>
+      <a href="/search?tbm=news" style="color:#5f6368; text-decoration:none;">News</a>
+      <a href="/search?tbm=shopping" style="color:#5f6368; text-decoration:none;">Shopping</a>
+      <a href="/scholar/search" style="color:#5f6368; text-decoration:none;">Scholar</a>
+    </nav>
+  </div>
+
+  <form action="/search" method="get" style="margin: 18px 0 14px;">
+    <input type="hidden" name="tbm" value="images">
+    <input type="search" name="q" placeholder="Search Google Images"
+           style="width:100%; padding:10px 14px; border:1px solid #dadce0; border-radius:24px; font-size:15px;"
+           aria-label="Search Google Images">
+  </form>
+
+  <div style="display:flex; gap:12px; align-items:center; margin: 6px 0 14px;">
+    <a href="/search/images/tools" style="padding:6px 14px; border:1px solid #dadce0; border-radius:16px; text-decoration:none; color:#1a73e8; font-size:13px;">Tools</a>
+    <a href="/search/images/usage-rights" style="padding:6px 14px; border:1px solid #dadce0; border-radius:16px; text-decoration:none; color:#1a73e8; font-size:13px;">Usage rights</a>
+    <span class="muted" style="font-size:13px;">{{ cards|length }} curated photographs from real sources (Tavily-verified domains).</span>
+  </div>
+
+  <h2 style="font-size: 14px; color:#5f6368; margin: 16px 0 6px;">Filter by color</h2>
+  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+    {% for key, label, swatch in colors %}
+    <a href="/search/images/color/{{ key }}"
+       style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid #dadce0; border-radius:14px; text-decoration:none; color:#202124; font-size:12px;">
+      <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background: {{ swatch if swatch.startswith('#') else '#fff' }}; border:1px solid #ccc;"></span>{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 14px; color:#5f6368; margin: 16px 0 6px;">Filter by size</h2>
+  <div style="display:flex; gap:6px;">
+    {% for key, label, det in sizes %}
+    <a href="/search/images/size/{{ key }}" style="padding:4px 10px; border:1px solid #dadce0; border-radius:14px; text-decoration:none; color:#202124; font-size:12px;">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 14px; color:#5f6368; margin: 16px 0 6px;">Filter by type</h2>
+  <div style="display:flex; gap:6px;">
+    {% for key, label, det in types %}
+    <a href="/search/images/type/{{ key }}" style="padding:4px 10px; border:1px solid #dadce0; border-radius:14px; text-decoration:none; color:#202124; font-size:12px;">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 16px; margin-top: 26px;">All curated images</h2>
+  <ul style="list-style:none; padding:0; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+    {% for c in cards %}
+    <li style="border:1px solid #e8eaed; border-radius:10px; padding:10px;">
+      <a href="/search/images/preview/{{ c.id }}" style="text-decoration:none; color:#202124;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;">{{ c.title }}</div>
+        <div class="muted" style="font-size:12px;">{{ c.source }} &middot; {{ c.dims }} &middot; {{ c.license_label }}</div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

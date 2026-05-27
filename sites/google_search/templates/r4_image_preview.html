@@ -16,6 +16,9 @@
     <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Type</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ type_index.get(card.type)[1] if type_index.get(card.type) else card.type }}</td></tr>
     <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Usage rights</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ rights_index.get(card.license)[1] if rights_index.get(card.license) else card.license }}</td></tr>
     <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Alt text</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.alt }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Source owner</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.source_owner }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Source URL</th><td style="padding:6px 8px; border-bottom:1px solid #eee;"><a href="{{ card.source_url }}">{{ card.source_url }}</a></td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Caption</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.caption }}</td></tr>
   </table>
   <p class="muted" style="font-size:12px; margin-top: 12px;">JSON form: <a href="/api/images/preview/{{ card.id }}"><code>/api/images/preview/{{ card.id }}</code></a></p>
 </div>

@@ -81,10 +81,10 @@
             <a class="chip" href="{{ url_for('search', q=q, tbm='all', t='week') }}">Past week</a>
             <a class="chip" href="{{ url_for('search', q=q, tbm='all', t='year') }}">Past year</a>
             <a class="chip" href="{{ url_for('search', q=q, tbm='news') }}">News</a>
-            <a class="chip" href="{{ url_for('search', q=q, tbm='videos') }}">Videos</a>
-            <a class="chip" href="{{ url_for('search', q=q, tbm='images') }}">Images</a>
+            <a class="chip" href="/videos">Videos</a>
+            <a class="chip" href="/images">Images</a>
             <a class="chip" href="{{ url_for('search', q=q, tbm='books') }}">Books</a>
-            <a class="chip" href="{{ url_for('search', q=q, tbm='scholar') }}">Scholar</a>
+            <a class="chip" href="/scholar/search?q={{ q|urlencode }}">Scholar</a>
             <a class="chip" href="{{ url_for('preferences_region') }}">Region</a>
             <a class="chip" href="{{ url_for('preferences_languages') }}">Language</a>
         </div>
