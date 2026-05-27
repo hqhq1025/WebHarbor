@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Search: {{ q }} | Fandom{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Search results</h1>
+  <form method="get" action="{{ url_for('search_global') }}" style="background: #fff; padding: 14px; border-radius: 6px; display: flex; gap: 8px; margin-bottom: 18px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search Fandom..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    <select name="wiki" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <option value="">All wikis</option>
+      {% for w in WIKIS %}
+        <option value="{{ w.slug }}" {% if wiki_slug == w.slug %}selected{% endif %}>{{ w.slug }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">Search</button>
+  </form>
+
+  {% if q %}
+    <p style="color: #555;">{{ results | length }} results for <strong>"{{ q }}"</strong>
+      {% if wiki_slug %}in <strong>{{ wiki_slug }}</strong>{% endif %}</p>
+  {% endif %}
+
+  <div class="trending-list">
+    {% for a in results %}
+      <div class="trending-item">
+        <div class="ti-wiki">{{ a.wiki.slug }}</div>
+        <h4><a href="{{ url_for('article_view', wiki_slug=a.wiki.slug, title=a.slug) }}">{{ a.title }}</a></h4>
+        <div class="ti-meta">{{ a.summary[:160] }}{{ '...' if a.summary|length > 160 else '' }}</div>
+      </div>
+    {% else %}
+      {% if q %}<p style="color: #888;">No results. Try different terms or remove the wiki filter.</p>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

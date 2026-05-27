@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}All pages &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>All pages</h1>
+  <p style="color: #888;">{{ articles | length }} mainspace pages on {{ wiki.name }}.</p>
+
+  <div class="trending-list">
+    {% for a in articles %}
+      <div class="trending-item">
+        <h4 style="margin: 0;"><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></h4>
+        <div class="ti-meta">{{ '{:,}'.format(a.view_count) }} views &middot; updated {{ a.updated_at | ago }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

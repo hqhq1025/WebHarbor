@@ -1,0 +1,21 @@
+<aside class="infobox">
+  {% if article.image %}
+    <div class="ib-image" style="background-image: url('{{ url_for('static', filename='images/' + article.image) }}');"></div>
+  {% endif %}
+  <div class="ib-title">{{ article.title }}</div>
+  <table>
+    {% set ib = article.infobox %}
+    {% for k, v in ib.items() %}
+      <tr>
+        <td class="k">{{ k.replace('_', ' ').title() }}</td>
+        <td class="v">
+          {% if v is iterable and v is not string %}
+            {{ v | join(', ') }}
+          {% else %}
+            {{ v }}
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</aside>

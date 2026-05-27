@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Recent changes &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Recent changes</h1>
+  <p style="color: #888;">Latest 200 edits on {{ wiki.name }}.</p>
+
+  <form method="get" class="filter-bar">
+    <label>Namespace
+      <select name="namespace">
+        <option value="">All</option>
+        <option value="Main" {% if namespace == 'Main' %}selected{% endif %}>Main (articles)</option>
+        <option value="Talk" {% if namespace == 'Talk' %}selected{% endif %}>Talk</option>
+        <option value="User" {% if namespace == 'User' %}selected{% endif %}>User</option>
+        <option value="Category" {% if namespace == 'Category' %}selected{% endif %}>Category</option>
+      </select>
+    </label>
+    <label><input type="checkbox" name="hide_minor" {% if hide_minor %}checked{% endif %}> Hide minor edits</label>
+    <label><input type="checkbox" name="hide_bot" {% if hide_bot %}checked{% endif %}> Hide bot edits</label>
+    <button class="btn" type="submit">Apply</button>
+  </form>
+
+  <div class="changes-feed">
+    {% for r in revisions %}{% include "partials/changes_row.html" %}{% endfor %}
+    {% if not revisions %}<div style="padding: 24px; text-align: center; color: #888;">No matching changes.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

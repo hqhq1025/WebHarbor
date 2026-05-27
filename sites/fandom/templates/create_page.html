@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create a page &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <h1>Create a new page</h1>
+  <p style="color: #888;">A new article will be created on <strong>{{ wiki.name }}</strong>. You'll then be taken to the editor.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <label for="title">Page title</label>
+      <input type="text" id="title" name="title" required placeholder="e.g. Tony Stark / Phase 5">
+    </div>
+    <button class="btn" type="submit">Continue to editor</button>
+  </form>
+</div>
+{% endblock %}

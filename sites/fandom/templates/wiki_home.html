@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<section class="wikihome-hero" style="background: linear-gradient(120deg, {{ wiki.accent }} 0%, #1a0033 100%);">
+  <div class="container">
+    <h1>{{ wiki.name }}</h1>
+    <p>{{ wiki.description }}</p>
+    <div class="wikihome-stats">
+      <div><strong>{{ wiki.article_count }}</strong> articles</div>
+      <div><strong>{{ wiki.page_count }}</strong> pages</div>
+      <div><strong>{{ wiki.discussion_count }}</strong> discussions</div>
+      <div><strong>{{ '{:,}'.format(wiki.members_count) }}</strong> members</div>
+    </div>
+  </div>
+</section>
+
+<div class="container wikihome-grid">
+  <div>
+    {% if featured %}
+    <article class="featured-article">
+      <div class="fa-label">Featured Article</div>
+      <h2><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=featured.slug) }}">{{ featured.title }}</a></h2>
+      <p>{{ featured.summary }}</p>
+      <p><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=featured.slug) }}">Read full article &raquo;</a></p>
+    </article>
+    {% endif %}
+
+    <section style="margin-top: 28px;">
+      <h2 style="font-size: 18px; border-bottom: 2px solid {{ wiki.accent }}; padding-bottom: 4px; display: inline-block;">Recent changes</h2>
+      <div class="changes-feed">
+        {% for r in recent %}{% include "partials/changes_row.html" %}{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <div class="sidebar-card">
+      <h3>Popular pages</h3>
+      <ul>
+        {% for a in popular %}
+          <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a>
+              <small style="color: #888;">({{ '{:,}'.format(a.view_count) }})</small></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if poll %}
+    <div class="sidebar-card">
+      <h3>Community poll</h3>
+      <p style="font-weight: 600; margin-top: 0;">{{ poll.question }}</p>
+      <form method="post" action="{{ url_for('poll_vote', wiki_slug=wiki.slug, poll_id=poll.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% set total = poll_results.values() | sum %}
+        {% for opt in poll.options %}
+          {% set cnt = poll_results.get(loop.index0, 0) %}
+          {% set pct = (cnt * 100 // total) if total else 0 %}
+          <label style="display: block; margin: 6px 0; font-size: 13px;">
+            <input type="radio" name="choice" value="{{ loop.index0 }}"> {{ opt }}
+            <span style="float: right; color: #888;">{{ cnt }} ({{ pct }}%)</span>
+          </label>
+        {% endfor %}
+        <button class="btn" type="submit" style="margin-top: 8px;">Vote</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-card">
+      <h3>Top categories</h3>
+      <ul>
+        {% for c in cats %}
+          <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}
