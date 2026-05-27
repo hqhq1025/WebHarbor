@@ -662,19 +662,41 @@ def _generate_procedural_image(filename: str, width: int = 800, height: int = 60
     return out
 
 
+_DISK_IMAGE_DIR = os.path.join(BASE_DIR, "static", "images")
+_DISK_IMAGE_MIME = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
+}
+
+
 @app.route("/static/images/<path:filename>")
 def procedural_static_image(filename):
-    """Serve a deterministic JPEG for any /static/images/<filename> reference.
+    """Serve real binaries from disk when present; fall back to procedural JPEG.
 
-    Real binaries on disk (if any are ever added) take precedence because the
-    default static handler is registered first; this route is a fallback that
-    Flask only reaches when the file is missing.
+    Flask's default static handler doesn't match this URL because the default
+    rule (``/static/<filename>`` with the ``string`` converter) refuses paths
+    containing slashes. So we explicitly check the on-disk file ourselves and
+    only synthesize a placeholder if the asset is missing.
     """
     # Strict allowlist: only common image extensions.
     if not re.search(r"\.(jpg|jpeg|png|gif|webp)$", filename, re.I):
         abort(404)
-    # 800×600 hero/featured-style by default; smaller for File:* uploads where
-    # the model declares w=800 h=600 already.
+
+    # Disk-first: serve real image if it exists.
+    disk_path = os.path.normpath(os.path.join(_DISK_IMAGE_DIR, filename))
+    if disk_path.startswith(_DISK_IMAGE_DIR + os.sep) or disk_path == _DISK_IMAGE_DIR:
+        if os.path.isfile(disk_path) and os.path.getsize(disk_path) > 0:
+            ext = os.path.splitext(disk_path)[1].lower()
+            mime = _DISK_IMAGE_MIME.get(ext, "application/octet-stream")
+            with open(disk_path, "rb") as fh:
+                body = fh.read()
+            resp = make_response(body)
+            resp.headers["Content-Type"] = mime
+            resp.headers["Content-Length"] = str(len(body))
+            resp.headers["Cache-Control"] = "public, max-age=86400"
+            return resp
+
+    # Fallback: 800×600 hero/featured-style placeholder.
     body = _generate_procedural_image(filename, 800, 600)
     resp = make_response(body)
     resp.headers["Content-Type"] = "image/jpeg"
