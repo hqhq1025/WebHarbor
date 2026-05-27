@@ -24,8 +24,11 @@ from pathlib import Path
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, jsonify,
-    session, abort
+    session, abort, send_file, make_response
 )
+from io import BytesIO
+from hashlib import md5 as _md5
+from PIL import Image, ImageDraw, ImageFont
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -519,6 +522,168 @@ def inject_globals():
 
 
 # =======================================================================
+# Procedural image generator
+# =======================================================================
+#
+# We reference ~350 image filenames across mcu / starwars / genshin (character
+# headshots, file uploads, hero banners, infobox images, posters). Rather than
+# ship the binaries on the Hugging Face dataset, we deterministically render a
+# branded placeholder per filename so every <img src="/static/images/..."> in
+# the rendered HTML actually resolves to a 200. The output is a JPEG with a
+# wiki-tinted gradient, the filename's "pretty" label, and a hash-derived sub-
+# title — distinct enough that a vision-language agent can OCR the label.
+#
+# This sits in a Flask route, NOT in static files, so the byte-identical reset
+# invariant (instance_seed → instance) is untouched.
+
+_IMG_CACHE: dict = {}
+
+_WIKI_PALETTE = {
+    "mcu":      ("#e23636", "#1b1f3a"),
+    "marvel":   ("#e23636", "#1b1f3a"),
+    "sw":       ("#ffe81f", "#0d0d0d"),
+    "starwars": ("#ffe81f", "#0d0d0d"),
+    "gs":       ("#e8b04c", "#1c2d44"),
+    "genshin":  ("#e8b04c", "#1c2d44"),
+    "fandom":   ("#fa005a", "#0e0e23"),
+}
+
+
+def _pretty_label_from_filename(name: str) -> str:
+    base = name.rsplit(".", 1)[0]
+    # Drop optional wiki / file prefixes for readability
+    for prefix in ("mcu_file_", "starwars_file_", "genshin_file_",
+                   "mcu_", "sw_", "gs_", "fandom_"):
+        if base.startswith(prefix):
+            base = base[len(prefix):]
+            break
+    return base.replace("_", " ").replace("-", " ").strip().title() or "Fandom"
+
+
+def _palette_for_filename(name: str):
+    low = name.lower()
+    for k, palette in _WIKI_PALETTE.items():
+        if low.startswith(k + "_"):
+            return palette
+    return _WIKI_PALETTE["fandom"]
+
+
+def _gradient_image(w: int, h: int, c1: str, c2: str) -> Image.Image:
+    """Vertical gradient between hex colors c1 (top) and c2 (bottom)."""
+    def hx(c):
+        c = c.lstrip("#")
+        return tuple(int(c[i:i+2], 16) for i in (0, 2, 4))
+    a, b = hx(c1), hx(c2)
+    img = Image.new("RGB", (w, h), a)
+    px = img.load()
+    for y in range(h):
+        t = y / max(1, h - 1)
+        r = int(a[0] + (b[0] - a[0]) * t)
+        g = int(a[1] + (b[1] - a[1]) * t)
+        bl = int(a[2] + (b[2] - a[2]) * t)
+        for x in range(w):
+            px[x, y] = (r, g, bl)
+    return img
+
+
+def _generate_procedural_image(filename: str, width: int = 800, height: int = 600) -> bytes:
+    """Deterministic JPEG bytes for a fandom mirror image filename."""
+    key = (filename, width, height)
+    if key in _IMG_CACHE:
+        return _IMG_CACHE[key]
+
+    c1, c2 = _palette_for_filename(filename)
+    digest = _md5(filename.encode("utf-8")).hexdigest()
+    hue_seed = int(digest[:6], 16)
+
+    img = _gradient_image(width, height, c1, c2)
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    # Decorative circles seeded by filename hash so each image is visually unique.
+    for i in range(6):
+        ox = (hue_seed >> (i * 3)) & 0xff
+        oy = (hue_seed >> (i * 3 + 8)) & 0xff
+        rr = 60 + ((hue_seed >> (i * 5)) & 0x7f)
+        cx = (ox * width) // 256
+        cy = (oy * height) // 256
+        col = ((hue_seed >> (i * 7)) & 0xff,
+               (hue_seed >> (i * 11)) & 0xff,
+               (hue_seed >> (i * 13)) & 0xff,
+               48)
+        draw.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=col)
+
+    label = _pretty_label_from_filename(filename)
+    sub_hash = digest[:8].upper()
+
+    # Center label box.
+    box_h = max(60, height // 5)
+    draw.rectangle([0, height // 2 - box_h // 2, width,
+                    height // 2 + box_h // 2], fill=(0, 0, 0, 140))
+
+    # Try a real TTF if available; fall back to default bitmap.
+    title_font = None
+    sub_font = None
+    for cand in (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ):
+        if os.path.exists(cand):
+            try:
+                title_font = ImageFont.truetype(cand, max(18, width // 22))
+                sub_font = ImageFont.truetype(cand.replace("-Bold", ""), max(12, width // 40))
+            except Exception:
+                title_font = None
+            break
+    if title_font is None:
+        title_font = ImageFont.load_default()
+        sub_font = ImageFont.load_default()
+
+    # Draw centered text. Pillow ≥10 uses textbbox.
+    def _centered_text(y_center, txt, font, fill):
+        bbox = draw.textbbox((0, 0), txt, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        draw.text(((width - tw) // 2, y_center - th // 2), txt, fill=fill, font=font)
+
+    _centered_text(height // 2 - 14, label[:48], title_font, "#ffffff")
+    _centered_text(height // 2 + 24, f"{sub_hash}  ·  Fandom mirror",
+                   sub_font, "#dddddd")
+
+    # Bottom-left filename strip (so OCR can recover the slug if needed).
+    fn_label = filename.rsplit("/", 1)[-1]
+    draw.rectangle([0, height - 32, width, height], fill=(0, 0, 0, 160))
+    draw.text((10, height - 26), fn_label[:80], fill="#ffffff", font=sub_font)
+
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=82, optimize=True)
+    out = buf.getvalue()
+    if len(_IMG_CACHE) < 1024:  # bounded in-memory cache
+        _IMG_CACHE[key] = out
+    return out
+
+
+@app.route("/static/images/<path:filename>")
+def procedural_static_image(filename):
+    """Serve a deterministic JPEG for any /static/images/<filename> reference.
+
+    Real binaries on disk (if any are ever added) take precedence because the
+    default static handler is registered first; this route is a fallback that
+    Flask only reaches when the file is missing.
+    """
+    # Strict allowlist: only common image extensions.
+    if not re.search(r"\.(jpg|jpeg|png|gif|webp)$", filename, re.I):
+        abort(404)
+    # 800×600 hero/featured-style by default; smaller for File:* uploads where
+    # the model declares w=800 h=600 already.
+    body = _generate_procedural_image(filename, 800, 600)
+    resp = make_response(body)
+    resp.headers["Content-Type"] = "image/jpeg"
+    resp.headers["Content-Length"] = str(len(body))
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+
+# =======================================================================
 # ROUTES — hub & auth
 # =======================================================================
 
@@ -658,9 +823,14 @@ def wiki_home(wiki_slug):
     popular = (Article.query.filter_by(wiki_id=w.id)
                .order_by(desc(Article.view_count)).limit(8).all())
     cats = Category.query.filter_by(wiki_id=w.id, parent_slug="").limit(12).all()
+    is_subscribed = False
+    if current_user.is_authenticated:
+        is_subscribed = WikiSubscription.query.filter_by(
+            user_id=current_user.id, wiki_id=w.id).first() is not None
     return render_template("wiki_home.html", wiki=w, featured=featured,
                            recent=recent, poll=poll, poll_results=poll_results,
-                           popular=popular, cats=cats)
+                           popular=popular, cats=cats,
+                           is_subscribed=is_subscribed)
 
 
 @app.route("/wiki/<wiki_slug>/wiki/<path:title>")

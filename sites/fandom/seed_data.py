@@ -63,7 +63,7 @@ WIKI_DEFS = [
             "open-world action RPG, with full coverage of playable characters, "
             "weapons, regions, quests, and events."
         ),
-        featured_article_slug="Diluc",
+        featured_article_slug="Diluc_Ragnvindr",
         article_count=62,
         page_count=210,
         discussion_count=51,
