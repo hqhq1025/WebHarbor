@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ drug_a.generic_name|capitalize }} vs {{ drug_b.generic_name|capitalize }} - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>{{ drug_a.generic_name|capitalize }} vs {{ drug_b.generic_name|capitalize }}</span></nav>
+<h1>{{ drug_a.generic_name|capitalize }} vs {{ drug_b.generic_name|capitalize }}</h1>
+<svg width="100%" height="80" viewBox="0 0 800 80" aria-label="Comparison hero" class="comparison-hero"><defs><linearGradient id="ch1" x1="0" x2="1"><stop offset="0" stop-color="#cfe6ff"/><stop offset="0.5" stop-color="#fff"/><stop offset="1" stop-color="#ffd9d9"/></linearGradient></defs><rect width="800" height="80" fill="url(#ch1)"/><text x="20" y="50" font-size="26" fill="#1c5599" font-family="Georgia">{{ drug_a.generic_name|capitalize }} vs {{ drug_b.generic_name|capitalize }}</text></svg>
+<table class="comparison-table">
+  <thead><tr><th></th><th>{{ drug_a.generic_name|capitalize }}</th><th>{{ drug_b.generic_name|capitalize }}</th></tr></thead>
+  <tbody>
+    <tr><th>Drug class</th><td>{{ drug_a.drug_class.name if drug_a.drug_class else '—' }}</td><td>{{ drug_b.drug_class.name if drug_b.drug_class else '—' }}</td></tr>
+    <tr><th>Brand names</th><td>{{ drug_a.brand_names|join(', ') if drug_a.brand_names else '—' }}</td><td>{{ drug_b.brand_names|join(', ') if drug_b.brand_names else '—' }}</td></tr>
+    <tr><th>Availability</th><td>{{ drug_a.availability }}</td><td>{{ drug_b.availability }}</td></tr>
+    <tr><th>CSA schedule</th><td>{{ drug_a.csa_schedule }}</td><td>{{ drug_b.csa_schedule }}</td></tr>
+    <tr><th>Pregnancy risk</th><td>{{ drug_a.pregnancy_risk }}</td><td>{{ drug_b.pregnancy_risk }}</td></tr>
+    <tr><th>Average rating</th><td>{{ '%.1f'|format(drug_a.avg_rating or 0) }} / 10 ({{ drug_a.review_count or 0 }} reviews)</td><td>{{ '%.1f'|format(drug_b.avg_rating or 0) }} / 10 ({{ drug_b.review_count or 0 }} reviews)</td></tr>
+  </tbody>
+</table>
+<form method="post" action="{{ url_for('comparison_save') }}" class="comparison-save">
+  <input type="hidden" name="drug_a_slug" value="{{ drug_a.slug }}">
+  <input type="hidden" name="drug_b_slug" value="{{ drug_b.slug }}">
+  <label>Add a note <input type="text" name="note" maxlength="240" placeholder="e.g. discussed with my doctor"></label>
+  <button type="submit" class="btn btn-primary">Save comparison</button>
+</form>
+{% endblock %}

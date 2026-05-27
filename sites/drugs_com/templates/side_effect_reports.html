@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Community Side Effect Reports - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Community Side Effect Reports</span></nav>
+<h1>Community side-effect reports</h1>
+<p>{{ reports|length }} recent report(s).</p>
+<ul class="reports-list">
+  {% for r in reports %}
+    <li class="reports-row">
+      <span class="reports-severity reports-{{ r.severity }}">{{ r.severity }}</span>
+      <div>
+        <a href="{{ url_for('drug_detail', slug=r.drug.slug if r.drug else '') }}"><strong>{{ r.drug.generic_name if r.drug else '—' }}</strong></a> &mdash; <span class="muted">by {{ r.user.username if r.user else 'anon' }} on {{ r.created_at.strftime('%b %d, %Y') if r.created_at else '' }}</span>
+        <p>{{ r.body }}</p>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

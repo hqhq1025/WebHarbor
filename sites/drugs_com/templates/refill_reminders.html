@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Refill Reminders - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('myaccount_hub') }}">My Account</a> &rsaquo; <span>Refill Reminders</span></nav>
+<h1>Refill Reminders</h1>
+<p><a class="btn btn-primary" href="{{ url_for('refill_reminder_new') }}">+ Add a refill reminder</a></p>
+<table class="refill-table">
+  <thead><tr><th>Medication</th><th>Frequency</th><th>Days supply</th><th>Next refill</th><th>Pharmacy</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for r in reminders %}
+      <tr>
+        <td><a href="{{ url_for('drug_detail', slug=r.drug.slug if r.drug else '') }}">{{ r.drug.generic_name if r.drug else '—' }}</a></td>
+        <td>{{ r.frequency }}</td>
+        <td>{{ r.days_supply }}</td>
+        <td>{{ r.next_refill_at.strftime('%b %d, %Y') if r.next_refill_at else '—' }}</td>
+        <td>{{ r.pharmacy_id or '—' }}</td>
+        <td>
+          <a class="btn btn-link" href="{{ url_for('refill_reminder_edit', rid=r.id) }}">Edit</a>
+          <form style="display:inline" action="{{ url_for('refill_reminder_delete', rid=r.id) }}" method="post" onsubmit="return confirm('Delete this reminder?');">
+            <button type="submit" class="btn btn-link btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">No refill reminders set. Add one to get email alerts.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

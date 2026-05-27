@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ recall.drug_name }} Recall - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('recalls_index') }}">Recalls</a> &rsaquo; <span>{{ recall.drug_name }}</span></nav>
+<h1>{{ recall.drug_name }} &mdash; {{ recall.severity }} recall</h1>
+<svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true" class="recall-icon"><circle cx="60" cy="60" r="56" fill="#ffd9d9" stroke="#9c2a2a" stroke-width="3"/><text x="60" y="74" font-size="46" text-anchor="middle" fill="#9c2a2a" font-family="Georgia">!</text></svg>
+<dl class="recall-meta">
+  <dt>Lot number</dt><dd>{{ recall.lot_number }}</dd>
+  <dt>Severity</dt><dd>{{ recall.severity }}</dd>
+  <dt>Recall date</dt><dd>{{ recall.recalled_at.strftime('%B %d, %Y') if recall.recalled_at else '—' }}</dd>
+</dl>
+<h2>Reason</h2>
+<p>{{ recall.reason }}</p>
+<h2>What patients should do</h2>
+<ul>
+  <li>Check the lot number on your bottle against the affected lot listed above.</li>
+  <li>If your lot matches, contact your pharmacist for a replacement.</li>
+  <li>Do not stop a maintenance medication without consulting your prescriber.</li>
+</ul>
+<p><a href="{{ url_for('recalls_index') }}">&laquo; Back to all recalls</a></p>
+{% endblock %}

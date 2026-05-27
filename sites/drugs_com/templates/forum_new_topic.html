@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}New Forum Topic - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <a href="{{ url_for('forum_index') }}">Forum</a> &rsaquo; <span>New topic</span></nav>
+<h1>Start a new topic</h1>
+{% if error %}<p class="flash flash-error">Category, title, and body are required.</p>{% endif %}
+<form method="post" class="forum-new-form">
+  <label>Category
+    <select name="category_id" required>
+      <option value="">-- pick a category --</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if request.args.get('cat') == c.slug %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Title <input type="text" name="title" maxlength="200" required></label>
+  <label>Body <textarea name="body" rows="6" required></textarea></label>
+  <button type="submit" class="btn btn-primary">Post topic</button>
+</form>
+{% endblock %}

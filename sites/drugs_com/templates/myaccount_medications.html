@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}My Medications - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('myaccount_hub') }}">My Account</a> &rsaquo; <span>My Medications</span></nav>
+<h1>My Medications</h1>
+<p class="muted">Saved drugs from your <a href="{{ url_for('my_med_list') }}">My Med List</a>. {{ saved|length }} medication(s).</p>
+<ul class="myacct-meds">
+  {% for s in saved %}
+    <li class="myacct-med-row">
+      <svg width="56" height="40" viewBox="0 0 56 40" aria-hidden="true"><ellipse cx="28" cy="20" rx="24" ry="14" fill="#cfe6ff" stroke="#4a86c9" stroke-width="2"/><line x1="28" y1="6" x2="28" y2="34" stroke="#4a86c9" stroke-width="2"/></svg>
+      <div>
+        <a href="{{ url_for('drug_detail', slug=s.drug.slug) }}"><strong>{{ s.drug.generic_name }}</strong></a>
+        <p class="muted">Added {{ s.created_at.strftime('%b %d, %Y') if s.created_at else '—' }}</p>
+      </div>
+      <form action="{{ url_for('myaccount_med_remove', saved_id=s.id) }}" method="post" onsubmit="return confirm('Remove this medication?');">
+        <button type="submit" class="btn btn-link btn-danger">Remove</button>
+      </form>
+    </li>
+  {% else %}
+    <li class="muted">No saved medications yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Report a Side Effect - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Report a Side Effect</span></nav>
+<h1>Report a side effect</h1>
+{% if error %}<p class="flash flash-error">Please pick a drug and describe the side effect.</p>{% endif %}
+<p>Help other patients by sharing side effects you've experienced. Reports are de-identified.</p>
+<form method="post" class="report-form">
+  <label>Drug
+    <select name="drug_id" required>
+      <option value="">-- pick a medication --</option>
+      {% for d in drugs[:200] %}<option value="{{ d.id }}">{{ d.generic_name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Severity
+    <select name="severity">
+      <option value="mild">Mild &mdash; bothersome but tolerable</option>
+      <option value="moderate">Moderate &mdash; affecting daily activities</option>
+      <option value="severe">Severe &mdash; required medical attention</option>
+    </select>
+  </label>
+  <label>Describe the side effect <textarea name="body" rows="5" maxlength="2000" required></textarea></label>
+  <button type="submit" class="btn btn-primary">Submit report</button>
+</form>
+{% endblock %}

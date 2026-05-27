@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} Dosage Calculator - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('dosage_calculator_index') }}">Dosage Calculator</a> &rsaquo; <span>{{ drug.generic_name|capitalize }}</span></nav>
+<h1>{{ drug.generic_name|capitalize }} dosage calculator</h1>
+<form method="post" class="dosage-calc-form">
+  <label>Weight (kg) <input type="number" name="weight_kg" min="1" max="250" step="0.1" required></label>
+  <label>Age (years) <input type="number" name="age_years" min="0" max="120" required></label>
+  <label>Indication
+    <select name="indication">
+      <option value="general">General use</option>
+      <option value="pain">Pain</option>
+      <option value="fever">Fever</option>
+      <option value="infection">Infection</option>
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Calculate</button>
+</form>
+{% if result %}
+  <div class="dosage-calc-result">
+    <h2>Suggested dose</h2>
+    <p><strong>{{ result.mg_per_dose }} mg per dose</strong> &times; {{ result.doses_per_day }} doses/day</p>
+    <p class="muted">Based on weight {{ result.weight_kg }} kg, age {{ result.age_years }}.</p>
+    <form method="post" action="{{ url_for('dosage_calculator_save', slug=drug.slug) }}">
+      <input type="hidden" name="weight_kg" value="{{ result.weight_kg }}">
+      <input type="hidden" name="age_years" value="{{ result.age_years }}">
+      <input type="hidden" name="result_mg" value="{{ result.mg_per_dose }}">
+      <button type="submit" class="btn btn-link">Save to profile</button>
+    </form>
+  </div>
+{% endif %}
+<p class="muted">See full <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} dosage guide</a>.</p>
+{% endblock %}

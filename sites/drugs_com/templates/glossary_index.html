@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Medical Glossary - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Medical Glossary</span></nav>
+<h1>Medical Glossary</h1>
+<p class="page-intro">Browse <strong>{{ terms|length }}</strong> pharmacology and medication terms{% if active_letter %} starting with <strong>{{ active_letter }}</strong>{% endif %}.</p>
+<div class="az-strip glossary-az">
+  {% for L in letters %}
+    <a href="{{ url_for('glossary_index', letter=L) }}" class="az-strip-link {% if L == active_letter %}is-active{% endif %}">{{ L }}</a>
+  {% endfor %}
+  <a href="{{ url_for('glossary_index') }}" class="az-strip-link">All</a>
+</div>
+<svg width="100%" height="80" viewBox="0 0 800 80" aria-label="Glossary hero" class="glossary-hero">
+  <defs><linearGradient id="gh" x1="0" x2="1"><stop offset="0" stop-color="#cfe6ff"/><stop offset="1" stop-color="#e7f5ff"/></linearGradient></defs>
+  <rect width="800" height="80" fill="url(#gh)"/>
+  <text x="20" y="50" font-size="28" font-family="Georgia" fill="#1c5599">Medical Glossary &mdash; A&ndash;Z</text>
+</svg>
+<ul class="glossary-list">
+  {% for t in terms %}
+    <li class="glossary-entry">
+      <a class="glossary-term" href="{{ url_for('glossary_term', term=t.slug) }}">{{ t.term }}</a>
+      <p class="glossary-def">{{ t.definition }}</p>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -22,7 +22,7 @@ curl -X POST http://localhost:8209/reset/drugs_com
 docker exec wh-test md5sum \
   /opt/WebSyn/drugs_com/instance/drugs_com.db \
   /opt/WebSyn/drugs_com/instance_seed/drugs_com.db
-# Both hashes must match: bfc94f8ff61fbbd553ae496217588bad
+# Both hashes must match: f4c0012b93fba43b91f551d65d254dfd
 ```
 
 ## Architecture
@@ -69,8 +69,8 @@ Rendered as inline SVGs via the `_pill_svg.html` macro — no external image fil
 ## Seed database
 
 - **Location**: `instance_seed/drugs_com.db` (gitignored — sourced from HuggingFace)
-- **MD5**: `bfc94f8ff61fbbd553ae496217588bad`
-- **Contents**: 251 drugs · 748 reviews · 76 interactions · 103 pill images · 68 conditions · 80 news articles · 12 users
+- **MD5**: `f4c0012b93fba43b91f551d65d254dfd`
+- **Contents**: 1050 drugs · 892 reviews · 685 interactions · 103 pill images · 205 conditions · 80 news articles · 12 users · 102 glossary terms · 10 forum categories · 51 forum topics · 153 forum posts · 30 health-news articles · 25 drug recalls · 20 pharmacies · 5 refill reminders · 15 side-effect reports
 
 All `seed_*()` functions gate on an already-populated DB (early-return if rows exist) so `seed_database()` is idempotent and the reset invariant holds.
 
@@ -89,16 +89,28 @@ All `seed_*()` functions gate on an already-populated DB (early-return if rows e
 
 ## Benchmark tasks
 
-21 tasks in `tasks.jsonl` (`Drugs.com--0` through `Drugs.com--20`), covering:
-- Drug detail lookup (drug class, brand names, availability, CSA schedule)
-- Drug interaction checker (2-drug and 3-drug, severity)
-- Pill identifier (by imprint, shape, color)
-- Drugs A-Z browsing
-- Drug class navigation (Statins, Benzodiazepines, Fluoroquinolones)
-- Condition browsing (diabetes, hypertension)
-- News reading (category filter, latest article)
-- User reviews and ratings
-- Authenticated actions (My Med List — read and write)
+2298 tasks in `tasks.jsonl`: 21 original `Drugs.com--<N>` tasks plus 2277
+deepening tasks with ids of the form `Drugs--gui_<page>_<NNN>`. Surfaces
+covered: drug detail / pregnancy / breastfeeding / dosage / side-effects /
+warnings / interactions / FAQ / reviews / monograph / images / price guide,
+condition detail + condition-drugs, drug-class browse, glossary, forum
+(browse + topic + reply + delete), refill reminders (CRUD), drug recalls,
+pharmacy finder, health news, dosage calculator, drug comparison, multi-step
+pill identifier wizard, search + autocomplete, and authenticated flows
+(myaccount hub / medications / refill reminder / review / forum post /
+contact pharmacist / report side effect / save comparison).
+
+## Deepening module
+
+`_deepen_routes.py` registers 12 new model classes and ~40 new routes
+(22 of them POST) on top of the base app. `_deepen.py` holds all literal
+seed data (glossary terms, forum topics, health news, recalls, pharmacies,
+side-effect reports, refill reminder presets).
+
+`seed_deepening()` is idempotent: each table is gated on `count() == 0`.
+The post-seed `normalize_seed_db_layout()` pass runs **only** when at least
+one row was added this boot — calling it on a stable DB would repaginate
+via VACUUM and break the byte-id reset invariant.
 
 ## HuggingFace assets
 

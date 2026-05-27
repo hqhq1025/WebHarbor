@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Drug Recalls and Safety Alerts - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Drug Recalls</span></nav>
+<svg width="100%" height="80" viewBox="0 0 800 80" aria-label="Recalls hero" class="recalls-hero"><defs><linearGradient id="rh" x1="0" x2="1"><stop offset="0" stop-color="#ffd9d9"/><stop offset="1" stop-color="#ff9a9a"/></linearGradient></defs><rect width="800" height="80" fill="url(#rh)"/><text x="20" y="50" font-size="28" font-family="Georgia" fill="#9c2a2a">Drug Recalls &amp; Safety Alerts</text></svg>
+<h1>Recalls and safety alerts</h1>
+<div class="recalls-filter">
+  <strong>Filter by severity:</strong>
+  <a href="{{ url_for('recalls_index') }}" class="{% if not active_severity %}is-active{% endif %}">All</a>
+  <a href="{{ url_for('recalls_index', severity='Class I') }}" class="{% if active_severity == 'Class I' %}is-active{% endif %}">Class I</a>
+  <a href="{{ url_for('recalls_index', severity='Class II') }}" class="{% if active_severity == 'Class II' %}is-active{% endif %}">Class II</a>
+  <a href="{{ url_for('recalls_index', severity='Class III') }}" class="{% if active_severity == 'Class III' %}is-active{% endif %}">Class III</a>
+</div>
+<ul class="recalls-list">
+  {% for r in recalls %}
+    <li class="recalls-row">
+      <span class="recalls-badge recalls-{{ (r.severity|lower)|replace(' ', '-') }}">{{ r.severity }}</span>
+      <div>
+        <a href="{{ url_for('recall_detail', slug=r.slug) }}"><strong>{{ r.drug_name }}</strong></a> &mdash; lot {{ r.lot_number }}
+        <p class="muted">{{ r.recalled_at.strftime('%b %d, %Y') if r.recalled_at else '' }} &mdash; {{ r.reason }}</p>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+<aside class="recalls-subscribe">
+  <h2>Get recall alerts by email</h2>
+  <form action="{{ url_for('recalls_subscribe') }}" method="post">
+    <label>Email <input type="email" name="email" required></label>
+    <button type="submit" class="btn btn-primary">Subscribe</button>
+  </form>
+</aside>
+{% endblock %}

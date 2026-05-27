@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Pill Identifier Wizard - Step 2 - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> &rsaquo; <span>Wizard - Step 2 of 3</span></nav>
+<h1>Step 2: Pick the shape</h1>
+<p class="muted">Imprint: <strong>{{ imprint or '(none)' }}</strong> &mdash; {{ candidates|length }} candidate pill(s) found.</p>
+<form method="post" action="{{ url_for('pill_id_wizard_step3') }}" class="pill-wiz-form">
+  <input type="hidden" name="imprint" value="{{ imprint }}">
+  <fieldset>
+    <legend>Shape</legend>
+    {% for s in shapes %}
+      <label class="pill-shape-chip"><input type="radio" name="shape" value="{{ s }}" required> {{ s }}</label>
+    {% else %}
+      <label class="pill-shape-chip"><input type="radio" name="shape" value="round" required> Round</label>
+      <label class="pill-shape-chip"><input type="radio" name="shape" value="oval"> Oval</label>
+      <label class="pill-shape-chip"><input type="radio" name="shape" value="capsule"> Capsule</label>
+    {% endfor %}
+  </fieldset>
+  <button type="submit" class="btn btn-primary">Continue to Step 3</button>
+</form>
+<p class="muted">Step 2 of 3</p>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ term.term }} - Medical Glossary - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <a href="{{ url_for('glossary_index') }}">Glossary</a> &rsaquo; <span>{{ term.term }}</span></nav>
+<svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true" class="glossary-term-icon"><defs><linearGradient id="gt" x1="0" x2="1"><stop offset="0" stop-color="#ffcfd9"/><stop offset="1" stop-color="#e05c8b"/></linearGradient></defs><circle cx="40" cy="40" r="36" fill="url(#gt)"/><text x="40" y="50" font-size="34" text-anchor="middle" fill="#fff" font-family="Georgia">{{ term.term[0] }}</text></svg>
+<h1 class="glossary-term-heading">{{ term.term }}</h1>
+<p class="glossary-term-def">{{ term.definition }}</p>
+<section class="glossary-related">
+  <h2>Related terms</h2>
+  <ul>
+    {% for r in related %}<li><a href="{{ url_for('glossary_term', term=r.slug) }}">{{ r.term }}</a> &mdash; <span class="muted">{{ r.definition[:80] }}{% if r.definition|length > 80 %}&hellip;{% endif %}</span></li>{% endfor %}
+  </ul>
+</section>
+<p><a href="{{ url_for('glossary_index') }}">&laquo; Back to glossary index</a></p>
+{% endblock %}

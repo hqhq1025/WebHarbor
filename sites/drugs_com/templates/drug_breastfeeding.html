@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} and breastfeeding - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo; <span>Breastfeeding</span></nav>
+<h1>{{ drug.generic_name|capitalize }} and breastfeeding</h1>
+<div class="bf-category">
+  <strong>Lactation category:</strong> {{ lactation_category }}
+</div>
+<p>{{ drug.generic_name|capitalize }} is a medication classified for breastfeeding mothers based on its expected transfer to breast milk and effects on the nursing infant.</p>
+<h2>Summary</h2>
+<p>This medication has been studied or evaluated for use during breastfeeding. Discuss with your healthcare provider whether benefits outweigh the risks for your specific situation.</p>
+<h2>What to monitor in the infant</h2>
+<ul>
+  <li>Excessive sedation or lethargy</li>
+  <li>Feeding difficulties or poor weight gain</li>
+  <li>Skin rashes or unusual irritability</li>
+  <li>Any signs of allergic reaction</li>
+</ul>
+<p class="muted">Source equivalents: LactMed / Drugs.com editorial review.</p>
+<p><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">See {{ drug.generic_name|capitalize }} during pregnancy &raquo;</a></p>
+{% endblock %}

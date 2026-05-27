@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Find a Pharmacy Near You - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Pharmacy Finder</span></nav>
+<h1>Find a pharmacy</h1>
+<form class="pharmacy-search" method="get">
+  <label>ZIP <input type="text" name="zip" maxlength="5" value="{{ active_zip }}"></label>
+  <label>Chain
+    <select name="chain">
+      <option value="">All chains</option>
+      {% for c in chains %}<option value="{{ c }}" {% if c == active_chain %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+<p class="muted">{{ pharmacies|length }} pharmacy/pharmacies found.</p>
+<ul class="pharmacy-list">
+  {% for p in pharmacies %}
+    <li class="pharmacy-card">
+      <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#cfe6ff" stroke="#4a86c9" stroke-width="2"/><text x="28" y="35" font-size="22" text-anchor="middle" fill="#1c5599" font-family="Georgia">Rx</text></svg>
+      <div>
+        <a href="{{ url_for('pharmacy_detail', slug=p.slug) }}"><strong>{{ p.name }}</strong></a>
+        <p class="muted">{{ p.chain }} · {{ p.address }}, {{ p.city }}, {{ p.state }} {{ p.zip_code }}</p>
+        <p>Hours: {{ p.hours }} · Phone: {{ p.phone }}</p>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

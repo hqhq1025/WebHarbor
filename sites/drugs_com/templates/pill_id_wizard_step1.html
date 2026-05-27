@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Pill Identifier Wizard - Step 1 - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> &rsaquo; <span>Wizard - Step 1 of 3</span></nav>
+<h1>Identify a pill &mdash; Step 1: Enter the imprint</h1>
+<svg width="160" height="100" viewBox="0 0 160 100" aria-hidden="true" class="pill-wiz-hero"><ellipse cx="80" cy="50" rx="70" ry="32" fill="#fff" stroke="#4a86c9" stroke-width="3"/><line x1="80" y1="18" x2="80" y2="82" stroke="#4a86c9" stroke-width="2"/><text x="40" y="58" font-size="20" fill="#4a86c9" font-family="Georgia">M</text><text x="105" y="58" font-size="20" fill="#4a86c9" font-family="Georgia">500</text></svg>
+<p>Look at the side of the pill that shows letters or numbers. Enter what you see (case-insensitive).</p>
+<form method="post" action="{{ url_for('pill_id_wizard_step2') }}" class="pill-wiz-form">
+  <label>Imprint <input type="text" name="imprint" maxlength="40" required></label>
+  <button type="submit" class="btn btn-primary">Continue to Step 2</button>
+</form>
+<p class="muted">Step 1 of 3: imprint &rarr; shape &rarr; color</p>
+{% endblock %}

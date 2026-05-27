@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Edit Refill Reminder - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('refill_reminders') }}">Refill Reminders</a> &rsaquo; <span>Edit</span></nav>
+<h1>Edit refill reminder &mdash; {{ reminder.drug.generic_name if reminder.drug else '—' }}</h1>
+<form method="post" class="refill-form">
+  <label>Frequency
+    <select name="frequency">
+      {% for f in ['daily','twice-daily','three-times-daily','weekly','as-needed'] %}
+        <option value="{{ f }}" {% if reminder.frequency == f %}selected{% endif %}>{{ f }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Days supply <input type="number" name="days_supply" min="1" max="365" value="{{ reminder.days_supply }}"></label>
+  <label>Days until next refill <input type="number" name="days_until_refill" min="0" max="365" value="14"></label>
+  <label>Pharmacy
+    <select name="pharmacy_id">
+      <option value="">— none —</option>
+      {% for p in pharmacies %}<option value="{{ p.id }}" {% if reminder.pharmacy_id == p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Save changes</button>
+</form>
+{% endblock %}

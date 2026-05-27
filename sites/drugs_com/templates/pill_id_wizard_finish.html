@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Pill Identification Results - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> &rsaquo; <span>Results</span></nav>
+<h1>Pill identification results</h1>
+<p class="muted">You searched: imprint <strong>{{ imprint or '(any)' }}</strong> · shape <strong>{{ shape or '(any)' }}</strong> · color <strong>{{ color or '(any)' }}</strong></p>
+<h2>{{ matched_drugs|length }} possible match(es)</h2>
+<ul class="pill-results-list">
+  {% for d in matched_drugs %}
+    <li class="pill-results-card">
+      <svg width="80" height="60" viewBox="0 0 80 60" aria-hidden="true"><ellipse cx="40" cy="30" rx="34" ry="20" fill="#cfe6ff" stroke="#4a86c9" stroke-width="2"/><line x1="40" y1="10" x2="40" y2="50" stroke="#4a86c9" stroke-width="2"/></svg>
+      <div>
+        <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
+        <p class="muted">{{ d.drug_class.name if d.drug_class else '—' }} · {{ d.availability }}</p>
+      </div>
+    </li>
+  {% else %}
+    <li class="muted">No matches. Try removing the color or shape filter.</li>
+  {% endfor %}
+</ul>
+<p><a href="{{ url_for('pill_id_wizard') }}">&laquo; Start over</a></p>
+{% endblock %}

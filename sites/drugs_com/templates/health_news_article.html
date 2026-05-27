@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('health_news_index') }}">Health News</a> &rsaquo; <span>{{ article.title }}</span></nav>
+<svg width="100%" height="120" viewBox="0 0 800 120" aria-hidden="true" class="hnews-article-hero"><defs><linearGradient id="hah" x1="0" x2="1"><stop offset="0" stop-color="#e7f5ff"/><stop offset="1" stop-color="#cfe6ff"/></linearGradient></defs><rect width="800" height="120" fill="url(#hah)"/><circle cx="80" cy="60" r="40" fill="#4a86c9"/><rect x="140" y="40" width="600" height="14" rx="6" fill="#4a86c9"/><rect x="140" y="64" width="500" height="10" rx="4" fill="#9bcef0"/></svg>
+<h1>{{ article.title }}</h1>
+<p class="muted">{{ article.category|replace('-', ' ')|title }} · Published {{ article.published_at.strftime('%B %d, %Y') if article.published_at else '' }}</p>
+<div class="hnews-body">
+  <p>{{ article.body }}</p>
+</div>
+<aside class="hnews-related">
+  <h2>Related stories</h2>
+  <ul>
+    {% for r in related %}<li><a href="{{ url_for('health_news_article', slug=r.slug) }}">{{ r.title }}</a></li>{% endfor %}
+  </ul>
+</aside>
+{% endblock %}

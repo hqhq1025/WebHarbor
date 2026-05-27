@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}My Drugs.com Account - {{ current_user.username }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>My Account</span></nav>
+<svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true" class="myacct-avatar"><circle cx="60" cy="60" r="56" fill="#cfe6ff"/><text x="60" y="74" font-size="46" text-anchor="middle" fill="#1c5599" font-family="Georgia">{{ current_user.username[:1]|upper }}</text></svg>
+<h1>Welcome, {{ current_user.username }}</h1>
+<nav class="myacct-tabs">
+  <a href="{{ url_for('myaccount_hub') }}" class="active">Overview</a>
+  <a href="{{ url_for('myaccount_medications') }}">My Medications</a>
+  <a href="{{ url_for('refill_reminders') }}">Refill Reminders</a>
+  <a href="{{ url_for('my_reviews') }}">My Reviews</a>
+  <a href="{{ url_for('account_settings') }}">Settings</a>
+</nav>
+<div class="myacct-grid">
+  <section>
+    <h2>Refill reminders ({{ reminders|length }})</h2>
+    <ul>
+      {% for r in reminders %}
+      <li><strong>{{ r.drug.generic_name if r.drug else '—' }}</strong> &mdash; next refill {{ r.next_refill_at.strftime('%b %d, %Y') if r.next_refill_at else '—' }}, {{ r.frequency }}</li>
+      {% else %}<li class="muted">No refill reminders yet. <a href="{{ url_for('refill_reminder_new') }}">Add one</a>.</li>{% endfor %}
+    </ul>
+  </section>
+  <section>
+    <h2>My forum topics</h2>
+    <ul>
+      {% for t in my_topics %}<li><a href="{{ url_for('forum_topic', topic_id=t.id) }}">{{ t.title }}</a> <span class="muted">· {{ t.reply_count }} replies</span></li>{% else %}<li class="muted">You haven't started a forum topic yet.</li>{% endfor %}
+    </ul>
+  </section>
+  <section>
+    <h2>My recent reviews</h2>
+    <ul>
+      {% for r in my_reviews %}<li><a href="{{ url_for('drug_reviews_page', slug=r.drug.slug if r.drug else '') }}">{{ r.drug.generic_name if r.drug else '—' }}</a> &mdash; {{ r.rating }}/10</li>{% else %}<li class="muted">No reviews yet.</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

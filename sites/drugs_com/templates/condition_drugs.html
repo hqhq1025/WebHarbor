@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Drugs for {{ condition.name }} - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('conditions_list') }}">Conditions</a> &rsaquo; <a href="{{ url_for('condition_page', slug=condition.slug) }}">{{ condition.name }}</a> &rsaquo; <span>Drugs used to treat</span></nav>
+<h1>Drugs used to treat {{ condition.name }}</h1>
+<p class="page-intro">{{ total }} medication(s) listed for {{ condition.name }}.</p>
+<table class="condition-drugs-table">
+  <thead><tr><th>Generic</th><th>Brand names</th><th>Class</th><th>Rx/OTC</th><th>Rating</th></tr></thead>
+  <tbody>
+    {% for d in drugs %}
+      <tr>
+        <td><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></td>
+        <td>{{ d.brand_names|join(', ') if d.brand_names else '—' }}</td>
+        <td>{{ d.drug_class.name if d.drug_class else '—' }}</td>
+        <td>{{ d.availability }}</td>
+        <td>{{ '%.1f'|format(d.avg_rating or 0) }} / 10</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

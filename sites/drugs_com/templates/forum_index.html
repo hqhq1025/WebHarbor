@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Drugs.com Community Forum{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Community Forum</span></nav>
+<svg width="100%" height="90" viewBox="0 0 900 90" class="forum-hero" aria-label="Forum hero">
+  <defs><linearGradient id="fh" x1="0" x2="1"><stop offset="0" stop-color="#4a86c9"/><stop offset="1" stop-color="#9bcef0"/></linearGradient></defs>
+  <rect width="900" height="90" fill="url(#fh)"/>
+  <text x="20" y="55" font-size="30" fill="#fff" font-family="Georgia">Community Forum</text>
+</svg>
+<div class="forum-actions">
+  <a class="btn btn-primary" href="{{ url_for('forum_new_topic') }}">Start a new topic</a>
+</div>
+<h1>Browse categories</h1>
+<ul class="forum-category-list">
+  {% for c in categories %}
+    <li class="forum-category-card">
+      <div class="forum-category-icon" aria-hidden="true">
+        <svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="#cfe6ff" stroke="#4a86c9" stroke-width="2"/><text x="28" y="36" font-size="22" text-anchor="middle" fill="#1c5599" font-family="Georgia">{{ c.name[0] }}</text></svg>
+      </div>
+      <div>
+        <h2><a href="{{ url_for('forum_category', slug=c.slug) }}">{{ c.name }}</a></h2>
+        <p>{{ c.description }}</p>
+        <p class="muted">{{ c.topic_count }} topics</p>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+<h2>Recent topics</h2>
+<ul class="forum-topic-list">
+  {% for t in recent_topics %}
+    <li><a href="{{ url_for('forum_topic', topic_id=t.id) }}">{{ t.title }}</a> <span class="muted">in {{ t.category.name if t.category else '—' }} · {{ t.reply_count }} replies · {{ t.view_count }} views</span></li>
+  {% endfor %}
+</ul>
+{% endblock %}

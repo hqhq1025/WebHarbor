@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ pharmacy.name }} - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('pharmacy_finder') }}">Pharmacy Finder</a> &rsaquo; <span>{{ pharmacy.name }}</span></nav>
+<h1>{{ pharmacy.name }}</h1>
+<svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true" class="pharmacy-detail-icon"><circle cx="40" cy="40" r="36" fill="#cfe6ff" stroke="#4a86c9" stroke-width="3"/><text x="40" y="50" font-size="30" text-anchor="middle" fill="#1c5599" font-family="Georgia">Rx</text></svg>
+<dl class="pharmacy-detail-meta">
+  <dt>Chain</dt><dd>{{ pharmacy.chain }}</dd>
+  <dt>Address</dt><dd>{{ pharmacy.address }}, {{ pharmacy.city }}, {{ pharmacy.state }} {{ pharmacy.zip_code }}</dd>
+  <dt>Phone</dt><dd><a href="tel:{{ pharmacy.phone }}">{{ pharmacy.phone }}</a></dd>
+  <dt>Hours</dt><dd>{{ pharmacy.hours }}</dd>
+</dl>
+<p><a class="btn btn-primary" href="{{ url_for('contact_pharmacist') }}">Ask a pharmacist</a></p>
+{% endblock %}

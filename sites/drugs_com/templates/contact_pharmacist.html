@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Ask a Pharmacist - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Ask a Pharmacist</span></nav>
+<h1>Ask a Pharmacist</h1>
+{% if error %}<p class="flash flash-error">Topic and message are required.</p>{% endif %}
+<p>Submit a non-emergency medication question. A licensed pharmacist will reply within 24 hours.</p>
+<form method="post" class="pharm-form">
+  <label>Your name <input type="text" name="name" maxlength="120"></label>
+  <label>Topic
+    <select name="topic" required>
+      <option value="">-- choose a topic --</option>
+      <option value="dosing">Dosing question</option>
+      <option value="interaction">Drug interaction</option>
+      <option value="side-effect">Side effect</option>
+      <option value="otc">OTC product question</option>
+      <option value="pregnancy">Pregnancy / breastfeeding</option>
+      <option value="other">Other</option>
+    </select>
+  </label>
+  <label>Your question <textarea name="body" rows="6" maxlength="2000" required></textarea></label>
+  <button type="submit" class="btn btn-primary">Submit question</button>
+</form>
+{% endblock %}

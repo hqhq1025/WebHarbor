@@ -7149,6 +7149,17 @@ def init_app():
     with app.app_context():
         db.create_all()
         seed_database()
+        # Deepening models / routes / seed registered after main seed.
+        try:
+            from _deepen_routes import register_deepening
+            register_deepening(app, db)
+            db.create_all()  # create deepening tables if absent
+            seed_fn = app.extensions.get("seed_deepening")
+            if seed_fn:
+                seed_fn()
+        except Exception as _e:
+            # Deepening is opt-in; don't break boot if it fails.
+            print(f"[drugs_com] deepening skipped: {_e}")
 
 
 init_app()

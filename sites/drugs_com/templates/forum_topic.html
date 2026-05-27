@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} - Drugs.com Forum{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <a href="{{ url_for('forum_index') }}">Forum</a> &rsaquo; <a href="{{ url_for('forum_category', slug=topic.category.slug if topic.category else 'general') }}">{{ topic.category.name if topic.category else '—' }}</a> &rsaquo; <span>{{ topic.title }}</span></nav>
+<h1>{{ topic.title }}</h1>
+<div class="forum-original-post">
+  <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="#cfe6ff"/><text x="22" y="29" font-size="18" text-anchor="middle" fill="#1c5599" font-family="Georgia">{{ (topic.user.username[:1] if topic.user else 'U')|upper }}</text></svg>
+  <div>
+    <p class="muted">{{ topic.user.username if topic.user else 'anon' }} · {{ topic.created_at.strftime('%b %d, %Y') if topic.created_at else '' }}</p>
+    <p>{{ topic.body }}</p>
+  </div>
+</div>
+<h2>Replies ({{ topic.reply_count or 0 }})</h2>
+<ul class="forum-replies">
+  {% for p in posts %}
+    <li class="forum-reply" id="post-{{ p.id }}">
+      <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" fill="#e2f5e2"/><text x="18" y="23" font-size="14" text-anchor="middle" fill="#2e7a3a" font-family="Georgia">{{ (p.user.username[:1] if p.user else 'U')|upper }}</text></svg>
+      <div>
+        <p class="muted">{{ p.user.username if p.user else 'anon' }} · {{ p.created_at.strftime('%b %d, %Y') if p.created_at else '' }}</p>
+        <p>{{ p.body }}</p>
+        <form class="forum-reply-helpful" action="{{ url_for('forum_post_helpful', post_id=p.id) }}" method="post">
+          <button type="submit" class="btn btn-link">Helpful ({{ p.helpful_count }})</button>
+        </form>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+<form class="forum-reply-form" action="{{ url_for('forum_reply', topic_id=topic.id) }}" method="post">
+  <label for="body"><strong>Add a reply</strong></label>
+  <textarea id="body" name="body" rows="4" required></textarea>
+  <button type="submit" class="btn btn-primary">Post reply</button>
+</form>
+{% if current_user.is_authenticated and topic.user_id == current_user.id %}
+<form class="forum-topic-delete" action="{{ url_for('forum_topic_delete', topic_id=topic.id) }}" method="post" onsubmit="return confirm('Delete this topic?');">
+  <button type="submit" class="btn btn-danger">Delete topic</button>
+</form>
+{% endif %}
+{% endblock %}

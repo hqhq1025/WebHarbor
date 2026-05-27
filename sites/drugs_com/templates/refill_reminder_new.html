@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}New Refill Reminder - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{{ url_for('refill_reminders') }}">Refill Reminders</a> &rsaquo; <span>New</span></nav>
+<h1>Add a refill reminder</h1>
+{% if error %}<p class="flash flash-error">Please select a medication.</p>{% endif %}
+<form method="post" class="refill-form">
+  <label>Medication
+    <select name="drug_id" required>
+      <option value="">-- pick from your med list --</option>
+      {% for d in saved_drugs %}<option value="{{ d.id }}">{{ d.generic_name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Frequency
+    <select name="frequency">
+      <option value="daily">Daily</option>
+      <option value="twice-daily">Twice daily</option>
+      <option value="three-times-daily">Three times daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="as-needed">As needed</option>
+    </select>
+  </label>
+  <label>Days supply <input type="number" name="days_supply" min="1" max="365" value="30"></label>
+  <label>Days until next refill <input type="number" name="days_until_refill" min="0" max="365" value="30"></label>
+  <label>Preferred pharmacy
+    <select name="pharmacy_id">
+      <option value="">-- no preference --</option>
+      {% for p in pharmacies %}<option value="{{ p.id }}">{{ p.name }} ({{ p.city }}, {{ p.state }})</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Save reminder</button>
+</form>
+{% endblock %}
