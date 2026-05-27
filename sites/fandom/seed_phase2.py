@@ -8,8 +8,18 @@ import json
 import os
 import re
 import random
+import hashlib as _hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
+
+
+def _stable_hash(s: str) -> int:
+    """Process-independent replacement for Python's builtin hash().
+
+    Builtin hash() is randomized per interpreter (PYTHONHASHSEED), so using
+    it during seed inserts breaks byte-identical reset across container runs.
+    """
+    return int(_hashlib.md5(s.encode("utf-8")).hexdigest()[:12], 16)
 
 
 BASE_TS = datetime(2026, 5, 1, 12, 0, 0)
@@ -258,7 +268,7 @@ def seed_files():
         w = Wiki.query.filter_by(slug=wiki_slug).first()
         for idx, (label, sub) in enumerate(items):
             fn = f"{wiki_slug}_file_{_slugify_filename(label.lower().replace(' ', '_'))}.jpg"
-            uploader = uploaders[(idx + hash(wiki_slug)) % len(uploaders)]
+            uploader = uploaders[(idx + _stable_hash(wiki_slug)) % len(uploaders)]
             uploaded_at = BASE_TS - timedelta(days=(idx * 7) % 800 + 5)
             f = FileAsset(
                 wiki_id=w.id,
@@ -301,7 +311,7 @@ def seed_extra_users():
         for k in range(4):  # 80 total
             username = f"{name}_{k:03d}"
             color = f"#{random.Random(name + str(k)).randint(0, 0xffffff):06x}"
-            joined = BASE_TS - timedelta(days=200 + (hash(username) % 1500))
+            joined = BASE_TS - timedelta(days=200 + (_stable_hash(username) % 1500))
             u = User(
                 email=f"{username.lower()}@reader.test",
                 username=username,
@@ -311,7 +321,8 @@ def seed_extra_users():
                 joined=joined,
                 home_wiki=["mcu", "starwars", "genshin", ""][k],
             )
-            u.set_password("Reader_Password_2024!")
+            from seed_data import assign_pinned_password
+            assign_pinned_password(u, "Reader_Password_2024!")
             seeds.append(u)
             db.session.add(u)
     db.session.commit()
@@ -690,23 +701,27 @@ def seed_follows_subs_watch():
     for u, slug in home.items():
         w = Wiki.query.filter_by(slug=slug).first()
         arts = Article.query.filter_by(wiki_id=w.id).limit(5).all()
-        for a in arts:
-            db.session.add(WatchItem(user_id=u.id, article_id=a.id))
+        for idx, a in enumerate(arts):
+            db.session.add(WatchItem(user_id=u.id, article_id=a.id,
+                                     since=BASE_TS - timedelta(days=30 + idx)))
     # Dan watches 3 across all wikis
-    for w in Wiki.query.all():
+    for idx, w in enumerate(Wiki.query.all()):
         a = Article.query.filter_by(wiki_id=w.id).first()
         if a:
-            db.session.add(WatchItem(user_id=dan.id, article_id=a.id))
+            db.session.add(WatchItem(user_id=dan.id, article_id=a.id,
+                                     since=BASE_TS - timedelta(days=60 + idx)))
     # Follow graph
-    db.session.add(UserFollow(follower_id=alice.id, followee_id=wikibot.id))
-    db.session.add(UserFollow(follower_id=bob.id, followee_id=wikibot.id))
-    db.session.add(UserFollow(follower_id=carol.id, followee_id=wikibot.id))
-    db.session.add(UserFollow(follower_id=alice.id, followee_id=bob.id))
-    db.session.add(UserFollow(follower_id=dan.id, followee_id=alice.id))
+    _f_ts = BASE_TS - timedelta(days=120)
+    db.session.add(UserFollow(follower_id=alice.id, followee_id=wikibot.id, since=_f_ts))
+    db.session.add(UserFollow(follower_id=bob.id, followee_id=wikibot.id, since=_f_ts - timedelta(days=1)))
+    db.session.add(UserFollow(follower_id=carol.id, followee_id=wikibot.id, since=_f_ts - timedelta(days=2)))
+    db.session.add(UserFollow(follower_id=alice.id, followee_id=bob.id, since=_f_ts - timedelta(days=3)))
+    db.session.add(UserFollow(follower_id=dan.id, followee_id=alice.id, since=_f_ts - timedelta(days=4)))
     # Wiki subs
-    for u, slug in home.items():
+    for idx, (u, slug) in enumerate(home.items()):
         w = Wiki.query.filter_by(slug=slug).first()
-        db.session.add(WikiSubscription(user_id=u.id, wiki_id=w.id))
+        db.session.add(WikiSubscription(user_id=u.id, wiki_id=w.id,
+                                        since=BASE_TS - timedelta(days=200 + idx)))
     db.session.commit()
 
 

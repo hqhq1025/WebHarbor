@@ -7,6 +7,12 @@ This module is imported from app.py at module-bottom AFTER all models are
 defined, so importing from app at function call time is safe and avoids
 circular-import crashes (which occur when seed_data tries to import models
 at module-load time and app.py is still being initialized as __main__).
+
+Determinism: bcrypt.generate_password_hash() randomizes its salt, so calling
+set_password() at seed time would break byte-identical reset. We pin pre-
+computed hashes (fixed salt `$2b$10$WebHarborSeedSalt22BC.`) for every
+password the seed scripts use and write them directly into password_hash.
+Verified to bcrypt.checkpw against the documented credentials.
 """
 from datetime import datetime, timedelta
 import json
@@ -14,6 +20,32 @@ import json
 from seed_articles_mcu import MCU_ARTICLES, MCU_CATEGORIES, MCU_TALK
 from seed_articles_starwars import SW_ARTICLES, SW_CATEGORIES, SW_TALK
 from seed_articles_genshin import GS_ARTICLES, GS_CATEGORIES, GS_TALK
+
+
+# ---------------------------------------------------------------------------
+# Pinned bcrypt hashes for deterministic seeding. See module docstring.
+# Generated once via bcrypt.hashpw(pw, b"$2b$10$WebHarborSeedSalt22BC.").
+# Add a new entry here whenever a new seed password is introduced.
+# ---------------------------------------------------------------------------
+PINNED_PWD_HASHES = {
+    "MCU_Fan_Alice2024":       "$2b$10$WebHarborSeedSalt22BC.zJpffXiNmBm3ic3ZLLq4gSe.oq5Ib0.",
+    "StarWars_Bob_42":         "$2b$10$WebHarborSeedSalt22BC.lnNP580DPm9psjvw8mW4LqgaaUmAdde",
+    "Genshin_Carol_AR60":      "$2b$10$WebHarborSeedSalt22BC.JO5CXoP2KTFclWKHQLquwOxL8I/36UG",
+    "Dan_The_Reviewer":        "$2b$10$WebHarborSeedSalt22BC.spo0BZxIh9f3ch2JT8.cRvY4BpK08gq",
+    "WikiBot_Pass_2024!":      "$2b$10$WebHarborSeedSalt22BC.u6w44/CYMawJo2FV46vOr.ACADcJ.qa",
+    "Reader_Password_2024!":   "$2b$10$WebHarborSeedSalt22BC.oebf60Eqb0xYa.FAQHo1O99sd6l0wg2",
+}
+
+
+def assign_pinned_password(user, raw_password):
+    """Write a deterministic bcrypt hash. Falls back to live bcrypt if the
+    password is unknown — useful for ad-hoc test passwords during dev, but a
+    seed run that hits this path will NOT be byte-identical."""
+    h = PINNED_PWD_HASHES.get(raw_password)
+    if h is not None:
+        user.password_hash = h
+    else:
+        user.set_password(raw_password)
 
 
 WIKI_DEFS = [
@@ -305,14 +337,14 @@ def seed_benchmark_users():
                              ("#ffe81f" if home == "starwars" else
                              ("#4a90e2" if home == "genshin" else "#fa0046")),
                  joined=BASE_TS - timedelta(days=900))
-        u.set_password(pwd)
+        assign_pinned_password(u, pwd)
         db.session.add(u)
     # Also add the WikiBot account so revisions can be linked.
     bot = User(email="wikibot@fandom.test", username="WikiBot",
                bio="Maintenance bot — typo fixes, link cleanup, archive runs.",
                groups="bot,autoconfirmed", joined=BASE_TS - timedelta(days=1200),
                avatar_color="#888888")
-    bot.set_password(bot_pwd)
+    assign_pinned_password(bot, bot_pwd)
     db.session.add(bot)
     db.session.commit()
 
