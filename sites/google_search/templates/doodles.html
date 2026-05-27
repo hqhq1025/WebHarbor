@@ -9,7 +9,7 @@
         {% for d in doodles %}
         <a class="doodle-card" href="{{ url_for('doodle_detail', slug=d.slug) }}">
             {% if d.image_url %}
-            <img src="{{ d.image_url }}" alt="{{ d.title }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ d.image_url }}" alt="{{ d.title }}" onerror="this.style.display='none'">
             {% endif %}
             <div class="body">
                 <div class="title">{{ d.title }}</div>

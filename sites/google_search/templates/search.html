@@ -104,7 +104,7 @@
                 {% if r.result_type == 'featured' %}<div class="result-badge result-badge-featured">Featured snippet</div>{% endif %}
                 <div class="result-site">
                     {% if r.favicon %}
-                    <div class="result-favicon"><img src="{{ r.favicon }}" alt="" width="18" height="18" onerror="this.style.display='none'; this.parentElement.textContent='{{ r.source[0]|upper if r.source else 'G' }}';"></div>
+                    <div class="result-favicon"><img loading="lazy" decoding="async" src="{{ r.favicon }}" alt="" width="18" height="18" onerror="this.style.display='none'; this.parentElement.textContent='{{ r.source[0]|upper if r.source else 'G' }}';"></div>
                     {% else %}
                     <div class="result-favicon">{{ r.source[0]|upper if r.source else 'G' }}</div>
                     {% endif %}
@@ -237,7 +237,7 @@
         <div class="knowledge-panel">
             {% if knowledge.hero_image %}
             <div class="kn-image">
-                <img src="{{ knowledge.hero_image }}" alt="{{ knowledge.name }}"
+                <img loading="lazy" decoding="async" src="{{ knowledge.hero_image }}" alt="{{ knowledge.name }}"
                      onerror="this.parentElement.style.display='none'">
             </div>
             {% endif %}

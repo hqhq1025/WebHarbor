@@ -12,7 +12,7 @@
     <div class="news-item">
         {% if imgs %}
         <div class="news-image" style="width:100px; height:150px;">
-            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
         </div>
         {% endif %}
         <div class="news-text">

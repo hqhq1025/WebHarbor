@@ -18,7 +18,7 @@
         </div>
         {% if imgs %}
         <div class="news-image">
-            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
         </div>
         {% endif %}
     </div>

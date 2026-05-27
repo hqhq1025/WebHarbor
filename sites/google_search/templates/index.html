@@ -39,7 +39,7 @@
     {% if doodle and doodle.image_url %}
     <div class="doodle">
         <a href="{{ url_for('doodle_detail', slug=doodle.slug) }}">
-            <img src="{{ doodle.image_url }}" alt="{{ doodle.title }}"
+            <img loading="lazy" decoding="async" src="{{ doodle.image_url }}" alt="{{ doodle.title }}"
                  onerror="this.style.display='none'">
         </a>
         <div class="doodle-caption">{{ doodle.title }}</div>

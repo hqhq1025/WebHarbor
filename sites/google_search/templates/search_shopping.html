@@ -9,7 +9,7 @@
         {% set imgs = topic.get_images() %}
         {% for r in results %}
         <div class="image-card">
-            <img src="{{ imgs[loop.index0 % imgs|length] if imgs else '' }}" alt="{{ r.title }}"
+            <img loading="lazy" decoding="async" src="{{ imgs[loop.index0 % imgs|length] if imgs else '' }}" alt="{{ r.title }}"
                  onerror="this.style.display='none'">
             <div class="img-caption">
                 <strong>{{ r.title[:40] }}</strong><br>

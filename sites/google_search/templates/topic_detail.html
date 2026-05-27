@@ -30,7 +30,7 @@
     <div class="topic-hero">
         {% if topic.hero_image %}
         <div class="topic-hero-img">
-            <img src="{{ topic.hero_image }}" alt="{{ topic.name }}"
+            <img loading="lazy" decoding="async" src="{{ topic.hero_image }}" alt="{{ topic.name }}"
                  onerror="this.parentElement.style.display='none'">
         </div>
         {% endif %}
@@ -72,7 +72,7 @@
         <h2>Images</h2>
         <div class="topic-gallery">
             {% for img in imgs %}
-            <img src="{{ img }}" alt="{{ topic.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ topic.name }}" onerror="this.style.display='none'">
             {% endfor %}
         </div>
     </div>
@@ -149,7 +149,7 @@
             <a class="topic-related-card" href="{{ url_for('topic_detail', slug=rt.slug) }}">
                 <div class="thumb">
                     {% if rt.hero_image %}
-                    <img src="{{ rt.hero_image }}" alt="{{ rt.name }}" onerror="this.parentElement.innerHTML='{{ rt.name[0] }}'">
+                    <img loading="lazy" decoding="async" src="{{ rt.hero_image }}" alt="{{ rt.name }}" onerror="this.parentElement.innerHTML='{{ rt.name[0] }}'">
                     {% endif %}
                 </div>
                 <div>

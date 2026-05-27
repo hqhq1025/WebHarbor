@@ -13,7 +13,7 @@
     <div class="video-item">
         <a class="video-thumb" href="{{ video_href }}">
             {% if imgs %}
-            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.background='#000'">
+            <img loading="lazy" decoding="async" src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.background='#000'">
             {% endif %}
             <span class="play-icon">{{ loop.index * 3 + 14 }}:{{ '%02d' % ((loop.index * 7) % 60) }}</span>
         </a>

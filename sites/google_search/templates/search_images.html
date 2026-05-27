@@ -22,7 +22,7 @@
     {% if imgs %}
         {% for img, alt in imgs %}
         <a class="image-card" href="{{ url_for('search', q=alt, tbm='images') }}">
-            <img src="{{ img }}" alt="{{ alt }}" onerror="this.parentElement.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ alt }}" onerror="this.parentElement.style.display='none'">
             <div class="img-caption">{{ alt }}</div>
         </a>
         {% endfor %}
