@@ -11,10 +11,27 @@
           <a href="{{ url_for('collection_share', token=collection.share_token) }}">Public link</a>
         </p>
       </div>
-      <form method="post" action="{{ url_for('collection_delete', cid=collection.id) }}">
+      <form method="post" action="{{ url_for('collection_delete', cid=collection.id) }}" id="delete-collection-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn outline tiny" type="submit" onclick="return confirm('Delete this collection?');">Delete collection</button>
+        <button class="btn outline tiny" type="button"
+                data-bs-toggle="modal" data-bs-target="#delete-confirm-modal"
+                onclick="document.getElementById('delete-confirm-modal').style.display='block'">Delete collection</button>
       </form>
+    </div>
+
+    <!-- delete_confirm_modal -->
+    <div id="delete-confirm-modal" class="modal" role="dialog" aria-modal="true"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1050">
+      <div class="modal-dialog" style="background:#fff;max-width:420px;margin:10vh auto;padding:24px;border-radius:8px">
+        <h3 style="margin-top:0">Delete collection?</h3>
+        <p>This will permanently delete <strong>{{ collection.name }}</strong> and remove all saved homes from it.</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn outline" type="button" id="cancel_btn"
+                  onclick="document.getElementById('delete-confirm-modal').style.display='none'">Cancel</button>
+          <button class="btn" type="submit" form="delete-collection-form"
+                  id="confirm_delete_btn">Delete collection</button>
+        </div>
+      </div>
     </div>
 
     {% if listings %}
