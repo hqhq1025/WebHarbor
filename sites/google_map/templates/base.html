@@ -94,6 +94,19 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    {# ---- Persistent semantic site banner: skip-link + brand. Most map UIs
+         rely on the left-rail in `_rail.html` for navigation, but pages
+         without that include (menus, transit-line details, etc.) still
+         need a landmark so screen readers and a11y/SEO probes can locate
+         the site header. The banner is intentionally minimal — 24px high,
+         pinned top-left — so it doesn't compete with the map canvas. #}
+    <header role="banner" class="site-banner"
+            style="position:fixed;top:0;left:0;z-index:60;display:flex;align-items:center;
+                   gap:8px;padding:4px 12px;font:13px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+                   color:#5f6368;background:rgba(255,255,255,0.94);
+                   border-bottom-right-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+        <a href="{{ url_for('index') }}" style="color:#1a73e8;text-decoration:none;font-weight:500;">Maps</a>
+    </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flash-container">
