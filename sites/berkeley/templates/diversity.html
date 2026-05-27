@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Diversity, Equity, Inclusion, and Belonging at Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Diversity, Equity, Inclusion, and Belonging</h1><p>Berkeley\'s commitment to access and inclusion across the campus.</p></div></section>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley\'s public mission demands that we make the campus accessible and welcoming to every Californian. The Division of Equity & Inclusion, the Centers for Educational Equity, and the Office for the Prevention of Harassment & Discrimination are central to that work.</p>
+    <h2 class="section-heading">Equity Leadership</h2>
+    <div class="card-grid">
+      {% for l in leaders %}
+        <div class="card">
+          <img src="{{ url_for('static', filename='images/' + l.headshot) }}" alt="{{ l.name }}" style="width:100%;height:280px;object-fit:cover;">
+          <div class="card-body">
+            <span class="card-category">{{ l.office }}</span>
+            <h3 class="card-title"><a href="{{ url_for('leader_profile', slug=l.slug) }}">{{ l.name }}</a></h3>
+            <p class="card-text">{{ l.title }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <h2 class="section-heading mt-4">Equity Programs</h2>
+    <ul style="list-style:disc;margin-left:24px;">
+      <li>The Centers for Educational Equity & Excellence (CE3) supports first-generation, low-income, and undocumented students.</li>
+      <li>The Disabled Students\' Program provides accommodations to 2,400+ students annually.</li>
+      <li>The Multicultural Education Program offers a culturally-rich academic and social environment for historically underrepresented students.</li>
+      <li>The Gender Equity Resource Center supports students of all genders and sexualities.</li>
+      <li>The Native American Recruitment and Retention Center supports Indigenous students through cohort and mentorship.</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

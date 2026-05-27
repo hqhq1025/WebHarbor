@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}PhET history &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.hist-hero { background:#1f2c3a; color:#fff; padding:2rem 1.8rem; border-radius:14px; margin-bottom:2rem; }
+.hist-hero h1 { margin:0 0 .35rem; }
+.hist-hero p { margin:0; opacity:.86; }
+.hist-timeline { position:relative; padding-left:2.4rem; }
+.hist-timeline::before { content:""; position:absolute; left:1rem; top:0; bottom:0; width:3px; background:#0079bf; }
+.hist-event { position:relative; margin-bottom:1.4rem; background:#fff; padding:1rem 1.2rem; border:1px solid #dde5ee; border-radius:8px; }
+.hist-event::before { content:""; position:absolute; left:-1.8rem; top:1.2rem; width:14px; height:14px; border-radius:50%; background:#0079bf; border:3px solid #fff; }
+.hist-year { font-size:1.6rem; color:#0079bf; font-weight:700; }
+.hist-event h3 { margin:.1rem 0 .35rem; color:#1f2c3a; }
+.hist-event p { margin:0; color:#506070; font-size:.92rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('about') }}">About</a> / <span>History</span></nav>
+
+<section class="hist-hero">
+  <h1>Two decades of PhET</h1>
+  <p>From a Nobel laureate's lab to over a billion plays. A timeline of the moments that shaped the project.</p>
+</section>
+
+<div class="hist-timeline">
+  {% for year, title, body in milestones %}
+    <article class="hist-event">
+      <div class="hist-year">{{ year }}</div>
+      <h3>{{ title }}</h3>
+      <p>{{ body }}</p>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

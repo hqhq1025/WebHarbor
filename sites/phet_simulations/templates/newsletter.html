@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Newsletter &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.nl-wrap { max-width:560px; margin:2rem auto 0; }
+.nl-card { background:#fff; padding:2rem 2.2rem; border-radius:14px; border:1px solid #dde5ee; text-align:center; }
+.nl-card h1 { color:#0079bf; margin:0 0 .6rem; }
+.nl-card p { color:#506070; margin:0 0 1.4rem; }
+.nl-row { display:flex; flex-direction:column; gap:.35rem; margin-bottom:.95rem; text-align:left; }
+.nl-row label { font-weight:600; font-size:.88rem; color:#0a3a5f; }
+.nl-row input, .nl-row select { padding:.6rem .75rem; border:1px solid #c9d5e0; border-radius:6px; font-size:.95rem; }
+.nl-submit { background:#0079bf; color:#fff; padding:.7rem 1.5rem; border:0; border-radius:8px; font-weight:600; cursor:pointer; width:100%; margin-top:.4rem; }
+.nl-perks { display:grid; grid-template-columns: repeat(3, 1fr); gap:.6rem; margin-top:1.4rem; }
+.nl-perk { background:#f4f9ff; border:1px solid #cee1f2; padding:.7rem .5rem; border-radius:8px; font-size:.78rem; color:#0a3a5f; }
+</style>
+
+<div class="nl-wrap">
+  <div class="nl-card">
+    <h1>Subscribe to the PhET newsletter</h1>
+    <p>Once a month. Release notes, lesson plans, translations, accessibility updates. No marketing, no third-party sharing.</p>
+
+    <form method="post" action="{{ url_for('newsletter') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="nl-row">
+        <label>Email</label>
+        <input type="email" name="email" required placeholder="you@school.edu">
+      </div>
+      <div class="nl-row">
+        <label>I am a...</label>
+        <select name="role">
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+          <option value="parent">Parent</option>
+          <option value="researcher">Researcher</option>
+          <option value="administrator">School administrator</option>
+          <option value="developer">Developer / partner</option>
+        </select>
+      </div>
+      <div class="nl-row">
+        <label>Country</label>
+        <input type="text" name="country" placeholder="Country">
+      </div>
+      <button class="nl-submit" type="submit">Subscribe</button>
+    </form>
+
+    <div class="nl-perks">
+      <div class="nl-perk">Monthly digest</div>
+      <div class="nl-perk">Lesson plan tips</div>
+      <div class="nl-perk">Translation alerts</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

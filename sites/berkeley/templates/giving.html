@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Give to Berkeley — Make Your Impact{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Give to Berkeley</h1><p>${{ total_raised|default(0)|int }} raised this year · {{ total_donors|default(0) }} donors · {{ funds|length }} active funds</p></div></section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('index') }}">Home</a><span>·</span>Giving</div></div>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley\'s public mission depends on private gifts. From need-based scholarships to climate research, your gift accelerates Berkeley\'s impact in every domain.</p>
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('giving_recurring') }}" class="btn btn-gold">Set Up Monthly Gift</a>
+      <a href="{{ url_for('giving_fund', slug='annual-fund') }}" class="btn btn-primary">Give to Berkeley Annual Fund</a>
+    </div>
+    <div class="card-grid">
+      {% for f in funds %}
+        <div class="card">
+          <img src="{{ url_for('static', filename='images/' + f.photo) }}" alt="{{ f.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <div class="card-body">
+            <span class="card-category">{{ f.category }}</span>
+            <h3 class="card-title"><a href="{{ url_for('giving_fund', slug=f.slug) }}">{{ f.name }}</a></h3>
+            <p class="card-text">${{ f.raised_amount|int }} raised of ${{ f.target_amount|int }} goal · {{ f.donor_count }} donors</p>
+            <p class="card-meta">{{ f.description[:90] }}{% if f.description|length > 90 %}…{% endif %}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

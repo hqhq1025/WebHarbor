@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}News &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.news-hero { display:flex; align-items:flex-end; justify-content:space-between; padding:1.5rem 1.8rem; background:linear-gradient(135deg,#0a4b66,#076b85); color:#fff; border-radius:14px; margin-bottom:1.7rem; }
+.news-hero h1 { margin:0 0 .25rem; font-size:1.7rem; }
+.news-hero p { margin:0; opacity:.88; max-width:580px; }
+.news-cat-row { display:flex; flex-wrap:wrap; gap:.45rem; margin-bottom:1.4rem; }
+.news-cat-pill { padding:.3rem .85rem; background:#fff; border:1px solid #b9d0d8; border-radius:999px; font-size:.82rem; color:#0a4b66; font-weight:600; }
+.news-cat-pill.active { background:#0a4b66; color:#fff; }
+.news-feed { display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; }
+@media (max-width: 900px) { .news-feed { grid-template-columns:1fr; } }
+.news-card { background:#fff; padding:1.05rem 1.2rem; border:1px solid #dee5ec; border-radius:10px; margin-bottom:.85rem; }
+.news-card h3 { margin:0 0 .35rem; font-size:1.1rem; }
+.news-card h3 a { color:#0a4b66; }
+.news-card-meta { font-size:.78rem; color:#7a8794; margin-bottom:.45rem; }
+.news-card-cat { display:inline-block; padding:.1rem .55rem; border-radius:999px; background:#e3f0f5; color:#0a4b66; font-size:.7rem; font-weight:700; margin-right:.35rem; }
+.news-card-summary { color:#3c4a55; font-size:.9rem; margin:0; }
+.news-side h3 { color:#0a4b66; }
+.news-side-card { background:#fff; padding:1rem 1.1rem; border:1px solid #dee5ec; border-radius:10px; margin-bottom:.85rem; }
+.news-side-card a { color:#0079bf; display:block; padding:.18rem 0; font-size:.88rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <span>News</span></nav>
+
+<section class="news-hero">
+  <div>
+    <h1>News and announcements</h1>
+    <p>Release notes, research highlights, community spotlights, and partnership news.</p>
+  </div>
+  <div style="font-size:.85rem; opacity:.85;">{{ articles|length }} stories</div>
+</section>
+
+<div class="news-cat-row">
+  <a class="news-cat-pill {% if not category %}active{% endif %}" href="{{ url_for('news_index') }}">All</a>
+  {% for c in categories %}
+    <a class="news-cat-pill {% if category == c %}active{% endif %}" href="{{ url_for('news_index', category=c) }}">{{ c|capitalize }}</a>
+  {% endfor %}
+</div>
+
+<div class="news-feed">
+  <div>
+    {% if articles %}
+      {% for a in articles %}
+        <article class="news-card">
+          <div class="news-card-meta">
+            <span class="news-card-cat">{{ a.category }}</span>
+            {{ a.author }} &middot; {{ a.published_date }} &middot; {{ a.view_count }} views
+          </div>
+          <h3><a href="{{ url_for('news_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <p class="news-card-summary">{{ a.summary }}</p>
+        </article>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">No news in this category.</p>
+    {% endif %}
+  </div>
+  <aside class="news-side">
+    <div class="news-side-card">
+      <h3>Stay subscribed</h3>
+      <p style="font-size:.88rem; color:#506070;">Sign up to our monthly newsletter for new sims, lesson plans, and translation milestones.</p>
+      <a href="{{ url_for('newsletter') }}" class="btn btn-primary">Subscribe to newsletter</a>
+    </div>
+    <div class="news-side-card">
+      <h3>Browse by category</h3>
+      {% for c in categories %}
+        <a href="{{ url_for('news_index', category=c) }}">{{ c|capitalize }}</a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

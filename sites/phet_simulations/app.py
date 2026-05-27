@@ -3,12 +3,15 @@
 Mirrors the structure of https://phet.colorado.edu/ for WebHarbor agent
 evaluation: a Flask + SQLite app that serves a deterministic snapshot of
 the PhET simulation catalog (browse, filter, search, translations,
-teacher activities, account-gated saves).
+teacher activities, lesson plans, classroom mode, accessibility,
+research papers, news, sponsors, workshops, donations and account-gated
+saves / favorites / bug reports / comments).
 """
+import hashlib
 import json
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from flask import (
@@ -22,9 +25,27 @@ from flask_login import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 
 from _health import health as _health_payload
+
+
+# ---------------------------------------------------------------------------
+# Byte-identical seed primitives (see harden-env gotchas #1, #2, #3).
+# Bcrypt hash pinned so the seed DB does not shift on every rebuild.
+# ---------------------------------------------------------------------------
+
+PINNED_PASSWORD_HASH = (
+    "$2b$12$Oi0plj9XBSbuCcjmrSVmje2AWKXN99Xpa7J2O6tjYvquZPTqNXN6i"  # 'test1234'
+)
+MIRROR_REFERENCE_DATE = datetime(2026, 5, 12, 12, 0, 0)
+
+
+def _md5_seed(*parts):
+    """Deterministic int derived from md5(parts) — used everywhere we'd
+    otherwise reach for random.choice / randrange."""
+    h = hashlib.md5("|".join(str(p) for p in parts).encode()).hexdigest()
+    return int(h, 16)
 
 
 BASE_DIR = Path(__file__).parent
@@ -160,6 +181,225 @@ class SavedSimulation(db.Model):
     notes = db.Column(db.Text)
     saved_at = db.Column(db.DateTime, default=datetime.utcnow)
     __table_args__ = (db.UniqueConstraint("user_id", "sim_id"),)
+
+
+class LessonPlan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    author = db.Column(db.String(120), nullable=False)
+    grade_band = db.Column(db.String(40), nullable=False)
+    duration_min = db.Column(db.Integer, default=45)
+    objectives = db.Column(db.Text, nullable=False)
+    materials = db.Column(db.Text, nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    standards = db.Column(db.Text, default="")
+    cover_image = db.Column(db.String(120))
+    rating_sum = db.Column(db.Integer, default=0)
+    rating_count = db.Column(db.Integer, default=0)
+    download_count = db.Column(db.Integer, default=0)
+    published_date = db.Column(db.Date)
+    sim = db.relationship("Simulation", foreign_keys=[sim_id])
+
+    @property
+    def avg_rating(self):
+        return round(self.rating_sum / self.rating_count, 2) if self.rating_count else 0
+
+
+class LessonPlanComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    lesson_plan_id = db.Column(db.Integer, db.ForeignKey("lesson_plan.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class TeacherTip(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    author = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(40), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    summary = db.Column(db.String(400), nullable=False)
+    upvotes = db.Column(db.Integer, default=0)
+    published_date = db.Column(db.Date)
+
+
+class ClassroomSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    session_code = db.Column(db.String(12), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120))
+    students_count = db.Column(db.Integer, default=0)
+    started_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    status = db.Column(db.String(20), default="active")
+
+
+class NewsArticle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(160), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(240), nullable=False)
+    summary = db.Column(db.String(400), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    author = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(40), nullable=False)
+    published_date = db.Column(db.Date, index=True)
+    cover_image = db.Column(db.String(160))
+    view_count = db.Column(db.Integer, default=0)
+
+
+class ResearchPaper(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(160), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(280), nullable=False)
+    authors = db.Column(db.String(360), nullable=False)
+    year = db.Column(db.Integer, index=True)
+    venue = db.Column(db.String(200), nullable=False)
+    abstract = db.Column(db.Text, nullable=False)
+    keywords = db.Column(db.String(300), default="")
+    citation_count = db.Column(db.Integer, default=0)
+    doi = db.Column(db.String(80))
+
+
+class Sponsor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(160), nullable=False)
+    tier = db.Column(db.String(20), nullable=False, index=True)
+    blurb = db.Column(db.Text, nullable=False)
+    logo = db.Column(db.String(120))
+    homepage = db.Column(db.String(200))
+    sort_order = db.Column(db.Integer, default=0)
+
+
+class Workshop(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(240), nullable=False)
+    presenter = db.Column(db.String(160), nullable=False)
+    held_on = db.Column(db.Date, nullable=False, index=True)
+    duration_min = db.Column(db.Integer, default=90)
+    capacity = db.Column(db.Integer, default=80)
+    registered = db.Column(db.Integer, default=0)
+    description = db.Column(db.Text, nullable=False)
+    location = db.Column(db.String(120), default="Virtual")
+
+
+class WorkshopRegistration(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    workshop_id = db.Column(db.Integer, db.ForeignKey("workshop.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    registered_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    __table_args__ = (db.UniqueConstraint("workshop_id", "user_id"),)
+
+
+class TeamMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(120), nullable=False)
+    team = db.Column(db.String(40), nullable=False, index=True)
+    bio = db.Column(db.Text, nullable=False)
+    photo = db.Column(db.String(120))
+    sort_order = db.Column(db.Integer, default=0)
+
+
+class FAQItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(40), nullable=False, index=True)
+    question = db.Column(db.String(280), nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    helpful = db.Column(db.Integer, default=0)
+
+
+class ContactMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(160), nullable=False, index=True)
+    topic = db.Column(db.String(40), nullable=False)
+    subject = db.Column(db.String(240), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class BugReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    summary = db.Column(db.String(240), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    severity = db.Column(db.String(20), default="medium")
+    status = db.Column(db.String(20), default="open")
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    sim = db.relationship("Simulation", foreign_keys=[sim_id])
+
+
+class AccessibilityReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    issue_type = db.Column(db.String(40), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default="reviewing")
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    sim = db.relationship("Simulation", foreign_keys=[sim_id])
+
+
+class SimRating(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    stars = db.Column(db.Integer, nullable=False)
+    review = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    __table_args__ = (db.UniqueConstraint("sim_id", "user_id"),)
+
+
+class SimComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class Donation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
+    donor_name = db.Column(db.String(160), nullable=False)
+    donor_email = db.Column(db.String(160), nullable=False)
+    amount_cents = db.Column(db.Integer, nullable=False)
+    frequency = db.Column(db.String(20), default="one-time")
+    message = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class NewsletterSubscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(160), unique=True, nullable=False, index=True)
+    role = db.Column(db.String(40), default="teacher")
+    country = db.Column(db.String(80), default="")
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class Favorite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    sim_id = db.Column(db.Integer, db.ForeignKey("simulation.id"), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    __table_args__ = (db.UniqueConstraint("user_id", "sim_id"),)
+
+
+class NewsArticleComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey("news_article.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
 @login_manager.user_loader
@@ -577,6 +817,702 @@ def api_unsave_sim():
         db.session.delete(row)
         db.session.commit()
     return jsonify({"ok": True, "saved": False, "sim_id": int(sim_id)})
+
+
+# ---------------------------------------------------------------------------
+# Routes — vanilla-level deepening: lesson plans, teacher tips, classroom
+# mode, accessibility detail, team/history, donate/sponsors, research, news,
+# contact, FAQ, workshops, per-grade hubs. All GUI routes (no /api/, no
+# /webhook, no /.well-known, no /sitemap). POST handlers follow.
+# ---------------------------------------------------------------------------
+
+
+@app.route("/grade/<slug>")
+def grade_band(slug):
+    grade = GradeLevel.query.filter_by(slug=slug).first_or_404()
+    sims = (
+        Simulation.query
+        .filter(Simulation.grades_json.like(f'%"{slug}"%'))
+        .order_by(Simulation.title)
+        .all()
+    )
+    activities = (
+        Activity.query.filter_by(grade_level=slug)
+        .order_by(Activity.download_count.desc())
+        .limit(8)
+        .all()
+    )
+    lesson_plans = (
+        LessonPlan.query.filter_by(grade_band=slug)
+        .order_by(LessonPlan.rating_count.desc())
+        .limit(10)
+        .all()
+    )
+    return render_template(
+        "grade_band.html", grade=grade, sims=sims,
+        activities=activities, lesson_plans=lesson_plans,
+    )
+
+
+@app.route("/lesson-plans")
+def lesson_plans():
+    grade = request.args.get("grade", "").strip()
+    subject = request.args.get("subject", "").strip()
+    sort = request.args.get("sort", "popular")
+
+    query = LessonPlan.query
+    if grade:
+        query = query.filter_by(grade_band=grade)
+    if subject:
+        query = query.join(Simulation, LessonPlan.sim_id == Simulation.id).filter(
+            Simulation.subjects_json.like(f'%"{subject}"%')
+        )
+    if sort == "newest":
+        query = query.order_by(LessonPlan.published_date.desc())
+    elif sort == "rating":
+        query = query.order_by(LessonPlan.rating_sum.desc())
+    else:
+        query = query.order_by(LessonPlan.download_count.desc())
+    plans = query.all()
+    return render_template(
+        "lesson_plans.html", plans=plans, grade=grade,
+        subject=subject, sort=sort, total=len(plans),
+    )
+
+
+@app.route("/lesson-plan/<slug>")
+def lesson_plan_detail(slug):
+    plan = LessonPlan.query.filter_by(slug=slug).first_or_404()
+    plan.download_count = (plan.download_count or 0) + 1
+    db.session.commit()
+    comments = (
+        LessonPlanComment.query.filter_by(lesson_plan_id=plan.id)
+        .order_by(LessonPlanComment.created_at.desc())
+        .all()
+    )
+    comment_users = {u.id: u for u in User.query.all()}
+    related = (
+        LessonPlan.query
+        .filter(LessonPlan.id != plan.id, LessonPlan.grade_band == plan.grade_band)
+        .order_by(LessonPlan.rating_sum.desc())
+        .limit(4)
+        .all()
+    )
+    return render_template(
+        "lesson_plan_detail.html", plan=plan, comments=comments,
+        comment_users=comment_users, related=related,
+    )
+
+
+@app.route("/lesson-plan/submit", methods=["GET", "POST"])
+@login_required
+def submit_lesson_plan():
+    sims = Simulation.query.order_by(Simulation.title).all()
+    grades = GradeLevel.query.order_by(GradeLevel.sort_order).all()
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        sim_id = request.form.get("sim_id", "").strip()
+        grade_band = request.form.get("grade_band", "").strip()
+        objectives = request.form.get("objectives", "").strip()
+        materials = request.form.get("materials", "").strip()
+        body = request.form.get("body", "").strip()
+        duration = request.form.get("duration_min", "45").strip()
+
+        if not (title and sim_id and grade_band and objectives and body):
+            flash("All required fields must be filled.", "error")
+        else:
+            sim = Simulation.query.get(int(sim_id))
+            if not sim:
+                flash("Unknown simulation.", "error")
+            else:
+                slug = _unique_slug(LessonPlan, _slug(title))
+                plan = LessonPlan(
+                    slug=slug,
+                    title=title,
+                    sim_id=sim.id,
+                    author=current_user.name,
+                    grade_band=grade_band,
+                    duration_min=int(duration) if duration.isdigit() else 45,
+                    objectives=objectives,
+                    materials=materials or "Computer with browser, paper, pencil",
+                    body=body,
+                    published_date=date(2026, 5, 27),
+                    cover_image=sim.thumbnail,
+                )
+                db.session.add(plan)
+                db.session.commit()
+                flash("Lesson plan submitted for review.", "success")
+                return redirect(url_for("lesson_plan_detail", slug=plan.slug))
+    return render_template("submit_lesson_plan.html", sims=sims, grades=grades)
+
+
+@app.route("/lesson-plan/<slug>/comment", methods=["POST"])
+@login_required
+def lesson_plan_comment(slug):
+    plan = LessonPlan.query.filter_by(slug=slug).first_or_404()
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("Comment cannot be empty.", "error")
+    else:
+        db.session.add(LessonPlanComment(
+            lesson_plan_id=plan.id, user_id=current_user.id, body=body,
+        ))
+        db.session.commit()
+        flash("Comment posted.", "success")
+    return redirect(url_for("lesson_plan_detail", slug=slug))
+
+
+@app.route("/lesson-plan/<slug>/rate", methods=["POST"])
+@login_required
+def lesson_plan_rate(slug):
+    plan = LessonPlan.query.filter_by(slug=slug).first_or_404()
+    try:
+        stars = max(1, min(5, int(request.form.get("stars", "0"))))
+    except ValueError:
+        flash("Invalid rating.", "error")
+        return redirect(url_for("lesson_plan_detail", slug=slug))
+    plan.rating_sum = (plan.rating_sum or 0) + stars
+    plan.rating_count = (plan.rating_count or 0) + 1
+    db.session.commit()
+    flash(f"Rated {stars} stars. Thanks!", "success")
+    return redirect(url_for("lesson_plan_detail", slug=slug))
+
+
+@app.route("/teacher-tips")
+def teacher_tips():
+    category = request.args.get("category", "").strip()
+    query = TeacherTip.query
+    if category:
+        query = query.filter_by(category=category)
+    tips = query.order_by(TeacherTip.upvotes.desc()).all()
+    categories = sorted({t.category for t in TeacherTip.query.all()})
+    return render_template(
+        "teacher_tips.html", tips=tips, category=category, categories=categories,
+    )
+
+
+@app.route("/teacher-tip/<slug>")
+def teacher_tip_detail(slug):
+    tip = TeacherTip.query.filter_by(slug=slug).first_or_404()
+    related = (
+        TeacherTip.query
+        .filter(TeacherTip.id != tip.id, TeacherTip.category == tip.category)
+        .order_by(TeacherTip.upvotes.desc())
+        .limit(4)
+        .all()
+    )
+    return render_template("teacher_tip_detail.html", tip=tip, related=related)
+
+
+@app.route("/teacher-tip/<slug>/upvote", methods=["POST"])
+@login_required
+def teacher_tip_upvote(slug):
+    tip = TeacherTip.query.filter_by(slug=slug).first_or_404()
+    tip.upvotes = (tip.upvotes or 0) + 1
+    db.session.commit()
+    flash("Tip upvoted.", "success")
+    return redirect(url_for("teacher_tip_detail", slug=slug))
+
+
+@app.route("/classroom-mode")
+def classroom_mode():
+    sims = (
+        Simulation.query.filter_by(is_featured=True)
+        .order_by(Simulation.title)
+        .all()
+    )
+    sessions = []
+    if current_user.is_authenticated:
+        sessions = (
+            ClassroomSession.query.filter_by(user_id=current_user.id)
+            .order_by(ClassroomSession.started_at.desc())
+            .all()
+        )
+    return render_template(
+        "classroom_mode.html", sims=sims, sessions=sessions,
+    )
+
+
+@app.route("/classroom-mode/setup", methods=["GET", "POST"])
+@login_required
+def classroom_mode_setup():
+    sims = Simulation.query.order_by(Simulation.title).all()
+    if request.method == "POST":
+        sim_id = request.form.get("sim_id", "").strip()
+        name = request.form.get("name", "").strip()
+        students = request.form.get("students_count", "0").strip()
+        if not (sim_id and name):
+            flash("Choose a simulation and name the session.", "error")
+        else:
+            sim = Simulation.query.get(int(sim_id))
+            if not sim:
+                flash("Unknown simulation.", "error")
+            else:
+                code = _md5_seed(
+                    "session", current_user.id, sim.id, name,
+                    ClassroomSession.query.count(),
+                )
+                session_code = f"PHET-{(code % 1000000):06d}"
+                cs = ClassroomSession(
+                    user_id=current_user.id,
+                    sim_id=sim.id,
+                    session_code=session_code,
+                    name=name,
+                    students_count=int(students) if students.isdigit() else 0,
+                )
+                db.session.add(cs)
+                db.session.commit()
+                flash(f"Classroom session {session_code} created.", "success")
+                return redirect(url_for("classroom_mode"))
+    return render_template("classroom_mode_setup.html", sims=sims)
+
+
+@app.route("/accessibility/sim/<slug>")
+def accessibility_sim(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    # Deterministic per-sim feature set from md5(slug)
+    h = _md5_seed("a11y", slug)
+    feat_pool = [
+        "Alternative Input",
+        "Pan and Zoom",
+        "Interactive Highlights",
+        "Mouse Sonification",
+        "Voicing",
+        "Camera Input",
+        "Keyboard Navigation",
+        "Sound",
+        "Audio Descriptions",
+    ]
+    n_features = 2 + (h % 4)
+    features = [feat_pool[(h >> (i * 3)) % len(feat_pool)] for i in range(n_features)]
+    features = list(dict.fromkeys(features))
+    reports = (
+        AccessibilityReport.query.filter_by(sim_id=sim.id)
+        .order_by(AccessibilityReport.created_at.desc())
+        .all()
+    )
+    return render_template(
+        "accessibility_sim.html", sim=sim, features=features, reports=reports,
+    )
+
+
+@app.route("/about/team")
+def about_team():
+    members = TeamMember.query.order_by(TeamMember.sort_order, TeamMember.name).all()
+    teams = sorted({m.team for m in members})
+    return render_template("about_team.html", members=members, teams=teams)
+
+
+@app.route("/about/team/<slug>")
+def team_member_detail(slug):
+    member = TeamMember.query.filter_by(slug=slug).first_or_404()
+    same_team = (
+        TeamMember.query
+        .filter(TeamMember.id != member.id, TeamMember.team == member.team)
+        .order_by(TeamMember.sort_order)
+        .all()
+    )
+    return render_template(
+        "team_member_detail.html", member=member, same_team=same_team,
+    )
+
+
+@app.route("/about/history")
+def about_history():
+    milestones = HISTORY_MILESTONES
+    return render_template("about_history.html", milestones=milestones)
+
+
+@app.route("/donate", methods=["GET", "POST"])
+def donate():
+    sponsors = Sponsor.query.order_by(Sponsor.sort_order, Sponsor.name).all()
+    if request.method == "POST":
+        donor_name = request.form.get("donor_name", "").strip()
+        donor_email = request.form.get("donor_email", "").strip().lower()
+        amount = request.form.get("amount", "").strip()
+        frequency = request.form.get("frequency", "one-time").strip()
+        message = request.form.get("message", "").strip()
+        try:
+            amt = int(round(float(amount) * 100))
+        except ValueError:
+            amt = 0
+        if not (donor_name and EMAIL_RE.match(donor_email) and amt > 0):
+            flash("Please provide name, valid email, and donation amount.", "error")
+        else:
+            d = Donation(
+                user_id=current_user.id if current_user.is_authenticated else None,
+                donor_name=donor_name, donor_email=donor_email,
+                amount_cents=amt, frequency=frequency, message=message,
+            )
+            db.session.add(d)
+            db.session.commit()
+            flash(f"Thank you for your ${amt/100:.2f} contribution!", "success")
+            return redirect(url_for("donate"))
+    total_donors = Donation.query.count()
+    return render_template(
+        "donate.html", sponsors=sponsors, total_donors=total_donors,
+    )
+
+
+@app.route("/sponsors")
+def sponsors():
+    sponsors = Sponsor.query.order_by(Sponsor.sort_order, Sponsor.name).all()
+    by_tier = {}
+    for s in sponsors:
+        by_tier.setdefault(s.tier, []).append(s)
+    return render_template(
+        "sponsors.html", sponsors=sponsors, by_tier=by_tier,
+    )
+
+
+@app.route("/sponsor/<slug>")
+def sponsor_detail(slug):
+    sp = Sponsor.query.filter_by(slug=slug).first_or_404()
+    return render_template("sponsor_detail.html", sponsor=sp)
+
+
+@app.route("/research")
+def research():
+    year = request.args.get("year", "").strip()
+    query = ResearchPaper.query
+    if year.isdigit():
+        query = query.filter_by(year=int(year))
+    papers = query.order_by(ResearchPaper.year.desc(), ResearchPaper.title).all()
+    years = sorted({p.year for p in ResearchPaper.query.all()}, reverse=True)
+    return render_template(
+        "research.html", papers=papers, year=year, years=years,
+    )
+
+
+@app.route("/research/paper/<slug>")
+def research_paper(slug):
+    paper = ResearchPaper.query.filter_by(slug=slug).first_or_404()
+    paper.citation_count = (paper.citation_count or 0)  # no-op for byte stability
+    related = (
+        ResearchPaper.query
+        .filter(ResearchPaper.id != paper.id, ResearchPaper.year == paper.year)
+        .order_by(ResearchPaper.title)
+        .limit(4)
+        .all()
+    )
+    return render_template(
+        "research_paper.html", paper=paper, related=related,
+    )
+
+
+@app.route("/news")
+def news_index():
+    category = request.args.get("category", "").strip()
+    query = NewsArticle.query
+    if category:
+        query = query.filter_by(category=category)
+    articles = query.order_by(NewsArticle.published_date.desc()).all()
+    categories = sorted({a.category for a in NewsArticle.query.all()})
+    return render_template(
+        "news.html", articles=articles, category=category, categories=categories,
+    )
+
+
+@app.route("/news/<slug>")
+def news_detail(slug):
+    article = NewsArticle.query.filter_by(slug=slug).first_or_404()
+    article.view_count = (article.view_count or 0) + 1
+    db.session.commit()
+    comments = (
+        NewsArticleComment.query.filter_by(article_id=article.id)
+        .order_by(NewsArticleComment.created_at.desc())
+        .all()
+    )
+    comment_users = {u.id: u for u in User.query.all()}
+    related = (
+        NewsArticle.query
+        .filter(NewsArticle.id != article.id, NewsArticle.category == article.category)
+        .order_by(NewsArticle.published_date.desc())
+        .limit(4)
+        .all()
+    )
+    return render_template(
+        "news_detail.html", article=article, related=related,
+        comments=comments, comment_users=comment_users,
+    )
+
+
+@app.route("/news/<slug>/comment", methods=["POST"])
+@login_required
+def news_comment(slug):
+    article = NewsArticle.query.filter_by(slug=slug).first_or_404()
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("Comment cannot be empty.", "error")
+    else:
+        db.session.add(NewsArticleComment(
+            article_id=article.id, user_id=current_user.id, body=body,
+        ))
+        db.session.commit()
+        flash("Comment posted.", "success")
+    return redirect(url_for("news_detail", slug=slug))
+
+
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        topic = request.form.get("topic", "general").strip()
+        subject = request.form.get("subject", "").strip()
+        body = request.form.get("body", "").strip()
+        if not (name and EMAIL_RE.match(email) and subject and body):
+            flash("All fields are required.", "error")
+        else:
+            db.session.add(ContactMessage(
+                name=name, email=email, topic=topic,
+                subject=subject, body=body,
+            ))
+            db.session.commit()
+            flash("Message received. We will reply within 3 business days.", "success")
+            return redirect(url_for("contact"))
+    return render_template("contact.html")
+
+
+@app.route("/faq")
+def faq():
+    category = request.args.get("category", "").strip()
+    query = FAQItem.query
+    if category:
+        query = query.filter_by(category=category)
+    items = query.order_by(FAQItem.category, FAQItem.sort_order).all()
+    categories = sorted({f.category for f in FAQItem.query.all()})
+    return render_template(
+        "faq.html", items=items, category=category, categories=categories,
+    )
+
+
+@app.route("/faq/<int:item_id>/helpful", methods=["POST"])
+def faq_helpful(item_id):
+    item = FAQItem.query.get_or_404(item_id)
+    item.helpful = (item.helpful or 0) + 1
+    db.session.commit()
+    flash("Thanks for your feedback.", "success")
+    return redirect(url_for("faq", category=item.category))
+
+
+@app.route("/workshops")
+def workshops():
+    upcoming = (
+        Workshop.query.filter(Workshop.held_on >= date(2026, 5, 1))
+        .order_by(Workshop.held_on)
+        .all()
+    )
+    past = (
+        Workshop.query.filter(Workshop.held_on < date(2026, 5, 1))
+        .order_by(Workshop.held_on.desc())
+        .all()
+    )
+    return render_template(
+        "workshops.html", upcoming=upcoming, past=past,
+    )
+
+
+@app.route("/workshop/<slug>")
+def workshop_detail(slug):
+    w = Workshop.query.filter_by(slug=slug).first_or_404()
+    registered = False
+    if current_user.is_authenticated:
+        registered = WorkshopRegistration.query.filter_by(
+            workshop_id=w.id, user_id=current_user.id,
+        ).first() is not None
+    return render_template(
+        "workshop_detail.html", workshop=w, registered=registered,
+    )
+
+
+@app.route("/workshop/<slug>/register", methods=["POST"])
+@login_required
+def workshop_register(slug):
+    w = Workshop.query.filter_by(slug=slug).first_or_404()
+    if w.registered >= w.capacity:
+        flash("Workshop is full.", "error")
+        return redirect(url_for("workshop_detail", slug=slug))
+    existing = WorkshopRegistration.query.filter_by(
+        workshop_id=w.id, user_id=current_user.id,
+    ).first()
+    if not existing:
+        db.session.add(WorkshopRegistration(
+            workshop_id=w.id, user_id=current_user.id,
+        ))
+        w.registered = (w.registered or 0) + 1
+        db.session.commit()
+        flash(f"Registered for {w.title}.", "success")
+    else:
+        flash("You are already registered.", "success")
+    return redirect(url_for("workshop_detail", slug=slug))
+
+
+@app.route("/sim/<slug>/comment", methods=["POST"])
+@login_required
+def sim_comment(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    body = request.form.get("body", "").strip()
+    if body:
+        db.session.add(SimComment(
+            sim_id=sim.id, user_id=current_user.id, body=body,
+        ))
+        db.session.commit()
+        flash("Comment posted.", "success")
+    return redirect(url_for("simulation_detail", slug=slug))
+
+
+@app.route("/sim/<slug>/rate", methods=["POST"])
+@login_required
+def sim_rate(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    try:
+        stars = max(1, min(5, int(request.form.get("stars", "0"))))
+    except ValueError:
+        flash("Invalid rating.", "error")
+        return redirect(url_for("simulation_detail", slug=slug))
+    review = request.form.get("review", "").strip()
+    existing = SimRating.query.filter_by(
+        sim_id=sim.id, user_id=current_user.id
+    ).first()
+    if existing:
+        existing.stars = stars
+        existing.review = review
+    else:
+        db.session.add(SimRating(
+            sim_id=sim.id, user_id=current_user.id,
+            stars=stars, review=review,
+        ))
+    db.session.commit()
+    flash(f"You rated {sim.title}: {stars} stars.", "success")
+    return redirect(url_for("simulation_detail", slug=slug))
+
+
+@app.route("/sim/<slug>/favorite", methods=["POST"])
+@login_required
+def sim_favorite(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    existing = Favorite.query.filter_by(
+        user_id=current_user.id, sim_id=sim.id,
+    ).first()
+    if existing:
+        db.session.delete(existing)
+        flash(f"Removed {sim.title} from favorites.", "success")
+    else:
+        db.session.add(Favorite(user_id=current_user.id, sim_id=sim.id))
+        flash(f"Added {sim.title} to favorites.", "success")
+    db.session.commit()
+    return redirect(url_for("simulation_detail", slug=slug))
+
+
+@app.route("/sim/<slug>/report-bug", methods=["GET", "POST"])
+def sim_report_bug(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    if request.method == "POST":
+        summary = request.form.get("summary", "").strip()
+        body = request.form.get("body", "").strip()
+        severity = request.form.get("severity", "medium").strip()
+        if not (summary and body):
+            flash("Summary and description are required.", "error")
+        else:
+            db.session.add(BugReport(
+                sim_id=sim.id,
+                user_id=current_user.id if current_user.is_authenticated else None,
+                summary=summary, body=body, severity=severity,
+            ))
+            db.session.commit()
+            flash("Bug report submitted. Thanks!", "success")
+            return redirect(url_for("simulation_detail", slug=slug))
+    return render_template("report_bug.html", sim=sim)
+
+
+@app.route("/sim/<slug>/report-inaccessibility", methods=["GET", "POST"])
+def sim_report_inaccessibility(slug):
+    sim = Simulation.query.filter_by(slug=slug).first_or_404()
+    if request.method == "POST":
+        issue_type = request.form.get("issue_type", "").strip()
+        body = request.form.get("body", "").strip()
+        if not (issue_type and body):
+            flash("Issue type and description are required.", "error")
+        else:
+            db.session.add(AccessibilityReport(
+                sim_id=sim.id,
+                user_id=current_user.id if current_user.is_authenticated else None,
+                issue_type=issue_type, body=body,
+            ))
+            db.session.commit()
+            flash("Accessibility report received.", "success")
+            return redirect(url_for("accessibility_sim", slug=slug))
+    return render_template("report_inaccessibility.html", sim=sim)
+
+
+@app.route("/newsletter", methods=["GET", "POST"])
+def newsletter():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        role = request.form.get("role", "teacher").strip()
+        country = request.form.get("country", "").strip()
+        if not EMAIL_RE.match(email):
+            flash("Please enter a valid email.", "error")
+        elif NewsletterSubscriber.query.filter_by(email=email).first():
+            flash("That email is already subscribed.", "error")
+        else:
+            db.session.add(NewsletterSubscriber(
+                email=email, role=role, country=country,
+            ))
+            db.session.commit()
+            flash("Subscribed! Watch your inbox monthly.", "success")
+            return redirect(url_for("newsletter"))
+    return render_template("newsletter.html")
+
+
+@app.route("/my/favorites")
+@login_required
+def my_favorites():
+    favs = (
+        Favorite.query.filter_by(user_id=current_user.id)
+        .order_by(Favorite.created_at.desc())
+        .all()
+    )
+    sims = []
+    for f in favs:
+        s = Simulation.query.get(f.sim_id)
+        if s:
+            sims.append(s)
+    return render_template("my_favorites.html", sims=sims)
+
+
+@app.route("/popular")
+def popular_sims():
+    period = request.args.get("period", "all").strip()
+    sims = Simulation.query.order_by(Simulation.play_count.desc()).limit(40).all()
+    return render_template("popular.html", sims=sims, period=period)
+
+
+@app.route("/topic/<slug>")
+def topic_hub(slug):
+    # topic slug derived from sim.topics_json — exact substring match
+    needle = slug.replace("-", " ")
+    sims = (
+        Simulation.query.filter(Simulation.topics_json.ilike(f'%{needle}%'))
+        .order_by(Simulation.title)
+        .all()
+    )
+    if not sims:
+        abort(404)
+    return render_template(
+        "topic_hub.html", topic=needle, slug=slug, sims=sims,
+    )
+
+
+def _unique_slug(model, base):
+    """Return a slug unique within model's table."""
+    candidate = base
+    n = 1
+    while model.query.filter_by(slug=candidate).first() is not None:
+        n += 1
+        candidate = f"{base}-{n}"
+    return candidate
 
 
 # ---------------------------------------------------------------------------
@@ -1701,12 +2637,821 @@ def _make_overview(title, topics, subjects):
 
 
 def seed_all():
+    # Short-circuit: if the seed DB already contains the deepened catalogue
+    # we have nothing to do. This keeps byte-identical resets working
+    # because we never mutate the file on boot when it is already seeded.
+    if (Simulation.query.count() > 0
+            and LessonPlan.query.count() > 0
+            and TeacherTip.query.count() > 0
+            and NewsArticle.query.count() > 0
+            and Sponsor.query.count() > 0):
+        return
     seed_subjects()
     seed_grades()
     seed_languages()
     seed_simulations()
     seed_activities()
     seed_benchmark_users()
+    seed_lesson_plans()
+    seed_teacher_tips()
+    seed_news_articles()
+    seed_research_papers()
+    seed_sponsors()
+    seed_workshops()
+    seed_team_members()
+    seed_faq_items()
+    normalize_seed_db_layout()
+
+
+# ---------------------------------------------------------------------------
+# Deepening seed data (lesson plans, tips, news, research, sponsors,
+# workshops, team, FAQ, history). All deterministic from md5 + the existing
+# simulation/grade/language seed. No randomness; rebuilds are byte-identical.
+# ---------------------------------------------------------------------------
+
+HISTORY_MILESTONES = [
+    (2002, "Carl Wieman founds PhET",
+     "Nobel laureate Carl Wieman launches the Physics Education "
+     "Technology project at the University of Colorado Boulder to "
+     "build research-driven physics simulations."),
+    (2005, "First Java release",
+     "Initial public release of more than 30 Java-based interactive "
+     "simulations covering mechanics, electromagnetism, and quantum "
+     "phenomena."),
+    (2009, "Math and chemistry expansion",
+     "PhET expands beyond physics to cover chemistry, math, and "
+     "biology, surpassing 100 simulations and a hundred million "
+     "annual plays."),
+    (2012, "HTML5 transition begins",
+     "Engineering team starts porting the catalogue from Java to "
+     "HTML5 so that simulations can run on tablets and Chromebooks "
+     "without browser plugins."),
+    (2015, "Accessibility initiative launches",
+     "PhET partners with disability researchers to add keyboard "
+     "navigation, screen-reader descriptions, and sonification to "
+     "core simulations."),
+    (2018, "Global PhET reaches 100 languages",
+     "Volunteer translators surpass 100 languages, making PhET the "
+     "most widely-translated science education resource on the web."),
+    (2021, "One billion plays",
+     "Cumulative simulation plays cross the one-billion threshold; "
+     "PhET classroom features ship for synchronous remote teaching."),
+    (2024, "PhET Studio public beta",
+     "PhET Studio enters public beta, letting teachers customise "
+     "and share their own variants of existing simulations."),
+    (2026, "Mirror release for research",
+     "A deterministic mirror of the PhET catalogue is published for "
+     "use by educational-AI researchers under a Creative Commons "
+     "licence."),
+]
+
+
+def _slug_safe(text, fallback):
+    s = re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
+    return s or fallback
+
+
+LESSON_PLAN_TITLES = [
+    ("Introductory Inquiry Lab", "Students predict outcomes, run trials, and reconcile "
+     "observations with theory.", 45),
+    ("Guided Concept Walkthrough", "Step-by-step guided exploration with built-in "
+     "checkpoints and reflection prompts.", 60),
+    ("Open-Ended Investigation", "Open-ended project format with student-chosen "
+     "questions, data tables, and a short write-up.", 90),
+    ("Quick Formative Check", "Twenty-minute lesson with three short tasks and a "
+     "quick exit ticket.", 20),
+    ("Differentiated Stations", "Tiered task stations supporting struggling, on-level, "
+     "and advanced learners.", 75),
+    ("Cross-Disciplinary Tie-In", "Connects the simulation to a real-world data "
+     "set from environmental science.", 55),
+    ("Engineering Design Challenge", "Students design a solution that satisfies a "
+     "constraint stated in the prompt.", 80),
+    ("Argument-from-Evidence", "Students collect observations and write a claim, "
+     "evidence, reasoning paragraph.", 50),
+    ("Modeling Cycle", "Build, test, refine. Students iterate on a conceptual model "
+     "across two class periods.", 90),
+    ("Phenomena-Anchored Discussion", "Anchored in a real classroom phenomenon and "
+     "discussion-driven.", 40),
+    ("Lab Report Practice", "Students complete a structured lab report using the "
+     "simulation as the data source.", 60),
+    ("Computational Thinking", "Students decompose the simulation behaviour into "
+     "rules and predict the next state.", 65),
+]
+
+
+TEACHER_TIP_TITLES = [
+    ("Run a Predict-Observe-Explain cycle",
+     "classroom",
+     "Have students write a prediction before running the simulation, then "
+     "compare and reconcile after observing."),
+    ("Pause the screen to focus discussion",
+     "classroom",
+     "Use the freeze button to lock the simulation state while students "
+     "discuss what they see; restart only after every group has spoken."),
+    ("Pair students for verbal explanations",
+     "classroom",
+     "Assign mixed-readiness pairs so the stronger student narrates the "
+     "physical reasoning out loud while the partner manipulates controls."),
+    ("Print the worksheet single-sided",
+     "logistics",
+     "Single-sided printing lets students lay out the entire activity at "
+     "their desk and improves data-capture quality."),
+    ("Project on the main board first",
+     "classroom",
+     "Begin by running the simulation on the projector while you narrate the "
+     "controls; only then let students take over on their own devices."),
+    ("Use the slow-motion control",
+     "ux",
+     "The slow-motion slider exposes intermediate states that look almost "
+     "instantaneous at full speed; lean on it for kinematics."),
+    ("Hide irrelevant variables early",
+     "ux",
+     "Most simulations let you hide secondary readouts; do that for "
+     "introductory lessons so students focus on the main relationship."),
+    ("Connect to a free-response writing prompt",
+     "assessment",
+     "End each session with a short open response that asks students to "
+     "summarise the most surprising observation in writing."),
+    ("Build vocabulary before you start",
+     "language",
+     "Pre-teach two or three key terms; the simulation accelerates only "
+     "after students can name what they are watching."),
+    ("Reset between groups",
+     "logistics",
+     "Always reset the simulation state between groups so the new students "
+     "start from a known initial condition."),
+    ("Re-use the screenshot tool",
+     "assessment",
+     "Have students screenshot two contrasting states and paste them into "
+     "their lab notebook before changing variables again."),
+    ("Use accessibility narration",
+     "accessibility",
+     "Turning on voicing narrates the underlying state and is useful even "
+     "for fully sighted learners as a verbal scaffold."),
+]
+
+
+NEWS_ARTICLE_TITLES = [
+    ("PhET Studio enters public beta", "platform",
+     "PhET Studio, the in-browser tool that lets teachers build customised "
+     "variants of existing simulations, is now in public beta."),
+    ("New accessibility features land", "accessibility",
+     "Three new accessibility features ship in this release: pan-and-zoom, "
+     "alternative input, and sonification of mouse traces."),
+    ("Global PhET passes 110 languages", "translations",
+     "Volunteer translators have pushed the catalogue past 110 languages, "
+     "with new launches in Tigrinya, Tajik, and Quechua."),
+    ("Featured teacher: classroom innovations", "community",
+     "This month's featured teacher describes how predict-observe-explain "
+     "cycles transformed her introductory chemistry sequence."),
+    ("Annual report 2025 published", "organization",
+     "The 2025 annual report summarises platform usage, new translations, "
+     "and the impact of the accessibility initiative."),
+    ("Workshop series: virtual summer institute", "workshops",
+     "Registration is open for the virtual summer institute, with eight "
+     "live sessions and asynchronous lesson-design clinics."),
+    ("Climate Change Model simulation released", "release",
+     "The new Climate Change Model simulation models greenhouse-gas "
+     "concentrations against global mean temperature."),
+    ("Open data: anonymised play counts", "research",
+     "We have published an anonymised dataset of simulation play counts "
+     "for educational-AI researchers to study learning patterns."),
+    ("Partnership with Mastercard Foundation", "organization",
+     "A new partnership with the Mastercard Foundation will fund expansion "
+     "into eleven sub-Saharan African countries."),
+    ("Build a Nucleus exits beta", "release",
+     "Build a Nucleus, our new nuclear physics simulation, exits beta "
+     "today with refreshed accessibility features."),
+    ("Research highlight: misconception probe", "research",
+     "A new study using PhET tracking data quantifies how Newtonian "
+     "misconceptions persist after instruction."),
+    ("Teacher leaders program announces 2026 cohort", "community",
+     "The Teacher Leaders program announces the 2026 cohort of forty "
+     "educators across twelve countries."),
+]
+
+
+RESEARCH_PAPER_SEED = [
+    ("Inquiry-based learning with interactive simulations",
+     "Wieman, C., Adams, W., Perkins, K.",
+     2008,
+     "Science",
+     "Reviews early evidence that PhET simulations support inquiry-based "
+     "learning by exposing causal structure students cannot easily reach "
+     "through static media.",
+     "inquiry; simulations; physics education",
+     "10.1126/science.1161948",
+     842),
+    ("PhET interactive simulations: transformative tools for teaching chemistry",
+     "Lancaster, K., Moore, E., Parson, R., Perkins, K.",
+     2013,
+     "Journal of Chemical Education",
+     "Documents how PhET chemistry simulations function as transformative "
+     "tools when paired with appropriately scaffolded activities.",
+     "chemistry; simulations; transformative learning",
+     "10.1021/ed3003503",
+     531),
+    ("A framework for the design of simulation-based learning",
+     "Adams, W., Reid, S., LeMaster, R., McKagan, S., Perkins, K., Wieman, C.",
+     2008,
+     "Journal of Interactive Learning Research",
+     "Synthesises design heuristics, interviewing studies, and classroom "
+     "observations into a coherent simulation-design framework.",
+     "design; usability; education",
+     "10.1119/1.2812550",
+     412),
+    ("Establishing the productive structure of student inquiry",
+     "Podolefsky, N., Perkins, K., Adams, W.",
+     2010,
+     "Physical Review Special Topics - PER",
+     "Argues that productive inquiry depends on cognitive scaffolds the "
+     "simulation makes salient at the right moment.",
+     "inquiry; scaffolding; physics",
+     "10.1103/PhysRevSTPER.6.020117",
+     287),
+    ("Designing for inclusive use: accessibility in PhET simulations",
+     "Smith, T., Moore, E., Perkins, K.",
+     2020,
+     "ACM ASSETS",
+     "Documents the accessibility redesign that introduced keyboard "
+     "navigation, voicing, and sonification across the catalogue.",
+     "accessibility; inclusive design; voicing",
+     "10.1145/3373625.3417013",
+     94),
+    ("Learning to balance equations using a digital tool",
+     "Lancaster, K., Beard, R., Moore, E., Loeblein, T., Parson, R., Lemaster, R., Perkins, K.",
+     2012,
+     "Chemistry Education Research and Practice",
+     "Quantitative pre/post study showing the Balancing Chemical Equations "
+     "simulation closes the gap between symbolic and visual representations.",
+     "balancing equations; chemistry; representational fluency",
+     "10.1039/c2rp00010e",
+     203),
+    ("Productive failure with a simulated environment",
+     "Kapur, M., Bielaczyc, K.",
+     2012,
+     "Journal of the Learning Sciences",
+     "Shows simulations support productive failure by giving learners "
+     "manipulable feedback after a wrong prediction.",
+     "productive failure; learning sciences",
+     "10.1080/10508406.2011.591717",
+     679),
+    ("Implicit feedback signals in interactive simulations",
+     "Bopardikar, A., Adams, W.",
+     2019,
+     "Computers and Education",
+     "Identifies which simulation responses functionally serve as feedback "
+     "even when no explicit feedback message is given.",
+     "feedback; cognitive load; HCI",
+     "10.1016/j.compedu.2019.04.001",
+     156),
+    ("Trajectories of engagement in K-12 physics simulations",
+     "Heim, A., Perkins, K., Madsen, A.",
+     2021,
+     "Physical Review PER",
+     "Cluster analysis of click-stream data identifies four distinct "
+     "engagement trajectories during simulation use.",
+     "engagement; clustering; learning analytics",
+     "10.1103/PhysRevPhysEducRes.17.010135",
+     71),
+    ("Cognitive coaching during simulation-based instruction",
+     "Lopez, R., Olmstead, A.",
+     2018,
+     "International Journal of Science Education",
+     "Compares scaffolded versus unscaffolded simulation lessons across "
+     "twelve high-school classrooms.",
+     "scaffolding; simulations; secondary",
+     "10.1080/09500693.2018.1486101",
+     142),
+    ("Bilingual learners and visual representations in PhET",
+     "Garcia, M., Perkins, K.",
+     2022,
+     "Journal of Research in Science Teaching",
+     "Tests whether translated simulations narrow or widen the achievement "
+     "gap for emergent bilingual learners.",
+     "bilingual; representation; equity",
+     "10.1002/tea.21745",
+     58),
+    ("Simulation-mediated peer discussion",
+     "Olmstead, A., Smith, T.",
+     2017,
+     "International Journal of Science Education",
+     "Quantitative coding of student utterances during paired simulation "
+     "tasks; identifies productive discussion moves.",
+     "peer discussion; collaboration",
+     "10.1080/09500693.2017.1334049",
+     188),
+    ("Mathematical modeling through interactive simulation",
+     "Roy, R., Adams, W.",
+     2015,
+     "Mathematical Thinking and Learning",
+     "Argues that simulation parameters can serve as concrete anchors for "
+     "abstract mathematical relationships.",
+     "math; modeling; anchoring",
+     "10.1080/10986065.2015.1054340",
+     112),
+    ("Teacher beliefs about simulation use in chemistry",
+     "Loeblein, T., Lancaster, K.",
+     2014,
+     "Chemistry Education Research and Practice",
+     "Survey of three hundred chemistry teachers exploring beliefs about "
+     "when simulations should be introduced.",
+     "teacher beliefs; survey",
+     "10.1039/c4rp00057a",
+     97),
+    ("Computational artefacts as cognitive tools",
+     "Wilensky, U., Resnick, M.",
+     2009,
+     "Mind, Culture, and Activity",
+     "Theoretical paper arguing simulations work because they externalise "
+     "cognitive structures.",
+     "computational thinking; theory",
+     "10.1080/10749030903253851",
+     320),
+    ("Voicing and sonification: complementary accessibility paths",
+     "Smith, T., Tovar, J.",
+     2023,
+     "ACM ASSETS",
+     "Comparative study of voicing-only, sonification-only, and combined "
+     "configurations on simulation comprehension.",
+     "voicing; sonification; accessibility",
+     "10.1145/3597638.3614497",
+     32),
+]
+
+
+SPONSOR_SEED = [
+    ("moore", "Gordon and Betty Moore Foundation", "principal",
+     "Long-time principal sponsor of PhET who funded the core HTML5 "
+     "transition between 2014 and 2019.",
+     "sponsor-moore.png", "https://www.moore.org/", 1),
+    ("hewlett", "William and Flora Hewlett Foundation", "principal",
+     "Supports PhET's open educational resources strategy and the "
+     "translation programme.",
+     "sponsor-hewlett.svg", "https://hewlett.org/", 2),
+    ("nsf", "National Science Foundation", "principal",
+     "Funded the original PhET research programme and a sequence of "
+     "follow-on accessibility and learning-analytics grants.",
+     "sponsor-nsf.png", "https://www.nsf.gov/", 3),
+    ("mastercard", "Mastercard Foundation", "principal",
+     "Funds expansion of PhET in sub-Saharan Africa, including teacher "
+     "training and locally relevant lesson plans.",
+     "sponsor-mastercard.svg", "https://mastercardfdn.org/", 4),
+    ("yidan", "Yidan Prize Foundation", "principal",
+     "Yidan Prize laureate funding supports PhET's global teacher "
+     "leadership programme.",
+     "sponsor-yidan.png", "https://yidanprize.org/", 5),
+    ("amgen", "Amgen Foundation", "sustaining",
+     "Funds biology simulation development and the Build a Nucleus "
+     "interactive.",
+     None, "https://www.amgenfoundation.org/", 10),
+    ("cu", "University of Colorado Boulder", "sustaining",
+     "Hosts PhET as a university project and provides core operational "
+     "support including server infrastructure.",
+     None, "https://www.colorado.edu/", 11),
+    ("templeton", "John Templeton Foundation", "supporting",
+     "Supports work on inquiry-based curiosity and learning trajectories.",
+     None, "https://www.templeton.org/", 20),
+    ("knight", "Knight Foundation", "supporting",
+     "Funds the local-news literacy companion materials that pair with "
+     "PhET data simulations.",
+     None, "https://knightfoundation.org/", 21),
+    ("rotary", "Rotary International", "supporting",
+     "Supports printing and offline distribution of PhET activity guides "
+     "in low-bandwidth regions.",
+     None, "https://www.rotary.org/", 22),
+    ("microsoft", "Microsoft Philanthropies", "supporting",
+     "Provides in-kind cloud credits and accessibility engineering hours.",
+     None, "https://www.microsoft.com/philanthropies/", 23),
+    ("google", "Google.org", "supporting",
+     "Supports the developer documentation translation effort.",
+     None, "https://www.google.org/", 24),
+]
+
+
+WORKSHOP_SEED = [
+    ("virtual-summer-institute-2026", "Virtual Summer Institute 2026",
+     "Dr. Trish Loeblein", date(2026, 7, 14), 120, 200, 0,
+     "Eight live sessions over two weeks covering simulation design, "
+     "classroom use, and assessment design.",
+     "Virtual"),
+    ("classroom-mode-deep-dive", "Classroom Mode Deep Dive",
+     "Emily Moore", date(2026, 6, 18), 90, 60, 0,
+     "Hands-on workshop for the Classroom Mode feature with realistic "
+     "student scenarios.",
+     "Virtual"),
+    ("accessibility-workshop-spring", "Accessibility Workshop: Voicing and Sonification",
+     "Taliesin Smith", date(2026, 6, 4), 90, 80, 0,
+     "A practical introduction to the accessibility features and how to "
+     "design lessons that exercise them.",
+     "Virtual"),
+    ("lesson-plan-design-clinic", "Lesson Plan Design Clinic",
+     "Trish Loeblein and Karina Hensberry", date(2026, 8, 22), 120, 50, 0,
+     "Bring an existing lesson and leave with a redesigned PhET-anchored "
+     "version with peer feedback.",
+     "Virtual"),
+    ("phet-studio-getting-started", "PhET Studio: Getting Started",
+     "Robert Parson", date(2026, 9, 10), 75, 100, 0,
+     "Walkthrough of PhET Studio with a focus on customising existing "
+     "simulations for your own classroom.",
+     "Virtual"),
+    ("global-phet-translator-summit", "Global PhET Translator Summit",
+     "Diana Lopez-Tavares", date(2026, 10, 5), 180, 150, 0,
+     "Annual gathering of volunteer translators with sessions on locale "
+     "review and quality control.",
+     "Virtual"),
+    ("phet-day-boulder", "PhET Day Boulder 2026",
+     "Kathy Perkins", date(2026, 11, 1), 360, 80, 0,
+     "In-person day at the University of Colorado Boulder with hands-on "
+     "demos and a tour of the engineering team.",
+     "Boulder, CO"),
+    ("middle-school-lab-design", "Middle School Lab Design Workshop",
+     "Karina Hensberry", date(2026, 5, 30), 90, 60, 0,
+     "Lab-design workshop tailored to the middle-school grade band.",
+     "Virtual"),
+    ("phet-day-springfield-2025", "PhET Day Springfield 2025",
+     "Trish Loeblein", date(2025, 11, 8), 360, 80, 0,
+     "Historical in-person event held in Springfield, included for "
+     "completeness.",
+     "Springfield, MA"),
+    ("intro-to-html5-sims", "Intro to HTML5 Simulations",
+     "Sam Reid", date(2024, 5, 12), 60, 100, 0,
+     "Historical session walking new teachers through the HTML5 "
+     "simulation lifecycle.",
+     "Virtual"),
+    ("assessment-with-sims-2024", "Assessment with Simulations 2024",
+     "Wendy Adams", date(2024, 7, 7), 90, 120, 0,
+     "Historical workshop on building assessment items that pair with "
+     "simulation use.",
+     "Virtual"),
+    ("equity-in-stem-2025", "Equity in STEM 2025",
+     "Diana Lopez-Tavares", date(2025, 3, 14), 120, 100, 0,
+     "Workshop on equity-minded simulation use across linguistic and "
+     "ability differences.",
+     "Virtual"),
+]
+
+
+TEAM_MEMBER_SEED = [
+    ("kathy-perkins", "Kathy Perkins", "Director", "leadership",
+     "Kathy Perkins directs PhET Interactive Simulations and leads its "
+     "research and partnership programmes. She holds a PhD in physics "
+     "from Harvard University.", None, 1),
+    ("emily-moore", "Emily Moore", "Director of Research and Design", "leadership",
+     "Emily Moore directs PhET's research and design programme, including "
+     "the accessibility and inclusive design initiative.", None, 2),
+    ("trish-loeblein", "Dr. Trish Loeblein", "Senior Teacher in Residence", "teachers",
+     "Trish Loeblein is a long-time PhET teacher-in-residence and lead "
+     "author of many of the most-downloaded lesson plans.", None, 3),
+    ("sam-reid", "Sam Reid", "Lead Software Engineer", "engineering",
+     "Sam Reid leads PhET's software engineering team and has driven the "
+     "HTML5 simulation architecture since 2012.", None, 4),
+    ("taliesin-smith", "Taliesin Smith", "Accessibility Lead", "engineering",
+     "Taliesin Smith leads the accessibility engineering effort, with a "
+     "focus on voicing and sonification.", None, 5),
+    ("diana-lopez-tavares", "Diana Lopez-Tavares", "Translations Manager", "translations",
+     "Diana coordinates the volunteer translator network and oversees the "
+     "Global PhET initiative across more than a hundred locales.", None, 6),
+    ("karina-hensberry", "Karina Hensberry", "Teacher in Residence", "teachers",
+     "Karina Hensberry contributes lesson plans, classroom-mode design "
+     "input, and middle-school teacher training.", None, 7),
+    ("robert-parson", "Robert Parson", "Chemistry Lead", "research",
+     "Robert Parson leads chemistry simulation design, with a focus on "
+     "representational fluency between symbolic and visual chemistry.", None, 8),
+    ("wendy-adams", "Wendy Adams", "Senior Research Associate", "research",
+     "Wendy Adams led the foundational interviewing studies that shaped "
+     "PhET's design heuristics.", None, 9),
+    ("noah-podolefsky", "Noah Podolefsky", "Research Associate", "research",
+     "Noah Podolefsky studies the cognitive structure of student inquiry "
+     "with interactive simulations.", None, 10),
+    ("ariel-paul", "Ariel Paul", "Math Lead", "engineering",
+     "Ariel Paul leads PhET's math simulation team and has built "
+     "Fractions Intro and the Area Model series.", None, 11),
+    ("jonathan-olson", "Jonathan Olson", "Engineering Manager", "engineering",
+     "Jonathan Olson manages day-to-day engineering and the release "
+     "process for the simulation catalogue.", None, 12),
+    ("amanda-mclaren", "Amanda McLaren", "UX Designer", "design",
+     "Amanda McLaren designs interaction flows and accessibility "
+     "affordances across the catalogue.", None, 13),
+    ("matt-blackman", "Matt Blackman", "Software Engineer", "engineering",
+     "Matt Blackman works on the simulation runtime and contributed to "
+     "the PhET Studio MVP.", None, 14),
+    ("megan-hoffman", "Megan Hoffman", "Project Manager", "leadership",
+     "Megan Hoffman coordinates simulation development cycles and the "
+     "annual roadmap.", None, 15),
+    ("brett-fiedler", "Brett Fiedler", "Sonification Engineer", "engineering",
+     "Brett Fiedler designs the mouse-trace sonification and voicing "
+     "engine.", None, 16),
+    ("jonathan-shoults", "Jonathan Shoults", "Front-end Engineer", "engineering",
+     "Jonathan Shoults works on PhET's front-end framework and the new "
+     "Studio interface.", None, 17),
+    ("nick-walker", "Nick Walker", "Build Engineer", "engineering",
+     "Nick Walker maintains the build, release, and translation tooling "
+     "for the catalogue.", None, 18),
+    ("anna-amick", "Anna Amick", "Teacher Liaison", "teachers",
+     "Anna Amick coordinates the teacher leaders programme and field "
+     "workshops.", None, 19),
+    ("matt-pennington", "Matt Pennington", "Quality Engineer", "engineering",
+     "Matt Pennington runs the cross-browser regression suite for every "
+     "PhET release.", None, 20),
+]
+
+
+FAQ_SEED = [
+    ("general", "What is PhET Interactive Simulations?",
+     "PhET is a non-profit project at the University of Colorado "
+     "Boulder that produces free interactive simulations for math and "
+     "science education.", 1),
+    ("general", "Is PhET free?",
+     "Yes. All simulations and teaching resources are free and "
+     "released under a Creative Commons licence.", 2),
+    ("general", "Who builds PhET?",
+     "A team of engineers, researchers, designers, and teachers at the "
+     "University of Colorado Boulder, with a network of volunteer "
+     "translators and educator contributors.", 3),
+    ("general", "What languages are supported?",
+     "More than a hundred languages, with the most common being "
+     "English, Spanish, Chinese, French, German, and Portuguese.", 4),
+    ("general", "Where can I report a bug?",
+     "Each simulation has a Report a Bug page accessible from the "
+     "Sim detail view. We triage reports weekly.", 5),
+    ("technical", "Do I need an account to use simulations?",
+     "No. Simulations run anonymously in your browser; an account is "
+     "only required to save favourites and post comments.", 1),
+    ("technical", "What devices are supported?",
+     "Any modern desktop or tablet browser. HTML5 simulations are "
+     "tested on Chromebooks, iPads, iPhones, Windows, macOS, and Linux.", 2),
+    ("technical", "Can I run PhET offline?",
+     "Yes. Each simulation can be downloaded as a self-contained HTML "
+     "file from its detail page.", 3),
+    ("technical", "Why do some sims still require Java?",
+     "A small number of legacy simulations have not yet been ported "
+     "to HTML5 and require Java. They remain available as downloads.", 4),
+    ("technical", "How do I report an accessibility issue?",
+     "Every simulation has a Report an Accessibility Issue link "
+     "that routes directly to the accessibility engineering team.", 5),
+    ("teaching", "How do I find a lesson plan for my class?",
+     "Browse the Lesson Plans page or filter by grade band and "
+     "subject on the activities page.", 1),
+    ("teaching", "Can I submit my own lesson plan?",
+     "Yes. Sign in and use the Submit a Lesson Plan page. We review "
+     "submissions before publishing.", 2),
+    ("teaching", "Are there training workshops?",
+     "Yes. See the Workshops page for the upcoming schedule, which "
+     "includes free virtual sessions and the annual PhET Day event.", 3),
+    ("teaching", "Can I host a classroom session?",
+     "Yes. Sign in, open the Classroom Mode page, and create a "
+     "session code that students can join.", 4),
+    ("teaching", "Do you offer professional development credit?",
+     "Selected workshops offer continuing-education credit; check the "
+     "individual workshop page.", 5),
+    ("accessibility", "Which simulations support keyboard navigation?",
+     "All simulations that are part of the inclusive design programme "
+     "support keyboard navigation. See each Sim Accessibility page.", 1),
+    ("accessibility", "What is voicing?",
+     "Voicing is a feature that reads aloud the current state of the "
+     "simulation, supplementing screen-reader output.", 2),
+    ("accessibility", "What is sonification?",
+     "Sonification represents simulation state as sound: pitch and "
+     "timbre vary to communicate continuous variables.", 3),
+    ("accessibility", "Can I use a switch device?",
+     "Many simulations support alternative input including switch "
+     "devices through their inclusive controls.", 4),
+    ("accessibility", "Where is the accessibility policy?",
+     "See the Accessibility page for the full policy and the per-"
+     "simulation accessibility detail pages.", 5),
+    ("donations", "How can I donate?",
+     "Use the Donate page to make a one-time or recurring contribution.", 1),
+    ("donations", "Is PhET a registered non-profit?",
+     "PhET is a project of the University of Colorado Boulder, which "
+     "is a public, non-profit university.", 2),
+    ("donations", "Can my company sponsor PhET?",
+     "Yes. Contact the team via the Contact page; corporate "
+     "partnerships fund specific simulation programmes.", 3),
+    ("donations", "Will my donation receipt be tax-deductible?",
+     "Donations are processed by the University of Colorado "
+     "Foundation and are tax-deductible in the United States.", 4),
+]
+
+
+def seed_lesson_plans():
+    if LessonPlan.query.count() > 0:
+        return
+    sims = Simulation.query.order_by(Simulation.title).all()
+    grade_bands = ["elementary", "middle", "high", "university"]
+    title_count = len(LESSON_PLAN_TITLES)
+    for i, sim in enumerate(sims):
+        plans_per_sim = 1 + (_md5_seed("lp_count", sim.slug) % 2)
+        for n in range(plans_per_sim):
+            h = _md5_seed("lp", sim.slug, n)
+            tpl = LESSON_PLAN_TITLES[h % title_count]
+            grade = grade_bands[(h >> 4) % 4]
+            author_idx = (h >> 8) % len(TEAM_MEMBER_SEED)
+            author = TEAM_MEMBER_SEED[author_idx][1]
+            base = _slug_safe(f"{sim.slug}-{tpl[0]}", f"lp-{sim.id}-{n}")
+            slug = _unique_slug(LessonPlan, base)
+            day = 1 + (h % 27)
+            month = 1 + ((h >> 12) % 12)
+            year = 2024 + ((h >> 16) % 2)
+            db.session.add(LessonPlan(
+                slug=slug,
+                title=f"{sim.title}: {tpl[0]}",
+                sim_id=sim.id,
+                author=author,
+                grade_band=grade,
+                duration_min=tpl[2],
+                objectives=(
+                    f"Students will use the {sim.title} simulation to "
+                    f"investigate the underlying relationships and "
+                    f"reason from observation to claim."
+                ),
+                materials=(
+                    "Computer or tablet with browser, paper, pencil, "
+                    "student worksheet (one per pair)."
+                ),
+                body=(
+                    f"{tpl[1]} Students open the {sim.title} simulation, "
+                    f"complete the predict-observe-explain cycle, and "
+                    f"submit a short write-up. Differentiation notes are "
+                    f"included for {grade} learners."
+                ),
+                standards="NGSS, Common Core Math Practice 4",
+                cover_image=f"{sim.slug}.png",
+                rating_sum=(h % 250),
+                rating_count=max(1, (h >> 3) % 80),
+                download_count=max(120, (h >> 5) % 9000),
+                published_date=date(year, month, day),
+            ))
+    db.session.commit()
+
+
+def seed_teacher_tips():
+    if TeacherTip.query.count() > 0:
+        return
+    sims = Simulation.query.order_by(Simulation.title).limit(80).all()
+    for i, sim in enumerate(sims):
+        h = _md5_seed("tip", sim.slug)
+        tpl = TEACHER_TIP_TITLES[h % len(TEACHER_TIP_TITLES)]
+        base = _slug_safe(f"{tpl[0]}-{sim.slug}", f"tip-{sim.id}")
+        slug = _unique_slug(TeacherTip, base)
+        day = 1 + (h % 27)
+        month = 1 + ((h >> 8) % 12)
+        author_idx = (h >> 12) % len(TEAM_MEMBER_SEED)
+        db.session.add(TeacherTip(
+            slug=slug,
+            title=f"{tpl[0]} — using {sim.title}",
+            author=TEAM_MEMBER_SEED[author_idx][1],
+            category=tpl[1],
+            summary=tpl[2][:380],
+            body=(
+                f"{tpl[2]} Specifically for the {sim.title} simulation, "
+                f"this tip works well during the first ten minutes of "
+                f"class. Pair it with a quick exit-ticket question to "
+                f"surface lingering misconceptions."
+            ),
+            upvotes=(h >> 4) % 250,
+            published_date=date(2024 + ((h >> 16) % 2), month, day),
+        ))
+    db.session.commit()
+
+
+def seed_news_articles():
+    if NewsArticle.query.count() > 0:
+        return
+    # 12 themed articles, with variants per sim for the climate / release ones
+    for i, (title, cat, summary) in enumerate(NEWS_ARTICLE_TITLES):
+        h = _md5_seed("news", title)
+        base = _slug_safe(title, f"news-{i}")
+        slug = _unique_slug(NewsArticle, base)
+        day = 1 + (h % 27)
+        month = 1 + ((h >> 8) % 12)
+        author_idx = (h >> 12) % len(TEAM_MEMBER_SEED)
+        db.session.add(NewsArticle(
+            slug=slug,
+            title=title,
+            summary=summary,
+            body=(
+                f"{summary} This article walks through the change, the "
+                f"motivation behind it, and what it means for teachers "
+                f"and learners. The PhET team welcomes feedback through "
+                f"the Contact page or the community forum."
+            ),
+            author=TEAM_MEMBER_SEED[author_idx][1],
+            category=cat,
+            published_date=date(2025 + ((h >> 16) % 2), month, day),
+            cover_image=None,
+            view_count=(h >> 4) % 50000,
+        ))
+    # add per-sim release notes for sims marked is_new to thicken the index
+    new_sims = Simulation.query.filter_by(is_new=True).order_by(Simulation.title).all()
+    for i, sim in enumerate(new_sims):
+        h = _md5_seed("news_rel", sim.slug)
+        title = f"Release notes: {sim.title}"
+        base = _slug_safe(f"release-notes-{sim.slug}", f"news-rel-{sim.id}")
+        slug = _unique_slug(NewsArticle, base)
+        day = 1 + (h % 27)
+        month = 1 + ((h >> 8) % 12)
+        author_idx = (h >> 12) % len(TEAM_MEMBER_SEED)
+        db.session.add(NewsArticle(
+            slug=slug,
+            title=title,
+            summary=(
+                f"{sim.title} ships with refreshed accessibility "
+                f"features and updated translations."
+            ),
+            body=(
+                f"{sim.title} is now released. The release adds the new "
+                f"voicing engine and refreshed translations covering "
+                f"more than thirty additional locales. See the "
+                f"accessibility page for the full feature matrix."
+            ),
+            author=TEAM_MEMBER_SEED[author_idx][1],
+            category="release",
+            published_date=sim.release_date,
+            cover_image=None,
+            view_count=(h >> 4) % 25000,
+        ))
+    db.session.commit()
+
+
+def seed_research_papers():
+    if ResearchPaper.query.count() > 0:
+        return
+    for title, authors, year, venue, abstract, kw, doi, cites in RESEARCH_PAPER_SEED:
+        h = _md5_seed("paper", title)
+        base = _slug_safe(title, f"paper-{h % 9999}")
+        slug = _unique_slug(ResearchPaper, base)
+        db.session.add(ResearchPaper(
+            slug=slug,
+            title=title,
+            authors=authors,
+            year=year,
+            venue=venue,
+            abstract=abstract,
+            keywords=kw,
+            citation_count=cites,
+            doi=doi,
+        ))
+    db.session.commit()
+
+
+def seed_sponsors():
+    if Sponsor.query.count() > 0:
+        return
+    for slug, name, tier, blurb, logo, hp, sort_order in SPONSOR_SEED:
+        db.session.add(Sponsor(
+            slug=slug, name=name, tier=tier, blurb=blurb,
+            logo=logo, homepage=hp, sort_order=sort_order,
+        ))
+    db.session.commit()
+
+
+def seed_workshops():
+    if Workshop.query.count() > 0:
+        return
+    for slug, title, presenter, held, dur, cap, reg, desc, loc in WORKSHOP_SEED:
+        db.session.add(Workshop(
+            slug=slug, title=title, presenter=presenter,
+            held_on=held, duration_min=dur, capacity=cap,
+            registered=reg, description=desc, location=loc,
+        ))
+    db.session.commit()
+
+
+def seed_team_members():
+    if TeamMember.query.count() > 0:
+        return
+    for slug, name, role, team, bio, photo, sort_order in TEAM_MEMBER_SEED:
+        db.session.add(TeamMember(
+            slug=slug, name=name, role=role, team=team,
+            bio=bio, photo=photo, sort_order=sort_order,
+        ))
+    db.session.commit()
+
+
+def seed_faq_items():
+    if FAQItem.query.count() > 0:
+        return
+    for category, question, answer, sort_order in FAQ_SEED:
+        h = _md5_seed("faq", category, question)
+        db.session.add(FAQItem(
+            category=category,
+            question=question,
+            answer=answer,
+            sort_order=sort_order,
+            helpful=(h >> 4) % 320,
+        ))
+    db.session.commit()
+
+
+def normalize_seed_db_layout():
+    """Pin auto_increment counters and VACUUM so the on-disk database is
+    byte-identical between rebuilds. See harden-env gotcha #3."""
+    try:
+        db.session.execute(text("VACUUM"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 with app.app_context():

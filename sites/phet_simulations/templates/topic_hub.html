@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Topic: {{ topic|capitalize }} &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.th-head { background:#1e7a44; color:#fff; padding:1.5rem 1.7rem; border-radius:12px; margin-bottom:1.5rem; }
+.th-head h1 { margin:0 0 .25rem; }
+.th-head p { margin:0; opacity:.92; }
+.th-topic-key { display:inline-block; background:rgba(255,255,255,.18); padding:.18rem .65rem; border-radius:999px; font-size:.78rem; }
+.th-count { background:#fff; padding:.6rem 1rem; border:1px solid #c4dccf; border-radius:8px; margin-bottom:1.4rem; color:#1e7a44; font-weight:600; }
+.th-related { margin-top:1.8rem; }
+.th-related h2 { color:#1e7a44; }
+.th-related-tags { display:flex; flex-wrap:wrap; gap:.4rem; }
+.th-related-tags a { background:#fff; border:1px solid #c4dccf; color:#1e7a44; padding:.3rem .8rem; border-radius:999px; font-size:.82rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('simulations') }}">Simulations</a> / <span>Topic: {{ topic }}</span></nav>
+
+<section class="th-head">
+  <span class="th-topic-key">Topic hub</span>
+  <h1 style="margin-top:.4rem;">{{ topic|capitalize }}</h1>
+  <p>Simulations that explore <strong>{{ topic }}</strong> across multiple subjects and grade bands.</p>
+</section>
+
+<div class="th-count">{{ sims|length }} simulation{{ '' if sims|length == 1 else 's' }} tagged "{{ topic }}"</div>
+
+<div class="sim-grid">
+  {% for sim in sims %}{% include "_sim_card.html" %}{% endfor %}
+</div>
+
+<section class="th-related">
+  <h2>Related topic hubs</h2>
+  <div class="th-related-tags">
+    <a href="{{ url_for('topic_hub', slug='gravity') }}">Gravity</a>
+    <a href="{{ url_for('topic_hub', slug='friction') }}">Friction</a>
+    <a href="{{ url_for('topic_hub', slug='energy') }}">Energy</a>
+    <a href="{{ url_for('topic_hub', slug='circuits') }}">Circuits</a>
+    <a href="{{ url_for('topic_hub', slug='atoms') }}">Atoms</a>
+    <a href="{{ url_for('topic_hub', slug='molecules') }}">Molecules</a>
+    <a href="{{ url_for('topic_hub', slug='fractions') }}">Fractions</a>
+    <a href="{{ url_for('topic_hub', slug='dna') }}">DNA</a>
+  </div>
+</section>
+{% endblock %}

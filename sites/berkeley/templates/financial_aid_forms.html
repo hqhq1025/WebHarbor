@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid Forms — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Financial Aid Forms</h1><p>FAFSA, CADAA, CSS Profile, and Berkeley-specific forms.</p></div></section>
+<section class="section">
+  <div class="container">
+    <table>
+      <thead><tr><th>Form</th><th>Audience</th><th>Deadline</th></tr></thead>
+      <tbody>
+      {% for f in forms %}
+        <tr><td><strong>{{ f.name }}</strong><br><span class="text-muted">{{ f.description }}</span></td><td>{{ f.audience }}</td><td>{{ f.deadline }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

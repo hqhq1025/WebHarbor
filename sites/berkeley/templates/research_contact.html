@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Contact {{ center.name }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Contact {{ center.name }}</h1><p>Connect with the research center for collaboration, internships, or media inquiries.</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Partnership Type</label>
+        <select class="form-control" name="partnership_type">
+          <option value="research_collab">Research Collaboration</option>
+          <option value="industry_partner">Industry Partnership</option>
+          <option value="visiting_scholar">Visiting Scholar</option>
+          <option value="media">Media Inquiry</option>
+          <option value="internship">Student Internship</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea class="form-control" name="message" rows="6" required></textarea></div>
+      <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

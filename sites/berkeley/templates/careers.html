@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Careers at UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.65),rgba(0,50,98,0.65)),url('{{ url_for('static', filename='images/campus_007.svg') }}');background-size:cover;">
+  <div class="container"><h1>Work at Berkeley</h1><p>Faculty, postdoc, and staff positions across the campus.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <table>
+      <thead><tr><th>Position</th><th>Department</th><th>Type</th><th>Deadline</th><th>Salary Range</th><th>Location</th></tr></thead>
+      <tbody>
+      {% for p in positions %}
+        <tr><td>{{ p.title }}</td><td>{{ p.department }}</td><td>{{ p.type }}</td><td>{{ p.deadline }}</td><td>{{ p.salary }}</td><td>{{ p.location }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

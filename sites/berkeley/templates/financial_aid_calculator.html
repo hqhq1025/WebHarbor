@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Cost of Attendance Calculator — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Cost of Attendance</h1><p>Estimated 9-month cost of attendance for the 2026-27 academic year.</p></div></section>
+<section class="section">
+  <div class="container">
+    <table>
+      <tbody>
+        <tr><td>In-State Tuition and Fees</td><td>${{ coa.in_state_tuition }}</td></tr>
+        <tr><td>Out-of-State Supplemental Tuition</td><td>${{ coa.out_of_state_tuition }}</td></tr>
+        <tr><td>Housing and Dining</td><td>${{ coa.housing_dining }}</td></tr>
+        <tr><td>Books and Supplies</td><td>${{ coa.books_supplies }}</td></tr>
+        <tr><td>Transportation</td><td>${{ coa.transportation }}</td></tr>
+        <tr><td>Personal Expenses</td><td>${{ coa.personal }}</td></tr>
+        <tr><td>Student Health Insurance Plan</td><td>${{ coa.health_insurance }}</td></tr>
+        <tr style="font-weight:bold;background:var(--off-white);"><td>Total (in-state)</td><td>${{ coa.in_state_tuition + coa.housing_dining + coa.books_supplies + coa.transportation + coa.personal + coa.health_insurance }}</td></tr>
+        <tr style="font-weight:bold;"><td>Total (out-of-state)</td><td>${{ coa.in_state_tuition + coa.out_of_state_tuition + coa.housing_dining + coa.books_supplies + coa.transportation + coa.personal + coa.health_insurance }}</td></tr>
+      </tbody>
+    </table>
+    <p class="mt-3"><a href="{{ url_for('financial_aid_apply') }}" class="btn btn-primary">Apply for Need-Based Aid</a></p>
+  </div>
+</section>
+{% endblock %}

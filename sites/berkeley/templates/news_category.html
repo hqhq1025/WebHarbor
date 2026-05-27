@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ hub.name }} — Berkeley News{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.65),rgba(0,50,98,0.65)),url('{{ url_for('static', filename='images/' + hub.banner_photo) }}');background-size:cover;">
+  <div class="container">
+    <p style="color:var(--gold);text-transform:uppercase;font-family:Arial;font-size:13px;letter-spacing:2px;">News Hub</p>
+    <h1>{{ hub.name }}</h1>
+    <p>{{ hub.tagline }}</p>
+  </div>
+</section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('news') }}">News</a><span>·</span>{{ hub.name }}</div></div>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">{{ hub.description }}</p>
+    <p class="text-muted mb-3">Edited by {{ hub.editor }}</p>
+    <div class="card-grid">
+      {% for a in articles %}
+        <div class="card"><div class="card-body">
+          <span class="card-category">{{ a.category }}</span>
+          <h3 class="card-title"><a href="{{ url_for('news_article', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <p class="card-text">{{ a.summary[:140] }}{% if a.summary|length > 140 %}…{% endif %}</p>
+          <p class="card-meta">{{ a.author }} · {{ a.published_date.strftime('%b %d, %Y') }}</p>
+        </div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

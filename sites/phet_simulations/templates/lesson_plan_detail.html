@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.title }} &middot; Lesson Plans{% endblock %}
+{% block content %}
+<style>
+.lpd-grid { display:grid; grid-template-columns: 2fr 1fr; gap:1.75rem; }
+@media (max-width: 900px) { .lpd-grid { grid-template-columns: 1fr; } }
+.lpd-head { background:#fffaf2; border-left:6px solid #f3a712; padding:1.2rem 1.4rem; border-radius:8px; margin-bottom:1.25rem; }
+.lpd-head h1 { margin:0 0 .35rem; font-size:1.55rem; color:#7c5400; }
+.lpd-head .lpd-meta { font-size:.88rem; color:#6b5429; }
+.lpd-pill { display:inline-block; background:#f3a712; color:#fff; border-radius:999px; padding:.15rem .6rem; font-size:.72rem; font-weight:700; margin-right:.3rem; }
+.lpd-section { margin-bottom:1.4rem; padding:1rem 1.25rem; background:#fff; border:1px solid #e7e1d2; border-radius:8px; }
+.lpd-section h2 { font-size:1.1rem; margin:0 0 .55rem; color:#7c5400; }
+.lpd-rating-form { display:flex; gap:.3rem; align-items:center; margin-top:.7rem; }
+.lpd-rating-form input[type="number"] { width:60px; padding:.3rem; }
+.lpd-comment { padding:.7rem .9rem; border-left:3px solid #f3a712; background:#fffdf6; margin-bottom:.6rem; border-radius:0 6px 6px 0; }
+.lpd-comment .lpd-comment-author { font-weight:600; font-size:.85rem; color:#7c5400; }
+.lpd-comment textarea { width:100%; padding:.5rem; border:1px solid #d4cbb1; border-radius:6px; }
+.lpd-sidebar h3 { margin-top:0; color:#7c5400; font-size:1rem; }
+.lpd-side-card { background:#fff; border:1px solid #e7e1d2; border-radius:8px; padding:.9rem 1rem; margin-bottom:.85rem; }
+.lpd-related a { color:#0079bf; font-size:.9rem; display:block; padding:.25rem 0; }
+.lpd-download-btn { display:inline-block; background:#0079bf; color:#fff; padding:.5rem 1rem; border-radius:6px; font-weight:600; margin-top:.4rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <a href="{{ url_for('lesson_plans') }}">Lesson Plans</a> / <span>{{ plan.title }}</span></nav>
+
+<section class="lpd-head">
+  <h1>{{ plan.title }}</h1>
+  <div class="lpd-meta">
+    <span class="lpd-pill">{{ plan.grade_band|capitalize }}</span>
+    <span class="lpd-pill">{{ plan.duration_min }} minutes</span>
+    By <strong>{{ plan.author }}</strong> &middot; published {{ plan.published_date }} &middot;
+    <span style="color:#cf8a00;">&#9733; {{ plan.avg_rating }}</span>
+    ({{ plan.rating_count }} rating{{ '' if plan.rating_count == 1 else 's' }})
+    &middot; {{ plan.download_count }} downloads
+  </div>
+</section>
+
+<div class="lpd-grid">
+  <div>
+    <section class="lpd-section">
+      <h2>Learning objectives</h2>
+      <p>{{ plan.objectives }}</p>
+    </section>
+
+    <section class="lpd-section">
+      <h2>Materials</h2>
+      <p>{{ plan.materials }}</p>
+    </section>
+
+    <section class="lpd-section">
+      <h2>Lesson body</h2>
+      <p>{{ plan.body }}</p>
+    </section>
+
+    {% if plan.standards %}
+    <section class="lpd-section">
+      <h2>Standards alignment</h2>
+      <p>{{ plan.standards }}</p>
+    </section>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <section class="lpd-section">
+      <h2>Rate this lesson plan</h2>
+      <form class="lpd-rating-form" method="post" action="{{ url_for('lesson_plan_rate', slug=plan.slug) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Stars (1-5):</label>
+        <input type="number" name="stars" min="1" max="5" value="5">
+        <button type="submit" class="btn btn-primary">Submit rating</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="lpd-section">
+      <h2>Comments ({{ comments|length }})</h2>
+      {% for c in comments %}
+        <div class="lpd-comment">
+          <div class="lpd-comment-author">{{ comment_users[c.user_id].name if c.user_id in comment_users else 'Teacher' }} &middot; <span style="color:#aa8;">{{ c.created_at.strftime('%Y-%m-%d') }}</span></div>
+          <div>{{ c.body }}</div>
+        </div>
+      {% else %}
+        <p>No comments yet. Be the first to share how this lesson worked in your class.</p>
+      {% endfor %}
+      {% if current_user.is_authenticated %}
+        <form method="post" action="{{ url_for('lesson_plan_comment', slug=plan.slug) }}" style="margin-top:.8rem;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea name="body" rows="3" placeholder="Share how it went in your classroom..."></textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Post comment</button>
+        </form>
+      {% else %}
+        <p><a href="{{ url_for('login') }}">Sign in</a> to leave a comment.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="lpd-sidebar">
+    <div class="lpd-side-card">
+      <h3>Linked simulation</h3>
+      {% if plan.sim %}
+        <a href="{{ url_for('simulation_detail', slug=plan.sim.slug) }}">{{ plan.sim.title }}</a>
+        <p style="margin:.4rem 0 0; font-size:.85rem; color:#6b5429;">{{ plan.sim.short_description }}</p>
+        <a class="lpd-download-btn" href="#">Download PDF</a>
+      {% endif %}
+    </div>
+
+    <div class="lpd-side-card lpd-related">
+      <h3>Related lesson plans</h3>
+      {% for r in related %}
+        <a href="{{ url_for('lesson_plan_detail', slug=r.slug) }}">{{ r.title }}</a>
+      {% else %}
+        <p style="font-size:.85rem;">No related lesson plans yet.</p>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

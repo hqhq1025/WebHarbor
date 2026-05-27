@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Report an accessibility issue &middot; {{ sim.title }}{% endblock %}
+{% block content %}
+<style>
+.ai-wrap { max-width:680px; margin:0 auto; background:#fff; padding:1.8rem 2rem; border:1px solid #c8d8f0; border-left:6px solid #0d3b66; border-radius:12px; }
+.ai-wrap h1 { color:#0d3b66; margin:0 0 .25rem; }
+.ai-wrap p.ai-sub { color:#22364b; margin:0 0 1.2rem; }
+.ai-row { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.ai-row label { font-weight:600; color:#0d3b66; font-size:.9rem; }
+.ai-row input, .ai-row select, .ai-row textarea { padding:.6rem .75rem; border:1px solid #c8d8f0; border-radius:6px; font-size:.95rem; }
+.ai-row textarea { min-height:140px; resize:vertical; }
+.ai-submit { background:#0d3b66; color:#fff; padding:.65rem 1.4rem; border:0; border-radius:8px; font-weight:600; cursor:pointer; }
+.ai-tip { background:#f4f9ff; border:1px dashed #c8d8f0; padding:.75rem 1rem; border-radius:8px; color:#0d3b66; font-size:.85rem; margin-bottom:1.2rem; }
+</style>
+
+<div class="ai-wrap">
+  <nav class="breadcrumb"><a href="{{ url_for('accessibility_sim', slug=sim.slug) }}">{{ sim.title }}</a> / <span>Report accessibility issue</span></nav>
+  <h1>Report an accessibility issue</h1>
+  <p class="ai-sub">Reports route directly to PhET's accessibility engineering team. Please describe the assistive technology you used.</p>
+
+  <div class="ai-tip">
+    Examples of useful context: screen reader name and version, browser, whether voicing was on, the specific
+    control that did not work as expected.
+  </div>
+
+  <form method="post" action="{{ url_for('sim_report_inaccessibility', slug=sim.slug) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="ai-row">
+      <label>Issue type <span style="color:#c0392b;">*</span></label>
+      <select name="issue_type" required>
+        <option value="">Choose issue type</option>
+        <option value="keyboard">Keyboard navigation</option>
+        <option value="screen-reader">Screen reader / voicing</option>
+        <option value="sonification">Sonification</option>
+        <option value="color-contrast">Colour contrast</option>
+        <option value="zoom">Pan and zoom</option>
+        <option value="alt-input">Alternative input device</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="ai-row">
+      <label>Describe the issue <span style="color:#c0392b;">*</span></label>
+      <textarea name="body" required placeholder="Assistive tech, browser, exact problem..."></textarea>
+    </div>
+    <button class="ai-submit" type="submit">Submit accessibility report</button>
+  </form>
+</div>
+{% endblock %}

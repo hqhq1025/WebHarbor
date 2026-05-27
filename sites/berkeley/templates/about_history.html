@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Berkeley History — 1868 to Today{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.6),rgba(0,50,98,0.6)),url('{{ url_for('static', filename='images/campus_002.svg') }}');background-size:cover;">
+  <div class="container"><h1>Our History</h1><p>From the Organic Act of 1868 to the present.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <div style="border-left:3px solid var(--gold);padding-left:24px;">
+      {% for year, headline, desc in milestones %}
+        <div style="margin-bottom:32px;">
+          <h3 style="color:var(--blue);"><span class="gold-text">{{ year }}</span> — {{ headline }}</h3>
+          <p>{{ desc }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

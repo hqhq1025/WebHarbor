@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Cal Bears Overview{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Cal Bears</h1><p>{{ total_titles }} NCAA national championships across {{ sports|length }} varsity programs</p></div></section>
+<section class="section">
+  <div class="container">
+    <h2 class="section-heading">National Champion Sports</h2>
+    <table>
+      <thead><tr><th>Sport</th><th>Season</th><th>Head Coach</th><th>Home Venue</th><th>National Titles</th></tr></thead>
+      <tbody>
+      {% for s in sports if s.national_titles > 0 %}
+        <tr><td><a href="{{ url_for('athletics_team', slug=s.slug) }}">{{ s.name }}</a></td><td>{{ s.season }}</td><td>{{ s.head_coach }}</td><td>{{ s.home_venue }}</td><td>{{ s.national_titles }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Start a Classroom Session &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.cms-wrap { max-width:660px; margin:0 auto; background:#fff; border:1px solid #d6e0e0; border-radius:12px; padding:2rem 2.25rem; }
+.cms-step { display:flex; gap:.7rem; align-items:flex-start; margin-bottom:1.4rem; }
+.cms-step-num { width:34px; height:34px; border-radius:50%; background:#00a59c; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+.cms-step h3 { margin:0 0 .35rem; color:#005249; }
+.cms-step p { margin:0; color:#506060; font-size:.9rem; }
+.cms-form-row { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1.1rem; }
+.cms-form-row label { font-weight:600; color:#005249; font-size:.92rem; }
+.cms-form-row input, .cms-form-row select { padding:.55rem .7rem; border:1px solid #b8d0cf; border-radius:6px; font-size:.95rem; }
+.cms-submit { background:#00a59c; color:#fff; padding:.65rem 1.4rem; border:0; border-radius:6px; font-weight:600; cursor:pointer; }
+.cms-tip { background:#e8f5f3; border:1px solid #b8d0cf; padding:.85rem 1rem; border-radius:8px; color:#005249; font-size:.88rem; margin-bottom:1.4rem; }
+</style>
+
+<div class="cms-wrap">
+  <nav class="breadcrumb"><a href="{{ url_for('classroom_mode') }}">Classroom Mode</a> / <span>New session</span></nav>
+  <h1 style="color:#005249;">Start a new classroom session</h1>
+
+  <div class="cms-tip">
+    Sessions stay open until you mark them complete. Share the join code with students so they land directly in
+    the right simulation.
+  </div>
+
+  <div class="cms-step">
+    <div class="cms-step-num">1</div>
+    <div>
+      <h3>Choose the simulation</h3>
+      <p>This is the simulation every student in the session opens by default.</p>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('classroom_mode_setup') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="cms-form-row">
+      <label>Simulation</label>
+      <select name="sim_id" required>
+        <option value="">Pick a simulation</option>
+        {% for s in sims %}<option value="{{ s.id }}">{{ s.title }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <div class="cms-step">
+      <div class="cms-step-num">2</div>
+      <div>
+        <h3>Name your session</h3>
+        <p>Pick something your students will recognise such as "Period 3 Forces Lab".</p>
+      </div>
+    </div>
+    <div class="cms-form-row">
+      <label>Session name</label>
+      <input type="text" name="name" required maxlength="120">
+    </div>
+
+    <div class="cms-step">
+      <div class="cms-step-num">3</div>
+      <div>
+        <h3>Expected students</h3>
+        <p>Optional. Helps the dashboard scale colour scales sensibly.</p>
+      </div>
+    </div>
+    <div class="cms-form-row">
+      <label>Expected students</label>
+      <input type="number" name="students_count" min="0" max="200" value="24">
+    </div>
+
+    <button class="cms-submit" type="submit">Generate session code</button>
+  </form>
+</div>
+{% endblock %}

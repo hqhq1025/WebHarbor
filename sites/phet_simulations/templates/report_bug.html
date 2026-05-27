@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Report a bug &middot; {{ sim.title }}{% endblock %}
+{% block content %}
+<style>
+.bug-wrap { max-width:680px; margin:0 auto; background:#fff; padding:1.8rem 2rem; border:1px solid #f3c8c1; border-left:6px solid #c0392b; border-radius:12px; }
+.bug-wrap h1 { color:#7a2014; margin:0 0 .25rem; }
+.bug-wrap p.bug-sub { color:#7a2014; margin:0 0 1.2rem; }
+.bug-row { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.bug-row label { font-weight:600; color:#7a2014; font-size:.9rem; }
+.bug-row input, .bug-row select, .bug-row textarea { padding:.6rem .75rem; border:1px solid #f3c8c1; border-radius:6px; font-size:.95rem; }
+.bug-row textarea { min-height:140px; resize:vertical; }
+.bug-submit { background:#c0392b; color:#fff; padding:.65rem 1.4rem; border:0; border-radius:8px; font-weight:600; cursor:pointer; }
+.bug-tip { background:#fffaf5; border:1px dashed #f3c8c1; padding:.75rem 1rem; border-radius:8px; color:#7a2014; font-size:.85rem; margin-bottom:1.2rem; }
+</style>
+
+<div class="bug-wrap">
+  <nav class="breadcrumb"><a href="{{ url_for('simulation_detail', slug=sim.slug) }}">{{ sim.title }}</a> / <span>Report a bug</span></nav>
+  <h1>Report a bug in {{ sim.title }}</h1>
+  <p class="bug-sub">Help us reproduce the issue. Triage runs weekly; severe issues get same-week fixes.</p>
+
+  <div class="bug-tip">
+    Please include the browser, operating system, and exact steps you took. Screenshots can be attached
+    after submission via a follow-up email link.
+  </div>
+
+  <form method="post" action="{{ url_for('sim_report_bug', slug=sim.slug) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="bug-row">
+      <label>Summary <span style="color:#c0392b;">*</span></label>
+      <input type="text" name="summary" required maxlength="240" placeholder="One-line summary of the bug">
+    </div>
+    <div class="bug-row">
+      <label>Severity</label>
+      <select name="severity">
+        <option value="low">Low &mdash; minor cosmetic issue</option>
+        <option value="medium" selected>Medium &mdash; affects normal use</option>
+        <option value="high">High &mdash; simulation unusable</option>
+        <option value="critical">Critical &mdash; data loss / accessibility blocker</option>
+      </select>
+    </div>
+    <div class="bug-row">
+      <label>Detailed description <span style="color:#c0392b;">*</span></label>
+      <textarea name="body" required placeholder="Browser, OS, exact steps, expected vs observed behaviour..."></textarea>
+    </div>
+    <button class="bug-submit" type="submit">Submit bug report</button>
+  </form>
+</div>
+{% endblock %}

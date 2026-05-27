@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}FAQ &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.faq-hero { background:#f3f7fb; border:1px solid #dde7ef; padding:1.5rem 1.8rem; border-radius:12px; margin-bottom:1.4rem; }
+.faq-hero h1 { margin:0 0 .25rem; color:#22364b; }
+.faq-hero p { margin:0; color:#506070; }
+.faq-cat-tabs { display:flex; flex-wrap:wrap; gap:.45rem; margin-bottom:1.3rem; }
+.faq-cat-tab { padding:.4rem .9rem; background:#fff; border:1px solid #c9d5e0; border-radius:999px; font-size:.85rem; color:#22364b; font-weight:600; }
+.faq-cat-tab.active { background:#22364b; color:#fff; border-color:#22364b; }
+.faq-list { display:flex; flex-direction:column; gap:.7rem; }
+.faq-item { background:#fff; padding:1.05rem 1.2rem; border:1px solid #dde7ef; border-radius:10px; border-left:5px solid #0079bf; }
+.faq-q { font-weight:700; color:#22364b; margin:0 0 .35rem; }
+.faq-a { color:#3c4a55; margin:0; font-size:.94rem; }
+.faq-foot { display:flex; align-items:center; justify-content:space-between; margin-top:.6rem; padding-top:.5rem; border-top:1px dashed #dde7ef; }
+.faq-helpful { color:#506070; font-size:.78rem; }
+.faq-foot button { background:#e8f0f7; border:0; color:#0a3a5f; padding:.3rem .7rem; border-radius:6px; font-size:.82rem; font-weight:600; cursor:pointer; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <span>FAQ</span></nav>
+
+<section class="faq-hero">
+  <h1>Frequently asked questions</h1>
+  <p>Quick answers to the questions we hear most often. If yours is not here, the <a href="{{ url_for('contact') }}">contact page</a> reaches us directly.</p>
+</section>
+
+<div class="faq-cat-tabs">
+  <a class="faq-cat-tab {% if not category %}active{% endif %}" href="{{ url_for('faq') }}">All</a>
+  {% for c in categories %}
+    <a class="faq-cat-tab {% if category == c %}active{% endif %}" href="{{ url_for('faq', category=c) }}">{{ c|capitalize }}</a>
+  {% endfor %}
+</div>
+
+<div class="faq-list">
+  {% for it in items %}
+    <article class="faq-item">
+      <p class="faq-q">{{ it.question }}</p>
+      <p class="faq-a">{{ it.answer }}</p>
+      <div class="faq-foot">
+        <span class="faq-helpful">{{ it.helpful }} people found this helpful</span>
+        <form method="post" action="{{ url_for('faq_helpful', item_id=it.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Mark helpful</button>
+        </form>
+      </div>
+    </article>
+  {% else %}
+    <p class="empty-state">No FAQ items in this category yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

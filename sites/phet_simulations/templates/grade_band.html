@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ grade.name }} simulations &middot; {{ site_title }}{% endblock %}
+{% block content %}
+{% set band_colors = {'elementary':'#4caf50','middle':'#1976d2','high':'#d32f2f','university':'#7b1fa2'} %}
+{% set band_color = band_colors.get(grade.slug, '#0079bf') %}
+<style>
+.gb-banner { background:{{ band_color }}; color:#fff; padding:2.2rem 2rem; border-radius:14px; margin-bottom:1.8rem; position:relative; overflow:hidden; }
+.gb-banner::after { content:""; position:absolute; right:-40px; top:-40px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,.10); }
+.gb-banner h1 { margin:0 0 .25rem; font-size:2rem; position:relative; z-index:1; }
+.gb-banner p { margin:0; opacity:.95; font-size:1rem; position:relative; z-index:1; max-width:640px; }
+.gb-banner .gb-age { display:inline-block; background:rgba(255,255,255,.18); padding:.2rem .7rem; border-radius:999px; font-size:.78rem; margin-top:.6rem; }
+.gb-stats-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:.85rem; margin-bottom:2rem; }
+.gb-stat { background:#fff; border:1px solid #ddd; border-top:4px solid {{ band_color }}; border-radius:8px; padding:1rem 1.1rem; }
+.gb-stat .gb-stat-num { font-size:1.75rem; font-weight:700; color:{{ band_color }}; }
+.gb-stat .gb-stat-label { font-size:.82rem; color:#666; text-transform:uppercase; letter-spacing:.04em; }
+.gb-section { margin-bottom:2.4rem; }
+.gb-section h2 { color:{{ band_color }}; border-bottom:2px solid {{ band_color }}33; padding-bottom:.4rem; margin-bottom:.9rem; }
+.gb-act-list, .gb-plan-list { list-style:none; padding:0; }
+.gb-act-list li, .gb-plan-list li { padding:.65rem .9rem; background:#fff; border:1px solid #eee; border-left:4px solid {{ band_color }}; border-radius:6px; margin-bottom:.5rem; display:flex; justify-content:space-between; align-items:center; }
+.gb-act-list a, .gb-plan-list a { color:#222; font-weight:600; }
+.gb-act-list .meta, .gb-plan-list .meta { color:#888; font-size:.82rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <span>Grade band: {{ grade.name }}</span></nav>
+
+<section class="gb-banner">
+  <h1>{{ grade.name }}</h1>
+  <span class="gb-age">{{ grade.age_range }}</span>
+  <p style="margin-top:.7rem;">Simulations, activities, and lesson plans curated for {{ grade.name.lower() }} learners.</p>
+</section>
+
+<div class="gb-stats-row">
+  <div class="gb-stat">
+    <div class="gb-stat-num">{{ sims|length }}</div>
+    <div class="gb-stat-label">Simulations</div>
+  </div>
+  <div class="gb-stat">
+    <div class="gb-stat-num">{{ activities|length }}</div>
+    <div class="gb-stat-label">Activities</div>
+  </div>
+  <div class="gb-stat">
+    <div class="gb-stat-num">{{ lesson_plans|length }}</div>
+    <div class="gb-stat-label">Lesson plans</div>
+  </div>
+</div>
+
+<section class="gb-section">
+  <h2>Simulations for {{ grade.name }}</h2>
+  {% if sims %}
+    <div class="sim-grid">
+      {% for sim in sims %}{% include "_sim_card.html" %}{% endfor %}
+    </div>
+  {% else %}
+    <p class="empty-state">No simulations tagged for this grade yet.</p>
+  {% endif %}
+</section>
+
+<section class="gb-section">
+  <h2>Top activities for this band</h2>
+  {% if activities %}
+    <ul class="gb-act-list">
+      {% for a in activities %}
+        <li>
+          <a href="{{ url_for('activity_detail', activity_id=a.id) }}">{{ a.title }}</a>
+          <span class="meta">{{ a.author }} &middot; {{ a.duration_min }} min &middot; {{ a.download_count }} downloads</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No activities yet for this grade.</p>
+  {% endif %}
+</section>
+
+<section class="gb-section">
+  <h2>Featured lesson plans</h2>
+  {% if lesson_plans %}
+    <ul class="gb-plan-list">
+      {% for p in lesson_plans %}
+        <li>
+          <a href="{{ url_for('lesson_plan_detail', slug=p.slug) }}">{{ p.title }}</a>
+          <span class="meta">{{ p.duration_min }} min &middot; &#9733; {{ p.avg_rating }} &middot; {{ p.download_count }} downloads</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No lesson plans for this band yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

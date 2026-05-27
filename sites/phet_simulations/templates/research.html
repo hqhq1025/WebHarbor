@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Research publications &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.rsr-head { background:#22364b; color:#fff; padding:1.7rem 1.8rem; border-radius:12px; margin-bottom:1.6rem; }
+.rsr-head h1 { margin:0 0 .25rem; font-size:1.7rem; }
+.rsr-head p { margin:0; opacity:.85; }
+.rsr-year-filter { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.3rem; }
+.rsr-year-pill { padding:.3rem .85rem; background:#fff; border:1px solid #ccd5df; color:#22364b; border-radius:999px; font-size:.82rem; font-weight:600; }
+.rsr-year-pill.active { background:#22364b; color:#fff; border-color:#22364b; }
+.rsr-paper { background:#fff; border:1px solid #dde5ee; border-radius:8px; padding:1rem 1.2rem; margin-bottom:.9rem; border-left:5px solid #f3a712; }
+.rsr-paper h3 { margin:0 0 .35rem; font-size:1.05rem; }
+.rsr-paper h3 a { color:#22364b; }
+.rsr-paper-authors { color:#506070; font-size:.85rem; font-style:italic; margin-bottom:.4rem; }
+.rsr-paper-venue { display:inline-block; background:#fff7e7; color:#7c5400; padding:.1rem .55rem; border-radius:999px; font-size:.72rem; font-weight:700; }
+.rsr-paper-abs { color:#3c4a55; font-size:.88rem; margin:.55rem 0 0; }
+.rsr-paper-meta { color:#7a8794; font-size:.78rem; margin-top:.35rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('about') }}">About</a> / <span>Research</span></nav>
+
+<section class="rsr-head">
+  <h1>Research publications</h1>
+  <p>Peer-reviewed publications that report on, or use, PhET interactive simulations.</p>
+</section>
+
+<div class="rsr-year-filter">
+  <a class="rsr-year-pill {% if not year %}active{% endif %}" href="{{ url_for('research') }}">All years</a>
+  {% for y in years %}
+    <a class="rsr-year-pill {% if year == (y|string) %}active{% endif %}" href="{{ url_for('research', year=y) }}">{{ y }}</a>
+  {% endfor %}
+</div>
+
+{% if papers %}
+  {% for p in papers %}
+    <article class="rsr-paper">
+      <h3><a href="{{ url_for('research_paper', slug=p.slug) }}">{{ p.title }}</a></h3>
+      <div class="rsr-paper-authors">{{ p.authors }}</div>
+      <span class="rsr-paper-venue">{{ p.venue }} &middot; {{ p.year }}</span>
+      <p class="rsr-paper-abs">{{ p.abstract[:240] }}{% if p.abstract|length > 240 %}...{% endif %}</p>
+      <div class="rsr-paper-meta">{{ p.citation_count }} citations &middot; DOI: {{ p.doi }}</div>
+    </article>
+  {% endfor %}
+{% else %}
+<p class="empty-state">No publications match this filter.</p>
+{% endif %}
+{% endblock %}

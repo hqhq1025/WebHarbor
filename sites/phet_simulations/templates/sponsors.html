@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Sponsors &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.sp-hero { background:#fff; padding:1.5rem 1.7rem; border:1px solid #ddd; border-radius:12px; margin-bottom:1.6rem; text-align:center; }
+.sp-hero h1 { margin:0 0 .25rem; color:#1f2c3a; }
+.sp-hero p { margin:0; color:#506070; }
+.sp-tier { margin-bottom:2rem; }
+.sp-tier h2 { color:#0079bf; border-bottom:2px solid #cee1f2; padding-bottom:.3rem; }
+.sp-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+.sp-card { background:#fff; padding:1.1rem 1.2rem; border:1px solid #ddd; border-radius:10px; transition:transform .15s; }
+.sp-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.06); }
+.sp-card h3 { margin:0 0 .25rem; }
+.sp-card h3 a { color:#1f2c3a; }
+.sp-card-tier { display:inline-block; padding:.1rem .55rem; border-radius:999px; font-size:.7rem; font-weight:700; margin-bottom:.4rem; }
+.tier-principal { background:#0079bf; color:#fff; }
+.tier-sustaining { background:#27ae60; color:#fff; }
+.tier-supporting { background:#7a3e9d; color:#fff; }
+.sp-card-blurb { font-size:.85rem; color:#506070; margin:0; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('about') }}">About</a> / <span>Sponsors</span></nav>
+
+<section class="sp-hero">
+  <h1>Our sponsors</h1>
+  <p>PhET is free to use thanks to the generous support of foundations and partner organisations listed below.</p>
+</section>
+
+{% for tier in ['principal', 'sustaining', 'supporting'] %}
+  {% if tier in by_tier %}
+    <section class="sp-tier">
+      <h2>{{ tier|capitalize }} sponsors</h2>
+      <div class="sp-grid">
+        {% for sp in by_tier[tier] %}
+          <article class="sp-card">
+            <span class="sp-card-tier tier-{{ tier }}">{{ tier }}</span>
+            <h3><a href="{{ url_for('sponsor_detail', slug=sp.slug) }}">{{ sp.name }}</a></h3>
+            <p class="sp-card-blurb">{{ sp.blurb[:160] }}{% if sp.blurb|length > 160 %}...{% endif %}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endfor %}
+{% endblock %}

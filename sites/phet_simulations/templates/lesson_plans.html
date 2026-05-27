@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Lesson Plans &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.lp-page-head { background: linear-gradient(135deg, #0079bf 0%, #054a7a 100%); color:#fff; padding:1.75rem 1.4rem; border-radius:10px; margin-bottom:1.4rem; }
+.lp-page-head h1 { margin:0 0 .35rem; font-size:1.7rem; }
+.lp-page-head p { margin:0; opacity:.92; font-size:.95rem; }
+.lp-filterbar { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; background:#f7f9fc; padding:.85rem 1rem; border:1px solid #dde5ee; border-radius:8px; margin-bottom:1.5rem; }
+.lp-filterbar label { font-size:.85rem; color:#506070; font-weight:600; }
+.lp-filterbar select { padding:.4rem .55rem; border:1px solid #c9d5e0; border-radius:6px; background:#fff; }
+.lp-filterbar .lp-result-count { margin-left:auto; color:#506070; font-size:.85rem; }
+.lp-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.85rem; }
+.lp-card { display:grid; grid-template-columns: 92px 1fr auto; gap:1rem; padding:.95rem 1rem; background:#fff; border:1px solid #dde5ee; border-left:5px solid #0079bf; border-radius:8px; }
+.lp-card-thumb { width:92px; height:64px; border-radius:6px; background:#eef3f8; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.lp-card-thumb img { max-width:100%; max-height:100%; object-fit:contain; }
+.lp-card-thumb-placeholder { font-size:.7rem; color:#88a; padding:.25rem; text-align:center; }
+.lp-card h3 { margin:0 0 .25rem; font-size:1.05rem; }
+.lp-card h3 a { color:#0a3a5f; }
+.lp-card-meta { font-size:.82rem; color:#506070; }
+.lp-card-meta .lp-pill { background:#e7f1f9; color:#054a7a; border-radius:999px; padding:.1rem .55rem; font-size:.74rem; margin-right:.35rem; font-weight:600; }
+.lp-card-stats { text-align:right; font-size:.8rem; color:#506070; align-self:center; }
+.lp-card-stats .lp-rating { color:#f3a712; font-weight:700; }
+.lp-submit-cta { background:#fff; border:2px dashed #0079bf; padding:1.5rem; border-radius:10px; margin-top:1.5rem; text-align:center; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <a href="{{ url_for('teachers') }}">Teaching</a> / <span>Lesson Plans</span></nav>
+
+<section class="lp-page-head">
+  <h1>Teacher-contributed lesson plans</h1>
+  <p>Browse {{ total }} lesson plans authored by PhET teachers-in-residence and the global teacher community.</p>
+</section>
+
+<form class="lp-filterbar" method="get" action="{{ url_for('lesson_plans') }}">
+  <label>Grade band</label>
+  <select name="grade">
+    <option value="">All grades</option>
+    {% for g in grade_levels %}
+      <option value="{{ g.slug }}" {% if grade == g.slug %}selected{% endif %}>{{ g.name }}</option>
+    {% endfor %}
+  </select>
+  <label>Subject</label>
+  <select name="subject">
+    <option value="">All subjects</option>
+    {% for s in primary_subjects %}
+      <option value="{{ s.slug }}" {% if subject == s.slug %}selected{% endif %}>{{ s.name }}</option>
+    {% endfor %}
+  </select>
+  <label>Sort</label>
+  <select name="sort">
+    <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most downloaded</option>
+    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+    <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Highest rated</option>
+  </select>
+  <button class="btn btn-primary" type="submit">Apply</button>
+  <span class="lp-result-count">{{ total }} plan{{ '' if total == 1 else 's' }}</span>
+</form>
+
+{% if plans %}
+<ul class="lp-list">
+  {% for plan in plans %}
+    <li class="lp-card">
+      <div class="lp-card-thumb">
+        {% if plan.sim and plan.sim.slug in available_thumbnails %}
+          <img src="{{ url_for('static', filename='images/sims/' ~ plan.sim.slug ~ '.png') }}" alt="{{ plan.sim.title }}">
+        {% else %}
+          <span class="lp-card-thumb-placeholder">{{ plan.title[:20] }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <h3><a href="{{ url_for('lesson_plan_detail', slug=plan.slug) }}">{{ plan.title }}</a></h3>
+        <div class="lp-card-meta">
+          <span class="lp-pill">{{ plan.grade_band|capitalize }}</span>
+          <span class="lp-pill">{{ plan.duration_min }} min</span>
+          By {{ plan.author }} &middot; published {{ plan.published_date }}
+        </div>
+      </div>
+      <div class="lp-card-stats">
+        <div class="lp-rating">{{ plan.avg_rating }} &#9733;</div>
+        <div>{{ plan.rating_count }} rating{{ '' if plan.rating_count == 1 else 's' }}</div>
+        <div>{{ plan.download_count }} downloads</div>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty-state">No lesson plans match the current filters.</p>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+<div class="lp-submit-cta">
+  <h3>Have a lesson plan you would like to share?</h3>
+  <a class="btn btn-primary" href="{{ url_for('submit_lesson_plan') }}">Submit your lesson plan</a>
+</div>
+{% else %}
+<div class="lp-submit-cta">
+  <h3>Sign in to contribute</h3>
+  <p><a href="{{ url_for('login') }}">Sign in</a> or <a href="{{ url_for('register') }}">create an account</a> to submit a lesson plan.</p>
+</div>
+{% endif %}
+{% endblock %}

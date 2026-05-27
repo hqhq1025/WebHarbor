@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ workshop.title }} &middot; Workshops{% endblock %}
+{% block content %}
+<style>
+.wsd-card { background:#fff; padding:1.8rem 2rem; border:1px solid #dde5ee; border-radius:14px; max-width:780px; margin:0 auto; }
+.wsd-card h1 { margin:0 0 .35rem; color:#0a3a5f; }
+.wsd-meta { color:#506070; font-size:.92rem; margin-bottom:1.2rem; }
+.wsd-meta strong { color:#0a3a5f; }
+.wsd-info { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:.8rem; background:#f3f7fb; padding:.95rem 1.1rem; border-radius:10px; margin-bottom:1.3rem; }
+.wsd-info-item .wsd-label { color:#506070; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+.wsd-info-item .wsd-value { color:#0a3a5f; font-weight:600; font-size:.96rem; }
+.wsd-desc { font-size:1rem; line-height:1.65; color:#22364b; margin-bottom:1.4rem; }
+.wsd-cta { padding:1.1rem 1.25rem; background:#fff8f0; border:1px solid #f3c8a3; border-radius:10px; display:flex; justify-content:space-between; align-items:center; }
+.wsd-cta-info { color:#7a4500; }
+.wsd-cta-info strong { color:#7a4500; }
+.wsd-cta a, .wsd-cta button { background:#cd6212; color:#fff; padding:.5rem 1rem; border:0; border-radius:6px; cursor:pointer; font-weight:600; }
+.wsd-cta.registered { background:#e9f5ed; border-color:#9fd5b8; }
+.wsd-cta.registered .wsd-cta-info { color:#0d6b2e; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('workshops') }}">Workshops</a> / <span>{{ workshop.title }}</span></nav>
+
+<article class="wsd-card">
+  <h1>{{ workshop.title }}</h1>
+  <div class="wsd-meta">Presented by <strong>{{ workshop.presenter }}</strong></div>
+
+  <div class="wsd-info">
+    <div class="wsd-info-item">
+      <div class="wsd-label">Date</div>
+      <div class="wsd-value">{{ workshop.held_on.strftime('%B %d, %Y') }}</div>
+    </div>
+    <div class="wsd-info-item">
+      <div class="wsd-label">Duration</div>
+      <div class="wsd-value">{{ workshop.duration_min }} minutes</div>
+    </div>
+    <div class="wsd-info-item">
+      <div class="wsd-label">Location</div>
+      <div class="wsd-value">{{ workshop.location }}</div>
+    </div>
+    <div class="wsd-info-item">
+      <div class="wsd-label">Seats</div>
+      <div class="wsd-value">{{ workshop.registered }} / {{ workshop.capacity }} taken</div>
+    </div>
+  </div>
+
+  <p class="wsd-desc">{{ workshop.description }}</p>
+
+  {% if registered %}
+    <div class="wsd-cta registered">
+      <div class="wsd-cta-info"><strong>You are registered.</strong> Look out for joining details via email.</div>
+    </div>
+  {% else %}
+    <div class="wsd-cta">
+      <div class="wsd-cta-info"><strong>Reserve your seat.</strong> Free for educators worldwide.</div>
+      {% if current_user.is_authenticated %}
+        <form method="post" action="{{ url_for('workshop_register', slug=workshop.slug) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit">Register</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('login') }}">Sign in to register</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</article>
+{% endblock %}

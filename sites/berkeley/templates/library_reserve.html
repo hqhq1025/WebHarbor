@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Reserve a Room — {{ lib.name }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Reserve a Room</h1><p>{{ lib.name }}</p></div></section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('library_index') }}">Library</a><span>·</span><a href="{{ url_for('library_branch', slug=lib.slug) }}">{{ lib.name }}</a><span>·</span>Reserve</div></div>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <img src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Room Type</label>
+        <select class="form-control" name="room_type">
+          <option>Study Room</option><option>Group Room (4 people)</option>
+          <option>Group Room (8 people)</option><option>Conference Room</option>
+          <option>Media Lab</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date</label><input class="form-control" name="reserve_date" placeholder="2026-09-15" required></div>
+        <div class="form-group"><label>Time Slot</label>
+          <select class="form-control" name="time_slot">
+            <option>9:00am – 11:00am</option><option>11:00am – 1:00pm</option>
+            <option>1:00pm – 3:00pm</option><option>3:00pm – 5:00pm</option><option>5:00pm – 7:00pm</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Group Size</label><input type="number" min="1" max="20" class="form-control" name="group_size" value="1"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit Reservation</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

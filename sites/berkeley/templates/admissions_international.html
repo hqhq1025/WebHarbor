@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}International Admissions — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.7),rgba(0,50,98,0.7)),url('{{ url_for('static', filename='images/campus_011.svg') }}');background-size:cover;">
+  <div class="container"><h1>International Admissions</h1><p>Berkeley enrolls students from over 100 countries every year.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">International students applying to Berkeley apply through the same UC Application as domestic students, but must meet additional requirements including English proficiency demonstration.</p>
+    <h2 class="section-heading">English Proficiency</h2>
+    <table>
+      <thead><tr><th>Exam</th><th>Minimum Score</th></tr></thead>
+      <tbody>
+        <tr><td>TOEFL iBT</td><td>80 (the average admitted student scored 110)</td></tr>
+        <tr><td>IELTS Academic</td><td>6.5 (the average admitted student scored 7.5)</td></tr>
+        <tr><td>Duolingo English Test</td><td>120</td></tr>
+        <tr><td>Cambridge English: Advanced</td><td>176</td></tr>
+        <tr><td>Pearson Test of English Academic</td><td>65</td></tr>
+      </tbody>
+    </table>
+    <h2 class="section-heading mt-4">Visa and Immigration</h2>
+    <p>After admission, students apply for an F-1 student visa through Berkeley\'s International Office. The office offers immigration advising, work authorization, and the OPT/CPT process.</p>
+    <div class="d-flex gap-2 mt-3">
+      <a href="{{ url_for('admissions_apply') }}" class="btn btn-gold">Start Application</a>
+      <a href="{{ url_for('student_service', slug='international-office') }}" class="btn btn-outline">International Office</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

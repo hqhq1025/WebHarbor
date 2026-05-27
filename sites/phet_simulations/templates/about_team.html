@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Our Team &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.team-banner { background:#fff8eb; padding:1.6rem 1.8rem; border-radius:10px; border-left:6px solid #f3a712; margin-bottom:1.6rem; }
+.team-banner h1 { margin:0 0 .3rem; color:#7c5400; }
+.team-banner p { margin:0; color:#7a6929; }
+.team-jump { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1.4rem; }
+.team-jump a { padding:.35rem .8rem; background:#fff; border:1px solid #dec79b; color:#7c5400; border-radius:999px; font-size:.82rem; font-weight:600; }
+.team-section { margin-bottom:2rem; }
+.team-section h2 { color:#7c5400; border-bottom:1px solid #ecd9b3; padding-bottom:.35rem; }
+.team-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; }
+.team-member-card { background:#fff; padding:1rem 1.1rem; border:1px solid #ecd9b3; border-radius:10px; transition:transform .12s; }
+.team-member-card:hover { transform:translateY(-3px); border-color:#f3a712; }
+.team-member-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#f3a712,#cc8400); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:700; margin-bottom:.5rem; }
+.team-member-card h3 { margin:0 0 .25rem; font-size:1rem; }
+.team-member-card h3 a { color:#3c2a00; }
+.team-member-role { font-size:.82rem; color:#7c5400; font-weight:600; margin-bottom:.35rem; }
+.team-member-bio { font-size:.82rem; color:#5a4d22; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('about') }}">About</a> / <span>Our Team</span></nav>
+
+<section class="team-banner">
+  <h1>The PhET team</h1>
+  <p>A research-driven group of engineers, designers, teachers, and researchers at the University of Colorado Boulder.</p>
+</section>
+
+<div class="team-jump">
+  {% for t in teams %}<a href="#team-{{ t }}">{{ t|capitalize }}</a>{% endfor %}
+</div>
+
+{% for t in teams %}
+<section class="team-section" id="team-{{ t }}">
+  <h2>{{ t|capitalize }}</h2>
+  <div class="team-grid">
+    {% for m in members if m.team == t %}
+      <article class="team-member-card">
+        <div class="team-member-avatar">{{ m.name[:1] }}</div>
+        <h3><a href="{{ url_for('team_member_detail', slug=m.slug) }}">{{ m.name }}</a></h3>
+        <div class="team-member-role">{{ m.role }}</div>
+        <p class="team-member-bio">{{ m.bio[:140] }}{% if m.bio|length > 140 %}...{% endif %}</p>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

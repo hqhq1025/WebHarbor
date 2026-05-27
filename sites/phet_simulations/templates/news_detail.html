@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} &middot; News{% endblock %}
+{% block content %}
+<style>
+.nd-wrap { max-width:780px; margin:0 auto; }
+.nd-banner { background:linear-gradient(135deg,#0a4b66,#076b85); color:#fff; padding:1.8rem 2rem; border-radius:14px; margin-bottom:1.5rem; }
+.nd-banner h1 { margin:0 0 .35rem; font-size:1.7rem; }
+.nd-banner .nd-meta { opacity:.9; font-size:.88rem; }
+.nd-cat { display:inline-block; background:rgba(255,255,255,.18); padding:.15rem .6rem; border-radius:999px; font-size:.72rem; font-weight:700; margin-bottom:.6rem; }
+.nd-summary { font-style:italic; color:#3c4a55; padding:.9rem 1.1rem; border-left:4px solid #0a4b66; background:#f4f9fb; margin-bottom:1.4rem; border-radius:0 8px 8px 0; }
+.nd-body { font-size:1.02rem; line-height:1.65; color:#22364b; padding:0 .2rem; }
+.nd-comments { margin-top:2.2rem; padding-top:1rem; border-top:1px solid #dde5ee; }
+.nd-comments h3 { color:#0a4b66; }
+.nd-comment { background:#fff; padding:.7rem .95rem; border:1px solid #dde5ee; border-radius:8px; margin-bottom:.65rem; }
+.nd-comment .nd-comment-author { font-weight:600; color:#0a4b66; font-size:.85rem; }
+.nd-comment-body { font-size:.92rem; color:#3c4a55; }
+.nd-comment-form textarea { width:100%; padding:.55rem; border:1px solid #c5d3dd; border-radius:6px; }
+.nd-related h3 { color:#0a4b66; margin-top:2rem; }
+.nd-related-list { list-style:none; padding:0; }
+.nd-related-list li { padding:.4rem 0; border-bottom:1px dashed #dde5ee; }
+.nd-related-list a { color:#0079bf; }
+</style>
+
+<div class="nd-wrap">
+  <nav class="breadcrumb"><a href="{{ url_for('news_index') }}">News</a> / <span>{{ article.title[:55] }}{% if article.title|length > 55 %}...{% endif %}</span></nav>
+
+  <section class="nd-banner">
+    <span class="nd-cat">{{ article.category }}</span>
+    <h1>{{ article.title }}</h1>
+    <div class="nd-meta">By {{ article.author }} &middot; {{ article.published_date }} &middot; {{ article.view_count }} views</div>
+  </section>
+
+  <p class="nd-summary">{{ article.summary }}</p>
+  <div class="nd-body"><p>{{ article.body }}</p></div>
+
+  <section class="nd-comments">
+    <h3>Discussion ({{ comments|length }})</h3>
+    {% for c in comments %}
+      <div class="nd-comment">
+        <div class="nd-comment-author">{{ comment_users[c.user_id].name if c.user_id in comment_users else 'Reader' }} &middot; <span style="color:#7a8794; font-weight:400;">{{ c.created_at.strftime('%Y-%m-%d') }}</span></div>
+        <div class="nd-comment-body">{{ c.body }}</div>
+      </div>
+    {% else %}
+      <p>No comments yet.</p>
+    {% endfor %}
+    {% if current_user.is_authenticated %}
+      <form class="nd-comment-form" method="post" action="{{ url_for('news_comment', slug=article.slug) }}" style="margin-top:.8rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea name="body" rows="3" placeholder="Share your thoughts..."></textarea>
+        <button class="btn btn-primary" type="submit" style="margin-top:.4rem;">Post comment</button>
+      </form>
+    {% else %}
+      <p><a href="{{ url_for('login') }}">Sign in</a> to comment.</p>
+    {% endif %}
+  </section>
+
+  <section class="nd-related">
+    <h3>More in {{ article.category }}</h3>
+    <ul class="nd-related-list">
+      {% for r in related %}
+        <li><a href="{{ url_for('news_detail', slug=r.slug) }}">{{ r.title }}</a> &middot; <span style="color:#7a8794;">{{ r.published_date }}</span></li>
+      {% else %}
+        <li>No related stories.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

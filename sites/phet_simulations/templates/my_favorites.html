@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My favorites &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.fav-head { background:linear-gradient(135deg,#ff5e7a,#c0394e); color:#fff; padding:1.5rem 1.7rem; border-radius:14px; margin-bottom:1.5rem; }
+.fav-head h1 { margin:0 0 .25rem; }
+.fav-head p { margin:0; opacity:.92; }
+.fav-empty { background:#fff; padding:2rem; border:2px dashed #f3c8c1; border-radius:10px; text-align:center; color:#7a2034; }
+.fav-empty p { margin:.4rem 0; }
+.fav-cta { background:#c0394e; color:#fff; padding:.5rem 1rem; border-radius:6px; }
+</style>
+
+<section class="fav-head">
+  <h1>My favorite simulations</h1>
+  <p>{{ sims|length }} simulation{{ '' if sims|length == 1 else 's' }} saved. Use the heart icon on any simulation page to add or remove.</p>
+</section>
+
+{% if sims %}
+  <div class="sim-grid">
+    {% for sim in sims %}{% include "_sim_card.html" %}{% endfor %}
+  </div>
+{% else %}
+  <div class="fav-empty">
+    <h2 style="margin:0 0 .5rem; color:#7a2034;">No favorites yet</h2>
+    <p>Browse the catalog and tap the heart on any simulation page to save it here.</p>
+    <p><a class="fav-cta" href="{{ url_for('simulations') }}">Browse simulations</a></p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Update Your Alumni Directory Profile{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Update Your Alumni Profile</h1><p>Tell us where life has taken you so we can keep the directory current.</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Graduation Year</label><input type="number" class="form-control" name="grad_year" min="1940" max="2030" value="2020"></div>
+        <div class="form-group"><label>City</label><input class="form-control" name="city" placeholder="San Francisco"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Employer</label><input class="form-control" name="employer"></div>
+        <div class="form-group"><label>Position</label><input class="form-control" name="position"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit Update</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

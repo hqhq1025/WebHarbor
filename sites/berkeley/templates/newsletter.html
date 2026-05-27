@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Subscribe to a Berkeley Newsletter{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Newsletter Subscriptions</h1><p>Get Berkeley news, research, athletics, and alumni updates by email.</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group"><label>Email Address</label><input type="email" class="form-control" name="email" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>List</label>
+          <select class="form-control" name="list_name">
+            <option value="berkeley-weekly">Berkeley Weekly (campus highlights)</option>
+            <option value="research-news">Research News</option>
+            <option value="cal-athletics">Cal Athletics Insider</option>
+            <option value="alumni-news">Cal Alumni Bulletin</option>
+            <option value="arts-culture">Arts and Culture at Berkeley</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Frequency</label>
+          <select class="form-control" name="frequency">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Bi-weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Subscribe</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

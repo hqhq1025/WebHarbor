@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Student Services — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Student Services</h1><p>Wellness, advising, dining, housing, and support for every Berkeley student.</p></div></section>
+<section class="section">
+  <div class="container">
+    {% for cat in categories %}
+      <h2 class="section-heading">{{ cat }}</h2>
+      <div class="card-grid mb-4">
+      {% for s in services if s.category == cat %}
+        <div class="card">
+          <img src="{{ url_for('static', filename='images/' + s.photo) }}" alt="{{ s.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <div class="card-body">
+            <h3 class="card-title"><a href="{{ url_for('student_service', slug=s.slug) }}">{{ s.name }}</a></h3>
+            <p class="card-text">{{ s.location }} · {{ s.phone }}</p>
+            <p class="card-meta">{{ s.hours }}</p>
+            <p class="card-meta">{% if s.appointment_required %}Appointment required{% else %}Drop-in OK{% endif %} · {{ s.cost }}</p>
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

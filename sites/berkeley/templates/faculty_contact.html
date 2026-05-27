@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Contact Professor {{ member.name }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Contact {{ member.name }}</h1><p>{{ member.title }}</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input class="form-control" name="sender_name" required></div>
+        <div class="form-group"><label>Your Email</label><input type="email" class="form-control" name="sender_email" required></div>
+      </div>
+      <div class="form-group"><label>Subject</label><input class="form-control" name="subject" required></div>
+      <div class="form-group"><label>Purpose</label>
+        <select class="form-control" name="purpose">
+          <option value="research_inquiry">Research Inquiry</option>
+          <option value="prospective_grad_student">Prospective Graduate Student</option>
+          <option value="course_question">Course Question</option>
+          <option value="collaboration">Research Collaboration</option>
+          <option value="media">Media Inquiry</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea class="form-control" name="message" rows="6" required></textarea></div>
+      <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Classroom Mode &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.cm-hero { background: radial-gradient(circle at top left, #00a59c 0%, #007268 70%); color:#fff; padding:2.4rem 2rem; border-radius:14px; margin-bottom:2rem; }
+.cm-hero h1 { margin:0 0 .4rem; font-size:2rem; }
+.cm-hero p { margin:0; opacity:.95; max-width:680px; }
+.cm-feature-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:2rem; }
+.cm-feature { background:#fff; border:1px solid #d6e0e0; border-radius:10px; padding:1.1rem 1.2rem; }
+.cm-feature .cm-icon { width:36px; height:36px; border-radius:8px; background:#00a59c; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; margin-bottom:.6rem; }
+.cm-feature h3 { margin:0 0 .35rem; color:#005249; font-size:1rem; }
+.cm-feature p { font-size:.85rem; color:#506060; margin:0; }
+.cm-cta { background:#fff; padding:1.4rem 1.6rem; border-radius:10px; border:1px solid #d6e0e0; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.cm-cta .cm-cta-text h3 { margin:0 0 .25rem; color:#005249; }
+.cm-cta .cm-cta-text p { margin:0; color:#506060; font-size:.9rem; }
+.cm-cta a.btn { background:#00a59c; color:#fff; padding:.6rem 1.2rem; border-radius:6px; }
+.cm-section h2 { color:#005249; margin:0 0 .7rem; }
+.cm-sims-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:.8rem; margin-bottom:2rem; }
+.cm-sim-tile { background:#fff; border:1px solid #d6e0e0; border-radius:8px; padding:.7rem; text-align:center; }
+.cm-sim-tile img { max-width:100%; max-height:120px; }
+.cm-sim-tile a { color:#005249; font-size:.85rem; }
+.cm-session-table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #d6e0e0; border-radius:8px; overflow:hidden; }
+.cm-session-table th, .cm-session-table td { padding:.55rem .8rem; border-bottom:1px solid #eee; text-align:left; font-size:.9rem; }
+.cm-session-table th { background:#f4faf9; color:#005249; }
+.cm-code { font-family: monospace; background:#e8f5f3; padding:.15rem .45rem; border-radius:4px; font-weight:600; }
+</style>
+
+<section class="cm-hero">
+  <h1>Classroom Mode</h1>
+  <p>Run a live simulation session with your students. Generate a session code, share it with your class, and follow each student's progress in real time.</p>
+</section>
+
+<div class="cm-feature-row">
+  <div class="cm-feature">
+    <div class="cm-icon">1</div>
+    <h3>Pick a simulation</h3>
+    <p>Choose any featured PhET simulation as the anchor for your live session.</p>
+  </div>
+  <div class="cm-feature">
+    <div class="cm-icon">2</div>
+    <h3>Generate a code</h3>
+    <p>We mint a six-digit join code that students enter from any device.</p>
+  </div>
+  <div class="cm-feature">
+    <div class="cm-icon">3</div>
+    <h3>Run the session</h3>
+    <p>Pace the class, freeze the simulation for discussion, and see who is engaged.</p>
+  </div>
+  <div class="cm-feature">
+    <div class="cm-icon">4</div>
+    <h3>Wrap up</h3>
+    <p>Export a session summary with engagement metrics and student question highlights.</p>
+  </div>
+</div>
+
+<div class="cm-cta">
+  <div class="cm-cta-text">
+    <h3>Ready to start?</h3>
+    <p>Create a new classroom session in under thirty seconds.</p>
+  </div>
+  {% if current_user.is_authenticated %}
+    <a class="btn" href="{{ url_for('classroom_mode_setup') }}">Create a new session</a>
+  {% else %}
+    <a class="btn" href="{{ url_for('login') }}">Sign in to create a session</a>
+  {% endif %}
+</div>
+
+<section class="cm-section">
+  <h2>Featured simulations for classroom mode</h2>
+  <div class="cm-sims-grid">
+    {% for sim in sims %}
+      <div class="cm-sim-tile">
+        {% if sim.slug in available_thumbnails %}
+          <img src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
+        {% endif %}
+        <a href="{{ url_for('simulation_detail', slug=sim.slug) }}">{{ sim.title }}</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% if current_user.is_authenticated %}
+<section class="cm-section">
+  <h2>Your classroom sessions</h2>
+  {% if sessions %}
+    <table class="cm-session-table">
+      <thead><tr><th>Session</th><th>Simulation</th><th>Code</th><th>Students</th><th>Started</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in sessions %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{% set sim = s.sim_id %}Sim #{{ s.sim_id }}</td>
+            <td><span class="cm-code">{{ s.session_code }}</span></td>
+            <td>{{ s.students_count }}</td>
+            <td>{{ s.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ s.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty-state">You have not created any classroom sessions yet. Click the button above to start one.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

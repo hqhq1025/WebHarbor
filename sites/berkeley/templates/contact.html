@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Contact UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Contact Berkeley</h1><p>For general inquiries, comments, or to be routed to the right office.</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Topic</label>
+        <select class="form-control" name="topic">
+          <option>General Inquiry</option><option>Admissions</option><option>Financial Aid</option>
+          <option>Press</option><option>Alumni</option><option>Athletics</option>
+          <option>Giving</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea class="form-control" name="message" rows="6" required></textarea></div>
+      <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

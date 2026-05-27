@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Donate &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.donate-grid { display:grid; grid-template-columns: 1.2fr 1fr; gap:1.8rem; }
+@media (max-width: 900px) { .donate-grid { grid-template-columns:1fr; } }
+.donate-hero { background:linear-gradient(135deg,#c0392b,#e85d4a); color:#fff; padding:1.8rem 2rem; border-radius:14px; margin-bottom:1.6rem; }
+.donate-hero h1 { margin:0 0 .35rem; font-size:1.9rem; }
+.donate-hero p { margin:0; opacity:.95; }
+.donate-form { background:#fff; padding:1.6rem 1.8rem; border-radius:12px; border:1px solid #f3c8c1; }
+.donate-row { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.donate-row label { font-weight:600; color:#7a2014; font-size:.9rem; }
+.donate-row input, .donate-row select, .donate-row textarea { padding:.55rem .7rem; border:1px solid #f3c8c1; border-radius:6px; font-size:.95rem; }
+.donate-amounts { display:flex; flex-wrap:wrap; gap:.45rem; }
+.donate-amount-btn { padding:.45rem .9rem; border-radius:8px; background:#fff5f3; border:2px solid #f3c8c1; color:#a82a1c; font-weight:600; cursor:pointer; }
+.donate-submit { background:#c0392b; color:#fff; padding:.65rem 1.4rem; border:0; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer; }
+.donate-side h3 { color:#7a2014; }
+.donate-impact { background:#fff7f5; padding:1rem 1.2rem; border-radius:10px; border:1px solid #f3c8c1; margin-bottom:1rem; }
+.donate-sponsors { background:#fff; padding:1rem 1.2rem; border:1px solid #ddd; border-radius:10px; }
+.donate-sponsors a { color:#0079bf; display:block; padding:.25rem 0; font-size:.88rem; }
+.donate-tally { text-align:center; padding:.8rem; background:#fffaf2; color:#7c5400; border-radius:8px; margin-bottom:1rem; font-weight:600; }
+</style>
+
+<section class="donate-hero">
+  <h1>Keep PhET free for every learner</h1>
+  <p>Your contribution funds new simulations, accessibility engineering, and translations into more than a hundred languages.</p>
+</section>
+
+<div class="donate-tally">{{ total_donors }} donor{{ '' if total_donors == 1 else 's' }} have already contributed this snapshot period. Join them.</div>
+
+<div class="donate-grid">
+  <form class="donate-form" method="post" action="{{ url_for('donate') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 style="margin-top:0; color:#7a2014;">Your contribution</h2>
+
+    <div class="donate-row">
+      <label>Choose an amount</label>
+      <div class="donate-amounts">
+        {% for v in [10, 25, 50, 100, 250, 500] %}
+          <button type="button" class="donate-amount-btn" onclick="document.querySelector('input[name=amount]').value={{ v }}">${{ v }}</button>
+        {% endfor %}
+      </div>
+      <input type="number" name="amount" min="1" max="100000" step="1" placeholder="Custom amount in USD" required>
+    </div>
+
+    <div class="donate-row">
+      <label>Frequency</label>
+      <select name="frequency">
+        <option value="one-time">One-time donation</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annual">Annual</option>
+      </select>
+    </div>
+
+    <div class="donate-row">
+      <label>Your name</label>
+      <input type="text" name="donor_name" required>
+    </div>
+    <div class="donate-row">
+      <label>Email</label>
+      <input type="email" name="donor_email" required>
+    </div>
+    <div class="donate-row">
+      <label>Optional message to the team</label>
+      <textarea name="message" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="donate-submit">Contribute now</button>
+  </form>
+
+  <aside class="donate-side">
+    <div class="donate-impact">
+      <h3>What your gift funds</h3>
+      <ul>
+        <li><strong>$25</strong> &mdash; one volunteer translator credit</li>
+        <li><strong>$100</strong> &mdash; one hour of accessibility engineering</li>
+        <li><strong>$500</strong> &mdash; one student-led usability study</li>
+        <li><strong>$5,000</strong> &mdash; co-fund a new simulation prototype</li>
+      </ul>
+    </div>
+    <div class="donate-sponsors">
+      <h3>Principal sponsors</h3>
+      {% for sp in sponsors[:8] %}<a href="{{ url_for('sponsor_detail', slug=sp.slug) }}">{{ sp.name }} <small style="color:#888;">({{ sp.tier }})</small></a>{% endfor %}
+      <a href="{{ url_for('sponsors') }}" style="margin-top:.5rem; font-weight:600;">See all sponsors</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

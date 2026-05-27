@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}UC Berkeley Library — 23 Branches{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <h1>The UC Berkeley Library</h1>
+    <p>23 branches · 1.2 million volumes · open to the entire UC community</p>
+  </div>
+</section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('index') }}">Home</a><span>·</span>Library</div></div>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">The Berkeley Library system, anchored by the historic Doe Memorial Library, serves over 70,000 students, faculty, and staff across 23 subject and area libraries. Browse a branch to view hours, special collections, and reserve a study room.</p>
+    <div class="card-grid">
+      {% for lib in libraries %}
+        <div class="card">
+          <img src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;height:160px;object-fit:cover;">
+          <div class="card-body">
+            <span class="card-category">{{ lib.branch_type }}</span>
+            <h3 class="card-title"><a href="{{ url_for('library_branch', slug=lib.slug) }}">{{ lib.name }}</a></h3>
+            <p class="card-text">{{ lib.location }} · {{ lib.seat_count }} seats · {{ lib.room_count }} group rooms</p>
+            <p class="card-meta">Hours: {{ lib.hours[:50] }}{% if lib.hours|length > 50 %}…{% endif %}</p>
+            <p class="card-meta">Librarian: {{ lib.librarian }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

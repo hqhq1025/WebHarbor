@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Undergraduate Admissions — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.7),rgba(0,50,98,0.7)),url('{{ url_for('static', filename='images/campus_001.svg') }}');background-size:cover;">
+  <div class="container"><h1>Undergraduate Admissions</h1><p>Apply to Berkeley as a first-year undergraduate.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley admits roughly 14,500 first-year students each year from a pool of over 125,000 applications. Berkeley does not require the SAT or ACT, and reviews each application holistically using 13 factors.</p>
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('admissions_apply') }}" class="btn btn-gold">Apply Now</a>
+      <a href="{{ url_for('admissions_visit') }}" class="btn btn-outline">Book a Campus Tour</a>
+      <a href="{{ url_for('admissions_request_info') }}" class="btn btn-outline">Request Info</a>
+    </div>
+    <h2 class="section-heading">Featured Undergraduate Programs</h2>
+    <div class="card-grid">
+      {% for p in programs %}
+        <div class="card"><div class="card-body">
+          <span class="card-category">{{ p.degree_type }}</span>
+          <h3 class="card-title"><a href="{{ url_for('program_detail', slug=p.slug) }}">{{ p.name }}</a></h3>
+          <p class="card-text">{{ p.units }} units · {{ p.duration_years }} years</p>
+        </div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

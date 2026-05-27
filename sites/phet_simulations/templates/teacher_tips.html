@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Teacher Tips &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.tt-hero { background:#f4ecff; border-left:6px solid #7a3e9d; padding:1.5rem 1.6rem; border-radius:8px; margin-bottom:1.5rem; }
+.tt-hero h1 { margin:0 0 .35rem; color:#5b2780; }
+.tt-tag-row { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1.3rem; }
+.tt-tag { background:#fff; border:1px solid #cbb5e3; color:#5b2780; padding:.3rem .8rem; border-radius:999px; font-size:.82rem; font-weight:600; }
+.tt-tag.active { background:#7a3e9d; color:#fff; }
+.tt-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1rem; }
+.tt-card { background:#fff; border:1px solid #ddd; border-radius:10px; padding:1rem 1.1rem; transition:transform .12s; }
+.tt-card:hover { transform:translateY(-2px); border-color:#7a3e9d; }
+.tt-cat-label { display:inline-block; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:#7a3e9d; font-weight:700; margin-bottom:.5rem; }
+.tt-card h3 { margin:0 0 .45rem; font-size:1rem; }
+.tt-card h3 a { color:#3a1f5a; }
+.tt-card-summary { font-size:.85rem; color:#5a6770; margin:0 0 .65rem; }
+.tt-card-foot { display:flex; align-items:center; justify-content:space-between; font-size:.78rem; color:#7a7a86; }
+.tt-upvote { color:#7a3e9d; font-weight:600; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <a href="{{ url_for('teachers') }}">Teaching</a> / <span>Teacher Tips</span></nav>
+
+<section class="tt-hero">
+  <h1>Teacher tips</h1>
+  <p>Quick classroom techniques contributed by PhET teacher-leaders. Filter by category or jump straight to the highest-voted tips.</p>
+</section>
+
+<div class="tt-tag-row">
+  <a class="tt-tag {% if not category %}active{% endif %}" href="{{ url_for('teacher_tips') }}">All</a>
+  {% for c in categories %}
+    <a class="tt-tag {% if category == c %}active{% endif %}" href="{{ url_for('teacher_tips', category=c) }}">{{ c|capitalize }}</a>
+  {% endfor %}
+</div>
+
+{% if tips %}
+<div class="tt-grid">
+  {% for tip in tips %}
+    <article class="tt-card">
+      <span class="tt-cat-label">{{ tip.category }}</span>
+      <h3><a href="{{ url_for('teacher_tip_detail', slug=tip.slug) }}">{{ tip.title }}</a></h3>
+      <p class="tt-card-summary">{{ tip.summary }}</p>
+      <div class="tt-card-foot">
+        <span>By {{ tip.author }}</span>
+        <span class="tt-upvote">&#9650; {{ tip.upvotes }}</span>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">No tips in this category yet.</p>
+{% endif %}
+{% endblock %}

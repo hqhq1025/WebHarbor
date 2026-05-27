@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Berkeley Alumni — 600,000 Cal Bears Worldwide{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>The Cal Alumni Community</h1><p>{{ total_members|default(60000) }} alumni active across {{ chapters|length }} chapters worldwide</p></div></section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('index') }}">Home</a><span>·</span>Alumni</div></div>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley\'s 600,000 alumni include Nobel laureates, Pulitzer Prize winners, Olympic champions, and entrepreneurs across every industry. Find your local chapter to join events, mentor students, and stay connected.</p>
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('alumni_update_profile') }}" class="btn btn-primary">Update Your Profile</a>
+      <a href="{{ url_for('newsletter') }}" class="btn btn-outline">Subscribe to Cal Alumni Newsletter</a>
+    </div>
+    <div class="card-grid">
+      {% for ch in chapters %}
+        <div class="card">
+          <img src="{{ url_for('static', filename='images/' + ch.photo) }}" alt="{{ ch.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <div class="card-body">
+            <span class="card-category">{{ ch.region }} · {{ ch.country }}</span>
+            <h3 class="card-title"><a href="{{ url_for('alumni_chapter', slug=ch.slug) }}">{{ ch.name }}</a></h3>
+            <p class="card-text">{{ ch.members_count|default(0) }} members · Founded {{ ch.founded_year }}</p>
+            <p class="card-meta">Next event: {{ ch.next_event[:60] }}{% if ch.next_event|length > 60 %}…{% endif %}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

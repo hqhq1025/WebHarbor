@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ ch.name }} Alumni Chapter{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.7),rgba(0,50,98,0.7)),url('{{ url_for('static', filename='images/' + ch.photo) }}');background-size:cover;">
+  <div class="container">
+    <p style="color:var(--gold);text-transform:uppercase;font-family:Arial;font-size:13px;letter-spacing:2px;">{{ ch.region }} · {{ ch.country }}</p>
+    <h1>{{ ch.name }} Chapter</h1>
+    <p>{{ ch.members_count }} members · Founded {{ ch.founded_year }}</p>
+  </div>
+</section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('alumni_index') }}">Alumni</a><span>·</span>{{ ch.name }}</div></div>
+<section class="section">
+  <div class="container sidebar-layout">
+    <div>
+      <img src="{{ url_for('static', filename='images/' + ch.photo) }}" alt="{{ ch.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
+      <p class="mb-3">{{ ch.description }}</p>
+      <h3 class="blue-text">Next Chapter Event</h3>
+      <p>{{ ch.next_event }}</p>
+    </div>
+    <aside class="sidebar">
+      <h3>Chapter</h3>
+      <div class="detail-meta-item"><strong>President</strong> <span>{{ ch.president }}</span></div>
+      <div class="detail-meta-item"><strong>Region</strong> <span>{{ ch.region }}</span></div>
+      <div class="detail-meta-item"><strong>Country</strong> <span>{{ ch.country }}</span></div>
+      <div class="detail-meta-item"><strong>Members</strong> <span>{{ ch.members_count }}</span></div>
+      <div class="detail-meta-item"><strong>Founded</strong> <span>{{ ch.founded_year }}</span></div>
+      <h3 class="mt-3">Other {{ ch.region }} Chapters</h3>
+      <ul>{% for s in siblings %}<li><a href="{{ url_for('alumni_chapter', slug=s.slug) }}">{{ s.name }}</a></li>{% endfor %}</ul>
+    </aside>
+  </div>
+</section>
+{% endblock %}

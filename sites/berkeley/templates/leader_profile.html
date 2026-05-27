@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ leader.name }} — {{ leader.title }}{% endblock %}
+{% block content %}
+<section class="page-header" style="background:var(--blue);">
+  <div class="container" style="display:flex;gap:32px;align-items:center;flex-wrap:wrap;">
+    <img src="{{ url_for('static', filename='images/' + leader.headshot) }}" alt="{{ leader.name }}" style="width:160px;height:160px;border-radius:50%;border:4px solid var(--gold);">
+    <div>
+      <p style="color:var(--gold);text-transform:uppercase;font-family:Arial;font-size:13px;letter-spacing:2px;">{{ leader.office }}</p>
+      <h1>{{ leader.name }}</h1>
+      <p>{{ leader.title }}</p>
+    </div>
+  </div>
+</section>
+<div class="breadcrumb"><div class="container"><a href="{{ url_for('leadership_index') }}">Leadership</a><span>·</span>{{ leader.name }}</div></div>
+<section class="section">
+  <div class="container sidebar-layout">
+    <div>
+      <h2 class="section-heading">Biography</h2>
+      <p class="mb-3">{{ leader.bio }}</p>
+      <h3 class="blue-text">Priorities</h3>
+      <p>{{ leader.priorities }}</p>
+    </div>
+    <aside class="sidebar">
+      <h3>Contact</h3>
+      <div class="detail-meta-item"><strong>Email</strong> <span>{{ leader.email }}</span></div>
+      <div class="detail-meta-item"><strong>Phone</strong> <span>{{ leader.phone }}</span></div>
+      <div class="detail-meta-item"><strong>Office</strong> <span>{{ leader.office }}</span></div>
+      <div class="detail-meta-item"><strong>Appointed</strong> <span>{{ leader.appointed_year }}</span></div>
+      <h3 class="mt-3">Colleagues</h3>
+      <ul>{% for c in colleagues %}<li><a href="{{ url_for('leader_profile', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}</ul>
+    </aside>
+  </div>
+</section>
+{% endblock %}

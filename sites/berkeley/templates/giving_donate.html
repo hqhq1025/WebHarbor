@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Donate · {{ fund.name }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Make a Gift</h1><p>{{ fund.name }}</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <img src="{{ url_for('static', filename='images/' + fund.photo) }}" alt="{{ fund.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Donor Name</label><input class="form-control" name="donor_name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Gift Amount (USD)</label><input type="number" min="5" class="form-control" name="amount" value="100" required></div>
+      <div class="form-group"><label><input type="checkbox" name="is_anonymous" value="1"> Make this gift anonymous</label></div>
+      <div class="form-group"><label>Message (optional)</label><textarea class="form-control" name="message" rows="4"></textarea></div>
+      <button type="submit" class="btn btn-gold">Submit Gift</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

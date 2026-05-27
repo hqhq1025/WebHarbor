@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Graduate Admissions — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.7),rgba(0,50,98,0.7)),url('{{ url_for('static', filename='images/campus_005.svg') }}');background-size:cover;">
+  <div class="container"><h1>Graduate Admissions</h1><p>Pursue your master\'s, doctoral, or professional degree at Berkeley.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley\'s Graduate Division coordinates admissions across over 100 master\'s, doctoral, and professional programs. Most application deadlines fall in December for the following fall.</p>
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('admissions_apply') }}" class="btn btn-gold">Apply Now</a>
+      <a href="{{ url_for('admissions_request_info') }}" class="btn btn-outline">Request Info</a>
+    </div>
+    <h2 class="section-heading">Featured Graduate Programs</h2>
+    <div class="card-grid">
+      {% for p in programs %}
+        <div class="card"><div class="card-body">
+          <span class="card-category">{{ p.degree_type }}</span>
+          <h3 class="card-title"><a href="{{ url_for('program_detail', slug=p.slug) }}">{{ p.name }}</a></h3>
+          <p class="card-text">Deadline: {{ p.application_deadline or 'See program page' }}</p>
+          <p class="card-meta">{% if p.gre_required %}GRE required{% else %}No GRE required{% endif %}</p>
+        </div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

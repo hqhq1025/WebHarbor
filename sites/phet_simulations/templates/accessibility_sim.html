@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Accessibility: {{ sim.title }} &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.a11y-sim-head { background:linear-gradient(120deg,#0d3b66,#02609a); color:#fff; padding:1.8rem 1.6rem; border-radius:12px; margin-bottom:1.6rem; }
+.a11y-sim-head h1 { margin:0 0 .3rem; font-size:1.6rem; }
+.a11y-sim-head p { margin:0; opacity:.95; }
+.a11y-grid { display:grid; grid-template-columns: 1.4fr 1fr; gap:1.5rem; }
+@media (max-width: 900px) { .a11y-grid { grid-template-columns:1fr; } }
+.a11y-feature-card { background:#fff; padding:1.1rem 1.2rem; border:1px solid #dee5ed; border-radius:8px; margin-bottom:.85rem; border-left:5px solid #0d8a73; }
+.a11y-feature-card h3 { margin:0 0 .35rem; color:#0d8a73; font-size:1.05rem; }
+.a11y-feature-card p { margin:0; color:#506070; font-size:.9rem; }
+.a11y-report-card { background:#fff; padding:.85rem 1rem; border:1px solid #f0c6c6; border-left:5px solid #c0392b; border-radius:8px; margin-bottom:.7rem; }
+.a11y-report-card .a11y-issue-type { display:inline-block; background:#c0392b; color:#fff; padding:.1rem .55rem; border-radius:999px; font-size:.7rem; font-weight:700; }
+.a11y-side h3 { color:#0d3b66; margin-top:0; }
+.a11y-report-cta { background:#fffceb; border:1px dashed #d4b300; padding:.85rem 1rem; border-radius:8px; margin-top:1rem; }
+.a11y-report-cta a { color:#7a6500; font-weight:600; }
+.a11y-status { display:inline-block; font-size:.7rem; padding:.1rem .5rem; border-radius:999px; background:#e0e0e0; color:#444; margin-left:.3rem; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('accessibility') }}">Accessibility</a> / <span>{{ sim.title }}</span></nav>
+
+<section class="a11y-sim-head">
+  <h1>{{ sim.title }} &mdash; accessibility detail</h1>
+  <p>Per-simulation matrix of inclusive design features and reported issues.</p>
+</section>
+
+<div class="a11y-grid">
+  <div>
+    <h2 style="color:#0d8a73;">Supported features ({{ features|length }})</h2>
+    {% for f in features %}
+      <div class="a11y-feature-card">
+        <h3>{{ f }}</h3>
+        <p>{{ sim.title }} supports {{ f|lower }} as part of the PhET inclusive design programme.</p>
+      </div>
+    {% endfor %}
+
+    <h2 style="color:#c0392b; margin-top:1.5rem;">Reported issues ({{ reports|length }})</h2>
+    {% if reports %}
+      {% for r in reports %}
+        <div class="a11y-report-card">
+          <span class="a11y-issue-type">{{ r.issue_type }}</span>
+          <span class="a11y-status">{{ r.status }}</span>
+          <p style="margin:.4rem 0 0; font-size:.9rem;">{{ r.body }}</p>
+          <p style="margin:.25rem 0 0; font-size:.78rem; color:#999;">Filed {{ r.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No accessibility issues currently filed for this simulation.</p>
+    {% endif %}
+  </div>
+
+  <aside class="a11y-side">
+    <div class="a11y-feature-card" style="border-left-color:#0079bf;">
+      <h3 style="color:#0079bf;">Open the simulation</h3>
+      <p><a href="{{ url_for('simulation_detail', slug=sim.slug) }}">Back to {{ sim.title }}</a></p>
+      <p style="font-size:.85rem; color:#506070;">{{ sim.short_description }}</p>
+    </div>
+    <div class="a11y-report-cta">
+      Notice an accessibility issue?
+      <a href="{{ url_for('sim_report_inaccessibility', slug=sim.slug) }}">Report it here</a>
+      — our accessibility engineers triage reports weekly.
+    </div>
+  </aside>
+</div>
+{% endblock %}

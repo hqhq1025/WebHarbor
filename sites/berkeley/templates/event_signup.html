@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — {{ event.title }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Sign Up for "{{ event.title }}"</h1><p>{{ event.location }}</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Role</label>
+        <select class="form-control" name="signup_type">
+          <option value="attendee">Attendee</option>
+          <option value="volunteer">Volunteer</option>
+          <option value="speaker">Speaker</option>
+          <option value="exhibitor">Exhibitor</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea class="form-control" name="notes" rows="4"></textarea></div>
+      <button type="submit" class="btn btn-primary">Sign Up</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

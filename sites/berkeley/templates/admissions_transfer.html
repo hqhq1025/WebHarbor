@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Transfer Admissions — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header" style="background-image: linear-gradient(rgba(0,50,98,0.7),rgba(0,50,98,0.7)),url('{{ url_for('static', filename='images/campus_009.svg') }}');background-size:cover;">
+  <div class="container"><h1>Transfer Admissions</h1><p>Berkeley admits 4,000+ junior transfer students every year — most from California community colleges.</p></div>
+</section>
+<section class="section">
+  <div class="container">
+    <p class="mb-3">Berkeley\'s Transfer Admission Guarantee (TAG) is offered to qualified students from California community colleges in 60 majors. The 2027 transfer application opens August 1, 2026 and closes November 30, 2026.</p>
+    <h2 class="section-heading">Key Requirements</h2>
+    <ul style="list-style:disc;margin-left:24px;">
+      <li>60 transferable semester units completed by the end of spring before fall enrollment.</li>
+      <li>Two transferable English courses with grades of C or better.</li>
+      <li>One transferable math course at the level of college algebra or higher with a C or better.</li>
+      <li>Four additional courses from at least two of the following: arts and humanities; social and behavioral sciences; physical and biological sciences.</li>
+      <li>Major preparation as outlined on assist.org for your intended Berkeley major.</li>
+    </ul>
+    <div class="d-flex gap-2 mt-3">
+      <a href="{{ url_for('admissions_apply') }}" class="btn btn-gold">Apply as Transfer</a>
+      <a href="{{ url_for('admissions_visit') }}" class="btn btn-outline">Tour Berkeley</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Contact &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.ct-wrap { display:grid; grid-template-columns: 1.4fr 1fr; gap:1.6rem; }
+@media (max-width:900px) { .ct-wrap { grid-template-columns:1fr; } }
+.ct-card { background:#fff; padding:1.6rem 1.8rem; border:1px solid #dde5ee; border-radius:12px; }
+.ct-card h1 { margin:0 0 .25rem; color:#0079bf; }
+.ct-card p { margin:0 0 1rem; color:#506070; }
+.ct-row { display:flex; flex-direction:column; gap:.3rem; margin-bottom:1rem; }
+.ct-row label { font-weight:600; color:#0a3a5f; font-size:.9rem; }
+.ct-row input, .ct-row select, .ct-row textarea { padding:.6rem .75rem; border:1px solid #c9d5e0; border-radius:6px; font-size:.95rem; }
+.ct-row textarea { min-height:140px; resize:vertical; }
+.ct-side h3 { color:#0079bf; margin-top:0; }
+.ct-side-card { background:#fff; padding:1.1rem 1.2rem; border:1px solid #dde5ee; border-radius:10px; margin-bottom:.85rem; }
+.ct-side-card dt { font-weight:600; color:#0a3a5f; font-size:.88rem; }
+.ct-side-card dd { margin:.1rem 0 .55rem; color:#506070; font-size:.88rem; }
+</style>
+
+<div class="ct-wrap">
+  <form class="ct-card" method="post" action="{{ url_for('contact') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h1>Contact the PhET team</h1>
+    <p>We typically reply within three business days. For accessibility or bug reports, please use the per-simulation report links.</p>
+
+    <div class="ct-row">
+      <label>Your name</label>
+      <input type="text" name="name" required>
+    </div>
+    <div class="ct-row">
+      <label>Email</label>
+      <input type="email" name="email" required>
+    </div>
+    <div class="ct-row">
+      <label>Topic</label>
+      <select name="topic">
+        <option value="general">General question</option>
+        <option value="teaching">Teaching / lesson plans</option>
+        <option value="accessibility">Accessibility</option>
+        <option value="bug">Bug report</option>
+        <option value="translations">Translations</option>
+        <option value="research">Research collaboration</option>
+        <option value="press">Press / media</option>
+      </select>
+    </div>
+    <div class="ct-row">
+      <label>Subject</label>
+      <input type="text" name="subject" required maxlength="240">
+    </div>
+    <div class="ct-row">
+      <label>Message</label>
+      <textarea name="body" required></textarea>
+    </div>
+    <button class="btn btn-primary" type="submit">Send message</button>
+  </form>
+
+  <aside class="ct-side">
+    <div class="ct-side-card">
+      <h3>Office</h3>
+      <dl>
+        <dt>PhET Interactive Simulations</dt>
+        <dd>Department of Physics, University of Colorado Boulder<br>2000 Colorado Avenue, Boulder, CO 80309, USA</dd>
+        <dt>General inquiries</dt>
+        <dd>phethelp@colorado.edu</dd>
+        <dt>Press</dt>
+        <dd>press@phet.colorado.edu</dd>
+      </dl>
+    </div>
+    <div class="ct-side-card">
+      <h3>Self-serve</h3>
+      <p><a href="{{ url_for('faq') }}">Frequently asked questions</a></p>
+      <p><a href="{{ url_for('accessibility') }}">Accessibility policy</a></p>
+      <p><a href="{{ url_for('about_team') }}">Our team</a></p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

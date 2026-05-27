@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Set Up Monthly Gift — Berkeley Giving{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Monthly Giving</h1><p>Sustain Berkeley with a recurring monthly gift to the fund of your choice.</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Donor Name</label><input class="form-control" name="donor_name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Designate Fund</label>
+        <select class="form-control" name="fund_slug">
+          {% for f in funds %}<option value="{{ f.slug }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Monthly Amount (USD)</label><input type="number" min="5" class="form-control" name="monthly_amount" value="50"></div>
+        <div class="form-group"><label>First Charge</label><input class="form-control" name="start_date" placeholder="2026-10-01"></div>
+      </div>
+      <button type="submit" class="btn btn-gold">Activate Monthly Gift</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

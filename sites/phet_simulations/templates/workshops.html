@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Workshops &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.ws-hero { background:#0a3a5f; color:#fff; padding:1.8rem 2rem; border-radius:14px; margin-bottom:1.6rem; }
+.ws-hero h1 { margin:0 0 .25rem; }
+.ws-hero p { margin:0; opacity:.88; }
+.ws-section h2 { color:#0a3a5f; }
+.ws-event { background:#fff; padding:1.05rem 1.25rem; border:1px solid #dde5ee; border-radius:10px; margin-bottom:.85rem; display:grid; grid-template-columns: 110px 1fr auto; gap:1rem; }
+.ws-date-block { background:#0a3a5f; color:#fff; padding:.6rem; border-radius:8px; text-align:center; }
+.ws-date-day { font-size:1.4rem; font-weight:700; line-height:1; }
+.ws-date-month { font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; }
+.ws-date-year { font-size:.72rem; opacity:.78; }
+.ws-event h3 { margin:0 0 .25rem; }
+.ws-event h3 a { color:#0a3a5f; }
+.ws-event .ws-meta { color:#506070; font-size:.85rem; }
+.ws-event .ws-cta { align-self:center; }
+.ws-event .ws-cta a { background:#0a3a5f; color:#fff; padding:.45rem .9rem; border-radius:6px; font-size:.85rem; font-weight:600; }
+.ws-event.past { opacity:.7; }
+.ws-event.past .ws-date-block { background:#7a8794; }
+.ws-capacity { font-size:.78rem; color:#27ae60; font-weight:600; }
+.ws-capacity.full { color:#c0392b; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('teachers') }}">Teaching</a> / <span>Workshops</span></nav>
+
+<section class="ws-hero">
+  <h1>Workshops and teacher training</h1>
+  <p>Live and asynchronous training sessions covering simulation design, classroom use, and accessibility.</p>
+</section>
+
+<section class="ws-section">
+  <h2>Upcoming</h2>
+  {% if upcoming %}
+    {% for w in upcoming %}
+      <article class="ws-event">
+        <div class="ws-date-block">
+          <div class="ws-date-day">{{ w.held_on.strftime('%d') }}</div>
+          <div class="ws-date-month">{{ w.held_on.strftime('%b') }}</div>
+          <div class="ws-date-year">{{ w.held_on.strftime('%Y') }}</div>
+        </div>
+        <div>
+          <h3><a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a></h3>
+          <div class="ws-meta">Presented by {{ w.presenter }} &middot; {{ w.duration_min }} min &middot; {{ w.location }}</div>
+          <p style="margin:.4rem 0 0; font-size:.88rem; color:#3c4a55;">{{ w.description[:140] }}{% if w.description|length > 140 %}...{% endif %}</p>
+          {% set remaining = w.capacity - w.registered %}
+          <p class="ws-capacity {% if remaining <= 0 %}full{% endif %}">{{ remaining }} of {{ w.capacity }} seats left</p>
+        </div>
+        <div class="ws-cta">
+          <a href="{{ url_for('workshop_detail', slug=w.slug) }}">Details</a>
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <p class="empty-state">No upcoming workshops scheduled.</p>
+  {% endif %}
+</section>
+
+<section class="ws-section" style="margin-top:2rem;">
+  <h2>Past workshops</h2>
+  {% if past %}
+    {% for w in past %}
+      <article class="ws-event past">
+        <div class="ws-date-block">
+          <div class="ws-date-day">{{ w.held_on.strftime('%d') }}</div>
+          <div class="ws-date-month">{{ w.held_on.strftime('%b') }}</div>
+          <div class="ws-date-year">{{ w.held_on.strftime('%Y') }}</div>
+        </div>
+        <div>
+          <h3><a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a></h3>
+          <div class="ws-meta">Presented by {{ w.presenter }} &middot; {{ w.duration_min }} min &middot; {{ w.location }}</div>
+        </div>
+        <div class="ws-cta"><a href="{{ url_for('workshop_detail', slug=w.slug) }}">Recap</a></div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <p class="empty-state">No past workshops on record.</p>
+  {% endif %}
+</section>
+{% endblock %}

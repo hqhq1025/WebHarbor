@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Submit a Lesson Plan &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.slp-page { max-width:760px; margin:0 auto; }
+.slp-banner { background:#e6f3ec; border:1px solid #b8d7c4; color:#155a2f; padding:1rem 1.25rem; border-radius:8px; margin-bottom:1.5rem; }
+.slp-form-card { background:#fff; padding:1.6rem 1.75rem; border:1px solid #d6e0ea; border-radius:10px; }
+.slp-row { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem; }
+.slp-row label { font-weight:600; font-size:.9rem; color:#385a78; }
+.slp-row input, .slp-row select, .slp-row textarea {
+  padding:.55rem .7rem; border:1px solid #c9d5e0; border-radius:6px; font-family:inherit; font-size:.95rem;
+}
+.slp-row textarea { min-height:120px; resize:vertical; }
+.slp-grid-two { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+.slp-help { color:#6b7e8e; font-size:.8rem; }
+.slp-actions { display:flex; gap:.7rem; align-items:center; margin-top:1rem; }
+</style>
+
+<div class="slp-page">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <a href="{{ url_for('lesson_plans') }}">Lesson Plans</a> / <span>Submit</span></nav>
+  <h1 style="color:#0079bf;">Submit a lesson plan</h1>
+  <div class="slp-banner">
+    Submissions are reviewed by PhET teacher-leaders before publication. All accepted plans are released under
+    a Creative Commons license.
+  </div>
+
+  <form class="slp-form-card" method="post" action="{{ url_for('submit_lesson_plan') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="slp-row">
+      <label>Lesson title <span style="color:#c0392b;">*</span></label>
+      <input type="text" name="title" maxlength="200" required>
+      <span class="slp-help">A short, descriptive title (under 200 characters).</span>
+    </div>
+
+    <div class="slp-grid-two">
+      <div class="slp-row">
+        <label>Anchor simulation <span style="color:#c0392b;">*</span></label>
+        <select name="sim_id" required>
+          <option value="">Pick a simulation</option>
+          {% for s in sims %}<option value="{{ s.id }}">{{ s.title }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="slp-row">
+        <label>Grade band <span style="color:#c0392b;">*</span></label>
+        <select name="grade_band" required>
+          <option value="">Choose grade band</option>
+          {% for g in grades %}<option value="{{ g.slug }}">{{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="slp-row">
+      <label>Duration (minutes)</label>
+      <input type="number" name="duration_min" min="10" max="240" value="45">
+    </div>
+
+    <div class="slp-row">
+      <label>Learning objectives <span style="color:#c0392b;">*</span></label>
+      <textarea name="objectives" required></textarea>
+    </div>
+
+    <div class="slp-row">
+      <label>Materials</label>
+      <textarea name="materials" placeholder="Computer with browser, paper, pencil"></textarea>
+    </div>
+
+    <div class="slp-row">
+      <label>Lesson body <span style="color:#c0392b;">*</span></label>
+      <textarea name="body" required placeholder="Outline the activity: warm-up, exploration, debrief..."></textarea>
+    </div>
+
+    <div class="slp-actions">
+      <button type="submit" class="btn btn-primary">Submit for review</button>
+      <a href="{{ url_for('lesson_plans') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

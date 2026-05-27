@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ member.name }} &middot; PhET Team{% endblock %}
+{% block content %}
+<style>
+.tm-detail-head { display:flex; gap:1.4rem; align-items:flex-start; background:#fff; padding:1.6rem 1.8rem; border-radius:12px; border:1px solid #ecd9b3; margin-bottom:1.4rem; }
+.tm-avatar { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,#f3a712,#cc8400); color:#fff; display:flex; align-items:center; justify-content:center; font-size:2.4rem; font-weight:700; flex-shrink:0; }
+.tm-detail-head h1 { margin:0 0 .3rem; color:#3c2a00; }
+.tm-detail-head .tm-role { color:#7c5400; font-weight:600; }
+.tm-detail-head .tm-team { display:inline-block; background:#fff3d6; color:#7c5400; padding:.15rem .6rem; border-radius:999px; font-size:.72rem; font-weight:700; margin-top:.35rem; }
+.tm-bio { background:#fffcf3; padding:1.2rem 1.4rem; border-radius:10px; line-height:1.65; color:#3c2a00; margin-bottom:1.4rem; }
+.tm-section { margin-bottom:1.5rem; }
+.tm-section h2 { color:#7c5400; font-size:1.1rem; margin:0 0 .55rem; }
+.tm-related { list-style:none; padding:0; display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:.7rem; }
+.tm-related li { background:#fff; padding:.5rem .8rem; border:1px solid #ecd9b3; border-radius:6px; }
+.tm-related a { color:#7c5400; font-weight:600; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('about_team') }}">Team</a> / <span>{{ member.name }}</span></nav>
+
+<section class="tm-detail-head">
+  <div class="tm-avatar">{{ member.name[:1] }}</div>
+  <div>
+    <h1>{{ member.name }}</h1>
+    <div class="tm-role">{{ member.role }}</div>
+    <span class="tm-team">{{ member.team|capitalize }}</span>
+  </div>
+</section>
+
+<div class="tm-bio">{{ member.bio }}</div>
+
+<section class="tm-section">
+  <h2>Other members in {{ member.team|capitalize }}</h2>
+  <ul class="tm-related">
+    {% for o in same_team %}
+      <li><a href="{{ url_for('team_member_detail', slug=o.slug) }}">{{ o.name }}</a><br><span style="color:#7a6929; font-size:.78rem;">{{ o.role }}</span></li>
+    {% else %}
+      <li>No other team members listed.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

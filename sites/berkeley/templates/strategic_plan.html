@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Strategic Plan — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Berkeley Strategic Plan 2025-2032</h1><p>Five pillars guiding the next chapter of UC Berkeley.</p></div></section>
+<section class="section">
+  <div class="container">
+    {% for p in pillars %}
+      <div style="background:var(--off-white);padding:24px;border-left:4px solid var(--gold);margin-bottom:24px;border-radius:4px;">
+        <h2 class="blue-text">{{ loop.index }}. {{ p.name }}</h2>
+        <p class="mb-2">{{ p.description }}</p>
+        <p><strong>2030 KPI:</strong> {{ p.kpi }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid — UC Berkeley{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Financial Aid & Scholarships</h1><p>{{ programs|length }} grant, scholarship, and loan programs.</p></div></section>
+<section class="section">
+  <div class="container">
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('financial_aid_apply') }}" class="btn btn-gold">Apply for Aid</a>
+      <a href="{{ url_for('financial_aid_forms') }}" class="btn btn-outline">Aid Forms</a>
+      <a href="{{ url_for('financial_aid_calculator') }}" class="btn btn-outline">Cost Calculator</a>
+    </div>
+    <table>
+      <thead><tr><th>Program</th><th>Category</th><th>Max Amount</th><th>Deadline</th><th>Renewable?</th></tr></thead>
+      <tbody>
+      {% for p in programs %}
+        <tr>
+          <td><a href="{{ url_for('financial_aid_apply') }}">{{ p.name }}</a></td>
+          <td>{{ p.category }}</td>
+          <td>${{ p.max_amount }}</td>
+          <td>{{ p.application_deadline }}</td>
+          <td>{% if p.renewable %}Yes{% else %}One-time{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

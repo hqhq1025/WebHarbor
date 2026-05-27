@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ tip.title }} &middot; Teacher Tips{% endblock %}
+{% block content %}
+<style>
+.ttd-wrap { max-width:760px; margin:0 auto; }
+.ttd-card { background:#fff; border-left:6px solid #7a3e9d; padding:2rem 2.2rem; border-radius:10px; box-shadow:0 1px 3px rgba(60,30,90,.08); }
+.ttd-category-label { display:inline-block; background:#7a3e9d; color:#fff; padding:.2rem .7rem; border-radius:999px; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; font-weight:700; margin-bottom:.95rem; }
+.ttd-card h1 { margin:0 0 .35rem; font-size:1.7rem; color:#3a1f5a; }
+.ttd-byline { color:#7a7a86; font-size:.88rem; margin-bottom:1.4rem; }
+.ttd-summary { font-size:1.05rem; color:#5a6770; font-style:italic; padding:.8rem 1rem; border-left:3px solid #cbb5e3; margin:1rem 0 1.5rem; background:#faf6ff; }
+.ttd-body { font-size:1rem; line-height:1.65; color:#2c2438; }
+.ttd-upvote-row { margin-top:1.6rem; padding-top:1rem; border-top:1px dashed #ddd5ee; display:flex; align-items:center; gap:.8rem; }
+.ttd-upvote-btn { background:#7a3e9d; color:#fff; border:0; padding:.5rem 1rem; border-radius:6px; cursor:pointer; font-weight:600; }
+.ttd-related { margin-top:1.8rem; }
+.ttd-related h3 { color:#5b2780; margin:0 0 .6rem; font-size:1rem; }
+.ttd-related-list { list-style:none; padding:0; }
+.ttd-related-list li { padding:.4rem 0; border-bottom:1px dashed #ddd; }
+.ttd-related-list a { color:#0079bf; }
+</style>
+
+<div class="ttd-wrap">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> / <a href="{{ url_for('teacher_tips') }}">Teacher Tips</a> / <span>{{ tip.title }}</span></nav>
+
+  <article class="ttd-card">
+    <span class="ttd-category-label">{{ tip.category }}</span>
+    <h1>{{ tip.title }}</h1>
+    <p class="ttd-byline">By {{ tip.author }} &middot; Published {{ tip.published_date }} &middot; {{ tip.upvotes }} upvotes</p>
+    <blockquote class="ttd-summary">{{ tip.summary }}</blockquote>
+    <div class="ttd-body">{{ tip.body }}</div>
+
+    <div class="ttd-upvote-row">
+      {% if current_user.is_authenticated %}
+        <form method="post" action="{{ url_for('teacher_tip_upvote', slug=tip.slug) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="ttd-upvote-btn" type="submit">&#9650; Upvote this tip</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('login') }}">Sign in to upvote</a>
+      {% endif %}
+      <span style="color:#888;">Help us surface the most useful tips.</span>
+    </div>
+  </article>
+
+  <section class="ttd-related">
+    <h3>More {{ tip.category }} tips</h3>
+    <ul class="ttd-related-list">
+      {% for r in related %}
+        <li><a href="{{ url_for('teacher_tip_detail', slug=r.slug) }}">{{ r.title }}</a></li>
+      {% else %}
+        <li>No related tips in this category yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

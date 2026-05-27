@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Schedule a Meeting — {{ dept.name }}{% endblock %}
+{% block content %}
+<section class="page-header"><div class="container"><h1>Schedule a Meeting</h1><p>{{ dept.name }}</p></div></section>
+<section class="section">
+  <div class="container" style="max-width:680px;">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input class="form-control" name="name" required></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-control" name="email" required></div>
+      </div>
+      <div class="form-group"><label>Purpose of Meeting</label><input class="form-control" name="purpose" placeholder="Advising appointment, faculty introduction, etc."></div>
+      <div class="form-group"><label>Preferred Date</label><input class="form-control" name="preferred_date" placeholder="2026-10-20"></div>
+      <button type="submit" class="btn btn-primary">Request Meeting</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
