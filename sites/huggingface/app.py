@@ -3515,7 +3515,8 @@ def space_settings(author, name):
 # R5 routes — copy snippets, dataset row pagination, readme section
 # anchors, like animation, discussion reply threading, AutoTrain billing
 # estimate, paper implementations, organization billing.
-# ------------------------------------------------------------def _section_slug(title: str) -> str:
+# ------------------------------------------------------------
+def _section_slug(title: str) -> str:
     s = (title or "").strip().lower()
     out = []
     for ch in s:
