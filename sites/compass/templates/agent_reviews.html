@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} — Reviews | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('agent_detail', slug=agent.slug) }}">← {{ agent.name }}</a></p>
+  <h1>{{ agent.name }} — Client Reviews</h1>
+  <p style="color:var(--c-gray-4)">{{ agent.title }} · {{ agent.city }}, {{ agent.state }}</p>
+
+  <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px;">
+    <div><strong>{{ '%.1f'|format(avg_rating) }}</strong>Average rating</div>
+    <div><strong>{{ reviews|length }}</strong>Total reviews</div>
+    <div><strong>{{ agent.transactions_count }}</strong>Lifetime transactions</div>
+  </div>
+
+  {% if reviews %}
+    <div style="margin-top:32px">
+      {% for r in reviews %}
+        <article style="border-top:1px solid var(--c-gray-2); padding:18px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0">{{ r.title or 'Client review' }}</h3>
+            <div style="color:#daa520; font-weight:600">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</div>
+          </div>
+          <div style="color:var(--c-gray-4); font-size:13px; margin:4px 0 10px;">
+            {{ r.reviewer_name }} · {{ r.transaction_type }} · {{ r.created_at.strftime('%b %Y') if r.created_at else '' }}
+          </div>
+          <p>{{ r.body }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No reviews yet.</div>
+  {% endif %}
+
+  <h3 style="margin-top:32px">Write a review</h3>
+  {% if not current_user.is_authenticated %}
+    <p><a href="{{ url_for('login', next=request.path) }}">Sign in to write a review.</a></p>
+  {% else %}
+    {% if error %}<div class="flash warning">{{ error }}</div>{% endif %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <p><label>Rating
+        <select name="rating">
+          {% for i in [5,4,3,2,1] %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+        </select>
+      </label></p>
+      <p><label>Title <input name="title" placeholder="Summarize your experience"></label></p>
+      <p><label>Transaction
+        <select name="transaction_type">
+          <option>Buyer</option><option>Seller</option><option>Renter</option>
+        </select>
+      </label></p>
+      <p><label>Your review<br>
+        <textarea name="body" rows="5" cols="60" placeholder="What was working with this agent like?"></textarea>
+      </label></p>
+      <p><button class="btn" type="submit">Post review</button></p>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

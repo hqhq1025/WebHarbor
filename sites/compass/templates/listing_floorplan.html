@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Floor plan — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Floor plan</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.address }}{% if listing.unit %}, Unit {{ listing.unit }}{% endif %} · {{ listing.city }}, {{ listing.state }}</p>
+
+  <div class="fact-grid">
+    <div class="label">Total area</div><div class="value">{{ '{:,}'.format(listing.sqft) if listing.sqft else '—' }} sq ft</div>
+    <div class="label">Bedrooms</div><div class="value">{{ listing.beds }}</div>
+    <div class="label">Full baths</div><div class="value">{{ listing.baths_full }}</div>
+    <div class="label">Half baths</div><div class="value">{{ listing.baths_half }}</div>
+    <div class="label">Lot size</div><div class="value">{{ '{:,}'.format(listing.lot_sqft) if listing.lot_sqft else 'N/A' }} sq ft</div>
+    <div class="label">Year built</div><div class="value">{{ listing.year_built }}</div>
+    <div class="label">Property type</div><div class="value">{{ listing.property_type }}</div>
+  </div>
+
+  <h3 style="margin-top:32px">Layout summary</h3>
+  <p>This {{ listing.property_type|lower }} offers
+    {% if listing.beds %}{{ listing.beds }} bedrooms,{% endif %}
+    {{ listing.baths_full + listing.baths_half }} bathrooms total
+    {% if listing.sqft %}across {{ '{:,}'.format(listing.sqft) }} square feet{% endif %}.
+    {% if listing.has_elevator %}The building features an elevator.{% endif %}
+    {% if listing.has_garage %}Includes garage parking.{% endif %}
+  </p>
+
+  <div class="empty" style="margin-top:24px">
+    Interactive floor plan image not available for this listing. Contact the listing agent for a detailed floor plan.
+    <p style="margin-top:8px"><a class="btn outline tiny" href="{{ url_for('inquiry_send', listing_id=listing.id) }}">Request floor plan</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Submit an Offer — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Submit an Offer</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.address }}{% if listing.unit %}, Unit {{ listing.unit }}{% endif %} · listed at {{ listing.price_display() }}</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p>
+      <label>Offer amount ($) <input type="number" name="amount" value="{{ listing.price }}" required></label>
+      <label>Earnest money ($) <input type="number" name="earnest_money" value="{{ (listing.price // 50) }}"></label>
+    </p>
+    <p>
+      <label>Financing
+        <select name="financing">
+          <option>Conventional</option><option>FHA</option><option>VA</option>
+          <option>Jumbo</option><option>Cash</option>
+        </select>
+      </label>
+      <label>Close date <input type="date" name="close_date" value="2026-08-15"></label>
+    </p>
+    <p><label>Contingencies <input name="contingencies" value="Financing, Inspection" size="40"></label></p>
+    <p><label>Notes to seller<br>
+      <textarea name="notes" rows="4" cols="60" placeholder="Personal letter, special terms, etc."></textarea>
+    </label></p>
+    <p><button class="btn" type="submit">Submit offer</button></p>
+  </form>
+</div>
+{% endblock %}

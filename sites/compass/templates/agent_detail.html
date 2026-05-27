@@ -34,6 +34,13 @@
       {% else %}
         <div class="empty">No active listings at the moment.</div>
       {% endif %}
+
+      <h2 style="margin-top:32px">More from {{ agent.name }}</h2>
+      <p>
+        <a class="btn outline tiny" href="{{ url_for('agent_reviews', slug=agent.slug) }}">Client reviews</a>
+        <a class="btn outline tiny" href="{{ url_for('agent_sold', slug=agent.slug) }}">Sold listings</a>
+        <a class="btn outline tiny" href="{{ url_for('agent_awards', slug=agent.slug) }}">Awards &amp; recognition</a>
+      </p>
     </div>
   </div>
 </div>

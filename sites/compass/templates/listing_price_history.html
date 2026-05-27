@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Price history — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Price &amp; tax history</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.address }}{% if listing.unit %}, Unit {{ listing.unit }}{% endif %} · {{ listing.city }}, {{ listing.state }}</p>
+
+  <h3 style="margin-top:32px">Price history</h3>
+  {% if history %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Event</th><th>Price</th><th>Change</th></tr></thead>
+      <tbody>
+        {% for e in history %}
+          <tr>
+            <td>{{ e.event_date }}</td>
+            <td>{{ e.event_type }}</td>
+            <td>${{ '{:,}'.format(e.price) }}</td>
+            <td>
+              {% set prev = history[loop.index] if loop.index < history|length else None %}
+              {% if prev and prev.price %}
+                {% set delta = e.price - prev.price %}
+                {% if delta > 0 %}+{% endif %}${{ '{:,}'.format(delta) }}
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty">No price history is available for this property.</div>
+  {% endif %}
+
+  <h3 style="margin-top:32px">Property summary</h3>
+  <div class="fact-grid">
+    <div class="label">Current price</div><div class="value">{{ listing.price_display() }}</div>
+    <div class="label">Price per sq ft</div><div class="value">{% if listing.price_per_sqft() %}${{ '{:,}'.format(listing.price_per_sqft()) }}{% else %}—{% endif %}</div>
+    <div class="label">Days on Compass</div><div class="value">{{ listing.days_on_compass }}</div>
+    <div class="label">MLS #</div><div class="value">{{ listing.mls_number }}</div>
+  </div>
+</div>
+{% endblock %}

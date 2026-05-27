@@ -55,6 +55,21 @@
         {% for f in listing.get_features() %}<span class="chip">{{ f }}</span>{% endfor %}
       </div>
 
+      <h3>Explore this home</h3>
+      <div class="action-stack" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;">
+        <a class="btn outline tiny" href="{{ url_for('listing_photos', slug=listing.slug) }}">All photos</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_floorplan', slug=listing.slug) }}">Floor plan</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_video', slug=listing.slug) }}">Video tour</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_price_history', slug=listing.slug) }}">Price history</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_walkscore', slug=listing.slug) }}">Walk Score</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_schools', slug=listing.slug) }}">Schools</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_neighborhood', slug=listing.slug) }}">Neighborhood</a>
+        <a class="btn outline tiny" href="{{ url_for('listing_share', listing_id=listing.id) }}">Share</a>
+        {% if current_user.is_authenticated %}
+          <a class="btn outline tiny" href="{{ url_for('offer_new', listing_id=listing.id) }}">Submit offer</a>
+        {% endif %}
+      </div>
+
       {% if listing.is_open_house %}
         <h3>Open house</h3>
         <p>{{ listing.open_house_date }} · {{ listing.open_house_time }}</p>

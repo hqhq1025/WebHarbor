@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Neighborhood Guides | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Neighborhood Guides</h1>
+  <p style="color:var(--c-gray-4)">Locally-curated overviews of the country's most desirable neighborhoods.</p>
+
+  <form method="get" class="filter-bar">
+    <div class="filter-group">
+      <label>City</label>
+      <select name="city">
+        <option value="">All cities</option>
+        {% for c in all_cities %}
+          <option value="{{ c }}" {% if filter_city == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn tiny" type="submit">Filter</button>
+    <a class="btn outline tiny" href="?">Reset</a>
+  </form>
+
+  <div class="result-summary">{{ neighborhoods|length }} neighborhoods{% if filter_city %} in {{ filter_city }}{% endif %}.</div>
+
+  <div class="grid-cards" style="grid-template-columns: repeat(2, 1fr);">
+    {% for n in neighborhoods %}
+      <a class="card" href="{{ url_for('neighborhood_detail', city_state=n.city.lower().replace(' ', '-') ~ '-' ~ n.state.lower(), slug=n.slug) }}" style="text-decoration:none; color:inherit;">
+        <div class="photo">
+          {% if n.hero_image %}<img src="{{ n.hero_image }}" alt="{{ n.name }}">{% endif %}
+        </div>
+        <div class="price">{{ n.name }}</div>
+        <div class="addr">{{ n.city }}, {{ n.state }}</div>
+        <div class="meta">Walk {{ n.walk_score }} · Transit {{ n.transit_score }} · Median ${{ '{:,}'.format(n.median_sale_price) }}</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

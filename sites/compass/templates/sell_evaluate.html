@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Free Home Valuation | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('sell_hub') }}">← Selling resources</a></p>
+  <h1>Free home valuation</h1>
+  <p style="color:var(--c-gray-4)">Quick estimate based on your home's basics. A Compass agent will follow up with a refined number.</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Address <input name="address" required size="40"></label></p>
+    <p>
+      <label>City <input name="city" required></label>
+      <label>State <input name="state" maxlength="2" required></label>
+      <label>Zip <input name="zip" maxlength="10"></label>
+    </p>
+    <p>
+      <label>Beds <input type="number" name="beds" value="3" min="0" max="20"></label>
+      <label>Baths <input type="number" step="0.5" name="baths" value="2"></label>
+      <label>Sq ft <input type="number" name="sqft" value="1800"></label>
+    </p>
+    <p><label>Move timeline
+      <select name="timeline">
+        <option value="0-3mo">0-3 months</option>
+        <option value="3-6mo" selected>3-6 months</option>
+        <option value="6-12mo">6-12 months</option>
+        <option value="just-curious">Just curious</option>
+      </select></label></p>
+    <p><button class="btn" type="submit">Get my estimate</button></p>
+  </form>
+
+  {% if result %}
+    <h3 style="margin-top:32px">Your estimate</h3>
+    <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px;">
+      <div><strong>${{ '{:,}'.format(result.estimated_value) }}</strong>Estimated value</div>
+      <div><strong>{{ result.beds }} bd · {{ result.baths }} ba</strong>{{ '{:,}'.format(result.sqft) }} sq ft</div>
+      <div><strong>{{ result.city }}, {{ result.state }}</strong>{{ result.address }}</div>
+    </div>
+    <p style="margin-top:16px">Want a more precise number?
+      <a class="btn outline" href="{{ url_for('sell_cma') }}">Request a full CMA →</a></p>
+  {% endif %}
+</div>
+{% endblock %}

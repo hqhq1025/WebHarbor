@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Compass Teams{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Find a Compass Team</h1>
+  <p style="color:var(--c-gray-4)">Multi-agent practices that combine deep local expertise with the Compass network.</p>
+
+  <div class="grid-cards" style="grid-template-columns: repeat(2, 1fr);">
+    {% for t in teams %}
+      <a class="agent-card" href="{{ url_for('team_detail', slug=t.slug) }}" style="text-decoration:none; color:inherit;">
+        <div class="av">{{ t.name[:2] }}</div>
+        <div>
+          <h3>{{ t.name }}</h3>
+          <div class="meta">{{ t.city }}, {{ t.state }}</div>
+          <div style="margin-top:8px">
+            <span class="stat"><strong>{{ t.transactions_count }}</strong>Transactions</span>
+            <span class="stat"><strong>${% set v = t.sales_volume_usd %}{% if v >= 1000000000 %}{{ '%.1f'|format(v/1000000000) }}B{% elif v >= 1000000 %}{{ '%.0f'|format(v/1000000) }}M{% else %}{{ '{:,}'.format(v) }}{% endif %}</strong>Volume</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Request a CMA Report | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('sell_hub') }}">← Selling resources</a></p>
+  <h1>Request a Comparative Market Analysis</h1>
+  <p>A Compass agent will pull recent comps, adjust for property-level differences, and email you a custom CMA report — typically within one business day.</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Property address <input name="address" required size="40"></label></p>
+    <p>
+      <label>City <input name="city" required></label>
+      <label>State <input name="state" maxlength="2" required></label>
+    </p>
+    <p><label>Your name <input name="name" required></label></p>
+    <p>
+      <label>Email <input type="email" name="email" required></label>
+      <label>Phone <input name="phone"></label>
+    </p>
+    <p><label>Anything specific you want the agent to focus on?<br>
+      <textarea name="notes" rows="4" cols="60" placeholder="e.g., recent renovation, ADU, off-market interest"></textarea>
+    </label></p>
+    <p><button class="btn" type="submit">Request CMA</button></p>
+  </form>
+</div>
+{% endblock %}

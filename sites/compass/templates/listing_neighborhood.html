@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Neighborhood — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>{% if neighborhood %}{{ neighborhood.name }}, {{ listing.city }}{% else %}{{ listing.city }}{% endif %}</h1>
+  <p style="color:var(--c-gray-4)">Neighborhood snapshot for {{ listing.address }}</p>
+
+  {% if neighborhood %}
+    <p class="lead">{{ neighborhood.blurb }}</p>
+
+    <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px; margin-top:24px;">
+      <div><strong>${{ '{:,}'.format(neighborhood.median_sale_price) }}</strong>Median sale price</div>
+      <div><strong>{{ neighborhood.walk_score }}</strong>Walk Score</div>
+      <div><strong>{{ neighborhood.transit_score }}</strong>Transit Score</div>
+      <div><strong>{{ neighborhood.median_age }}</strong>Median age</div>
+    </div>
+
+    <h3 style="margin-top:32px">Living in {{ neighborhood.name }}</h3>
+    <p>{{ neighborhood.dining_blurb }}</p>
+    <p>{{ neighborhood.parks_blurb }}</p>
+    <p>{{ neighborhood.transit_blurb }}</p>
+
+    <p style="margin-top:24px">
+      <a class="btn" href="{{ url_for('neighborhood_detail', city_state=neighborhood.city.lower().replace(' ', '-') ~ '-' ~ neighborhood.state.lower(), slug=neighborhood.slug) }}">Full {{ neighborhood.name }} guide →</a>
+    </p>
+  {% else %}
+    <div class="empty">No detailed neighborhood guide is available for this address yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

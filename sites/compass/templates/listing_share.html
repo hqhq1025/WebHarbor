@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Share — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Share this listing</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.address }}{% if listing.unit %}, Unit {{ listing.unit }}{% endif %} — {{ listing.price_display() }}</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Recipient email <input type="email" name="recipient_email" required size="40"></label></p>
+    <p><label>Note (optional)<br>
+      <textarea name="note" rows="3" cols="60" placeholder="Thought you'd love this one."></textarea>
+    </label></p>
+    <p><button class="btn" type="submit">Send</button></p>
+  </form>
+</div>
+{% endblock %}

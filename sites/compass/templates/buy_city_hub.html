@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Buy in {{ city }}, {{ state }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Buy a home in {{ city }}, {{ state }}</h1>
+  <p style="color:var(--c-gray-4)">{{ total }} active listings · everything you need to start your search.</p>
+
+  <div class="action-stack" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+    <a class="btn" href="{{ url_for('city_for_sale', city_state=city_slug) }}">All {{ city }} homes for sale</a>
+    <a class="btn outline" href="{{ url_for('new_listings') }}?city={{ city }}">New listings</a>
+    <a class="btn outline" href="{{ url_for('open_houses') }}?city={{ city }}">Open houses</a>
+    <a class="btn outline" href="{{ url_for('agents_index') }}?city={{ city }}">Find a {{ city }} agent</a>
+  </div>
+
+  {% if featured %}
+    <h3 style="margin-top:32px">Featured listings in {{ city }}</h3>
+    <div class="grid-cards">
+      {% for L in featured %}{% include "_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if new_in_city %}
+    <h3 style="margin-top:32px">Just listed</h3>
+    <div class="grid-cards">
+      {% for L in new_in_city %}{% include "_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if open_houses_in_city %}
+    <h3 style="margin-top:32px">Open this weekend</h3>
+    <div class="grid-cards">
+      {% for L in open_houses_in_city %}{% include "_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if neighborhoods %}
+    <h3 style="margin-top:32px">Top {{ city }} neighborhoods</h3>
+    <ul style="columns:2;">
+      {% for n in neighborhoods %}
+        <li><a href="{{ url_for('neighborhood_detail', city_state=n.city.lower().replace(' ', '-') ~ '-' ~ n.state.lower(), slug=n.slug) }}">{{ n.name }}</a> — median ${{ '{:,}'.format(n.median_sale_price) }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if report %}
+    <h3 style="margin-top:32px">Latest market snapshot</h3>
+    <p>{{ report.month }} · Median ${{ '{:,}'.format(report.median_sale_price) }}, {{ report.median_days_on_market }} days on market.
+      <a href="{{ url_for('market_report_detail', city_state=city_slug) }}">Full report →</a></p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Schools — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Schools near {{ listing.address }}</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.city }}, {{ listing.state }} · {{ schools|length }} nearby schools</p>
+
+  {% if schools %}
+    <table class="table" style="margin-top:24px">
+      <thead><tr><th>School</th><th>Grades</th><th>Type</th><th>Rating</th><th>Distance</th><th></th></tr></thead>
+      <tbody>
+        {% for s, link in schools %}
+          <tr>
+            <td><strong>{{ s.name }}</strong><br><span style="color:var(--c-gray-4); font-size:13px">{{ s.address }}</span></td>
+            <td>{{ s.grade_low }}–{{ s.grade_high }}</td>
+            <td>{{ s.school_type }}</td>
+            <td>
+              <strong>{{ s.rating }}/10</strong>
+              {% if link.is_assigned %}<span class="chip active" style="font-size:10px;margin-left:6px">Assigned</span>{% endif %}
+            </td>
+            <td>{{ '%.1f'|format(link.distance_miles) }} mi</td>
+            <td><span style="color:var(--c-gray-4); font-size:13px">{{ s.students }} students · {{ s.student_teacher_ratio }} ratio</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty">No school data is available for this listing.</div>
+  {% endif %}
+
+  <p style="margin-top:24px; font-size:13px; color:var(--c-gray-4)">
+    School ratings shown reflect Compass mirror reference data. Boundaries change — confirm enrollment with the school district before purchasing.
+  </p>
+</div>
+{% endblock %}

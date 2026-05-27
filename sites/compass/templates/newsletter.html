@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Compass Newsletter{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:600px">
+  <h1>Stay in the loop</h1>
+  <p>Get a weekly digest of market reports, new listings, and standout homes — straight to your inbox.</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Name <input name="name" placeholder="Your name"></label></p>
+    <p><label>Email <input type="email" name="email" required></label></p>
+    <p><label>City you're watching <input name="city_interest" placeholder="e.g. Brooklyn"></label></p>
+    <p><button class="btn" type="submit">Subscribe</button></p>
+  </form>
+</div>
+{% endblock %}

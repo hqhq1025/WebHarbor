@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ city }} Market Report | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('market_reports_index') }}">← All markets</a></p>
+  <h1>{{ city }}, {{ state }} Market Report</h1>
+  <p style="color:var(--c-gray-4)">Updated {{ latest.month }}</p>
+
+  <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px; margin-top:16px;">
+    <div><strong>${{ '{:,}'.format(latest.median_sale_price) }}</strong>Median sale price</div>
+    <div><strong>${{ '{:,}'.format(latest.median_price_per_sqft) }}</strong>Median $/sq ft</div>
+    <div><strong>{{ latest.homes_sold }}</strong>Homes sold</div>
+    <div><strong>{{ latest.median_days_on_market }}</strong>Median DOM</div>
+    <div><strong>{{ '%.1f'|format(latest.sale_to_list_ratio * 100) }}%</strong>Sale-to-list</div>
+    <div><strong>{{ latest.inventory }}</strong>Active inventory</div>
+    <div><strong>{{ latest.new_listings }}</strong>New listings</div>
+    <div><strong>{% if latest.yoy_price_change_pct >= 0 %}+{% endif %}{{ latest.yoy_price_change_pct }}%</strong>YoY price change</div>
+  </div>
+
+  <h3 style="margin-top:32px">Trailing 12-month history</h3>
+  <table class="table">
+    <thead><tr><th>Month</th><th>Median price</th><th>$/sq ft</th><th>Homes sold</th><th>DOM</th><th>Sale/List</th></tr></thead>
+    <tbody>
+      {% for r in history %}
+        <tr>
+          <td>{{ r.month }}</td>
+          <td>${{ '{:,}'.format(r.median_sale_price) }}</td>
+          <td>${{ '{:,}'.format(r.median_price_per_sqft) }}</td>
+          <td>{{ r.homes_sold }}</td>
+          <td>{{ r.median_days_on_market }}</td>
+          <td>{{ '%.1f'|format(r.sale_to_list_ratio * 100) }}%</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:32px">Subscribe to the monthly report</h3>
+  <form method="post" action="{{ url_for('market_report_subscribe', city_state=city_slug) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p>
+      <label>Email <input type="email" name="email" placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %}></label>
+      <button class="btn" type="submit">Subscribe</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Mortgage Calculator | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Mortgage Calculator</h1>
+  <p style="color:var(--c-gray-4)">Estimate your monthly payment, principal, interest, taxes, insurance, and HOA.</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p>
+      <label>Home price ($) <input type="number" name="home_price" value="{{ result.home_price if result else 850000 }}" required></label>
+      <label>Down payment ($) <input type="number" name="down_payment" value="{{ result.down_payment if result else 170000 }}" required></label>
+    </p>
+    <p>
+      <label>Interest rate (%) <input type="number" step="0.01" name="rate_pct" value="{{ result.rate_pct if result else 6.5 }}" required></label>
+      <label>Term (years)
+        <select name="term_years">
+          {% for t in [10, 15, 20, 25, 30] %}
+            <option value="{{ t }}" {% if result and result.term_years == t %}selected{% elif t == 30 %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </p>
+    <p>
+      <label>Annual property tax ($) <input type="number" name="annual_tax" value="{{ result.monthly_tax * 12 if result else 8500 }}"></label>
+      <label>Annual insurance ($) <input type="number" name="annual_insurance" value="{{ result.monthly_insurance * 12 if result else 1400 }}"></label>
+      <label>Monthly HOA ($) <input type="number" name="monthly_hoa" value="{{ result.monthly_hoa if result else 0 }}"></label>
+    </p>
+    <p>
+      <button class="btn" type="submit">Calculate</button>
+      <label style="margin-left:24px;"><input type="checkbox" name="save" value="1"> Save this scenario</label>
+      <label>Label <input name="label" value="My scenario"></label>
+    </p>
+  </form>
+
+  {% if result %}
+    <h3 style="margin-top:32px">Estimated monthly payment</h3>
+    <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px;">
+      <div><strong>${{ '{:,}'.format(result.monthly_total) }}</strong>Total monthly</div>
+      <div><strong>${{ '{:,}'.format(result.principal_interest) }}</strong>Principal &amp; interest</div>
+      <div><strong>${{ '{:,}'.format(result.monthly_tax) }}</strong>Property tax</div>
+      <div><strong>${{ '{:,}'.format(result.monthly_insurance) }}</strong>Insurance</div>
+      <div><strong>${{ '{:,}'.format(result.monthly_hoa) }}</strong>HOA</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ sold.address }} (Sold) | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('sold_homes_city', city_state=sold.city.lower().replace(' ', '-') ~ '-' ~ sold.state.lower()) }}">← Back to recently sold in {{ sold.city }}, {{ sold.state }}</a></p>
+
+  {% if sold.hero_image %}
+    <img src="{{ sold.hero_image }}" alt="{{ sold.address }}" style="width:100%; max-height:420px; object-fit:cover;">
+  {% endif %}
+
+  <h1 style="margin-top:24px">{{ sold.address }}{% if sold.unit %}, Unit {{ sold.unit }}{% endif %}</h1>
+  <p style="color:var(--c-gray-4)">{{ sold.city }}, {{ sold.state }} {{ sold.zip }}
+    {% if sold.neighborhood %}· {{ sold.neighborhood }}{% endif %}</p>
+
+  <div class="price-big" style="color:#888;">${{ '{:,}'.format(sold.sold_price) }} <span style="font-size:14px; color:var(--c-gray-4)">Sold {{ sold.sold_date }}</span></div>
+
+  <div class="key-facts">
+    <div><strong>{{ sold.beds }}</strong>Bedrooms</div>
+    <div><strong>{{ sold.baths_full + 0.5 * sold.baths_half }}</strong>Bathrooms</div>
+    {% if sold.sqft %}<div><strong>{{ '{:,}'.format(sold.sqft) }}</strong>Sq. Ft.</div>{% endif %}
+    <div><strong>{{ sold.year_built }}</strong>Year built</div>
+    <div><strong>{{ sold.property_type }}</strong>Property type</div>
+    <div><strong>{{ sold.days_on_market }}</strong>Days on market</div>
+  </div>
+
+  <h3>Sale details</h3>
+  <div class="fact-grid">
+    <div class="label">List price</div><div class="value">${{ '{:,}'.format(sold.list_price) }}</div>
+    <div class="label">Sold price</div><div class="value">${{ '{:,}'.format(sold.sold_price) }}</div>
+    <div class="label">Difference</div><div class="value">
+      {% set diff = sold.sold_price - sold.list_price %}
+      {% if diff >= 0 %}+{% endif %}${{ '{:,}'.format(diff) }}
+      ({{ '%.1f'|format(100.0 * diff / sold.list_price if sold.list_price else 0) }}%)
+    </div>
+    <div class="label">Listing agent</div><div class="value">
+      {% if sold.agent_id %}{% set a = sold.agent_id %}<a href="{{ url_for('agent_detail', slug=request.path) }}" style="display:none"></a>{% endif %}
+      {% if sold.agent_id %}
+        Compass agent (id {{ sold.agent_id }})
+      {% else %}—{% endif %}
+    </div>
+  </div>
+
+  {% if similar %}
+    <h3 style="margin-top:32px">Similar recent sales nearby</h3>
+    <table class="table">
+      <thead><tr><th>Address</th><th>Sold price</th><th>Beds</th><th>Sq ft</th></tr></thead>
+      <tbody>
+        {% for s in similar %}
+          <tr>
+            <td><a href="{{ url_for('sold_home_detail', slug=s.slug) }}">{{ s.address }}</a></td>
+            <td>${{ '{:,}'.format(s.sold_price) }}</td>
+            <td>{{ s.beds }}</td>
+            <td>{{ '{:,}'.format(s.sqft) if s.sqft else '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

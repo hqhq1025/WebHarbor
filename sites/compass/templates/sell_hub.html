@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sell your home with Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Sell with Compass</h1>
+  <p class="lead">From a quick valuation to a tailored Comparative Market Analysis, get the resources you need to list with confidence.</p>
+
+  <div class="grid-cards" style="grid-template-columns: repeat(3, 1fr);">
+    <a class="card" href="{{ url_for('sell_evaluate') }}" style="text-decoration:none; color:inherit;">
+      <div class="price">Free home valuation</div>
+      <div class="addr">Instant estimate based on city, beds, baths, and square footage.</div>
+      <div class="meta">2-min form · Email follow-up from your local agent</div>
+    </a>
+    <a class="card" href="{{ url_for('sell_cma') }}" style="text-decoration:none; color:inherit;">
+      <div class="price">Comparative Market Analysis</div>
+      <div class="addr">Custom CMA report from a Compass agent, with recent sold comps in your zip.</div>
+      <div class="meta">Free · 1-business-day response</div>
+    </a>
+    <a class="card" href="{{ url_for('agents_index') }}" style="text-decoration:none; color:inherit;">
+      <div class="price">Find a listing agent</div>
+      <div class="addr">Local listing specialists ranked by recent sales volume and reviews.</div>
+      <div class="meta">Browse Compass agents in your city</div>
+    </a>
+  </div>
+
+  <h3 style="margin-top:32px">Why sell with Compass</h3>
+  <ul>
+    <li><strong>Compass Concierge</strong> — front money for pre-listing improvements, with no upfront cost.</li>
+    <li><strong>Coming Soon &amp; Private Exclusive</strong> — test the market before listing publicly.</li>
+    <li><strong>National network</strong> — your home is exposed to over 10M Compass-visiting buyers each month.</li>
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My Notes | Compass{% endblock %}
+{% block content %}
+<div class="container dashboard">
+  {% include "_account_nav.html" %}
+  <div>
+    <h1>My Notes</h1>
+    <p style="color:var(--c-gray-4)">Personal notes — visible only to you.</p>
+
+    <h2>Add a note</h2>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <p><label>Note<br>
+        <textarea name="body" rows="3" cols="60" placeholder="Anything you want to remember…"></textarea>
+      </label></p>
+      <p><label>Attach to listing ID (optional) <input name="listing_id" placeholder="e.g., 12"></label></p>
+      <p><button class="btn" type="submit">Add note</button></p>
+    </form>
+
+    <h2 style="margin-top:32px">All notes ({{ notes|length }})</h2>
+    {% if notes %}
+      <ul style="list-style:none; padding:0;">
+        {% for n in notes %}
+          <li style="padding:14px 0; border-bottom:1px solid var(--c-gray-2);">
+            <div style="color:var(--c-gray-4); font-size:13px;">{{ n.created_at.strftime('%b %d, %Y · %H:%M') if n.created_at else '' }}{% if n.listing_id %} · Listing #{{ n.listing_id }}{% endif %}</div>
+            <p style="margin:6px 0;">{{ n.body }}</p>
+            <form method="post" action="{{ url_for('note_delete', nid=n.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn outline tiny" type="submit">Delete</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}<div class="empty">No notes yet.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

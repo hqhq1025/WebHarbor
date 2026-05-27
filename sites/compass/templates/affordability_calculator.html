@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Affordability Calculator | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Affordability Calculator</h1>
+  <p style="color:var(--c-gray-4)">Find out how much home you can afford based on your income, debts, and down payment.</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p>
+      <label>Annual income ($) <input type="number" name="annual_income" value="{{ result.annual_income if result else 175000 }}" required></label>
+      <label>Monthly debts ($) <input type="number" name="monthly_debts" value="{{ result.monthly_debts if result else 600 }}"></label>
+    </p>
+    <p>
+      <label>Down payment ($) <input type="number" name="down_payment" value="{{ result.down_payment if result else 60000 }}"></label>
+      <label>Interest rate (%) <input type="number" step="0.01" name="rate_pct" value="{{ result.rate_pct if result else 6.5 }}"></label>
+    </p>
+    <p>
+      <button class="btn" type="submit">Calculate</button>
+      <label style="margin-left:24px;"><input type="checkbox" name="save" value="1"> Save this result</label>
+    </p>
+  </form>
+
+  {% if result %}
+    <h3 style="margin-top:32px">You can afford up to</h3>
+    <div class="key-facts" style="border:1px solid var(--c-gray-2); padding:24px;">
+      <div><strong>${{ '{:,}'.format(result.max_home_price) }}</strong>Max home price</div>
+      <div><strong>${{ '{:,}'.format(result.max_monthly_payment) }}</strong>Max monthly payment</div>
+      <div><strong>{{ result.rate_pct }}%</strong>at 30-yr rate</div>
+    </div>
+    <p style="margin-top:16px; color:var(--c-gray-4); font-size:13px;">
+      Based on the 28/36 rule and a 30-year mortgage. Property tax, insurance, and HOA are excluded — they will lower your effective price ceiling.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

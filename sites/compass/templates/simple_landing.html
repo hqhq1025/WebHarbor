@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ topic }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>{{ topic }}</h1>
+  <p class="lead">More information about Compass {{ topic|lower }} is coming soon. In the meantime, our nationwide network of agents is ready to help.</p>
+
+  <p style="margin-top:24px">
+    <a class="btn" href="{{ url_for('agents_index') }}">Browse Compass agents</a>
+    <a class="btn outline" href="{{ url_for('about') }}">About Compass</a>
+  </p>
+</div>
+{% endblock %}

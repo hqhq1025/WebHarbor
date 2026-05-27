@@ -7,5 +7,7 @@
   <a href="{{ url_for('collections_index') }}" {% if request.endpoint in ('collections_index','collection_detail','collection_new') %}class="active"{% endif %}>Collections</a>
   <a href="{{ url_for('tours_list') }}" {% if request.endpoint == 'tours_list' %}class="active"{% endif %}>Tours</a>
   <a href="{{ url_for('inquiries_list') }}" {% if request.endpoint == 'inquiries_list' %}class="active"{% endif %}>Inquiries</a>
+  <a href="{{ url_for('notes_index') }}" {% if request.endpoint == 'notes_index' %}class="active"{% endif %}>Notes</a>
+  <a href="{{ url_for('offers_index') }}" {% if request.endpoint == 'offers_index' %}class="active"{% endif %}>Offers</a>
   <a href="{{ url_for('change_password') }}" {% if request.endpoint == 'change_password' %}class="active"{% endif %}>Password</a>
 </nav>

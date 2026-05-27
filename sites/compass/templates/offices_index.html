@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Compass Offices{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Compass Offices</h1>
+  <p style="color:var(--c-gray-4)">Visit one of our offices across the country.</p>
+
+  <table class="table" style="margin-top:24px">
+    <thead><tr><th>Office</th><th>City</th><th>Address</th><th>Phone</th><th>Hours</th><th>Agents</th></tr></thead>
+    <tbody>
+      {% for o in offices %}
+        <tr>
+          <td><a href="{{ url_for('office_detail', slug=o.slug) }}">{{ o.name }}</a></td>
+          <td>{{ o.city }}, {{ o.state }}</td>
+          <td>{{ o.address }}</td>
+          <td>{{ o.phone }}</td>
+          <td>{{ o.hours }}</td>
+          <td>{{ o.agent_count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

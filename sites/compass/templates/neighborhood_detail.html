@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ neighborhood.name }}, {{ neighborhood.city }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('neighborhood_index') }}">← All neighborhoods</a></p>
+  <h1>{{ neighborhood.name }}</h1>
+  <p style="color:var(--c-gray-4)">{{ neighborhood.city }}, {{ neighborhood.state }}</p>
+
+  <p class="lead">{{ neighborhood.blurb }}</p>
+
+  <h3>By the numbers</h3>
+  <div class="fact-grid">
+    <div class="label">Median sale price</div><div class="value">${{ '{:,}'.format(neighborhood.median_sale_price) }}</div>
+    <div class="label">Median rent</div><div class="value">${{ '{:,}'.format(neighborhood.median_rent) }}/mo</div>
+    <div class="label">Walk Score</div><div class="value">{{ neighborhood.walk_score }}</div>
+    <div class="label">Transit Score</div><div class="value">{{ neighborhood.transit_score }}</div>
+    <div class="label">Bike Score</div><div class="value">{{ neighborhood.bike_score }}</div>
+    <div class="label">Population</div><div class="value">{{ '{:,}'.format(neighborhood.population) }}</div>
+    <div class="label">Median age</div><div class="value">{{ neighborhood.median_age }}</div>
+    <div class="label">Median household income</div><div class="value">${{ '{:,}'.format(neighborhood.median_household_income) }}</div>
+  </div>
+
+  <h3 style="margin-top:32px">Dining &amp; nightlife</h3>
+  <p>{{ neighborhood.dining_blurb }}</p>
+
+  <h3>Parks &amp; outdoors</h3>
+  <p>{{ neighborhood.parks_blurb }}</p>
+
+  <h3>Transit &amp; getting around</h3>
+  <p>{{ neighborhood.transit_blurb }}</p>
+
+  {% if listings %}
+    <h3 style="margin-top:32px">Homes for sale in {{ neighborhood.name }}</h3>
+    <div class="grid-cards">
+      {% for L in listings %}{% include "_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+
+  <h3 style="margin-top:32px">Get alerts for {{ neighborhood.name }}</h3>
+  <form method="post" action="{{ url_for('neighborhood_alert_subscribe', city_state=neighborhood.city.lower().replace(' ', '-') ~ '-' ~ neighborhood.state.lower(), slug=neighborhood.slug) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p>
+      <label>Email <input type="email" name="email" placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %}></label>
+      <label>Frequency
+        <select name="frequency">
+          <option value="daily">Daily</option>
+          <option value="weekly" selected>Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </label>
+      <button class="btn" type="submit">Subscribe</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

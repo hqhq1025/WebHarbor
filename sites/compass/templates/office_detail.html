@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ office.name }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('offices_index') }}">← All offices</a></p>
+  <h1>{{ office.name }}</h1>
+  <p style="color:var(--c-gray-4)">{{ office.address }}</p>
+
+  <div class="fact-grid">
+    <div class="label">Phone</div><div class="value">{{ office.phone }}</div>
+    <div class="label">Hours</div><div class="value">{{ office.hours }}</div>
+    <div class="label">Office director</div><div class="value">{{ office.director_name }}</div>
+    <div class="label">Active agents</div><div class="value">{{ office.agent_count }}</div>
+  </div>
+
+  <h3 style="margin-top:32px">Agents at this office</h3>
+  <div class="grid-cards" style="grid-template-columns: repeat(2, 1fr);">
+    {% for a in agents %}
+      <a class="agent-card" href="{{ url_for('agent_detail', slug=a.slug) }}" style="text-decoration:none; color:inherit;">
+        <div class="av">{{ a.name.split()[0][0] }}{{ a.name.split()[-1][0] }}</div>
+        <div>
+          <h3>{{ a.name }}</h3>
+          <div class="meta">{{ a.title }}</div>
+          <div style="margin-top:8px">
+            <span class="stat"><strong>{{ a.years_experience }}</strong>Years</span>
+            <span class="stat"><strong>{{ a.transactions_count }}</strong>Transactions</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

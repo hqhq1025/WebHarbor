@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Invite to {{ collection.name }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('collection_detail', cid=collection.id) }}">← Back to {{ collection.name }}</a></p>
+  <h1>Invite a co-buyer to "{{ collection.name }}"</h1>
+  <p style="color:var(--c-gray-4)">They'll receive a view-only link.</p>
+
+  {% set invited = collection.get_invited_emails() %}
+  {% if invited %}
+    <h3>Already invited ({{ invited|length }})</h3>
+    <ul>{% for em in invited %}<li>{{ em }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Email <input type="email" name="email" required size="40"></label></p>
+    <p><button class="btn" type="submit">Send invite</button></p>
+  </form>
+</div>
+{% endblock %}

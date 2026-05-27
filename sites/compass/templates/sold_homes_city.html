@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Recently sold in {{ city }}, {{ state }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('sold_homes_index') }}">← All cities</a></p>
+  <h1>Recently sold in {{ city }}, {{ state }}</h1>
+  <p style="color:var(--c-gray-4)">{{ sold|length }} closed sales</p>
+
+  {% if sold %}
+    <table class="table" style="margin-top:24px">
+      <thead><tr><th>Address</th><th>Sold price</th><th>Sold date</th><th>Beds</th><th>Sq ft</th><th>DOM</th></tr></thead>
+      <tbody>
+        {% for s in sold %}
+          <tr>
+            <td><a href="{{ url_for('sold_home_detail', slug=s.slug) }}">{{ s.address }}</a>
+                {% if s.neighborhood %}<br><span style="color:var(--c-gray-4); font-size:13px">{{ s.neighborhood }}</span>{% endif %}</td>
+            <td><strong>${{ '{:,}'.format(s.sold_price) }}</strong>
+                {% if s.list_price and s.sold_price != s.list_price %}
+                <br><span style="color:var(--c-gray-4); font-size:13px">List ${{ '{:,}'.format(s.list_price) }}</span>
+                {% endif %}</td>
+            <td>{{ s.sold_date }}</td>
+            <td>{{ s.beds }}</td>
+            <td>{{ '{:,}'.format(s.sqft) if s.sqft else '—' }}</td>
+            <td>{{ s.days_on_market }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty">No recent sales recorded.</div>
+  {% endif %}
+</div>
+{% endblock %}

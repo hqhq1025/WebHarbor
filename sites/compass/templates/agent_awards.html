@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} — Awards & Recognition | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('agent_detail', slug=agent.slug) }}">← {{ agent.name }}</a></p>
+  <h1>{{ agent.name }} — Awards &amp; Recognition</h1>
+  <p style="color:var(--c-gray-4)">{{ agent.title }} · {{ agent.city }}, {{ agent.state }}</p>
+
+  {% if awards %}
+    <ul style="margin-top:24px; list-style:none; padding:0;">
+      {% for aw in awards %}
+        <li style="padding:14px 0; border-bottom:1px solid var(--c-gray-2);">
+          <strong>{{ aw.year }}</strong> — {{ aw.name }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty">No awards recorded for this agent.</div>
+  {% endif %}
+</div>
+{% endblock %}

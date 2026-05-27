@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Closing Cost Calculator | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Closing Cost Calculator</h1>
+  <p style="color:var(--c-gray-4)">Estimate the one-time costs of closing on a home, by state.</p>
+
+  <div class="empty" style="margin-top:24px">
+    Closing costs typically run 2-5% of the purchase price and include lender fees, title insurance, recording fees, and prepaid escrows. For a precise estimate, request a Loan Estimate from your lender or contact a Compass agent.
+    <p style="margin-top:8px"><a class="btn outline tiny" href="{{ url_for('agents_index') }}">Find a Compass agent</a> <a class="btn outline tiny" href="{{ url_for('mortgage_calculator') }}">Mortgage calculator</a></p>
+  </div>
+</div>
+{% endblock %}

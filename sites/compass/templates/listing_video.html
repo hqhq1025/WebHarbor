@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Video tour — {{ listing.address }} | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <p><a href="{{ url_for('listing_detail', slug=listing.slug) }}">← Back to listing</a></p>
+  <h1>Video tour</h1>
+  <p style="color:var(--c-gray-4)">{{ listing.address }}{% if listing.unit %}, Unit {{ listing.unit }}{% endif %} · {{ listing.city }}, {{ listing.state }}</p>
+
+  <div style="position:relative; aspect-ratio:16 / 9; background:var(--c-gray-1); display:flex; align-items:center; justify-content:center; color:var(--c-gray-4); border-radius:8px; margin-top:16px;">
+    {% if listing.hero_image %}
+      <img src="{{ listing.hero_image }}" alt="{{ listing.address }}" style="width:100%; height:100%; object-fit:cover; opacity:.6;">
+    {% endif %}
+    <div style="position:absolute; text-align:center;">
+      <div style="font-size:64px; line-height:1">▶</div>
+      <div style="font-size:14px; margin-top:8px;">Video tour preview</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:32px">About this video</h3>
+  <p>Take a guided walk through {{ listing.address }} with our listing agent
+    {% if listing.agent %}{{ listing.agent.name }}{% endif %}. The tour highlights the
+    {% if listing.beds %}{{ listing.beds }}-bedroom layout, {% endif %}
+    {% if listing.has_pool %}pool, {% endif %}
+    {% if listing.has_garage %}garage, {% endif %}
+    and key updates throughout the home.
+  </p>
+
+  <p style="margin-top:24px">
+    <a class="btn" href="{{ url_for('tour_request', listing_id=listing.id) }}">Schedule an in-person tour</a>
+    <a class="btn outline" href="{{ url_for('inquiry_send', listing_id=listing.id) }}">Ask the agent</a>
+  </p>
+</div>
+{% endblock %}

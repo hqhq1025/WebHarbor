@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | Compass Edit{% endblock %}
+{% block content %}
+<div class="container section" style="max-width:760px">
+  <p><a href="{{ url_for('blog_index') }}">← The Compass Edit</a></p>
+  <div style="font-size:12px; color:var(--c-gray-4); text-transform:uppercase; letter-spacing:.05em;">{{ post.category }} · {{ post.read_minutes }} min read</div>
+  <h1>{{ post.title }}</h1>
+  <div style="color:var(--c-gray-4); margin-bottom:24px;">By {{ post.author }} · Published {{ post.published_at.strftime('%B %d, %Y') if post.published_at else '' }}</div>
+
+  {% if post.hero_image %}<img src="{{ post.hero_image }}" alt="" style="width:100%; max-height:400px; object-fit:cover; margin-bottom:24px;">{% endif %}
+
+  <p class="lead">{{ post.excerpt }}</p>
+
+  <div class="article-body">
+    {% for para in post.body.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+  </div>
+
+  {% if related %}
+    <h3 style="margin-top:48px">Related reads</h3>
+    <ul style="list-style:none; padding:0;">
+      {% for r in related %}
+        <li style="padding:10px 0; border-bottom:1px solid var(--c-gray-2);">
+          <a href="{{ url_for('blog_post', slug=r.slug) }}"><strong>{{ r.title }}</strong></a>
+          <div style="color:var(--c-gray-4); font-size:13px;">{{ r.excerpt }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}

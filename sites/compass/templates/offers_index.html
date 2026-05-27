@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My Offers | Compass{% endblock %}
+{% block content %}
+<div class="container dashboard">
+  {% include "_account_nav.html" %}
+  <div>
+    <h1>My Offers</h1>
+    <p style="color:var(--c-gray-4)">All offers you've submitted through Compass.</p>
+
+    {% if offers %}
+      <table class="table" style="margin-top:24px">
+        <thead><tr><th>Listing</th><th>Offer amount</th><th>Earnest money</th><th>Close date</th><th>Status</th><th>Submitted</th></tr></thead>
+        <tbody>
+          {% for o in offers %}
+            <tr>
+              <td>Listing #{{ o.listing_id }}</td>
+              <td>${{ '{:,}'.format(o.amount) }}</td>
+              <td>${{ '{:,}'.format(o.earnest_money) }}</td>
+              <td>{{ o.close_date }}</td>
+              <td>{{ o.status }}</td>
+              <td>{{ o.created_at.strftime('%b %d, %Y') if o.created_at else '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<div class="empty">You haven't submitted any offers yet.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

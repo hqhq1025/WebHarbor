@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}The Compass Edit — Insights for buyers, sellers, and curious onlookers{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>The Compass Edit</h1>
+  <p style="color:var(--c-gray-4)">Insights, market reports, and stories from across our markets.</p>
+
+  <form method="get" class="filter-bar" style="margin-top:16px">
+    <div class="filter-group">
+      <label>Category</label>
+      <select name="category">
+        <option value="">All</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if filter_category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn tiny" type="submit">Filter</button>
+    <a class="btn outline tiny" href="?">Reset</a>
+  </form>
+
+  <div class="result-summary">{{ posts|length }} posts{% if filter_category %} in {{ filter_category }}{% endif %}.</div>
+
+  <ul style="margin-top:16px; list-style:none; padding:0;">
+    {% for p in posts %}
+      <li style="padding:18px 0; border-bottom:1px solid var(--c-gray-2);">
+        <div style="font-size:12px; color:var(--c-gray-4); text-transform:uppercase; letter-spacing:.05em;">{{ p.category }} · {{ p.read_minutes }} min read</div>
+        <h3 style="margin:4px 0 6px;"><a href="{{ url_for('blog_post', slug=p.slug) }}">{{ p.title }}</a></h3>
+        <p style="margin:0 0 4px;">{{ p.excerpt }}</p>
+        <div style="color:var(--c-gray-4); font-size:13px;">By {{ p.author }} · {{ p.published_at.strftime('%b %d, %Y') if p.published_at else '' }}</div>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

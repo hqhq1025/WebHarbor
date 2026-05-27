@@ -301,6 +301,13 @@ class Collection(db.Model):
     listing_ids_json = db.Column(db.Text, default="[]")
     share_token = db.Column(db.String(20), default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    invited_emails_json = db.Column(db.Text, default="[]")
+
+    def get_invited_emails(self):
+        try:
+            return json.loads(self.invited_emails_json or "[]")
+        except Exception:
+            return []
 
     def get_listing_ids(self):
         try:
@@ -320,8 +327,298 @@ class Collection(db.Model):
         return [by_id[i] for i in ids if i in by_id]
 
 
-# ─── Login loader ──────────────────────────────────────────────────────────────
+# ─── New deep-content models ──────────────────────────────────────────────────
 
+
+class Neighborhood(db.Model):
+    __tablename__ = "neighborhoods"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    city = db.Column(db.String(80), index=True)
+    state = db.Column(db.String(40), index=True)
+    blurb = db.Column(db.Text, default="")
+    walk_score = db.Column(db.Integer, default=0)
+    transit_score = db.Column(db.Integer, default=0)
+    bike_score = db.Column(db.Integer, default=0)
+    median_sale_price = db.Column(db.Integer, default=0)
+    median_rent = db.Column(db.Integer, default=0)
+    population = db.Column(db.Integer, default=0)
+    median_age = db.Column(db.Integer, default=0)
+    median_household_income = db.Column(db.Integer, default=0)
+    hero_image = db.Column(db.String(250), default="")
+    dining_blurb = db.Column(db.Text, default="")
+    parks_blurb = db.Column(db.Text, default="")
+    transit_blurb = db.Column(db.Text, default="")
+
+
+class School(db.Model):
+    __tablename__ = "schools"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    city = db.Column(db.String(80), index=True)
+    state = db.Column(db.String(40), index=True)
+    school_type = db.Column(db.String(20), default="Public")  # Public / Private / Charter
+    grade_low = db.Column(db.String(8), default="K")
+    grade_high = db.Column(db.String(8), default="5")
+    rating = db.Column(db.Integer, default=0)  # 1-10
+    students = db.Column(db.Integer, default=0)
+    student_teacher_ratio = db.Column(db.String(16), default="")
+    address = db.Column(db.String(200), default="")
+
+
+class ListingSchool(db.Model):
+    __tablename__ = "listing_schools"
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False, index=True)
+    school_id = db.Column(db.Integer, db.ForeignKey("schools.id"), nullable=False)
+    distance_miles = db.Column(db.Float, default=0)
+    is_assigned = db.Column(db.Boolean, default=False)
+    __table_args__ = (db.UniqueConstraint("listing_id", "school_id"),)
+
+
+class Office(db.Model):
+    __tablename__ = "offices"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    city = db.Column(db.String(80), index=True)
+    state = db.Column(db.String(40), index=True)
+    address = db.Column(db.String(200), default="")
+    phone = db.Column(db.String(40), default="")
+    hours = db.Column(db.String(120), default="Mon-Fri 9am-6pm")
+    director_name = db.Column(db.String(120), default="")
+    agent_count = db.Column(db.Integer, default=0)
+
+
+class Team(db.Model):
+    __tablename__ = "teams"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    city = db.Column(db.String(80), index=True)
+    state = db.Column(db.String(40), index=True)
+    bio = db.Column(db.Text, default="")
+    lead_agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"))
+    sales_volume_usd = db.Column(db.BigInteger, default=0)
+    transactions_count = db.Column(db.Integer, default=0)
+
+
+class TeamMember(db.Model):
+    __tablename__ = "team_members"
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey("teams.id"), nullable=False, index=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"), nullable=False)
+    role = db.Column(db.String(60), default="Agent")
+    __table_args__ = (db.UniqueConstraint("team_id", "agent_id"),)
+
+
+class MarketReport(db.Model):
+    __tablename__ = "market_reports"
+    id = db.Column(db.Integer, primary_key=True)
+    city_slug = db.Column(db.String(80), index=True)
+    city = db.Column(db.String(80))
+    state = db.Column(db.String(40))
+    month = db.Column(db.String(8), index=True)  # YYYY-MM
+    median_sale_price = db.Column(db.Integer, default=0)
+    median_price_per_sqft = db.Column(db.Integer, default=0)
+    homes_sold = db.Column(db.Integer, default=0)
+    median_days_on_market = db.Column(db.Integer, default=0)
+    sale_to_list_ratio = db.Column(db.Float, default=0)
+    inventory = db.Column(db.Integer, default=0)
+    new_listings = db.Column(db.Integer, default=0)
+    yoy_price_change_pct = db.Column(db.Float, default=0)
+    __table_args__ = (db.UniqueConstraint("city_slug", "month"),)
+
+
+class BlogPost(db.Model):
+    __tablename__ = "blog_posts"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(160), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(220), nullable=False)
+    category = db.Column(db.String(60), index=True)
+    author = db.Column(db.String(120), default="Compass Editorial")
+    excerpt = db.Column(db.Text, default="")
+    body = db.Column(db.Text, default="")
+    hero_image = db.Column(db.String(250), default="")
+    published_at = db.Column(db.DateTime)
+    read_minutes = db.Column(db.Integer, default=4)
+
+
+class PriceHistory(db.Model):
+    __tablename__ = "price_history"
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False, index=True)
+    event_date = db.Column(db.String(20))  # YYYY-MM-DD
+    event_type = db.Column(db.String(40))  # Listed, Price reduced, Pending, Sold, Relisted
+    price = db.Column(db.Integer, default=0)
+
+
+class AgentReview(db.Model):
+    __tablename__ = "agent_reviews"
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    reviewer_name = db.Column(db.String(120), default="")
+    rating = db.Column(db.Integer, default=5)
+    title = db.Column(db.String(160), default="")
+    body = db.Column(db.Text, default="")
+    transaction_type = db.Column(db.String(20), default="Buyer")  # Buyer / Seller / Renter
+    created_at = db.Column(db.DateTime)
+
+
+class AgentAward(db.Model):
+    __tablename__ = "agent_awards"
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"), nullable=False, index=True)
+    year = db.Column(db.Integer)
+    name = db.Column(db.String(160))
+
+
+class SoldListing(db.Model):
+    """Recently-sold homes — separate table so live listings stay clean."""
+    __tablename__ = "sold_listings"
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    address = db.Column(db.String(200), nullable=False)
+    unit = db.Column(db.String(60), default="")
+    neighborhood = db.Column(db.String(80), default="")
+    city = db.Column(db.String(80), index=True)
+    state = db.Column(db.String(40), index=True)
+    zip = db.Column(db.String(20), default="")
+    beds = db.Column(db.Integer, default=0)
+    baths_full = db.Column(db.Integer, default=0)
+    baths_half = db.Column(db.Integer, default=0)
+    sqft = db.Column(db.Integer, default=0)
+    year_built = db.Column(db.Integer, default=0)
+    property_type = db.Column(db.String(40), default="Single Family")
+    list_price = db.Column(db.Integer, default=0)
+    sold_price = db.Column(db.Integer, default=0)
+    sold_date = db.Column(db.String(20))
+    days_on_market = db.Column(db.Integer, default=0)
+    hero_image = db.Column(db.String(250), default="")
+    agent_id = db.Column(db.Integer, db.ForeignKey("agents.id"))
+
+    @property
+    def baths(self):
+        return (self.baths_full or 0) + 0.5 * (self.baths_half or 0)
+
+    def price_display(self):
+        return f"${self.sold_price:,}"
+
+
+class Note(db.Model):
+    __tablename__ = "notes"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
+    body = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime)
+
+
+class Offer(db.Model):
+    __tablename__ = "offers"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False)
+    amount = db.Column(db.Integer, default=0)
+    earnest_money = db.Column(db.Integer, default=0)
+    contingencies = db.Column(db.String(200), default="")
+    close_date = db.Column(db.String(20), default="")
+    financing = db.Column(db.String(40), default="Conventional")
+    notes = db.Column(db.Text, default="")
+    status = db.Column(db.String(20), default="submitted")
+    created_at = db.Column(db.DateTime)
+
+
+class MortgageScenario(db.Model):
+    __tablename__ = "mortgage_scenarios"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    label = db.Column(db.String(120), default="Saved scenario")
+    home_price = db.Column(db.Integer, default=0)
+    down_payment = db.Column(db.Integer, default=0)
+    rate_pct = db.Column(db.Float, default=0)
+    term_years = db.Column(db.Integer, default=30)
+    annual_tax = db.Column(db.Integer, default=0)
+    annual_insurance = db.Column(db.Integer, default=0)
+    monthly_hoa = db.Column(db.Integer, default=0)
+    monthly_payment = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime)
+
+
+class AffordabilityResult(db.Model):
+    __tablename__ = "affordability_results"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    annual_income = db.Column(db.Integer, default=0)
+    monthly_debts = db.Column(db.Integer, default=0)
+    down_payment = db.Column(db.Integer, default=0)
+    rate_pct = db.Column(db.Float, default=0)
+    max_home_price = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime)
+
+
+class HomeEvaluation(db.Model):
+    __tablename__ = "home_evaluations"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    address = db.Column(db.String(200))
+    city = db.Column(db.String(80))
+    state = db.Column(db.String(40))
+    zip = db.Column(db.String(20), default="")
+    beds = db.Column(db.Integer, default=0)
+    baths = db.Column(db.Float, default=0)
+    sqft = db.Column(db.Integer, default=0)
+    estimated_value = db.Column(db.Integer, default=0)
+    timeline = db.Column(db.String(40), default="3-6mo")
+    created_at = db.Column(db.DateTime)
+
+
+class CMARequest(db.Model):
+    __tablename__ = "cma_requests"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    address = db.Column(db.String(200))
+    city = db.Column(db.String(80))
+    state = db.Column(db.String(40))
+    contact_name = db.Column(db.String(120), default="")
+    contact_email = db.Column(db.String(120), default="")
+    contact_phone = db.Column(db.String(40), default="")
+    notes = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime)
+
+
+class NewsletterSignup(db.Model):
+    __tablename__ = "newsletter_signups"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), default="")
+    city_interest = db.Column(db.String(80), default="")
+    created_at = db.Column(db.DateTime)
+
+
+class NeighborhoodAlertSubscription(db.Model):
+    __tablename__ = "neighborhood_alerts"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    email = db.Column(db.String(120))
+    neighborhood_slug = db.Column(db.String(120))
+    frequency = db.Column(db.String(20), default="weekly")
+    created_at = db.Column(db.DateTime)
+
+
+class MarketReportSubscription(db.Model):
+    __tablename__ = "market_report_subscriptions"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    email = db.Column(db.String(120))
+    city_slug = db.Column(db.String(80))
+    created_at = db.Column(db.DateTime)
+
+
+# ─── Login loader ──────────────────────────────────────────────────────────────
 
 @login_manager.user_loader
 def load_user(uid):
@@ -985,6 +1282,682 @@ def health():
             "users": User.query.count()}
 
 
+# ─── Listing deep-dive pages ──────────────────────────────────────────────────
+
+
+def _get_listing_or_404(slug):
+    L = Listing.query.filter_by(slug=slug).first()
+    if not L:
+        abort(404)
+    return L
+
+
+@app.route("/listing/<slug>/photos")
+def listing_photos(slug):
+    L = _get_listing_or_404(slug)
+    return render_template("listing_photos.html", listing=L,
+                           gallery=L.get_gallery())
+
+
+@app.route("/listing/<slug>/floor-plan")
+def listing_floorplan(slug):
+    L = _get_listing_or_404(slug)
+    return render_template("listing_floorplan.html", listing=L)
+
+
+@app.route("/listing/<slug>/video-tour")
+def listing_video(slug):
+    L = _get_listing_or_404(slug)
+    return render_template("listing_video.html", listing=L)
+
+
+@app.route("/listing/<slug>/price-history")
+def listing_price_history(slug):
+    L = _get_listing_or_404(slug)
+    history = (PriceHistory.query.filter_by(listing_id=L.id)
+               .order_by(PriceHistory.event_date.desc()).all())
+    return render_template("listing_price_history.html", listing=L,
+                           history=history)
+
+
+@app.route("/listing/<slug>/walkscore")
+def listing_walkscore(slug):
+    L = _get_listing_or_404(slug)
+    n = None
+    if L.neighborhood:
+        n = Neighborhood.query.filter_by(name=L.neighborhood,
+                                         city=L.city).first()
+    return render_template("listing_walkscore.html", listing=L, neighborhood=n)
+
+
+@app.route("/listing/<slug>/schools")
+def listing_schools(slug):
+    L = _get_listing_or_404(slug)
+    rows = (ListingSchool.query.filter_by(listing_id=L.id)
+            .order_by(ListingSchool.distance_miles).all())
+    pairs = []
+    for r in rows:
+        s = School.query.get(r.school_id)
+        if s:
+            pairs.append((s, r))
+    return render_template("listing_schools.html", listing=L, schools=pairs)
+
+
+@app.route("/listing/<slug>/neighborhood")
+def listing_neighborhood(slug):
+    L = _get_listing_or_404(slug)
+    n = None
+    if L.neighborhood:
+        n = Neighborhood.query.filter_by(name=L.neighborhood,
+                                         city=L.city).first()
+    return render_template("listing_neighborhood.html", listing=L,
+                           neighborhood=n)
+
+
+@app.route("/listing/<slug>/contact-agent", methods=["GET", "POST"])
+def listing_contact_agent(slug):
+    L = _get_listing_or_404(slug)
+    return redirect(url_for("inquiry_send", listing_id=L.id), code=307)
+
+
+@app.route("/listing/<slug>/schedule-tour", methods=["GET", "POST"])
+def listing_schedule_tour(slug):
+    L = _get_listing_or_404(slug)
+    if not current_user.is_authenticated:
+        return redirect(url_for("login",
+                                next=url_for("listing_schedule_tour", slug=slug)))
+    return redirect(url_for("tour_request", listing_id=L.id), code=307)
+
+
+# ─── Neighborhoods ────────────────────────────────────────────────────────────
+
+
+@app.route("/neighborhoods")
+def neighborhood_index():
+    city = request.args.get("city", "")
+    qs = Neighborhood.query
+    if city:
+        qs = qs.filter(Neighborhood.city.ilike(f"%{city}%"))
+    rows = qs.order_by(Neighborhood.city, Neighborhood.name).all()
+    all_cities = sorted(set(n.city for n in Neighborhood.query.all() if n.city))
+    return render_template("neighborhood_index.html",
+                           neighborhoods=rows, filter_city=city,
+                           all_cities=all_cities)
+
+
+@app.route("/neighborhood/<city_state>/<slug>")
+def neighborhood_detail(city_state, slug):
+    n = Neighborhood.query.filter_by(slug=slug).first()
+    if not n:
+        abort(404)
+    listings = (Listing.query
+                .filter_by(city=n.city, state=n.state, neighborhood=n.name,
+                           status="for-sale")
+                .order_by(Listing.price).limit(12).all())
+    return render_template("neighborhood_detail.html",
+                           neighborhood=n, listings=listings)
+
+
+@app.route("/neighborhood/<city_state>/<slug>/subscribe", methods=["POST"])
+def neighborhood_alert_subscribe(city_state, slug):
+    n = Neighborhood.query.filter_by(slug=slug).first_or_404()
+    email = (request.form.get("email") or "").strip().lower()
+    if current_user.is_authenticated and not email:
+        email = current_user.email
+    if email:
+        db.session.add(NeighborhoodAlertSubscription(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            email=email, neighborhood_slug=n.slug,
+            frequency=(request.form.get("frequency") or "weekly"),
+            created_at=datetime.utcnow(),
+        ))
+        db.session.commit()
+        flash(f"Alerts on for {n.name}. We'll email {email}.", "success")
+    return redirect(url_for("neighborhood_detail",
+                            city_state=city_state, slug=n.slug))
+
+
+# ─── Sold homes ───────────────────────────────────────────────────────────────
+
+
+@app.route("/sold-homes")
+def sold_homes_index():
+    pairs = sorted({(s.city, s.state) for s in SoldListing.query.all()
+                    if s.city and s.state})
+    counts = {(c, st): SoldListing.query.filter_by(city=c, state=st).count()
+              for (c, st) in pairs}
+    return render_template("sold_homes_index.html",
+                           city_state_pairs=pairs, counts=counts)
+
+
+@app.route("/sold-homes/<city_state>/")
+def sold_homes_city(city_state):
+    city, state = city_state_slug(city_state)
+    if not city:
+        abort(404)
+    qs = SoldListing.query.filter_by(city=city, state=state)
+    rows = qs.order_by(SoldListing.sold_date.desc()).all()
+    return render_template("sold_homes_city.html",
+                           city=city, state=state, city_slug=city_state,
+                           sold=rows)
+
+
+@app.route("/sold-home/<slug>")
+def sold_home_detail(slug):
+    s = SoldListing.query.filter_by(slug=slug).first_or_404()
+    similar = (SoldListing.query
+               .filter(SoldListing.id != s.id, SoldListing.city == s.city)
+               .order_by(func.abs(SoldListing.sold_price - s.sold_price))
+               .limit(4).all())
+    return render_template("sold_home_detail.html", sold=s, similar=similar)
+
+
+# ─── Market reports ───────────────────────────────────────────────────────────
+
+
+@app.route("/market-reports")
+def market_reports_index():
+    pairs = sorted({(m.city, m.state) for m in MarketReport.query.all()
+                    if m.city and m.state})
+    return render_template("market_reports_index.html", city_state_pairs=pairs)
+
+
+@app.route("/market-report/<city_state>/")
+def market_report_detail(city_state):
+    city, state = city_state_slug(city_state)
+    if not city:
+        abort(404)
+    rows = (MarketReport.query
+            .filter_by(city_slug=city_state)
+            .order_by(MarketReport.month.desc()).all())
+    if not rows:
+        abort(404)
+    latest = rows[0]
+    return render_template("market_report_detail.html",
+                           city=city, state=state, city_slug=city_state,
+                           latest=latest, history=rows)
+
+
+@app.route("/market-report/<city_state>/subscribe", methods=["POST"])
+def market_report_subscribe(city_state):
+    email = (request.form.get("email") or "").strip().lower()
+    if current_user.is_authenticated and not email:
+        email = current_user.email
+    if email:
+        db.session.add(MarketReportSubscription(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            email=email, city_slug=city_state,
+            created_at=datetime.utcnow(),
+        ))
+        db.session.commit()
+        flash(f"You'll receive the {city_state} market report at {email}.",
+              "success")
+    return redirect(url_for("market_report_detail", city_state=city_state))
+
+
+# ─── Agent extras ─────────────────────────────────────────────────────────────
+
+
+@app.route("/agent/<slug>")
+def agent_alias(slug):
+    return redirect(url_for("agent_detail", slug=slug), code=301)
+
+
+@app.route("/agent/<slug>/reviews", methods=["GET", "POST"])
+def agent_reviews(slug):
+    a = Agent.query.filter_by(slug=slug).first_or_404()
+    error = None
+    if request.method == "POST":
+        if not current_user.is_authenticated:
+            return redirect(url_for("login",
+                                    next=url_for("agent_reviews", slug=slug)))
+        try:
+            rating = int(request.form.get("rating") or "5")
+            rating = max(1, min(5, rating))
+        except ValueError:
+            rating = 5
+        body = (request.form.get("body") or "").strip()
+        title = (request.form.get("title") or "").strip()
+        tx = (request.form.get("transaction_type") or "Buyer").strip()
+        if not body:
+            error = "Please share a few words about your experience."
+        else:
+            db.session.add(AgentReview(
+                agent_id=a.id, user_id=current_user.id,
+                reviewer_name=current_user.name,
+                rating=rating, title=title, body=body,
+                transaction_type=tx, created_at=datetime.utcnow(),
+            ))
+            db.session.commit()
+            flash("Thanks — your review has been posted.", "success")
+            return redirect(url_for("agent_reviews", slug=slug))
+    reviews = (AgentReview.query.filter_by(agent_id=a.id)
+               .order_by(AgentReview.created_at.desc()).all())
+    avg = (sum(r.rating for r in reviews) / len(reviews)) if reviews else 0
+    return render_template("agent_reviews.html", agent=a,
+                           reviews=reviews, avg_rating=avg, error=error)
+
+
+@app.route("/agent/<slug>/sold")
+def agent_sold(slug):
+    a = Agent.query.filter_by(slug=slug).first_or_404()
+    sold = (SoldListing.query.filter_by(agent_id=a.id)
+            .order_by(SoldListing.sold_date.desc()).all())
+    return render_template("agent_sold.html", agent=a, sold=sold)
+
+
+@app.route("/agent/<slug>/awards")
+def agent_awards(slug):
+    a = Agent.query.filter_by(slug=slug).first_or_404()
+    awards = (AgentAward.query.filter_by(agent_id=a.id)
+              .order_by(AgentAward.year.desc()).all())
+    return render_template("agent_awards.html", agent=a, awards=awards)
+
+
+# ─── Teams & Offices ──────────────────────────────────────────────────────────
+
+
+@app.route("/teams")
+def teams_index():
+    rows = Team.query.order_by(Team.sales_volume_usd.desc()).all()
+    return render_template("teams_index.html", teams=rows)
+
+
+@app.route("/team/<slug>")
+def team_detail(slug):
+    t = Team.query.filter_by(slug=slug).first_or_404()
+    members = []
+    for tm in TeamMember.query.filter_by(team_id=t.id).all():
+        a = Agent.query.get(tm.agent_id)
+        if a:
+            members.append((a, tm.role))
+    lead = Agent.query.get(t.lead_agent_id) if t.lead_agent_id else None
+    listings = []
+    if members:
+        ids = [a.id for a, _ in members]
+        listings = (Listing.query.filter(Listing.agent_id.in_(ids))
+                    .order_by(Listing.price.desc()).limit(12).all())
+    return render_template("team_detail.html", team=t, members=members,
+                           lead=lead, listings=listings)
+
+
+@app.route("/offices")
+def offices_index():
+    rows = Office.query.order_by(Office.state, Office.city, Office.name).all()
+    return render_template("offices_index.html", offices=rows)
+
+
+@app.route("/office/<slug>")
+def office_detail(slug):
+    o = Office.query.filter_by(slug=slug).first_or_404()
+    agents = (Agent.query.filter_by(city=o.city, state=o.state)
+              .order_by(Agent.sales_volume_usd.desc()).limit(12).all())
+    return render_template("office_detail.html", office=o, agents=agents)
+
+
+# ─── Buy / Sell hubs + Blog ───────────────────────────────────────────────────
+
+
+@app.route("/buy/<city_state>/")
+def buy_city_hub(city_state):
+    city, state = city_state_slug(city_state)
+    if not city:
+        abort(404)
+    qs = Listing.query.filter_by(city=city, state=state, status="for-sale")
+    total = qs.count()
+    featured = qs.order_by(Listing.price.desc()).limit(3).all()
+    new_listings_in_city = (qs.filter_by(is_new=True)
+                            .order_by(Listing.id.desc()).limit(4).all())
+    open_houses_in_city = (qs.filter_by(is_open_house=True)
+                           .order_by(Listing.open_house_date).limit(4).all())
+    nbhd = (Neighborhood.query.filter_by(city=city, state=state)
+            .order_by(Neighborhood.median_sale_price.desc()).limit(6).all())
+    report = (MarketReport.query.filter_by(city_slug=city_state)
+              .order_by(MarketReport.month.desc()).first())
+    return render_template("buy_city_hub.html",
+                           city=city, state=state, city_slug=city_state,
+                           total=total, featured=featured,
+                           new_in_city=new_listings_in_city,
+                           open_houses_in_city=open_houses_in_city,
+                           neighborhoods=nbhd, report=report)
+
+
+@app.route("/sell")
+def sell_hub():
+    return render_template("sell_hub.html")
+
+
+@app.route("/sell/evaluate-home", methods=["GET", "POST"])
+def sell_evaluate():
+    if request.method == "POST":
+        try:
+            beds = int(request.form.get("beds") or 0)
+            baths = float(request.form.get("baths") or 0)
+            sqft = int(request.form.get("sqft") or 0)
+        except ValueError:
+            beds, baths, sqft = 0, 0.0, 0
+        addr = (request.form.get("address") or "").strip()
+        city = (request.form.get("city") or "").strip()
+        state = (request.form.get("state") or "").strip()
+        # Lightweight estimate: $/sqft baseline by state with a beds bonus.
+        baseline = {"CA": 750, "NY": 950, "FL": 420, "MA": 600, "TX": 280,
+                    "WA": 580, "CO": 520, "IL": 350, "DC": 700}.get(state, 380)
+        est = max(150_000, sqft * baseline + beds * 25_000)
+        ev = HomeEvaluation(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            address=addr, city=city, state=state,
+            zip=(request.form.get("zip") or ""),
+            beds=beds, baths=baths, sqft=sqft,
+            estimated_value=int(est),
+            timeline=(request.form.get("timeline") or "3-6mo"),
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(ev)
+        db.session.commit()
+        flash(f"Your home is estimated at ${int(est):,}. A Compass agent will be in touch.",
+              "success")
+        return render_template("sell_evaluate.html", result=ev)
+    return render_template("sell_evaluate.html", result=None)
+
+
+@app.route("/sell/cma-report", methods=["GET", "POST"])
+def sell_cma():
+    if request.method == "POST":
+        c = CMARequest(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            address=(request.form.get("address") or "").strip(),
+            city=(request.form.get("city") or "").strip(),
+            state=(request.form.get("state") or "").strip(),
+            contact_name=(request.form.get("name") or "").strip(),
+            contact_email=(request.form.get("email") or "").strip().lower(),
+            contact_phone=(request.form.get("phone") or "").strip(),
+            notes=(request.form.get("notes") or "").strip(),
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(c)
+        db.session.commit()
+        flash("Thanks — your CMA report request is in. Expect a reply within one business day.",
+              "success")
+        return redirect(url_for("sell_cma"))
+    return render_template("sell_cma.html")
+
+
+@app.route("/blog")
+def blog_index():
+    cat = request.args.get("category", "")
+    qs = BlogPost.query
+    if cat:
+        qs = qs.filter_by(category=cat)
+    posts = qs.order_by(BlogPost.published_at.desc()).all()
+    cats = sorted(set(p.category for p in BlogPost.query.all() if p.category))
+    return render_template("blog_index.html", posts=posts, categories=cats,
+                           filter_category=cat)
+
+
+@app.route("/blog/<slug>")
+def blog_post(slug):
+    p = BlogPost.query.filter_by(slug=slug).first_or_404()
+    related = (BlogPost.query.filter(BlogPost.id != p.id,
+                                     BlogPost.category == p.category)
+               .order_by(BlogPost.published_at.desc()).limit(3).all())
+    return render_template("blog_post.html", post=p, related=related)
+
+
+# ─── Calculators ──────────────────────────────────────────────────────────────
+
+
+def _monthly_payment(P, rate_pct, term_years):
+    n = term_years * 12
+    if n <= 0:
+        return 0
+    r = (rate_pct or 0) / 100.0 / 12.0
+    if r == 0:
+        return int(round(P / n)) if n else 0
+    pay = P * (r * (1 + r) ** n) / ((1 + r) ** n - 1)
+    return int(round(pay))
+
+
+@app.route("/mortgage-calculator", methods=["GET", "POST"])
+def mortgage_calculator():
+    result = None
+    if request.method == "POST":
+        try:
+            home_price = int(request.form.get("home_price") or 0)
+            down = int(request.form.get("down_payment") or 0)
+            rate = float(request.form.get("rate_pct") or 6.5)
+            term = int(request.form.get("term_years") or 30)
+            tax = int(request.form.get("annual_tax") or 0)
+            ins = int(request.form.get("annual_insurance") or 0)
+            hoa = int(request.form.get("monthly_hoa") or 0)
+        except ValueError:
+            flash("Please enter valid numbers.", "warning")
+            return redirect(url_for("mortgage_calculator"))
+        principal = max(0, home_price - down)
+        pi = _monthly_payment(principal, rate, term)
+        total = pi + tax // 12 + ins // 12 + hoa
+        result = {
+            "home_price": home_price, "down_payment": down,
+            "rate_pct": rate, "term_years": term,
+            "principal_interest": pi,
+            "monthly_tax": tax // 12,
+            "monthly_insurance": ins // 12,
+            "monthly_hoa": hoa,
+            "monthly_total": total,
+        }
+        if request.form.get("save"):
+            label = (request.form.get("label") or "Saved scenario").strip()
+            db.session.add(MortgageScenario(
+                user_id=current_user.id if current_user.is_authenticated else None,
+                label=label,
+                home_price=home_price, down_payment=down,
+                rate_pct=rate, term_years=term,
+                annual_tax=tax, annual_insurance=ins,
+                monthly_hoa=hoa, monthly_payment=total,
+                created_at=datetime.utcnow(),
+            ))
+            db.session.commit()
+            flash(f'Scenario "{label}" saved.', "success")
+    return render_template("mortgage_calculator.html", result=result)
+
+
+@app.route("/affordability-calculator", methods=["GET", "POST"])
+def affordability_calculator():
+    result = None
+    if request.method == "POST":
+        try:
+            income = int(request.form.get("annual_income") or 0)
+            debts = int(request.form.get("monthly_debts") or 0)
+            down = int(request.form.get("down_payment") or 0)
+            rate = float(request.form.get("rate_pct") or 6.5)
+        except ValueError:
+            flash("Please enter valid numbers.", "warning")
+            return redirect(url_for("affordability_calculator"))
+        # 28/36 rule + simple amortization invert.
+        max_monthly = int(income * 0.36 / 12) - debts
+        max_monthly = max(0, max_monthly)
+        # invert _monthly_payment to get principal:
+        n = 30 * 12
+        r = rate / 100.0 / 12.0
+        if r > 0 and max_monthly > 0:
+            principal = max_monthly * ((1 + r) ** n - 1) / (r * (1 + r) ** n)
+        else:
+            principal = max_monthly * n
+        max_home = int(principal + down)
+        result = {
+            "annual_income": income, "monthly_debts": debts,
+            "down_payment": down, "rate_pct": rate,
+            "max_monthly_payment": max_monthly,
+            "max_home_price": max_home,
+        }
+        if request.form.get("save"):
+            db.session.add(AffordabilityResult(
+                user_id=current_user.id if current_user.is_authenticated else None,
+                annual_income=income, monthly_debts=debts, down_payment=down,
+                rate_pct=rate, max_home_price=max_home,
+                created_at=datetime.utcnow(),
+            ))
+            db.session.commit()
+            flash(f"Result saved — you could afford up to ${max_home:,}.",
+                  "success")
+    return render_template("affordability_calculator.html", result=result)
+
+
+@app.route("/closing-cost-calculator")
+def closing_cost_calculator():
+    return render_template("closing_cost_calculator.html")
+
+
+# ─── Account extras: Notes / Offers / Share ───────────────────────────────────
+
+
+@app.route("/myaccount/notes", methods=["GET", "POST"])
+@login_required
+def notes_index():
+    if request.method == "POST":
+        body = (request.form.get("body") or "").strip()
+        lid = request.form.get("listing_id")
+        if not body:
+            flash("Note cannot be empty.", "warning")
+        else:
+            db.session.add(Note(
+                user_id=current_user.id,
+                listing_id=int(lid) if lid and lid.isdigit() else None,
+                body=body, created_at=datetime.utcnow(),
+            ))
+            db.session.commit()
+            flash("Note added.", "success")
+        return redirect(url_for("notes_index"))
+    rows = (Note.query.filter_by(user_id=current_user.id)
+            .order_by(Note.created_at.desc()).all())
+    return render_template("notes_index.html", notes=rows)
+
+
+@app.route("/myaccount/notes/<int:nid>/delete", methods=["POST"])
+@login_required
+def note_delete(nid):
+    n = Note.query.filter_by(id=nid, user_id=current_user.id).first_or_404()
+    db.session.delete(n)
+    db.session.commit()
+    flash("Note removed.", "info")
+    return redirect(url_for("notes_index"))
+
+
+@app.route("/myaccount/offers")
+@login_required
+def offers_index():
+    rows = (Offer.query.filter_by(user_id=current_user.id)
+            .order_by(Offer.created_at.desc()).all())
+    return render_template("offers_index.html", offers=rows)
+
+
+@app.route("/listing/<int:listing_id>/offer", methods=["GET", "POST"])
+@login_required
+def offer_new(listing_id):
+    L = Listing.query.get_or_404(listing_id)
+    if request.method == "POST":
+        try:
+            amount = int(request.form.get("amount") or 0)
+            earnest = int(request.form.get("earnest_money") or 0)
+        except ValueError:
+            amount, earnest = 0, 0
+        o = Offer(
+            user_id=current_user.id, listing_id=L.id,
+            amount=amount, earnest_money=earnest,
+            contingencies=(request.form.get("contingencies") or ""),
+            close_date=(request.form.get("close_date") or ""),
+            financing=(request.form.get("financing") or "Conventional"),
+            notes=(request.form.get("notes") or "").strip(),
+            status="submitted",
+            created_at=datetime.utcnow(),
+        )
+        db.session.add(o)
+        db.session.commit()
+        flash(f"Offer of ${amount:,} submitted for {L.address}.", "success")
+        return redirect(url_for("offers_index"))
+    return render_template("offer_new.html", listing=L)
+
+
+@app.route("/listing/<int:listing_id>/share", methods=["GET", "POST"])
+def listing_share(listing_id):
+    L = Listing.query.get_or_404(listing_id)
+    if request.method == "POST":
+        recipient = (request.form.get("recipient_email") or "").strip().lower()
+        note = (request.form.get("note") or "").strip()
+        # We record this as an inquiry-like artifact for benchmark verification.
+        db.session.add(Inquiry(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            listing_id=L.id, agent_id=L.agent_id,
+            name="Listing share",
+            email=recipient,
+            phone="",
+            subject=f"Shared listing: {L.address}",
+            message=note or f"A friend shared this listing with you: {L.address}",
+        ))
+        db.session.commit()
+        flash(f"Sent {L.address} to {recipient}.", "success")
+        return redirect(url_for("listing_detail", slug=L.slug))
+    return render_template("listing_share.html", listing=L)
+
+
+@app.route("/collections/<int:cid>/invite", methods=["GET", "POST"])
+@login_required
+def collection_invite(cid):
+    c = Collection.query.filter_by(id=cid, user_id=current_user.id).first_or_404()
+    if request.method == "POST":
+        em = (request.form.get("email") or "").strip().lower()
+        if em:
+            invited = c.get_invited_emails()
+            if em not in invited:
+                invited.append(em)
+                c.invited_emails_json = json.dumps(invited)
+                db.session.commit()
+            flash(f"Invited {em} to view '{c.name}'.", "success")
+        return redirect(url_for("collection_detail", cid=c.id))
+    return render_template("collection_invite.html", collection=c)
+
+
+# ─── Newsletter / Careers / Aliases ───────────────────────────────────────────
+
+
+@app.route("/newsletter", methods=["GET", "POST"])
+def newsletter():
+    if request.method == "POST":
+        em = (request.form.get("email") or "").strip().lower()
+        nm = (request.form.get("name") or "").strip()
+        ci = (request.form.get("city_interest") or "").strip()
+        if em:
+            existing = NewsletterSignup.query.filter_by(email=em).first()
+            if not existing:
+                db.session.add(NewsletterSignup(
+                    email=em, name=nm, city_interest=ci,
+                    created_at=datetime.utcnow(),
+                ))
+                db.session.commit()
+            flash(f"You're subscribed at {em}.", "success")
+        return redirect(url_for("newsletter"))
+    return render_template("newsletter.html")
+
+
+@app.route("/careers")
+@app.route("/concierge")
+@app.route("/private-exclusives")
+def simple_landing():
+    topic = request.path.strip("/").replace("-", " ").title()
+    return render_template("simple_landing.html", topic=topic)
+
+
+@app.route("/myaccount/saved-searches")
+@login_required
+def myaccount_saved_searches_alias():
+    return redirect(url_for("saved_searches"), code=301)
+
+
+@app.route("/myaccount/favorited")
+@login_required
+def myaccount_favorited_alias():
+    return redirect(url_for("saved_list"), code=301)
+
+
 @app.errorhandler(404)
 def not_found(e):
     return render_template("404.html"), 404
@@ -999,11 +1972,37 @@ def server_error(e):
 
 
 from seed_data import seed_database, seed_benchmark_users  # noqa: E402
+from seed_extras import seed_extras_all  # noqa: E402
+
+
+def _normalize_seed_db_layout():
+    """Re-emit CREATE INDEX statements in alpha order + VACUUM so a fresh
+    rebuild produces byte-identical sqlite output. Without this, SQLAlchemy
+    emits CREATE INDEX in `Table.indexes` set order, which depends on Python
+    `id()` allocation and varies between processes. See harden-env gotcha #2.
+    """
+    from sqlalchemy import text
+    with db.engine.begin() as conn:
+        rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _ in rows:
+            conn.execute(text(f'DROP INDEX IF EXISTS "{name}"'))
+        for name, sql in sorted(rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+    with db.engine.connect() as conn:
+        conn.exec_driver_sql("VACUUM")
+
 
 with app.app_context():
+    fresh = not os.path.exists(os.path.join(BASE_DIR, "instance", "compass.db"))
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    seed_extras_all()
+    if fresh:
+        _normalize_seed_db_layout()
 
 
 if __name__ == "__main__":

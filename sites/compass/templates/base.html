@@ -16,10 +16,12 @@
     <nav class="cx-nav-links">
       <a href="{{ url_for('homes_for_sale_index') }}">Buy</a>
       <a href="{{ url_for('homes_for_rent_index') }}">Rent</a>
+      <a href="{{ url_for('sell_hub') }}">Sell</a>
       <a href="{{ url_for('new_listings') }}">New Listings</a>
       <a href="{{ url_for('open_houses') }}">Open Houses</a>
       <a href="{{ url_for('luxury') }}">Luxury</a>
       <a href="{{ url_for('agents_index') }}">Agents</a>
+      <a href="{{ url_for('blog_index') }}">The Edit</a>
     </nav>
     <div class="cx-nav-right">
       {% if current_user.is_authenticated %}
@@ -72,12 +74,29 @@
       </ul>
     </div>
     <div>
+      <h4>Sell</h4>
+      <ul>
+        <li><a href="{{ url_for('sell_hub') }}">Selling Resources</a></li>
+        <li><a href="{{ url_for('sell_evaluate') }}">Free Home Valuation</a></li>
+        <li><a href="{{ url_for('sell_cma') }}">CMA Report</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Tools</h4>
+      <ul>
+        <li><a href="{{ url_for('mortgage_calculator') }}">Mortgage Calculator</a></li>
+        <li><a href="{{ url_for('affordability_calculator') }}">Affordability</a></li>
+        <li><a href="{{ url_for('market_reports_index') }}">Market Reports</a></li>
+        <li><a href="{{ url_for('neighborhood_index') }}">Neighborhoods</a></li>
+        <li><a href="{{ url_for('sold_homes_index') }}">Recently Sold</a></li>
+      </ul>
+    </div>
+    <div>
       <h4>Find an Agent</h4>
       <ul>
         <li><a href="{{ url_for('agents_index') }}">Browse Agents</a></li>
-        <li><a href="{{ url_for('agents_index') }}?city=New York">New York</a></li>
-        <li><a href="{{ url_for('agents_index') }}?city=Los Angeles">Los Angeles</a></li>
-        <li><a href="{{ url_for('agents_index') }}?city=Miami">Miami</a></li>
+        <li><a href="{{ url_for('teams_index') }}">Teams</a></li>
+        <li><a href="{{ url_for('offices_index') }}">Offices</a></li>
       </ul>
     </div>
     <div>
@@ -85,6 +104,8 @@
       <ul>
         <li><a href="{{ url_for('about') }}">About</a></li>
         <li><a href="{{ url_for('help_page') }}">Help</a></li>
+        <li><a href="{{ url_for('blog_index') }}">The Compass Edit</a></li>
+        <li><a href="{{ url_for('newsletter') }}">Newsletter</a></li>
       </ul>
     </div>
   </div>

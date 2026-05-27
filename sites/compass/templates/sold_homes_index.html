@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Recently Sold Homes | Compass{% endblock %}
+{% block content %}
+<div class="container section">
+  <h1>Recently Sold Homes</h1>
+  <p style="color:var(--c-gray-4)">Look up recent sales to see what comparable homes have traded for.</p>
+
+  <ul style="margin-top:24px; list-style:none; padding:0;">
+    {% for c, st in city_state_pairs %}
+      <li style="padding:12px 0; border-bottom:1px solid var(--c-gray-2);">
+        <a href="{{ url_for('sold_homes_city', city_state=c.lower().replace(' ', '-') ~ '-' ~ st.lower()) }}">
+          <strong>{{ c }}, {{ st }}</strong>
+        </a> · {{ counts.get((c, st), 0) }} recent sales
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
