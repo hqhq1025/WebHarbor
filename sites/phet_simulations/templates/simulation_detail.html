@@ -13,7 +13,7 @@
 
       <div class="sim-detail-frame">
         {% if sim.slug in available_thumbnails %}
-          <img src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}"
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}"
                alt="{{ sim.title }} screenshot">
         {% else %}
           <div class="sim-detail-frame-placeholder">{{ sim.title }}</div>

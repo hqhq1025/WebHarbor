@@ -38,7 +38,7 @@
       <div class="pop-rank {% if loop.index <= 3 %}top{% endif %}">{{ loop.index }}</div>
       <div class="pop-thumb">
         {% if sim.slug in available_thumbnails %}
-          <img src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
         {% else %}
           <span style="font-size:.7rem; color:#888;">{{ sim.title[:8] }}</span>
         {% endif %}

@@ -71,7 +71,7 @@
     {% for sim in sims %}
       <div class="cm-sim-tile">
         {% if sim.slug in available_thumbnails %}
-          <img src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
         {% endif %}
         <a href="{{ url_for('simulation_detail', slug=sim.slug) }}">{{ sim.title }}</a>
       </div>

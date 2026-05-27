@@ -39,7 +39,7 @@
   {% for slug, name in subjects_ordered %}
     <a class="subject-pastel ps-{{ slug }}"
        href="{{ url_for('simulations_by_subject', slug=slug) }}">
-      <img src="{{ url_for('static', filename='images/ui/subject-' ~ subj_icon[slug] ~ '.svg') }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/subject-' ~ subj_icon[slug] ~ '.svg') }}" alt="">
       <span class="subject-pastel-name">{{ name }}</span>
     </a>
   {% endfor %}
@@ -63,24 +63,24 @@
 
 <section class="interact-section container">
   <div class="interact-heading">
-    <img src="{{ url_for('static', filename='images/ui/interact-discover-learn.png') }}"
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/interact-discover-learn.png') }}"
          alt="Interact. Discover. Learn.">
   </div>
   <div class="interact-stats">
     <div class="interact-stat">
       <span class="interact-stat-num">{{ total_simulations }}</span>
       <span class="interact-stat-label">interactive simulations</span>
-      <div><img src="{{ url_for('static', filename='images/ui/icon-interactive.png') }}" alt=""></div>
+      <div><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/icon-interactive.png') }}" alt=""></div>
     </div>
     <div class="interact-stat">
       <span class="interact-stat-num">{{ total_languages }}</span>
       <span class="interact-stat-label">language translations</span>
-      <div><img src="{{ url_for('static', filename='images/ui/icon-languages.png') }}" alt=""></div>
+      <div><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/icon-languages.png') }}" alt=""></div>
     </div>
     <div class="interact-stat">
       <span class="interact-stat-num">{{ total_activities }}</span>
       <span class="interact-stat-label">teacher-submitted lessons</span>
-      <div><img src="{{ url_for('static', filename='images/ui/icon-lessons.png') }}" alt=""></div>
+      <div><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/icon-lessons.png') }}" alt=""></div>
     </div>
   </div>
   <p class="about-blurb">

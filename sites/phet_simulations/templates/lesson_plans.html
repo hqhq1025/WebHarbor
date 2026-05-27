@@ -61,7 +61,7 @@
     <li class="lp-card">
       <div class="lp-card-thumb">
         {% if plan.sim and plan.sim.slug in available_thumbnails %}
-          <img src="{{ url_for('static', filename='images/sims/' ~ plan.sim.slug ~ '.png') }}" alt="{{ plan.sim.title }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/sims/' ~ plan.sim.slug ~ '.png') }}" alt="{{ plan.sim.title }}">
         {% else %}
           <span class="lp-card-thumb-placeholder">{{ plan.title[:20] }}</span>
         {% endif %}

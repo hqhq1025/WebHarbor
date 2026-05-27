@@ -11,9 +11,9 @@
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="{{ url_for('index') }}" aria-label="PhET Interactive Simulations">
-      <img class="brand-phet" src="{{ url_for('static', filename='images/ui/phet-logo.svg') }}" alt="PhET">
+      <img loading="lazy" decoding="async" class="brand-phet" src="{{ url_for('static', filename='images/ui/phet-logo.svg') }}" alt="PhET">
       <span class="brand-divider"></span>
-      <img class="brand-cu" src="{{ url_for('static', filename='images/ui/cu-logo.png') }}" alt="University of Colorado Boulder">
+      <img loading="lazy" decoding="async" class="brand-cu" src="{{ url_for('static', filename='images/ui/cu-logo.png') }}" alt="University of Colorado Boulder">
     </a>
 
     <nav class="primary-nav" aria-label="Primary">
@@ -181,21 +181,21 @@
   </div>
 
   <div class="footer-apps">
-    <a href="#" aria-label="iOS App Store"><img src="{{ url_for('static', filename='images/ui/badge-ios.svg') }}" alt="Download on the App Store"></a>
-    <a href="#" aria-label="Google Play"><img src="{{ url_for('static', filename='images/ui/badge-android.png') }}" alt="Get it on Google Play"></a>
+    <a href="#" aria-label="iOS App Store"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/badge-ios.svg') }}" alt="Download on the App Store"></a>
+    <a href="#" aria-label="Google Play"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/badge-android.png') }}" alt="Get it on Google Play"></a>
   </div>
   <a href="#" class="footer-apps-link">Get Apps for Schools</a>
 </div>
 
 <section class="sponsor-strip" aria-label="Principal sponsors">
   <div class="sponsor-inner">
-    <img src="{{ url_for('static', filename='images/ui/sponsor-moore.png') }}" alt="Gordon and Betty Moore Foundation">
-    <img src="{{ url_for('static', filename='images/ui/sponsor-hewlett.svg') }}" alt="The William and Flora Hewlett Foundation">
-    <img src="{{ url_for('static', filename='images/ui/sponsor-nsf.png') }}" alt="National Science Foundation">
-    <img src="{{ url_for('static', filename='images/ui/sponsor-mastercard.svg') }}" alt="Mastercard Foundation">
-    <img src="{{ url_for('static', filename='images/ui/sponsor-yidan.png') }}" alt="Yidan Prize Foundation">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/sponsor-moore.png') }}" alt="Gordon and Betty Moore Foundation">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/sponsor-hewlett.svg') }}" alt="The William and Flora Hewlett Foundation">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/sponsor-nsf.png') }}" alt="National Science Foundation">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/sponsor-mastercard.svg') }}" alt="Mastercard Foundation">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/sponsor-yidan.png') }}" alt="Yidan Prize Foundation">
     <div class="sponsor-phet-mark">
-      <img src="{{ url_for('static', filename='images/ui/phet-logo-black.png') }}" alt="PhET">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/ui/phet-logo-black.png') }}" alt="PhET">
       <span>&copy; {{ current_year }}<br>University of Colorado Boulder<br>Some rights reserved</span>
     </div>
   </div>
