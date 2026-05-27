@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="wizard-progress">
+  {% for i in range(total_steps) %}
+    <div class="step {% if i + 1 < step_idx %}done{% elif i + 1 == step_idx %}current{% endif %}"></div>
+  {% endfor %}
+</div>
+<div class="wizard-step">
+  <span class="muted">Step {{ step_idx }} of {{ total_steps }}</span>
+  {% block wizard_body %}{% endblock %}
+</div>
+{% endblock %}

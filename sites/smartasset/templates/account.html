@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My Account | SmartAsset{% endblock %}
+{% block content %}
+<h1>Welcome back, {{ current_user.name }}</h1>
+<p class="muted">{{ current_user.email }}{% if current_user.state %} &middot; {{ current_user.state }}{% endif %} &middot; <a href="{{ url_for('account_edit') }}">Edit profile</a> &middot; <a href="{{ url_for('logout') }}">Sign out</a></p>
+
+<div class="section-title"><h2>Saved Calculations</h2></div>
+{% if saved %}
+  <div class="sa-grid sa-cols-2">
+    {% for s in saved %}
+      <div class="card">
+        <strong>{{ s.label or s.calc_slug }}</strong>
+        <div class="muted" style="font-size:.85rem;">{{ s.calc_slug }} &middot; {{ s.created_at.strftime('%b %d, %Y') }}</div>
+        <p>{{ s.summary }}</p>
+        <a class="btn btn-sm" href="{{ url_for('calculator', slug=s.calc_slug) }}">Open &rsaquo;</a>
+        <form method="post" action="{{ url_for('delete_saved', sc_id=s.id) }}" style="display:inline-block;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn-link" type="submit" onclick="return confirm('Remove this calculation?')">Remove</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">You haven't saved any calculations yet. <a href="{{ url_for('calculators_index') }}">Try a calculator &rsaquo;</a></p>
+{% endif %}
+
+<div class="section-title"><h2>Advisor Matches</h2></div>
+{% if matches %}
+  {% for m in matches %}
+    <div class="card" style="margin-bottom:10px;">
+      <strong>{{ m.created_at.strftime('%b %d, %Y') }}</strong> &middot; {{ m.state_abbr }} &middot; ${{ m.investable_assets|commafy }} &middot; goal: {{ m.goal }}
+      <p class="muted">Matched IDs: {{ m.matched_ids }}</p>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="muted">No advisor matches yet. <a href="{{ url_for('advisor_match_start') }}">Take the quiz &rsaquo;</a></p>
+{% endif %}
+{% endblock %}

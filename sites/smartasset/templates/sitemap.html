@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sitemap | SmartAsset{% endblock %}
+{% block content %}
+<h1>Sitemap</h1>
+<div class="sa-grid sa-cols-3">
+  <div class="card">
+    <h3>Calculators</h3>
+    {% for c in calc_hub %}
+      <a href="{{ url_for('calculator', slug=c.slug) }}">{{ c.title }}</a><br>
+    {% endfor %}
+  </div>
+  <div class="card">
+    <h3>Categories</h3>
+    {% for cat in cats %}
+      <a href="{{ url_for('category_page', slug=cat.slug) }}">{{ cat.name }}</a><br>
+    {% endfor %}
+    <h3 style="margin-top:14px;">Other</h3>
+    <a href="{{ url_for('smartreads_index') }}">SmartReads</a><br>
+    <a href="{{ url_for('authors_index') }}">Authors</a><br>
+    <a href="{{ url_for('advisor_landing') }}">Find an Advisor</a><br>
+    <a href="{{ url_for('about') }}">About</a><br>
+    <a href="{{ url_for('contact') }}">Contact</a><br>
+  </div>
+  <div class="card">
+    <h3>States</h3>
+    {% for s in states %}
+      <a href="{{ url_for('state_detail', slug=s.slug) }}">{{ s.name }}</a><br>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

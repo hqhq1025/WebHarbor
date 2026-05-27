@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Your Advisor Matches | SmartAsset{% endblock %}
+{% block content %}
+<div class="card-hero">
+  <span class="tag">Your Matches</span>
+  <h1>Top Advisors for You{% if wiz.first_name %}, {{ wiz.first_name }}{% endif %}</h1>
+  <p>Based on your profile{% if wiz.location %} in {{ wiz.location }}{% endif %} with {{ wiz.investable_assets|commafy }} in investable assets focused on {{ wiz.goal or 'comprehensive' }} planning, here are your top 3 matches.</p>
+</div>
+
+<div class="sa-grid sa-cols-3" style="margin-top:24px;">
+  {% for a in matches %}
+    <div class="advisor-card">
+      <div class="avatar">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+      <h3 style="margin:0;">{{ a.name }}, {{ a.credentials }}</h3>
+      <div class="muted" style="font-size:.85rem;">{{ a.firm }}</div>
+      <p style="margin-top:6px;">
+        <span class="badge">{{ a.specialty }}</span>
+        <span class="badge">{{ a.fee_structure }}</span>
+        {% if a.fiduciary %}<span class="badge" style="background:var(--sa-yellow);">Fiduciary</span>{% endif %}
+      </p>
+      <p class="muted" style="font-size:.9rem;">
+        {{ a.city }}, {{ a.state_abbr }} &middot;
+        {{ a.years_experience }} yr experience &middot;
+        ${{ a.aum_millions }}M AUM &middot;
+        ⭐ {{ a.rating }} ({{ a.review_count }} reviews)
+      </p>
+      <p>{{ a.bio[:200] }}...</p>
+      <a class="btn btn-sm" href="{{ url_for('advisor_detail', slug=a.slug) }}">View profile &rsaquo;</a>
+    </div>
+  {% else %}
+    <p>We couldn't find advisors that match your criteria. Try broadening your asset range.</p>
+  {% endfor %}
+</div>
+
+<div class="card" style="margin-top:30px;">
+  <h3>What happens next?</h3>
+  <ol>
+    <li>Your matched advisors will reach out within 24-48 hours to schedule a free 30-minute introductory call.</li>
+    <li>You decide which advisor (if any) is the right fit — no obligation.</li>
+    <li>SmartAsset is paid by the advisor only if you sign on, which keeps the service free for you.</li>
+  </ol>
+</div>
+{% endblock %}

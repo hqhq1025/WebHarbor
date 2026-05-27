@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Disclosure | SmartAsset{% endblock %}
+{% block content %}
+<h1>Disclosure</h1>
+<p>SmartAsset Advisors, LLC ("SmartAsset"), a wholly owned subsidiary of Financial Insight Technology, Inc., is registered with the U.S. Securities and Exchange Commission as an investment adviser. SmartAsset's services are limited to referring users to third party investment advisers registered or chartered as fiduciaries.</p>
+<p>Investment advisers pay SmartAsset a referral fee for receiving matches. The amount of the referral fee does not influence which advisors are shown to you, but the existence of the fee is a conflict of interest you should be aware of.</p>
+<p>Past performance is not a guarantee of future results. All investments involve risk, including possible loss of principal.</p>
+<p>For additional disclosures, see our <a href="{{ url_for('privacy') }}">Privacy Policy</a> and <a href="{{ url_for('terms') }}">Terms of Use</a>.</p>
+{% endblock %}

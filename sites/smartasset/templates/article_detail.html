@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }} | SmartAsset{% endblock %}
+{% block description %}{{ a.dek }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('smartreads_index') }}">SmartReads</a> &rsaquo;
+  <a href="{{ url_for('category_page', slug=a.category.slug) }}">{{ a.category.name }}</a>
+</div>
+
+<article class="card" style="max-width:820px;margin:0 auto;">
+  <span class="tag">{{ a.category.name }}</span>
+  <h1 style="margin-top:10px;">{{ a.title }}</h1>
+  <p class="dek" style="font-size:1.15rem;color:var(--sa-muted);">{{ a.dek }}</p>
+  <div class="meta" style="display:flex;gap:14px;align-items:center;margin:10px 0 18px;">
+    <a href="{{ url_for('author_page', slug=a.author.slug) }}" style="font-weight:600;">
+      {{ a.author.name }}{% if a.author.credentials %}, {{ a.author.credentials }}{% endif %}
+    </a>
+    <span class="muted">&middot; {{ a.published_at.strftime('%B %d, %Y') }} &middot; {{ a.reading_minutes }} min read &middot; {{ a.view_count|commafy }} views</span>
+  </div>
+  <div class="hero" style="aspect-ratio:16/7;background:linear-gradient(135deg,var(--sa-blue),var(--sa-blue-2));border-radius:8px;display:flex;align-items:flex-end;padding:24px;color:#fff;font-family:'Merriweather',serif;font-weight:700;">
+    {{ a.category.name }}
+  </div>
+
+  <div style="font-size:1.05rem;margin-top:24px;">
+    {% for para in a.body.split('\n\n') %}
+      {% if para.startswith('##') %}
+        <h2 style="margin-top:1.6em;">{{ para.lstrip('#').strip() }}</h2>
+      {% elif para.startswith('- ') %}
+        <ul>
+          {% for line in para.split('\n') %}
+            {% if line.startswith('- ') %}<li>{{ line[2:]|safe }}</li>{% endif %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>{{ para|safe }}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  {% if a.tags %}
+    <div style="margin:18px 0;">
+      {% for t in a.tags.split(',') %}
+        <span class="pill">#{{ t.strip() }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if related_calc %}
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);padding:24px;border-radius:8px;">
+      <h3 style="color:var(--sa-blue);">Try the related calculator: {{ related_calc.title }}</h3>
+      <p style="color:var(--sa-blue);">{{ related_calc.blurb }}</p>
+      <a href="{{ url_for('calculator', slug=related_calc.slug) }}" class="btn">Open calculator &rsaquo;</a>
+    </div>
+  {% endif %}
+</article>
+
+{% if related %}
+  <div style="max-width:820px;margin:30px auto 0;">
+    <h2>Related Articles</h2>
+    <div class="sa-grid sa-cols-2">
+      {% for r in related %}
+        <article class="article-card">
+          <a href="{{ url_for('article_detail', slug=r.slug) }}"><div class="hero">{{ r.category.name }}</div></a>
+          <div class="body">
+            <h3><a href="{{ url_for('article_detail', slug=r.slug) }}">{{ r.title }}</a></h3>
+            <div class="meta">{{ r.author.name }} &middot; {{ r.published_at.strftime('%b %d, %Y') }}</div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<div id="comments" style="max-width:820px;margin:30px auto;">
+  <h2>Comments ({{ a.comments.count() }})</h2>
+  {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('post_comment', slug=a.slug) }}" class="card">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="cbody">Add a comment</label>
+      <textarea id="cbody" name="body" rows="3" maxlength="1200" required></textarea>
+      <button class="btn btn-sm" type="submit" style="margin-top:8px;">Post comment</button>
+    </form>
+  {% else %}
+    <p class="muted"><a href="{{ url_for('login') }}">Sign in</a> to leave a comment.</p>
+  {% endif %}
+
+  {% for c in a.comments %}
+    <div class="card" style="margin-top:10px;">
+      <strong>{{ c.user.name }}</strong>
+      <span class="muted" style="font-size:.8rem;">&middot; {{ c.created_at.strftime('%b %d, %Y') }}</span>
+      <p style="margin:6px 0 0;">{{ c.body }}</p>
+    </div>
+  {% else %}
+    <p class="muted">Be the first to comment.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SmartAsset | Empowering You to Make Smart Financial Decisions{% endblock %}</title>
+  <meta name="description" content="{% block description %}SmartAsset's free tools and articles help you make smarter financial decisions — from mortgages and retirement to taxes and advisors.{% endblock %}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.svg') }}" type="image/svg+xml">
+</head>
+<body>
+<header class="sa-header">
+  <div class="sa-header-inner">
+    <a class="sa-logo" href="{{ url_for('index') }}">
+      <span class="star">&#9733;</span>SmartAsset
+    </a>
+    <nav class="sa-nav">
+      <a href="{{ url_for('smartreads_index') }}">SmartReads</a>
+      <a href="{{ url_for('calculators_index') }}">Calculators</a>
+      <a href="{{ url_for('advisor_landing') }}">Find Advisor</a>
+      <a href="{{ url_for('states_index') }}">By State</a>
+      <a href="{{ url_for('category_page', slug='retirement') }}">Retirement</a>
+      <a href="{{ url_for('category_page', slug='taxes') }}">Taxes</a>
+      <a href="{{ url_for('category_page', slug='mortgage') }}">Mortgage</a>
+      <a href="{{ url_for('category_page', slug='investing') }}">Investing</a>
+    </nav>
+    <div class="sa-actions">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('account') }}">My Account</a>
+        <a href="{{ url_for('logout') }}">Sign Out</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Sign In</a>
+      {% endif %}
+      <a href="{{ url_for('advisor_match_start') }}" class="btn-match">Take Matching Quiz</a>
+    </div>
+  </div>
+  <div class="sa-search-bar">
+    <form method="get" action="{{ url_for('search') }}">
+      <input type="text" name="q" placeholder="Search articles, calculators, advisors, states..." value="{{ request.args.get('q', '') }}">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+</header>
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="sa-footer">
+  <div class="sa-footer-inner">
+    <div>
+      <h4>SmartAsset</h4>
+      <p style="color:#cfe2ee;font-size:.9rem;">Empowering you to make smart financial decisions with free guides, calculators, and a fiduciary advisor matching service.</p>
+      <form method="post" action="{{ url_for('newsletter_subscribe') }}" style="margin-top:14px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="email" name="email" placeholder="Email for SmartMoney Minute" required
+               style="background:#fff;border:0;color:#333;padding:8px 12px;border-radius:3px;width:70%;">
+        <button class="btn-yellow btn-sm" type="submit" style="border:0;">Subscribe</button>
+      </form>
+    </div>
+    <div>
+      <h4>Calculators</h4>
+      {% for c in calc_hub[:7] %}
+        <a href="{{ url_for('calculator', slug=c.slug) }}">{{ c.title }}</a>
+      {% endfor %}
+      <a href="{{ url_for('calculators_index') }}">All calculators &rsaquo;</a>
+    </div>
+    <div>
+      <h4>Guides</h4>
+      <a href="{{ url_for('category_page', slug='retirement') }}">Retirement</a>
+      <a href="{{ url_for('category_page', slug='taxes') }}">Taxes</a>
+      <a href="{{ url_for('category_page', slug='mortgage') }}">Mortgage</a>
+      <a href="{{ url_for('category_page', slug='investing') }}">Investing</a>
+      <a href="{{ url_for('category_page', slug='banking') }}">Banking</a>
+      <a href="{{ url_for('category_page', slug='personal-finance') }}">Personal Finance</a>
+    </div>
+    <div>
+      <h4>Advisors</h4>
+      <a href="{{ url_for('advisor_landing') }}">Find an Advisor</a>
+      <a href="{{ url_for('advisor_match_start') }}">Matching Quiz</a>
+      <a href="{{ url_for('states_index') }}">By State</a>
+      <a href="{{ url_for('authors_index') }}">Our Authors</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="{{ url_for('about') }}">About</a>
+      <a href="{{ url_for('careers') }}">Careers</a>
+      <a href="{{ url_for('press') }}">Press</a>
+      <a href="{{ url_for('contact') }}">Contact</a>
+      <a href="{{ url_for('privacy') }}">Privacy</a>
+      <a href="{{ url_for('terms') }}">Terms</a>
+      <a href="{{ url_for('disclosure') }}">Disclosure</a>
+      <a href="{{ url_for('sitemap') }}">Sitemap</a>
+    </div>
+  </div>
+  <div class="sa-footer-base">
+    &copy; {{ now().year }} SmartAsset Advisors, LLC. All Rights Reserved. SmartAsset's services are limited to referring users to third party advisers registered or chartered as fiduciaries.
+  </div>
+</footer>
+</body>
+</html>

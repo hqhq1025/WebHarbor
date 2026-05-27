@@ -1,0 +1,15 @@
+{% extends "_wizard_base.html" %}
+{% block title %}Advisor Matching — Retirement Status{% endblock %}
+{% block wizard_body %}
+<h2>What's your retirement status?</h2>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="choice-grid">
+    <label><input type="radio" name="retirement_status" value="planning" {% if wiz.retirement_status == 'planning' %}checked{% endif %}> <span>Planning for retirement</span></label>
+    <label><input type="radio" name="retirement_status" value="near" {% if wiz.retirement_status == 'near' %}checked{% endif %}> <span>Within 5 years</span></label>
+    <label><input type="radio" name="retirement_status" value="retired" {% if wiz.retirement_status == 'retired' %}checked{% endif %}> <span>Already retired</span></label>
+    <label><input type="radio" name="retirement_status" value="growing" {% if wiz.retirement_status == 'growing' %}checked{% endif %}> <span>Building wealth</span></label>
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

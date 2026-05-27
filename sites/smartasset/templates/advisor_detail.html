@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }}, {{ a.credentials }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('advisor_landing') }}">Find an Advisor</a> &rsaquo;
+  <span>{{ a.name }}</span>
+</div>
+
+<div class="card" style="display:grid;grid-template-columns:140px 1fr;gap:24px;">
+  <div class="avatar" style="width:120px;height:120px;font-size:2.5rem;">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+  <div>
+    <h1 style="margin:0;">{{ a.name }}, {{ a.credentials }}</h1>
+    <p class="muted" style="font-size:1.05rem;margin:4px 0;">{{ a.firm }}</p>
+    <p>
+      <span class="badge">{{ a.specialty }}</span>
+      <span class="badge">{{ a.fee_structure }}</span>
+      {% if a.fiduciary %}<span class="badge" style="background:var(--sa-yellow);">Fiduciary</span>{% endif %}
+    </p>
+    <p>{{ a.city }}, {{ a.state_abbr }} &middot; {{ a.years_experience }} years experience &middot; ${{ a.aum_millions }}M AUM &middot; ⭐ {{ a.rating }} ({{ a.review_count }} reviews)</p>
+    <p>Minimum assets: <strong>${{ a.min_assets|commafy }}</strong></p>
+    <a class="btn-match" href="{{ url_for('advisor_match_start') }}">Get Matched</a>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h2>About {{ a.name.split(' ')[0] }}</h2>
+  <p>{{ a.bio }}</p>
+  <h3>Specialties</h3>
+  <ul>
+    <li>{{ a.specialty }} planning</li>
+    <li>Goal-based investment strategies</li>
+    <li>Tax-aware portfolio construction</li>
+    <li>Retirement income modeling</li>
+  </ul>
+  <h3>Fee Structure</h3>
+  <p>{{ a.fee_structure }} — {% if 'Fee-only' in a.fee_structure %}compensated solely by client fees, never commissions from product sales.{% else %}may receive a combination of advisory fees and commissions.{% endif %}</p>
+</div>
+
+{% if similar %}
+  <div class="section-title"><h2>Similar Advisors</h2></div>
+  <div class="sa-grid sa-cols-4">
+    {% for s in similar %}
+      <a class="advisor-card" href="{{ url_for('advisor_detail', slug=s.slug) }}" style="text-decoration:none;color:inherit;">
+        <div class="avatar">{{ s.name[0] }}{{ s.name.split(' ')[-1][0] }}</div>
+        <strong>{{ s.name }}</strong>
+        <div class="muted" style="font-size:.85rem;">{{ s.firm }} &middot; ⭐ {{ s.rating }}</div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ st.name }} Financial Guide | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('states_index') }}">States</a> &rsaquo;
+  <span>{{ st.name }}</span>
+</div>
+
+<h1>{{ st.name }} ({{ st.abbr }}) Financial Guide</h1>
+<p style="max-width:760px;font-size:1.05rem;">{{ st.overview }}</p>
+
+<div class="sa-grid sa-cols-3" style="margin-top:20px;">
+  <div class="card">
+    <h3>Income Tax</h3>
+    {% if st.income_tax_type == 'none' %}
+      <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-success);">No state income tax</p>
+    {% elif st.income_tax_type == 'flat' %}
+      <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">{{ st.state_income_flat_rate }}% flat</p>
+    {% else %}
+      <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">Up to {{ st.state_income_top_rate }}%</p>
+    {% endif %}
+    <a href="{{ url_for('calculator', slug='state-tax', state=st.abbr) }}">Run state tax calculator &rsaquo;</a>
+  </div>
+  <div class="card">
+    <h3>Property Tax</h3>
+    <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">{{ st.property_tax_rate }}%</p>
+    <p class="muted">Effective annual rate on home value</p>
+    <a href="{{ url_for('calculator', slug='property-tax', state=st.abbr) }}">Calculate yours &rsaquo;</a>
+  </div>
+  <div class="card">
+    <h3>Sales Tax</h3>
+    <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">{{ st.sales_tax_rate }}%</p>
+    <p class="muted">State portion (local rates may add more)</p>
+  </div>
+  <div class="card">
+    <h3>Median Home Price</h3>
+    <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">${{ st.median_home_price|commafy }}</p>
+    <a href="{{ url_for('calculator', slug='mortgage', price=st.median_home_price) }}">Run a mortgage scenario &rsaquo;</a>
+  </div>
+  <div class="card">
+    <h3>Median Household Income</h3>
+    <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">${{ st.median_household_income|commafy }}</p>
+    <a href="{{ url_for('calculator', slug='paycheck', salary=st.median_household_income, state=st.abbr) }}">See take-home pay &rsaquo;</a>
+  </div>
+  <div class="card">
+    <h3>Cost of Living Index</h3>
+    <p class="big" style="font-family:'Merriweather',serif;color:var(--sa-blue);">{{ st.cost_of_living_index }}</p>
+    <p class="muted">100 = U.S. average</p>
+  </div>
+</div>
+
+<div class="section-title"><h2>Top Financial Advisors in {{ st.name }}</h2><a class="more" href="{{ url_for('advisors_by_state', state_slug=st.slug) }}">All {{ st.name }} advisors &rsaquo;</a></div>
+<div class="sa-grid sa-cols-3">
+  {% for a in advisors %}
+    <a class="advisor-card" href="{{ url_for('advisor_detail', slug=a.slug) }}" style="text-decoration:none;color:inherit;">
+      <div class="avatar">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+      <h3 style="margin:0;">{{ a.name }}</h3>
+      <div class="muted" style="font-size:.85rem;">{{ a.firm }}</div>
+      <div style="margin-top:6px;">
+        <span class="badge">{{ a.credentials }}</span>
+        <span class="badge">{{ a.specialty }}</span>
+      </div>
+      <p class="muted" style="font-size:.85rem;margin-top:8px;">{{ a.city }} &middot; ${{ a.aum_millions }}M AUM &middot; ⭐ {{ a.rating }}</p>
+    </a>
+  {% endfor %}
+</div>
+
+{% if related_articles %}
+  <div class="section-title"><h2>SmartReads About {{ st.name }}</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for a in related_articles %}
+      <article class="article-card">
+        <a href="{{ url_for('article_detail', slug=a.slug) }}"><div class="hero">{{ a.category.name }}</div></a>
+        <div class="body"><h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3></div>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

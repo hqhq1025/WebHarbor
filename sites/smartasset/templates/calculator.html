@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}{{ spec.title }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('calculators_index') }}">Calculators</a> &rsaquo;
+  <span>{{ spec.title }}</span>
+</div>
+
+<h1>{{ spec.title }}</h1>
+<p class="muted" style="font-size:1.05rem;max-width:760px;">{{ spec.blurb }}</p>
+
+<div class="calc-shell">
+  <div class="card">
+    <h3>Your Details</h3>
+    <form method="post" action="{{ url_for('calculator', slug=spec.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% from "_field_macros.html" import render_field %}
+      {% for f in spec.fields %}
+        {% set val = inputs.get(f, '') or spec.defaults.get(f, '') %}
+        {{ render_field(f, val, spec) }}
+      {% endfor %}
+
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button type="submit" class="btn">Calculate</button>
+        <a class="btn-link" href="{{ url_for('calculator', slug=spec.slug) }}">Reset</a>
+        {% if result %}
+          <a class="btn-link" href="{{ url_for('share_calc', slug=spec.slug, **inputs) }}">Share</a>
+          <a class="btn-link" href="{{ url_for('print_calc', slug=spec.slug, **inputs) }}">Print</a>
+        {% endif %}
+      </div>
+    </form>
+    {% if current_user.is_authenticated and result %}
+      <form method="post" action="{{ url_for('save_calculation') }}" style="margin-top:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="calc_slug" value="{{ spec.slug }}">
+        {% for f in spec.fields %}
+          <input type="hidden" name="{{ f }}" value="{{ inputs.get(f, '') }}">
+        {% endfor %}
+        <input type="text" name="label" placeholder="Label this calculation" style="width:60%;display:inline-block;">
+        <button class="btn-yellow btn btn-sm" type="submit">Save to my account</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if error %}
+      <div class="flash danger">{{ error }}</div>
+    {% endif %}
+    {% if result %}
+      <div class="calc-result">
+        <h3 style="margin-top:0;">Result</h3>
+        <p class="big">{{ result.headline }}</p>
+
+        {% if spec.slug == 'mortgage' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Monthly P&amp;I</span><span class="val">${{ result.monthly_pi|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Property Tax</span><span class="val">${{ result.prop_tax_monthly|commafy }}/mo</span></div>
+            <div class="chip"><span class="lbl">Home Insurance</span><span class="val">${{ result.insurance_monthly|commafy }}/mo</span></div>
+            {% if result.needs_pmi %}<div class="chip"><span class="lbl">PMI</span><span class="val">${{ result.pmi_monthly|commafy }}/mo</span></div>{% endif %}
+            <div class="chip"><span class="lbl">HOA</span><span class="val">${{ result.hoa_monthly|commafy }}/mo</span></div>
+            <div class="chip"><span class="lbl">Total Monthly</span><span class="val">${{ result.monthly_total|commafy }}</span></div>
+          </div>
+          <p>Loan amount ${{ result.loan_amount|commafy }} &bull; Total interest over loan: ${{ result.total_interest|commafy }}</p>
+          <details>
+            <summary style="cursor:pointer;font-weight:700;color:var(--sa-yellow);">View year-by-year amortization</summary>
+            <table class="table-compact" style="margin-top:10px;">
+              <tr><th>Year</th><th class="right">Principal</th><th class="right">Interest</th><th class="right">Balance</th></tr>
+              {% for r in result.schedule[:30] %}
+                <tr><td>{{ r.year }}</td><td class="right">${{ r.principal|commafy }}</td><td class="right">${{ r.interest|commafy }}</td><td class="right">${{ r.balance|commafy }}</td></tr>
+              {% endfor %}
+            </table>
+          </details>
+          <div class="bar-chart" style="margin-top:18px;">
+            {% set max_p = result.schedule|map(attribute='balance')|max %}
+            {% for r in result.schedule[::3] %}
+              <div class="bar" style="height:{{ (r.balance / max_p * 180)|round }}px" data-label="Y{{ r.year }}"></div>
+            {% endfor %}
+          </div>
+
+        {% elif spec.slug == 'affordability' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Max Home Price</span><span class="val">${{ result.max_price|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Max Loan</span><span class="val">${{ result.max_loan|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Max Monthly Housing</span><span class="val">${{ result.max_monthly_housing|commafy }}</span></div>
+            <div class="chip"><span class="lbl">DTI Used</span><span class="val">{{ result.dti_used }}%</span></div>
+          </div>
+
+        {% elif spec.slug == 'refinance' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Old Payment</span><span class="val">${{ result.old_payment|commafy }}</span></div>
+            <div class="chip"><span class="lbl">New Payment</span><span class="val">${{ result.new_payment|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Monthly Savings</span><span class="val">${{ result.monthly_savings|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Lifetime Savings</span><span class="val">${{ result.lifetime_savings|commafy }}</span></div>
+            {% if result.breakeven_months %}<div class="chip"><span class="lbl">Break-even</span><span class="val">{{ result.breakeven_months }} mo</span></div>{% endif %}
+          </div>
+
+        {% elif spec.slug == 'closing-costs' %}
+          <p>Estimated total: <strong>${{ result.total|commafy }}</strong> ({{ result.pct_of_price|round(2) }}% of price) for {{ result.state }}.</p>
+          <table class="table-compact">
+            <tr><th>Line item</th><th class="right">Amount</th></tr>
+            {% for it in result['items'] %}
+              <tr><td>{{ it.name }}</td><td class="right">${{ it.amount|commafy }}</td></tr>
+            {% endfor %}
+          </table>
+
+        {% elif spec.slug == 'property-tax' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Annual Tax</span><span class="val">${{ result.annual_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Monthly</span><span class="val">${{ result.monthly_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Effective Rate</span><span class="val">{{ result.rate_pct }}%</span></div>
+            <div class="chip"><span class="lbl">State</span><span class="val">{{ result.state }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'income-tax' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Federal Tax</span><span class="val">${{ result.federal_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">AGI</span><span class="val">${{ result.agi|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Taxable</span><span class="val">${{ result.taxable_income|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Effective Rate</span><span class="val">{{ result.effective_rate }}%</span></div>
+            <div class="chip"><span class="lbl">Marginal Rate</span><span class="val">{{ result.marginal_rate }}%</span></div>
+          </div>
+
+        {% elif spec.slug == 'state-tax' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">{{ result.state }} Tax</span><span class="val">${{ result.state_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Effective Rate</span><span class="val">{{ result.effective_rate }}%</span></div>
+            <div class="chip"><span class="lbl">Top Rate</span><span class="val">{{ result.rate_top }}%</span></div>
+            <div class="chip"><span class="lbl">Type</span><span class="val">{{ result.tax_type }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'paycheck' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Net per {{ result.pay_freq }}</span><span class="val">${{ result.per_period_net|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Annual Take-Home</span><span class="val">${{ result.annual_net|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Federal Tax</span><span class="val">${{ result.federal_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">State Tax ({{ result.state }})</span><span class="val">${{ result.state_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Social Security</span><span class="val">${{ result.social_security|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Medicare</span><span class="val">${{ result.medicare|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Pre-tax 401(k)</span><span class="val">${{ result.pretax_401k|commafy }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'capital-gains' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Gain</span><span class="val">${{ result.gain|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Federal Tax</span><span class="val">${{ result.fed_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Holding</span><span class="val">{{ 'Long-term' if result.is_long_term else 'Short-term' }}</span></div>
+            {% if result.long_term_rate is defined %}<div class="chip"><span class="lbl">LTCG Rate</span><span class="val">{{ result.long_term_rate }}%</span></div>{% endif %}
+            {% if result.niit %}<div class="chip"><span class="lbl">NIIT</span><span class="val">${{ result.niit|commafy }}</span></div>{% endif %}
+            {% if result.net_proceeds %}<div class="chip"><span class="lbl">Net Proceeds</span><span class="val">${{ result.net_proceeds|commafy }}</span></div>{% endif %}
+          </div>
+
+        {% elif spec.slug == 'retirement' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Nest Egg</span><span class="val">${{ result.nest_egg|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Years Until Retire</span><span class="val">{{ result.years_until_retire }}</span></div>
+            <div class="chip"><span class="lbl">Annual Need</span><span class="val">${{ result.annual_need|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Safe 4% Withdrawal</span><span class="val">${{ result.safe_withdrawal_annual|commafy }}/yr</span></div>
+            {% if result.shortfall %}<div class="chip"><span class="lbl">Shortfall</span><span class="val">${{ result.shortfall|commafy }}</span></div>{% endif %}
+            <div class="chip"><span class="lbl">On Track?</span><span class="val">{{ 'Yes' if result.on_track else 'No' }}</span></div>
+          </div>
+
+        {% elif spec.slug == '401k' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Final Balance</span><span class="val">${{ result.final_balance|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Your Contributions</span><span class="val">${{ result.total_employee|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Employer Match</span><span class="val">${{ result.total_match|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Annual Income (4%)</span><span class="val">${{ result.annual_retirement_income|commafy }}</span></div>
+          </div>
+          <details>
+            <summary style="cursor:pointer;font-weight:700;color:var(--sa-yellow);">Year-by-year projection</summary>
+            <table class="table-compact" style="margin-top:10px;">
+              <tr><th>Yr</th><th>Age</th><th class="right">Salary</th><th class="right">Contrib</th><th class="right">Match</th><th class="right">Balance</th></tr>
+              {% for s in result.schedule %}
+                <tr><td>{{ s.year }}</td><td>{{ s.age }}</td><td class="right">${{ s.salary|commafy }}</td><td class="right">${{ s.contrib|commafy }}</td><td class="right">${{ s.match|commafy }}</td><td class="right">${{ s.balance|commafy }}</td></tr>
+              {% endfor %}
+            </table>
+          </details>
+
+        {% elif spec.slug == 'ira' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Future Value</span><span class="val">${{ result.fv_total|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Roth After-Tax</span><span class="val">${{ result.roth_after_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Traditional After-Tax</span><span class="val">${{ result.traditional_after_tax|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Roth Advantage</span><span class="val">${{ result.roth_better_by|commafy }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'savings' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Final Balance</span><span class="val">${{ result.final_balance|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Deposits</span><span class="val">${{ result.total_deposits|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Interest</span><span class="val">${{ result.interest_earned|commafy }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'cd' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Maturity Value</span><span class="val">${{ result.maturity_value|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Interest Earned</span><span class="val">${{ result.interest_earned|commafy }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'investment' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Future Value</span><span class="val">${{ result.future_value|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Deposits</span><span class="val">${{ result.deposits|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Growth</span><span class="val">${{ result.growth|commafy }}</span></div>
+          </div>
+          {% set max_b = result.by_year|map(attribute='balance')|max %}
+          <div class="bar-chart">
+            {% for s in result.by_year %}
+              <div class="bar" style="height:{{ (s.balance / max_b * 180)|round }}px" data-label="Y{{ s.year }}"></div>
+            {% endfor %}
+          </div>
+
+        {% elif spec.slug == 'cost-of-living' %}
+          <p>Equivalent salary in {{ result.city_b.name }}: <strong>${{ result.equivalent_salary|commafy }}</strong> ({{ result.diff_pct|round(1) }}% {{ 'more' if result.diff_pct >= 0 else 'less' }} expensive)</p>
+          <table class="table-compact">
+            <tr><th>Category</th><th class="right">{{ result.city_a.name }}</th><th class="right">{{ result.city_b.name }}</th><th class="right">Diff</th></tr>
+            {% for c in result.components %}
+              <tr><td>{{ c.category }}</td><td class="right">${{ c.city_a|commafy }}</td><td class="right">${{ c.city_b|commafy }}</td><td class="right">{{ c.diff_pct|round(1) }}%</td></tr>
+            {% endfor %}
+          </table>
+
+        {% elif spec.slug == 'inflation' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Today's Value</span><span class="val">${{ result.new_value|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Years</span><span class="val">{{ result.years }}</span></div>
+            <div class="chip"><span class="lbl">Cumulative Inflation</span><span class="val">{{ result.cumulative_pct }}%</span></div>
+          </div>
+
+        {% elif spec.slug == 'student-loan' or spec.slug == 'auto-loan' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Monthly Payment</span><span class="val">${{ result.monthly_payment|commafy }}</span></div>
+            {% if result.loan_amount is defined %}<div class="chip"><span class="lbl">Loan Amount</span><span class="val">${{ result.loan_amount|commafy }}</span></div>{% endif %}
+            {% if result.months_to_payoff is defined %}<div class="chip"><span class="lbl">Payoff</span><span class="val">{{ result.months_to_payoff }} mo</span></div>{% endif %}
+            <div class="chip"><span class="lbl">Total Interest</span><span class="val">${{ result.total_interest|commafy }}</span></div>
+          </div>
+
+        {% elif spec.slug == 'credit-card' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Months to Payoff</span><span class="val">{{ result.months_to_payoff }}</span></div>
+            <div class="chip"><span class="lbl">Total Paid</span><span class="val">${{ result.total_paid|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Total Interest</span><span class="val">${{ result.total_interest|commafy }}</span></div>
+            <div class="chip"><span class="lbl">APR</span><span class="val">{{ result.apr }}%</span></div>
+          </div>
+
+        {% elif spec.slug == 'net-worth' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Net Worth</span><span class="val">${{ result.net_worth|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Total Assets</span><span class="val">${{ result.total_assets|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Total Liabilities</span><span class="val">${{ result.total_liabilities|commafy }}</span></div>
+          </div>
+          <table class="table-compact">
+            <tr><th>Assets</th><th class="right">Amount</th></tr>
+            {% for a in result.assets %}
+              <tr><td>{{ a.name }}</td><td class="right">${{ a.amount|commafy }}</td></tr>
+            {% endfor %}
+            <tr><th>Liabilities</th><th class="right">Amount</th></tr>
+            {% for l in result.liabilities %}
+              <tr><td>{{ l.name }}</td><td class="right">${{ l.amount|commafy }}</td></tr>
+            {% endfor %}
+          </table>
+
+        {% elif spec.slug == 'rent-vs-buy' %}
+          <div class="calc-breakdown">
+            <div class="chip"><span class="lbl">Verdict</span><span class="val">{{ result.verdict|upper }}</span></div>
+            <div class="chip"><span class="lbl">Total Rent Cost</span><span class="val">${{ result.total_rent_cost|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Net Own Cost</span><span class="val">${{ result.net_own_cost|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Equity Built</span><span class="val">${{ result.equity_built|commafy }}</span></div>
+            <div class="chip"><span class="lbl">Monthly P&amp;I</span><span class="val">${{ result.monthly_pi|commafy }}</span></div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if related %}
+      <h3 style="margin-top:24px;">Related Calculators</h3>
+      <div class="sa-grid sa-cols-2" style="grid-template-columns: 1fr 1fr;">
+        {% for c in related %}
+          <a class="card" href="{{ url_for('calculator', slug=c.slug) }}" style="text-decoration:none;color:inherit;padding:14px;">
+            <strong>{{ c.title }}</strong>
+            <div class="muted" style="font-size:.85rem;">{{ c.blurb }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if related_articles %}
+  <div class="section-title"><h2>Related SmartReads</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for a in related_articles %}
+      <article class="article-card">
+        <a href="{{ url_for('article_detail', slug=a.slug) }}"><div class="hero">{{ a.category.name }}</div></a>
+        <div class="body">
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="meta">{{ a.author.name }} &middot; {{ a.published_at.strftime('%b %d, %Y') }}</div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="divider"></div>
+<div class="card">
+  <h3>About This Calculator</h3>
+  <p>SmartAsset's {{ spec.title }} estimates your result based on the inputs you provide. All math runs server-side and the result is deterministic — you can save it to your account or share a permalink that recomputes the same numbers.</p>
+  <p>Need help interpreting the result? <a href="{{ url_for('advisor_match_start') }}">Get matched with a vetted fiduciary advisor</a> in your area for a free 30-minute call.</p>
+</div>
+{% endblock %}

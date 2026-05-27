@@ -1,0 +1,17 @@
+{% extends "_wizard_base.html" %}
+{% block title %}Advisor Matching — Investable Assets{% endblock %}
+{% block wizard_body %}
+<h2>How much do you have to invest?</h2>
+<p class="muted">Include all investable assets across retirement and taxable accounts.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="choice-grid">
+    <label><input type="radio" name="investable_assets" value="50000" {% if wiz.investable_assets == '50000' %}checked{% endif %}> <span>Less than $100k</span></label>
+    <label><input type="radio" name="investable_assets" value="250000" {% if wiz.investable_assets == '250000' %}checked{% endif %}> <span>$100k – $500k</span></label>
+    <label><input type="radio" name="investable_assets" value="750000" {% if wiz.investable_assets == '750000' %}checked{% endif %}> <span>$500k – $1M</span></label>
+    <label><input type="radio" name="investable_assets" value="2000000" {% if wiz.investable_assets == '2000000' %}checked{% endif %}> <span>$1M – $5M</span></label>
+    <label><input type="radio" name="investable_assets" value="7500000" {% if wiz.investable_assets == '7500000' %}checked{% endif %}> <span>$5M+</span></label>
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

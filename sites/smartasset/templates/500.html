@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Server Error | SmartAsset{% endblock %}
+{% block content %}
+<div style="text-align:center;padding:60px 0;">
+  <h1 style="font-size:4rem;color:var(--sa-yellow);">500</h1>
+  <h2>Something went wrong</h2>
+  <p class="muted">Try refreshing or <a href="{{ url_for('index') }}">return home</a>.</p>
+</div>
+{% endblock %}

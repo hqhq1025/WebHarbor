@@ -1,0 +1,21 @@
+{% extends "_wizard_base.html" %}
+{% block wizard_body %}
+<h2>How should we reach you?</h2>
+<p class="muted">Your matches will reach out within 24-48 hours to schedule a free intro call. Your details are never sold.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="first_name">First name</label>
+    <input type="text" id="first_name" name="first_name" value="{{ wiz.first_name or '' }}" required>
+  </div>
+  <div class="field">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" value="{{ wiz.email or '' }}" required>
+  </div>
+  <div class="field">
+    <label for="phone">Phone (optional)</label>
+    <input type="text" id="phone" name="phone" value="{{ wiz.phone or '' }}">
+  </div>
+  <button class="btn" type="submit">See My Matches &rsaquo;</button>
+</form>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Find a Financial Advisor | SmartAsset{% endblock %}
+{% block content %}
+<div class="card-hero">
+  <span class="tag">Free Service</span>
+  <h1>Find a Financial Advisor</h1>
+  <p>Get matched with up to 3 vetted fiduciary advisors who serve your area. Free, no obligation, and you choose who to talk to.</p>
+  <a class="btn-match" href="{{ url_for('advisor_match_start') }}">Take the Matching Quiz</a>
+</div>
+
+<div class="section-title"><h2>Top Advisors on SmartAsset</h2></div>
+<div class="sa-grid sa-cols-3">
+  {% for a in top %}
+    <a class="advisor-card" href="{{ url_for('advisor_detail', slug=a.slug) }}" style="text-decoration:none;color:inherit;">
+      <div class="avatar">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+      <h3 style="margin:0;">{{ a.name }}, {{ a.credentials }}</h3>
+      <div class="muted" style="font-size:.85rem;">{{ a.firm }}</div>
+      <p style="margin-top:6px;">
+        <span class="badge">{{ a.specialty }}</span>
+      </p>
+      <p class="muted" style="font-size:.9rem;">{{ a.city }}, {{ a.state_abbr }} &middot; ⭐ {{ a.rating }}</p>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="section-title"><h2>Advisors by State</h2></div>
+<div class="state-grid">
+  {% for s in states %}
+    <a href="{{ url_for('advisors_by_state', state_slug=s.slug) }}">{{ s.name }}</a>
+  {% endfor %}
+</div>
+{% endblock %}

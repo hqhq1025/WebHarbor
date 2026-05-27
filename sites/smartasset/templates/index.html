@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card-hero">
+  <span class="tag">Get clarity. Find your advisor.</span>
+  <h1>Smart Financial Decisions Start Here</h1>
+  <p>Free, tested calculators for the questions that really move the needle — mortgages, retirement, taxes, paychecks — plus a vetted advisor matching service that's helped 100M+ Americans plan their financial future.</p>
+  <a class="btn-match" href="{{ url_for('advisor_match_start') }}">Take the Matching Quiz</a>
+  <a class="btn btn-outline" href="{{ url_for('calculators_index') }}" style="background:rgba(255,255,255,.12);color:#fff !important;border-color:#fff;margin-left:8px;">Explore Calculators</a>
+</div>
+
+<div class="section-title">
+  <h2>The Latest in SmartReads</h2>
+  <a class="more" href="{{ url_for('smartreads_index') }}">View all articles &rsaquo;</a>
+</div>
+<div class="sa-grid sa-cols-4">
+  {% for a in featured[:4] %}
+    <article class="article-card">
+      <a href="{{ url_for('article_detail', slug=a.slug) }}">
+        <div class="hero">{{ a.category.name }}</div>
+      </a>
+      <div class="body">
+        <span class="tag tag-muted">{{ a.category.name }}</span>
+        <h3 style="margin-top:8px;"><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+        <div class="meta">{{ a.author.name }} &middot; {{ a.published_at.strftime('%b %d, %Y') }} &middot; {{ a.reading_minutes }} min read</div>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+
+<div class="section-title">
+  <h2>Featured Calculators</h2>
+  <a class="more" href="{{ url_for('calculators_index') }}">All calculators &rsaquo;</a>
+</div>
+<div class="sa-grid sa-cols-3">
+  {% for c in top_calcs %}
+    <a class="card" href="{{ url_for('calculator', slug=c.slug) }}" style="text-decoration:none;color:inherit;">
+      <span class="tag tag-muted">{{ c.group }}</span>
+      <h3 style="margin:8px 0 6px;">{{ c.title }}</h3>
+      <p class="muted">{{ c.blurb }}</p>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="section-title">
+  <h2>Explore Our Guides</h2>
+  <a class="more" href="{{ url_for('smartreads_index') }}">SmartReads &rsaquo;</a>
+</div>
+<div class="sa-grid sa-cols-4">
+  {% for c in categories %}
+    <a class="card" href="{{ url_for('category_page', slug=c.slug) }}" style="text-decoration:none;color:inherit;">
+      <h3 style="margin:0 0 6px;">{{ c.name }}</h3>
+      <p class="muted" style="font-size:.9rem;">{{ c.blurb }}</p>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="section-title">
+  <h2>Choose Your State</h2>
+  <a class="more" href="{{ url_for('states_index') }}">All states &rsaquo;</a>
+</div>
+<p class="muted">Get matched with financial advisors and tax tools tailored to your state.</p>
+<div class="state-grid">
+  {% for st in states %}
+    <a href="{{ url_for('state_detail', slug=st.slug) }}">{{ st.name }}</a>
+  {% endfor %}
+</div>
+
+<div class="divider"></div>
+
+<div class="card-hero" style="background:linear-gradient(135deg,#fdcd2f,#fdb91e);color:var(--sa-blue);">
+  <h2 style="color:var(--sa-blue);">Subscribe to SmartMoney Minute</h2>
+  <p style="color:var(--sa-blue);">Join 850k+ readers getting smarter about finances each week.</p>
+  <form method="post" action="{{ url_for('newsletter_subscribe') }}" style="display:flex;gap:8px;max-width:480px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="email" name="email" placeholder="your@email.com" required>
+    <button class="btn">Subscribe</button>
+  </form>
+</div>
+{% endblock %}

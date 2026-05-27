@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}SmartAsset Authors & Editors{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Authors</div>
+<h1>Our Authors & Editors</h1>
+<p class="muted" style="max-width:760px;">SmartReads is written by CFPs, CPAs, and award-winning journalists who specialize in personal finance.</p>
+
+<div class="sa-grid sa-cols-3">
+  {% for au in authors %}
+    <a class="card" href="{{ url_for('author_page', slug=au.slug) }}" style="text-decoration:none;color:inherit;">
+      <div class="avatar" style="margin-bottom:10px;">{{ au.name[0] }}{{ au.name.split(' ')[-1][0] }}</div>
+      <h3 style="margin:0 0 4px;">{{ au.name }}{% if au.credentials %}, {{ au.credentials }}{% endif %}</h3>
+      <div class="muted" style="font-size:.85rem;margin-bottom:6px;">{{ au.title }}</div>
+      <p style="font-size:.92rem;">{{ au.bio[:140] }}...</p>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

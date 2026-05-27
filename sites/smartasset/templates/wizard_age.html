@@ -1,0 +1,12 @@
+{% extends "_wizard_base.html" %}
+{% block wizard_body %}
+<h2>What's your age?</h2>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="age">Age</label>
+    <input type="number" id="age" name="age" min="18" max="100" value="{{ wiz.age or 45 }}" required>
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

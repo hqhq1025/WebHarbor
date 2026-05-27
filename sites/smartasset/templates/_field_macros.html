@@ -1,0 +1,170 @@
+{# Centralized field renderer for calculator forms. Decides input type
+   (money / percent / select / number / text) based on the field name. #}
+
+{% set MONEY_FIELDS = ['price','down','balance','income','salary','closing',
+                       'cost_basis','proceeds','soc_sec_monthly','monthly_contrib',
+                       'current_savings','current_balance','annual_contrib',
+                       'initial','monthly_deposit','principal','monthly',
+                       'amount','extra','trade_in','monthly_rent','home_price',
+                       'value','itemized','pretax_401k','pretax_health',
+                       'monthly_debt','hoa','insurance','cash','savings',
+                       'brokerage','retirement','home_value','vehicles',
+                       'other_assets','mortgage','auto_loans','student_loans',
+                       'credit_cards','other_debt','monthly_payment'] %}
+{% set PCT_FIELDS = ['rate','current_rate','new_rate','prop_tax_pct','dti',
+                     'growth','inflation','income_replacement',
+                     'contrib_pct','employer_match_pct','employer_match_cap',
+                     'salary_growth','marginal_now','marginal_retire','apy',
+                     'apr','pretax_401k_pct','down_pct','appreciation',
+                     'rent_growth','sales_tax_pct'] %}
+{% set INT_FIELDS = ['term','term_months','term_years','years','current_age',
+                     'retire_age','life_age','age','holding_years',
+                     'from_year','to_year'] %}
+
+{% set STATE_OPTIONS = [
+    ('AL','Alabama'),('AK','Alaska'),('AZ','Arizona'),('AR','Arkansas'),
+    ('CA','California'),('CO','Colorado'),('CT','Connecticut'),('DE','Delaware'),
+    ('FL','Florida'),('GA','Georgia'),('HI','Hawaii'),('ID','Idaho'),
+    ('IL','Illinois'),('IN','Indiana'),('IA','Iowa'),('KS','Kansas'),
+    ('KY','Kentucky'),('LA','Louisiana'),('ME','Maine'),('MD','Maryland'),
+    ('MA','Massachusetts'),('MI','Michigan'),('MN','Minnesota'),('MS','Mississippi'),
+    ('MO','Missouri'),('MT','Montana'),('NE','Nebraska'),('NV','Nevada'),
+    ('NH','New Hampshire'),('NJ','New Jersey'),('NM','New Mexico'),('NY','New York'),
+    ('NC','North Carolina'),('ND','North Dakota'),('OH','Ohio'),('OK','Oklahoma'),
+    ('OR','Oregon'),('PA','Pennsylvania'),('RI','Rhode Island'),('SC','South Carolina'),
+    ('SD','South Dakota'),('TN','Tennessee'),('TX','Texas'),('UT','Utah'),
+    ('VT','Vermont'),('VA','Virginia'),('WA','Washington'),('WV','West Virginia'),
+    ('WI','Wisconsin'),('WY','Wyoming'),('DC','District of Columbia')] %}
+
+{% set FILING_OPTIONS = [
+    ('single','Single'),('married','Married filing jointly'),
+    ('head','Head of household')] %}
+
+{% set PAY_FREQ_OPTIONS = [
+    ('weekly','Weekly (52/yr)'),('biweekly','Biweekly (26/yr)'),
+    ('semimonthly','Semi-monthly (24/yr)'),('monthly','Monthly (12/yr)')] %}
+
+{% set COMPOUND_OPTIONS = [
+    ('daily','Daily'),('monthly','Monthly'),('quarterly','Quarterly'),
+    ('annually','Annually')] %}
+
+{% set LOAN_TERM_OPTIONS = [(15,'15-Year Fixed'),(20,'20-Year Fixed'),(30,'30-Year Fixed')] %}
+
+{% set CITY_OPTIONS = [
+    ('new-york-ny','New York, NY'),('san-francisco-ca','San Francisco, CA'),
+    ('los-angeles-ca','Los Angeles, CA'),('seattle-wa','Seattle, WA'),
+    ('boston-ma','Boston, MA'),('washington-dc','Washington, DC'),
+    ('chicago-il','Chicago, IL'),('miami-fl','Miami, FL'),
+    ('denver-co','Denver, CO'),('austin-tx','Austin, TX'),
+    ('dallas-tx','Dallas, TX'),('houston-tx','Houston, TX'),
+    ('atlanta-ga','Atlanta, GA'),('philadelphia-pa','Philadelphia, PA'),
+    ('phoenix-az','Phoenix, AZ'),('minneapolis-mn','Minneapolis, MN'),
+    ('raleigh-nc','Raleigh, NC'),('nashville-tn','Nashville, TN'),
+    ('portland-or','Portland, OR'),('san-diego-ca','San Diego, CA'),
+    ('pittsburgh-pa','Pittsburgh, PA'),('indianapolis-in','Indianapolis, IN'),
+    ('kansas-city-mo','Kansas City, MO'),('saint-louis-mo','St. Louis, MO'),
+    ('cleveland-oh','Cleveland, OH'),('detroit-mi','Detroit, MI'),
+    ('memphis-tn','Memphis, TN'),('buffalo-ny','Buffalo, NY'),
+    ('las-vegas-nv','Las Vegas, NV'),('honolulu-hi','Honolulu, HI')] %}
+
+{% set LABELS = {
+    'price':'Home price','down':'Down payment','rate':'Interest rate (%)',
+    'term':'Loan term (years)','prop_tax_pct':'Annual property tax rate (%)',
+    'insurance':'Annual homeowners insurance','hoa':'Monthly HOA / condo fee',
+    'income':'Annual income','monthly_debt':'Monthly debt payments',
+    'dti':'Max debt-to-income (%)','balance':'Current loan balance',
+    'current_rate':'Current rate (%)','new_rate':'New rate (%)',
+    'closing':'Closing costs','state':'State','filing':'Filing status',
+    'pretax_401k':'Pre-tax 401(k) contributions','itemized':'Itemized deductions',
+    'salary':'Annual salary','pay_freq':'Pay frequency',
+    'pretax_401k_pct':'Pre-tax 401(k) (%)','pretax_health':'Pre-tax health premium',
+    'cost_basis':'Cost basis','proceeds':'Sale price',
+    'holding_years':'Holding period (years)','current_age':'Current age',
+    'retire_age':'Retirement age','life_age':'Life expectancy',
+    'current_savings':'Current savings','monthly_contrib':'Monthly contribution',
+    'growth':'Expected annual return (%)','inflation':'Inflation (%)',
+    'income_replacement':'Income replacement (%)',
+    'soc_sec_monthly':'Estimated Social Security (monthly)',
+    'contrib_pct':'Your contribution (% of pay)',
+    'employer_match_pct':'Employer match (% of contribution)',
+    'employer_match_cap':'Employer match cap (% of salary)',
+    'current_balance':'Current balance','salary_growth':'Annual raise (%)',
+    'annual_contrib':'Annual contribution',
+    'marginal_now':'Marginal tax rate today (%)',
+    'marginal_retire':'Marginal tax rate at retirement (%)',
+    'initial':'Initial deposit','monthly_deposit':'Monthly deposit',
+    'years':'Years','apy':'APY (%)','compound':'Compounding frequency',
+    'principal':'Initial deposit','term_months':'Term (months)',
+    'monthly':'Monthly contribution',
+    'amount':'Amount','from_year':'Starting year','to_year':'Ending year',
+    'term_years':'Term (years)','extra':'Extra monthly payment',
+    'trade_in':'Trade-in value','sales_tax_pct':'Sales tax (%)',
+    'apr':'APR (%)','monthly_payment':'Monthly payment',
+    'city_a':'Your current city','city_b':'Compare to city',
+    'monthly_rent':'Monthly rent','home_price':'Home price (buy)',
+    'down_pct':'Down payment (%)','appreciation':'Annual home appreciation (%)',
+    'rent_growth':'Annual rent growth (%)','value':'Home value',
+    'cash':'Cash & checking','savings':'Savings / CDs',
+    'brokerage':'Brokerage','retirement':'Retirement accounts',
+    'home_value':'Home value','vehicles':'Vehicles','other_assets':'Other assets',
+    'mortgage':'Mortgage balance','auto_loans':'Auto loans',
+    'student_loans':'Student loans','credit_cards':'Credit card debt',
+    'other_debt':'Other debt','age':'Age',
+} %}
+
+{% macro render_field(name, value, spec) %}
+  <div class="field">
+    {% set label = LABELS.get(name, name.replace('_',' ').title()) %}
+    <label for="f_{{ name }}">{{ label }}</label>
+
+    {% if name == 'state' %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for abbr, full in STATE_OPTIONS %}
+          <option value="{{ abbr }}" {% if value == abbr %}selected{% endif %}>{{ full }} ({{ abbr }})</option>
+        {% endfor %}
+      </select>
+    {% elif name == 'filing' %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for v, lbl in FILING_OPTIONS %}
+          <option value="{{ v }}" {% if value == v %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    {% elif name == 'pay_freq' %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for v, lbl in PAY_FREQ_OPTIONS %}
+          <option value="{{ v }}" {% if value == v %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    {% elif name == 'compound' %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for v, lbl in COMPOUND_OPTIONS %}
+          <option value="{{ v }}" {% if value == v %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    {% elif name == 'term' %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for v, lbl in LOAN_TERM_OPTIONS %}
+          <option value="{{ v }}" {% if value|string == v|string %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    {% elif name in ['city_a', 'city_b'] %}
+      <select id="f_{{ name }}" name="{{ name }}">
+        {% for v, lbl in CITY_OPTIONS %}
+          <option value="{{ v }}" {% if value == v %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    {% elif name in PCT_FIELDS %}
+      <div class="input-percent">
+        <input type="number" step="0.01" id="f_{{ name }}" name="{{ name }}" value="{{ value }}">
+      </div>
+    {% elif name in MONEY_FIELDS %}
+      <div class="input-money">
+        <input type="number" step="1" id="f_{{ name }}" name="{{ name }}" value="{{ value }}">
+      </div>
+    {% elif name in INT_FIELDS %}
+      <input type="number" step="1" id="f_{{ name }}" name="{{ name }}" value="{{ value }}">
+    {% else %}
+      <input type="text" id="f_{{ name }}" name="{{ name }}" value="{{ value }}">
+    {% endif %}
+  </div>
+{% endmacro %}

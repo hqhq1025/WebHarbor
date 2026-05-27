@@ -1,0 +1,17 @@
+{% extends "_wizard_base.html" %}
+{% block title %}Advisor Matching — Goal{% endblock %}
+{% block wizard_body %}
+<h2>What's your primary financial goal?</h2>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="choice-grid">
+    <label><input type="radio" name="goal" value="retirement" {% if wiz.goal == 'retirement' %}checked{% endif %}> <span>Retirement planning</span></label>
+    <label><input type="radio" name="goal" value="growth" {% if wiz.goal == 'growth' %}checked{% endif %}> <span>Wealth growth</span></label>
+    <label><input type="radio" name="goal" value="taxes" {% if wiz.goal == 'taxes' %}checked{% endif %}> <span>Tax minimization</span></label>
+    <label><input type="radio" name="goal" value="estate" {% if wiz.goal == 'estate' %}checked{% endif %}> <span>Estate planning</span></label>
+    <label><input type="radio" name="goal" value="education" {% if wiz.goal == 'education' %}checked{% endif %}> <span>Education savings</span></label>
+    <label><input type="radio" name="goal" value="general" {% if wiz.goal == 'general' %}checked{% endif %}> <span>Comprehensive plan</span></label>
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

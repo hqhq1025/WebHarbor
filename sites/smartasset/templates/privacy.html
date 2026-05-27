@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Privacy | SmartAsset{% endblock %}
+{% block content %}
+<h1>Privacy Policy</h1>
+<p>SmartAsset Advisors, LLC ("SmartAsset", "we") respects your privacy. This policy explains what data we collect, how we use it, and your rights.</p>
+<h2>Data we collect</h2>
+<ul>
+  <li><strong>Calculator inputs</strong> — used only to compute your result; never shared.</li>
+  <li><strong>Account email</strong> — used to authenticate and let you save calculations.</li>
+  <li><strong>Advisor match details</strong> — shared only with the up-to-3 advisors you choose to be matched with.</li>
+  <li><strong>Cookies</strong> — strictly necessary for authentication. We do not load third-party advertising trackers in this mirror environment.</li>
+</ul>
+<h2>Your rights</h2>
+<p>You may delete your account at any time. Contact us at <a href="{{ url_for('contact') }}">privacy@smartasset.example</a>.</p>
+{% endblock %}

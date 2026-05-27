@@ -1,0 +1,22 @@
+{% extends "_wizard_base.html" %}
+{% block wizard_body %}
+<h2>Where do you live?</h2>
+<p class="muted">We'll match you with advisors who serve your area.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="location">State</label>
+    <select id="location" name="location" required>
+      <option value="">Choose your state...</option>
+      {% for st in states %}
+        <option value="{{ st.abbr }}" {% if wiz.location == st.abbr %}selected{% endif %}>{{ st.name }} ({{ st.abbr }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="zip_code">ZIP code (optional)</label>
+    <input type="text" id="zip_code" name="zip_code" maxlength="5" value="{{ wiz.zip_code or '' }}">
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

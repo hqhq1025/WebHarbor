@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Share Calculator{% endblock %}
+{% block content %}
+<h1>Share this calculation</h1>
+<p class="muted">A permalink that reproduces these results.</p>
+<div class="card">
+  <p><strong>{{ spec.title }}</strong></p>
+  <input type="text" readonly value="{{ request.host_url }}calculators/{{ spec.slug }}?{% for k, v in params.items() %}{{ k }}={{ v }}{% if not loop.last %}&{% endif %}{% endfor %}" style="font-family:monospace;">
+  <p style="margin-top:14px;">
+    <a class="btn" href="{{ share_url }}">Open calculation &rsaquo;</a>
+  </p>
+</div>
+{% endblock %}

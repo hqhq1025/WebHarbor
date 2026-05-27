@@ -1,0 +1,14 @@
+{% extends "_wizard_base.html" %}
+{% block wizard_body %}
+<h2>What's your marital status?</h2>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="choice-grid">
+    <label><input type="radio" name="marital_status" value="single" {% if wiz.marital_status == 'single' %}checked{% endif %}> <span>Single</span></label>
+    <label><input type="radio" name="marital_status" value="married" {% if wiz.marital_status == 'married' %}checked{% endif %}> <span>Married</span></label>
+    <label><input type="radio" name="marital_status" value="divorced" {% if wiz.marital_status == 'divorced' %}checked{% endif %}> <span>Divorced</span></label>
+    <label><input type="radio" name="marital_status" value="widowed" {% if wiz.marital_status == 'widowed' %}checked{% endif %}> <span>Widowed</span></label>
+  </div>
+  <button class="btn" type="submit">Continue &rsaquo;</button>
+</form>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Careers | SmartAsset{% endblock %}
+{% block content %}
+<h1>Careers at SmartAsset</h1>
+<p>We're hiring across product, engineering, content, and advisor success. Browse open roles below.</p>
+<div class="sa-grid sa-cols-2">
+  {% for role, dept, loc in [
+    ('Senior Software Engineer, Calculators', 'Engineering', 'NYC / Remote'),
+    ('Personal Finance Editor', 'Content', 'Remote'),
+    ('Lead Designer, Advisor Match', 'Design', 'NYC'),
+    ('Data Engineer, Financial Modeling', 'Data', 'Remote'),
+    ('Product Manager, SmartReads', 'Product', 'NYC'),
+    ('Advisor Success Manager', 'Sales', 'Remote'),
+  ] %}
+    <div class="card">
+      <h3>{{ role }}</h3>
+      <p class="muted">{{ dept }} &middot; {{ loc }}</p>
+      <a class="btn btn-sm" href="{{ url_for('contact') }}">Apply</a>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

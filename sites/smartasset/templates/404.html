@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found | SmartAsset{% endblock %}
+{% block content %}
+<div style="text-align:center;padding:60px 0;">
+  <h1 style="font-size:4rem;color:var(--sa-yellow);">404</h1>
+  <h2>Page Not Found</h2>
+  <p class="muted">We couldn't find the page you were looking for. Try one of these:</p>
+  <p>
+    <a class="btn" href="{{ url_for('index') }}">Home</a>
+    <a class="btn btn-outline" href="{{ url_for('calculators_index') }}">Calculators</a>
+    <a class="btn btn-outline" href="{{ url_for('smartreads_index') }}">SmartReads</a>
+  </p>
+</div>
+{% endblock %}

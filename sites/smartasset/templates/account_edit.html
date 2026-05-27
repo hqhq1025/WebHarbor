@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile | SmartAsset{% endblock %}
+{% block content %}
+<h1>Edit Your Profile</h1>
+<form method="post" class="card" style="max-width:480px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="{{ current_user.name }}">
+  </div>
+  <div class="field">
+    <label for="state">State (2-letter)</label>
+    <input type="text" id="state" name="state" value="{{ current_user.state }}" maxlength="2">
+  </div>
+  <div class="field">
+    <label for="zip_code">ZIP</label>
+    <input type="text" id="zip_code" name="zip_code" value="{{ current_user.zip_code }}" maxlength="5">
+  </div>
+  <button class="btn" type="submit">Save changes</button>
+  <a class="btn-link" href="{{ url_for('account') }}">Cancel</a>
+</form>
+{% endblock %}

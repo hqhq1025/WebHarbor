@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Get Matched with a Financial Advisor | SmartAsset{% endblock %}
+{% block content %}
+<div class="card-hero">
+  <span class="tag">Free Service</span>
+  <h1>Find Your Financial Advisor</h1>
+  <p>Answer a few quick questions and we'll match you with up to three vetted fiduciary advisors who serve your area. Each match offers a free 30-minute introductory call.</p>
+</div>
+
+<div class="wizard-step" style="margin-top:24px;">
+  <span class="muted">Step 1 of 7</span>
+  <h2>What's your retirement status?</h2>
+  <form method="post" action="{{ url_for('advisor_match_start') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="choice-grid">
+      <label><input type="radio" name="retirement_status" value="planning" checked> <span>Planning for retirement</span></label>
+      <label><input type="radio" name="retirement_status" value="near"> <span>Within 5 years of retirement</span></label>
+      <label><input type="radio" name="retirement_status" value="retired"> <span>Already retired</span></label>
+      <label><input type="radio" name="retirement_status" value="growing"> <span>Building wealth (not yet planning retirement)</span></label>
+    </div>
+    <button class="btn" type="submit">Continue &rsaquo;</button>
+  </form>
+</div>
+
+<div style="margin-top:30px;max-width:680px;margin-left:auto;margin-right:auto;">
+  <h3>How Our Free Service Works</h3>
+  <ol>
+    <li><strong>Answer SmartAsset advisor match quiz</strong> — about 3 minutes.</li>
+    <li><strong>Review your vetted matches</strong> — up to 3 fiduciary advisors who serve your area.</li>
+    <li><strong>Have a free introductory call</strong> with the advisors you choose, at no cost to you.</li>
+  </ol>
+  <p class="muted">SmartAsset's advisor matching platform matches you with vetted fiduciary advisors who can help you on the path toward achieving your financial goals.</p>
+</div>
+{% endblock %}

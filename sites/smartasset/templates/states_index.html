@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}State-by-State Financial Tools | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; States</div>
+<h1>Financial Tools by State</h1>
+<p class="muted" style="max-width:760px;">Tax rates, housing costs, and advisor matches tailored to where you live.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>State</th>
+      <th>Income Tax</th>
+      <th>Property Tax</th>
+      <th class="right">Median Home Price</th>
+      <th class="right">Median Income</th>
+      <th>Top Metro</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for st in states %}
+      <tr>
+        <td><a href="{{ url_for('state_detail', slug=st.slug) }}">{{ st.name }}</a></td>
+        <td>
+          {% if st.income_tax_type == 'none' %}<strong>None</strong>
+          {% elif st.income_tax_type == 'flat' %}{{ st.state_income_flat_rate }}% flat
+          {% else %}up to {{ st.state_income_top_rate }}%
+          {% endif %}
+        </td>
+        <td>{{ st.property_tax_rate }}%</td>
+        <td class="right">${{ st.median_home_price|commafy }}</td>
+        <td class="right">${{ st.median_household_income|commafy }}</td>
+        <td>{{ st.top_metro }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}SmartReads — Personal Finance Articles | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; SmartReads</div>
+<h1>SmartReads</h1>
+<p class="muted">Practical articles on retirement, taxes, investing, mortgages, and more. {{ total }} articles in our archive.</p>
+
+<div class="sa-cols-2 sa-grid">
+  <div>
+    <div class="sa-grid sa-cols-2">
+      {% for a in articles %}
+        <article class="article-card">
+          <a href="{{ url_for('article_detail', slug=a.slug) }}"><div class="hero">{{ a.category.name }}</div></a>
+          <div class="body">
+            <span class="tag tag-muted">{{ a.category.name }}</span>
+            <h3 style="margin-top:8px;"><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+            <p class="dek">{{ a.dek }}</p>
+            <div class="meta">{{ a.author.name }} &middot; {{ a.published_at.strftime('%b %d, %Y') }} &middot; {{ a.reading_minutes }} min read</div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+    <div class="pagination">
+      {% if page > 1 %}<a href="?page={{ page - 1 }}">&laquo; Prev</a>{% endif %}
+      {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+          <span class="current">{{ p }}</span>
+        {% elif p == 1 or p == pages or (p >= page - 2 and p <= page + 2) %}
+          <a href="?page={{ p }}">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page < pages %}<a href="?page={{ page + 1 }}">Next &raquo;</a>{% endif %}
+    </div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h3>Browse by Topic</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        {% for c in categories %}
+          <a href="{{ url_for('category_page', slug=c.slug) }}">{{ c.name }} &rsaquo;</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <h3>Top Calculators</h3>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        {% for c in calc_hub[:8] %}
+          <a href="{{ url_for('calculator', slug=c.slug) }}">{{ c.title }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

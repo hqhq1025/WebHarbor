@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ au.name }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('authors_index') }}">Authors</a> &rsaquo;
+  <span>{{ au.name }}</span>
+</div>
+
+<div class="card" style="display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:flex-start;">
+  <div class="advisor-card" style="border:0;padding:0;">
+    <div class="avatar">{{ au.name[0] }}{{ au.name.split(' ')[-1][0] }}</div>
+  </div>
+  <div>
+    <h1 style="margin:0;">{{ au.name }}{% if au.credentials %}, {{ au.credentials }}{% endif %}</h1>
+    <p class="muted" style="margin:4px 0;">{{ au.title }}{% if au.location %} &middot; {{ au.location }}{% endif %}</p>
+    <p>{{ au.bio }}</p>
+    {% if au.twitter %}<a href="https://twitter.com/{{ au.twitter }}">@{{ au.twitter }}</a> &middot; {% endif %}
+    {% if au.linkedin %}<a href="{{ au.linkedin }}">LinkedIn</a>{% endif %}
+  </div>
+</div>
+
+<h2 style="margin-top:30px;">Articles by {{ au.name }} ({{ articles|length }})</h2>
+<div>
+  {% for a in articles %}
+    <div class="article-row">
+      <a href="{{ url_for('article_detail', slug=a.slug) }}"><div class="thumb"></div></a>
+      <div>
+        <span class="tag tag-muted">{{ a.category.name }}</span>
+        <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+        <div class="meta">{{ a.published_at.strftime('%b %d, %Y') }} &middot; {{ a.reading_minutes }} min read</div>
+        <p>{{ a.dek }}</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
