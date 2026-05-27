@@ -55,11 +55,15 @@ v2 默认就装的 anti-bot 套件：
 - Cookie kill: 已含 `Accept all` / `I agree` / `Got it` text-based 触发
 
 v2 自动检测的失败状态（写入 metadata.json）：
-- `not_found: true` — HTTP 4xx/5xx
-- `bot_block: true` — body 含 "Access Denied"/"errors.edgesuite.net"/"Pardon Our Interruption"/"Just a moment..."/"captcha-delivery" 等
-- `interstitial: true` — body < 5KB 又没明确 block phrase
+- `not_found: true` — HTTP 4xx/5xx 或 body 有 "Page Not Found" / "404 - Not Found" 等 soft-404 字面
+- `not_found_reason: "HTTP 404" | "body contains 'Page Not Found'"`
+- `bot_block: true` — body 含 "Access Denied"/"errors.edgesuite.net"/"Checking your connection"/"challenges.cloudflare.com"/"Pardon Our Interruption"/"unusual traffic"/"captcha-delivery" 等
+- `bot_block_reason: "body contains '...'"` —— v2.1 加，让人秒看出哪种墙
+- `interstitial: true` — body < 5KB 又没明确 block phrase；或 title 是字面 URL（Google reCaptcha 模式：title=`https://www.google.com/search?q=...&sei=...`）
 - `http2_error: true` — Chromium `ERR_HTTP2_PROTOCOL_ERROR`（自动用 curl HTTP/1.1 fallback）
 - `fallback_used: "curl_http1" | "exa_hint"` — 留 `FALLBACK_NEEDED.md` 让 agent 后续走 Exa MCP 抓 markdown 存 `content.md`
+
+**v2.1 关键修复**（2026-05 R2 phys_org 案例后）：`detect_failure` 不再 short-circuit。**bot_block 检测优先于 status**，所以 Akamai/CF 的 403 + "Checking your connection" body 会正确标 bot_block（之前会被错标成 not_found）。bot_block 触发 Exa fallback hint；not_found 不触发（真 404 没必要走 Exa）。
 
 ## 配套工具
 
@@ -140,10 +144,12 @@ python3 index_site.py --all       # 全站
 | **SPA 全部空 div + 慢 JS** | timeout 30s + settle 2.5s + 5 次 lazy-load scroll。Maps/Flights canvas 类 SPA 仍只能拿 full.html，section 提取意义不大 |
 | **大站 full.html 3+ MB / full.png 1+ MB 截图超时** | 自动 try/except 退化到 viewport-only（v2 加） |
 | **Akamai/AWS-WAF 边缘墙**（apartments.com / drugs.com / mayoclinic.org / amazon.com 部分页面） | Azure datacenter IP 被 IP-class 拉黑；stealth/UA/xvfb 全无效。v2 自动检测 `bot_block=true` + 写 `FALLBACK_NEEDED.md`，agent 接着跑 `mcp__exa__crawling_exa` 拿 markdown 存 `content.md` |
-| **HTTP/2 protocol error**（nba.com 全站） | v2 catch `ERR_HTTP2_PROTOCOL_ERROR` 自动 fallback `curl --http1.1`（HTML-only，无截图）|
+| **Cloudflare Turnstile**（phys.org / discogs 部分 routes / 各类后端 API）| body `<title>Just a moment...</title>` + `script src="https://challenges.cloudflare.com/..."`。HTTP 状态可能是 403 或 200。v2.1 修了 detect_failure 优先级让它正确触发 bot_block + Exa hint |
+| **HTTP/2 protocol error**（nba.com 全站 / 偶发其它）| v2 catch `ERR_HTTP2_PROTOCOL_ERROR` 自动 fallback `curl --http1.1`（HTML-only，无截图）。但 R2 发现：v2 stealth UA + Chrome 131 headers 让 NBA HTTP/2 也通了 0 次 fallback —— 可能是 NBA 后端对老 UA 才发 HTTP/2 |
 | **Captcha shell**（amazon 部分页面）| body < 50KB + "Are you a robot" → `bot_block=true`，走 Exa fallback |
+| **Soft 404**（status 200 + `<h1>404 - Not Found</h1>` / `<title>Page Not Found</title>`，RT / SmartAsset / NBA `/tickets`）| v2.1 加 SOFT_404_PHRASES 扫 body 前 50KB，标 `not_found=true` + `not_found_reason: "body contains 'Page Not Found'"` |
 | **404 chrome 被当真实数据**（bbc 失效 article / arxiv subscribe）| v2 status≥400 → `not_found=true` 标记；agent 后续可弃这页或换 URL |
-| **Google SERP interstitial**（results/images/news/videos/shopping/maps_search 6 个变体）| Google 边缘 anti-bot 检测 headless，发送 6.6KB 重定向 stub；home / advanced / preferences 不触发。短期没好办法，long-term 需要 residential proxy |
+| **Google SERP interstitial**（results/images/news/videos/shopping/maps_search 6 个变体）| Google 发送 ~6.6 KB 重定向 stub，HTTP 200，title 是字面 URL `https://www.google.com/search?q=...&sei=...`。v2.1 检测"title startswith http"→ `bot_block` + `interstitial` 都 true。短期没好办法，long-term 需 residential proxy |
 | **图片 src 是 CDN 链接，复刻时 404** | 单独 `curl --referer https://<site>/ <img-url>` 下载到 `sites/<slug>/static/images/` |
 
 ## 经验
