@@ -6,7 +6,7 @@
 <div class="container-wide page">
     <div class="author-head">
         <div class="author-head-avatar">
-            <img src="{{ author.avatar_url }}" alt="{{ author.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ author.username[0]|upper }}</span>'">
+            <img loading="lazy" decoding="async" src="{{ author.avatar_url }}" alt="{{ author.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ author.username[0]|upper }}</span>'">
         </div>
         <div class="author-head-body">
             <h1>{{ author.display_name }}{% if author.is_verified %} <span class="verified">✓</span>{% endif %}</h1>

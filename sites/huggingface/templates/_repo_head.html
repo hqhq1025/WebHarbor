@@ -65,7 +65,7 @@
 <div class="repo-head">
     <div class="repo-head-title">
         <div class="repo-head-avatar">
-            <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+            <img loading="lazy" decoding="async" src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
         </div>
         <div>
             <h1 class="repo-head-name">

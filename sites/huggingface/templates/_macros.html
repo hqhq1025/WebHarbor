@@ -3,7 +3,7 @@
 {% macro repo_card(repo, liked_ids=None) %}
 <a class="repo-card" href="{% if repo.repo_type == 'dataset' %}{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% elif repo.repo_type == 'space' %}{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% else %}{{ url_for('model_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% endif %}">
     <div class="repo-card-avatar">
-        <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+        <img loading="lazy" decoding="async" src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
     </div>
     <div class="repo-card-body">
         <div class="repo-card-title">
@@ -29,7 +29,7 @@
 <a class="repo-grid-card" href="{% if repo.repo_type == 'dataset' %}{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% elif repo.repo_type == 'space' %}{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% else %}{{ url_for('model_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% endif %}">
     <div class="repo-grid-card-head">
         <div class="repo-grid-card-avatar">
-            <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+            <img loading="lazy" decoding="async" src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
         </div>
         <div class="repo-grid-card-title">
             {{ repo.slug }}

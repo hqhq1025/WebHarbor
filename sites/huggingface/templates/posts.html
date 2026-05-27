@@ -24,7 +24,7 @@
         <div class="post-card-head">
           {% if author %}
           <a href="{{ url_for('author_page', username=author.username) }}" class="post-author">
-            <img src="{{ author.avatar_url }}" alt="" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ author.avatar_url }}" alt="" onerror="this.style.display='none'">
             <strong>{{ author.display_name }}</strong>
             <span class="post-author-handle">@{{ author.username }}</span>
           </a>

@@ -12,7 +12,7 @@
             {% for item in items %}
             <div class="cart-item">
                 <div class="cart-item-avatar">
-                    <img src="{{ item.repo.author_obj.avatar_url if item.repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ item.repo.slug[0]|upper }}</span>'">
+                    <img loading="lazy" decoding="async" src="{{ item.repo.author_obj.avatar_url if item.repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ item.repo.slug[0]|upper }}</span>'">
                 </div>
                 <div class="cart-item-body">
                     <div class="cart-item-title">{{ item.repo.slug }}</div>

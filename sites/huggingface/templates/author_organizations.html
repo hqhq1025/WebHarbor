@@ -16,7 +16,7 @@
         {% for o in orgs %}
         <a class="repo-card" href="{{ url_for('author_page', username=o.username) }}">
             <div class="repo-card-head">
-                {% if o.avatar_url %}<img src="{{ o.avatar_url }}" alt="" style="width:32px;height:32px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
+                {% if o.avatar_url %}<img loading="lazy" decoding="async" src="{{ o.avatar_url }}" alt="" style="width:32px;height:32px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
                 <strong>{{ o.display_name or o.username }}</strong>
                 {% if o.is_verified %}<span class="tag tag-blue">verified</span>{% endif %}
             </div>

@@ -171,7 +171,7 @@
                 <div class="pd-gallery-images">
                     {% for img in gallery[:3] %}
                     <div class="pd-gallery-img">
-                        <img src="{{ img }}" alt="Space preview" onerror="this.parentElement.style.display='none'">
+                        <img loading="lazy" decoding="async" src="{{ img }}" alt="Space preview" onerror="this.parentElement.style.display='none'">
                     </div>
                     {% endfor %}
                 </div>
@@ -184,7 +184,7 @@
                 <div class="pd-gallery-images">
                     {% for img in gallery[3:] %}
                     <div class="pd-gallery-img">
-                        <img src="{{ img }}" alt="" onerror="this.parentElement.style.display='none'">
+                        <img loading="lazy" decoding="async" src="{{ img }}" alt="" onerror="this.parentElement.style.display='none'">
                     </div>
                     {% endfor %}
                 </div>

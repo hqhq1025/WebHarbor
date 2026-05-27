@@ -100,7 +100,7 @@
             {% for org in featured_orgs %}
             <a class="org-card" href="{{ url_for('author_page', username=org.username) }}">
                 <div class="org-card-avatar">
-                    <img src="{{ org.avatar_url }}" alt="{{ org.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ org.username[0]|upper }}</span>'">
+                    <img loading="lazy" decoding="async" src="{{ org.avatar_url }}" alt="{{ org.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ org.username[0]|upper }}</span>'">
                 </div>
                 <div>
                     <div class="org-card-name">{{ org.display_name }}{% if org.is_verified %} ✓{% endif %}</div>
