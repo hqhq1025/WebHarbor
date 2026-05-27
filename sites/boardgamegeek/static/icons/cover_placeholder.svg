@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+  <!-- BoardGameGeek cover placeholder: square box-cover silhouette -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6d4b8"/>
+      <stop offset="1" stop-color="#c4a373"/>
+    </linearGradient>
+    <linearGradient id="bx" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6f4a22"/>
+      <stop offset="1" stop-color="#3a2410"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <!-- Box body with subtle isometric top -->
+  <polygon points="60,140 200,80 340,140 340,340 60,340" fill="url(#bx)" stroke="#2a1808" stroke-width="3"/>
+  <polygon points="60,140 200,80 340,140 200,200" fill="#a07043" stroke="#2a1808" stroke-width="3"/>
+  <!-- Meeple silhouette in middle -->
+  <g transform="translate(200,260)" fill="#fdf6e3">
+    <circle cx="0" cy="-32" r="14"/>
+    <path d="M-30,-10 Q-30,-20 -20,-20 L20,-20 Q30,-20 30,-10 L30,30 L18,30 L18,10 L-18,10 L-18,30 L-30,30 Z"/>
+  </g>
+  <text x="200" y="370" font-family="Georgia, serif" font-size="22" fill="#fdf6e3" text-anchor="middle" font-style="italic">cover unavailable</text>
+</svg>
