@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Report organizer | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:640px;">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Report this organizer</h1>
+  <p class="eb-muted">{{ o.name }}</p>
+  <form method="POST" action="{{ url_for('report_organizer', slug=o.slug) }}">
+    <label>Reason
+      <select name="reason" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;">
+        <option value="fraud">Fraud / scam</option>
+        <option value="impersonation">Impersonation</option>
+        <option value="spam">Spam</option>
+        <option value="repeat-cancellation">Repeat cancellation</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+    <label style="display:block;margin-top:14px;">Details
+      <textarea name="body" rows="5" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;"></textarea>
+    </label>
+    <label style="display:block;margin-top:14px;">Your email (optional)
+      <input type="email" name="contact_email" style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;">
+    </label>
+    <button class="btn btn-primary" type="submit" style="margin-top:18px;">Submit report</button>
+  </form>
+</div>
+{% endblock %}

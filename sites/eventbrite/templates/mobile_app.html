@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mobile app | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#9D2BB8,#E294FF);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Eventbrite on your phone</h1>
+    <p class="eb-hero-sub">Manage tickets, scan attendees at the door, and never miss a save again.</p>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h2 class="eb-h2">Two apps for two jobs</h2>
+  <div class="eb-grid-2">
+    <div class="eb-card" style="padding:24px;">
+      <h3 class="eb-h3" style="margin-top:0;">Eventbrite (for attendees)</h3>
+      <p>Browse events, buy tickets, save favorites, and access mobile tickets at the door.</p>
+      <a class="btn btn-outline" href="#">Download for iOS</a> <a class="btn btn-outline" href="#">Download for Android</a>
+    </div>
+    <div class="eb-card" style="padding:24px;">
+      <h3 class="eb-h3" style="margin-top:0;">Eventbrite Organizer</h3>
+      <p>Run check-in with QR scanning, manage your guest list, and view real-time sales.</p>
+      <a class="btn btn-outline" href="#">Download for iOS</a> <a class="btn btn-outline" href="#">Download for Android</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

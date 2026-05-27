@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Free events | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Free events</h1>
+  <p class="eb-muted">Every event on this page is free to attend — RSVP and you're in.</p>
+  <form action="{{ url_for('free_events') }}" method="GET" style="margin:14px 0 22px;">
+    <select name="city" onchange="this.form.submit()" style="padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+      <option value="">All cities</option>
+      {% for cs, cn, st, _, _ in cities %}
+        <option value="{{ cs }}" {% if cs == city %}selected{% endif %}>{{ cn }}, {{ st }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+    {% if not events %}<p class="eb-muted">No free events found.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

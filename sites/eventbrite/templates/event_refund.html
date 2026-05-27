@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ ev.title }} — Refund policy | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ ev.title }} — Refund policy</h1>
+  <div style="margin:14px 0;">
+    <a href="{{ url_for('event_detail', slug=ev.slug) }}">Overview</a> ·
+    <a href="{{ url_for('event_schedule', slug=ev.slug) }}">Schedule</a> ·
+    <a href="{{ url_for('event_speakers', slug=ev.slug) }}">Speakers</a> ·
+    <a href="{{ url_for('event_faq', slug=ev.slug) }}">FAQ</a> ·
+    <a href="{{ url_for('event_refund', slug=ev.slug) }}"><strong>Refund policy</strong></a>
+  </div>
+  <p><strong>Policy:</strong> {{ refund_label }}</p>
+  <p>If the organizer cancels or reschedules the event, you will be notified by email
+     with options to refund or transfer. To request a refund under the organizer's
+     policy, open the order in <a href="{{ url_for('my_tickets') }}">My Tickets</a>
+     and click "Request refund".</p>
+  <h3 class="eb-h3">Eventbrite refund guarantee</h3>
+  <p class="eb-muted">For events that meet Eventbrite's safety guidelines, our guarantee
+     covers cancellations, rescheduling and similar disruptions.</p>
+</div>
+{% endblock %}

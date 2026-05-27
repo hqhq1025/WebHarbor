@@ -26,6 +26,7 @@
       <a href="{{ url_for('my_tickets') }}">Tickets</a>
       <a href="{{ url_for('my_saved') }}">Likes</a>
       <a href="{{ url_for('my_following') }}">Following</a>
+      <a href="{{ url_for('cart_view') }}">Cart{% if cart_count %} ({{ cart_count }}){% endif %}</a>
       <a href="{{ url_for('create_intro') }}" class="eb-cta">Create an event</a>
       <a href="{{ url_for('account') }}">{{ current_user.name.split(' ')[0] }}</a>
       <form action="{{ url_for('logout') }}" method="POST" style="display:inline">
@@ -57,34 +58,54 @@
     <div>
       <h4>Use Eventbrite</h4>
       <a href="{{ url_for('create_intro') }}">Create Events</a>
-      <a href="{{ url_for('help_index') }}">Pricing</a>
-      <a href="{{ url_for('help_index') }}">Event Marketing Platform</a>
-      <a href="{{ url_for('help_index') }}">Eventbrite Mobile Ticket App</a>
-      <a href="{{ url_for('help_index') }}">Eventbrite Check-In App</a>
-      <a href="{{ url_for('help_index') }}">Eventbrite App Marketplace</a>
+      <a href="{{ url_for('organize_page', page='pricing') }}">Pricing</a>
+      <a href="{{ url_for('organize_page', page='event-marketing-platform') }}">Event Marketing Platform</a>
+      <a href="{{ url_for('mobile_app') }}">Mobile Ticket App</a>
+      <a href="{{ url_for('mobile_app') }}">Check-In App</a>
+      <a href="{{ url_for('organize_page', page='features') }}">Features</a>
+      <a href="{{ url_for('organize_page', page='boost') }}">Boost Ads</a>
+      <a href="{{ url_for('organize_page', page='salesforce') }}">Salesforce</a>
     </div>
     <div>
       <h4>Plan events</h4>
-      <a href="{{ url_for('help_index') }}">Sell Tickets Online</a>
-      <a href="{{ url_for('help_index') }}">Event Planning</a>
-      <a href="{{ url_for('help_index') }}">Sell Concert Tickets Online</a>
-      <a href="{{ url_for('help_index') }}">Event Payment System</a>
-      <a href="{{ url_for('help_index') }}">Solutions for Professional Services</a>
-      <a href="{{ url_for('help_index') }}">Halloween Party Planning</a>
+      <a href="{{ url_for('organize_hub') }}">Organize hub</a>
+      <a href="{{ url_for('organize_page', page='promote') }}">Promote your event</a>
+      <a href="{{ url_for('organize_page', page='spotlight') }}">Spotlight features</a>
+      <a href="{{ url_for('organize_page', page='music-tools') }}">Music tools</a>
+      <a href="{{ url_for('organize_page', page='how-it-works') }}">How it works</a>
+      <a href="{{ url_for('blog_index') }}">Blog</a>
     </div>
     <div>
       <h4>Find Events</h4>
       <a href="{{ url_for('city_landing', city_slug='ny--new-york') }}">New York</a>
       <a href="{{ url_for('city_landing', city_slug='ca--los-angeles') }}">Los Angeles</a>
       <a href="{{ url_for('city_landing', city_slug='il--chicago') }}">Chicago</a>
-      <a href="{{ url_for('online_landing') }}">Online events</a>
+      <a href="{{ url_for('city_landing', city_slug='tx--austin') }}">Austin</a>
+      <a href="{{ url_for('online_hub') }}">Online events</a>
+      <a href="{{ url_for('free_events') }}">Free events</a>
+      <a href="{{ url_for('date_landing', label='this-weekend') }}">This weekend</a>
+      <a href="{{ url_for('trending_hub') }}">Trending</a>
       <a href="{{ url_for('calendar_view') }}">Calendar view</a>
-      <a href="{{ url_for('search') }}">All events</a>
+      <a href="{{ url_for('country_us') }}">United States</a>
+      <a href="{{ url_for('sitemap_page') }}">Sitemap</a>
+    </div>
+    <div>
+      <h4>Browse categories</h4>
+      {% for cslug, cname, _ in categories[:9] %}
+        <a href="{{ url_for('category_landing', cat_slug=cslug) }}">{{ cname }}</a>
+      {% endfor %}
+      <a href="{{ url_for('causes_hub') }}">Charity & Causes</a>
+      <a href="{{ url_for('conferences_hub') }}">Conferences</a>
+      <a href="{{ url_for('groups_hub') }}">Groups</a>
     </div>
     <div>
       <h4>Connect with us</h4>
-      <a href="#">Contact Support</a>
-      <a href="#">Contact Sales</a>
+      <a href="{{ url_for('help_index') }}">Help Center</a>
+      <a href="{{ url_for('help_search') }}">Search Help</a>
+      <a href="{{ url_for('about_page') }}">About</a>
+      <a href="{{ url_for('careers_page') }}">Careers</a>
+      <a href="{{ url_for('press_page') }}">Press</a>
+      <a href="{{ url_for('investors_page') }}">Investors</a>
       <a href="#">Twitter</a>
       <a href="#">Facebook</a>
       <a href="#">LinkedIn</a>

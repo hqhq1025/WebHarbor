@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Online events | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#3659E3,#9CB5FF);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Online events</h1>
+    <p class="eb-hero-sub">Webinars, classes, and live streams you can join from anywhere.</p>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+
+  <div class="eb-section-header"><h2 class="eb-h2">Upcoming online events</h2></div>
+  <div class="eb-grid">
+    {% for ev in upcoming[:24] %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+
+  {% for cs, evs in by_cat.items() %}
+    {% if loop.index <= 6 %}
+    <div class="eb-section-header" style="margin-top:42px;">
+      <h2 class="eb-h2">Online {{ cat_map[cs][0] if cs in cat_map else cs }}</h2>
+      <a href="{{ url_for('online_landing', sub=cs + '--events') }}">See all →</a>
+    </div>
+    <div class="eb-grid">
+      {% for ev in evs[:8] %}{% include 'partials/event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Events in the {{ region_name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Events in the {{ region_name }}</h1>
+
+  <div class="eb-section-header"><h2 class="eb-h2">Cities</h2></div>
+  <div class="eb-grid-3">
+    {% for cs, cn, st, _, _ in cities %}
+      <a class="eb-card" href="{{ url_for('city_landing', city_slug=cs) }}" style="text-decoration:none;">
+        {% set img = city_image_url(cs) %}
+        {% if img %}
+          <div class="eb-card-img" style="background-image:url('{{ img }}');background-size:cover;background-position:center;">
+            <div class="img-title">{{ cn }}, {{ st }}</div>
+          </div>
+        {% else %}
+          <div class="eb-card-img" style="background:linear-gradient(135deg,#9D2BB8,#E294FF);">
+            <div class="img-title">{{ cn }}, {{ st }}</div>
+          </div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-section-header" style="margin-top:42px;"><h2 class="eb-h2">Upcoming events</h2></div>
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+</div>
+{% endblock %}

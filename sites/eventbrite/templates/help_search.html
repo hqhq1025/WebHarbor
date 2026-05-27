@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Search the Help Center | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Search the Help Center</h1>
+  <form action="{{ url_for('help_search') }}" method="GET" style="margin-bottom:24px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Try 'refund' or 'reset password'" style="width:60%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;">
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
+  {% if q %}
+    <p class="eb-muted">{{ articles|length }} result{{ 's' if articles|length != 1 else '' }} for "{{ q }}"</p>
+    <ul style="list-style:none;padding:0;">
+      {% for a in articles %}
+        <li style="padding:12px 0;border-bottom:1px solid var(--eb-border);">
+          <a href="{{ url_for('help_article', slug=a.slug) }}"><strong>{{ a.title }}</strong></a>
+          <div class="eb-muted">{{ a.section }} · {{ a.body|truncate(140) }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="eb-muted">Enter a query above to search.</p>
+  {% endif %}
+</div>
+{% endblock %}

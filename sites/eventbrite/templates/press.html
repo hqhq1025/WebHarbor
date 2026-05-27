@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Press | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Press & Media</h1>
+  <p class="eb-muted">Member of the press? We're happy to help with quotes, data, and access.</p>
+  <h2 class="eb-h2">Contact</h2>
+  <p>For press inquiries: <strong>press@eventbrite-mirror.example</strong></p>
+  <h2 class="eb-h2">Latest mentions</h2>
+  <ul>
+    <li><em>The 2026 events economy is up 38%</em> — TechCrunch</li>
+    <li><em>Eventbrite Spotlight reaches 1B impressions</em> — Adweek</li>
+    <li><em>Why organizers are abandoning Facebook Events</em> — The Verge</li>
+  </ul>
+</div>
+{% endblock %}

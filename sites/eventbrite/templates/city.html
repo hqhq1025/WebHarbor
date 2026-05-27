@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Events in {{ city_name }}{% if sub_label %} — {{ sub_label }}{% endif %} | Eventbrite{% endblock %}
 {% block content %}
-<section class="eb-hero">
+{% set chero = city_image_url(city_slug) %}
+<section class="eb-hero" {% if chero %}style="background-image:linear-gradient(135deg,rgba(30,10,60,.55),rgba(54,89,227,.45)),url('{{ chero }}');background-size:cover;background-position:center;color:#fff;"{% endif %}>
   <div class="eb-container">
     <h1 class="eb-hero-title">
       {% if sub_label %}{{ sub_label }} in {{ city_name }}
@@ -14,6 +15,7 @@
       <a class="eb-pill {% if sub=='this-weekend' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='this-weekend') }}">This weekend</a>
       <a class="eb-pill {% if sub=='free' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='free') }}">Free</a>
       <a class="eb-pill {% if sub=='popular' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='popular') }}">Popular</a>
+      <a class="eb-pill" href="{{ url_for('trending_hub') }}?city={{ city_slug }}">Trending</a>
     </div>
     <div class="eb-pill-row" style="margin-top:8px;">
       {% for cslug, cname, color in categories %}
@@ -25,6 +27,17 @@
 </section>
 
 <div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  {% set hoods = neighborhoods_for(city_slug) %}
+  {% if hoods %}
+  <div style="margin-bottom:18px;">
+    <strong>Neighborhoods:</strong>
+    {% for ns, nn, _ in hoods %}
+      <a href="{{ url_for('neighborhood_landing', city_slug=city_slug, n_slug=ns) }}" style="margin-left:6px;">{{ nn }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if events %}
     <div class="eb-grid">
       {% for ev in events %}

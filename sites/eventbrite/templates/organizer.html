@@ -21,6 +21,11 @@
       <div class="eb-detail-section">
         <h2>About</h2>
         <p>{{ o.bio }}</p>
+        <div style="margin-top:8px;font-size:14px;">
+          <a href="{{ url_for('organizer_about', slug=o.slug) }}">Full bio & reviews</a> ·
+          <a href="{{ url_for('organizer_past', slug=o.slug) }}">All past events</a> ·
+          <a href="{{ url_for('organizer_followers', slug=o.slug) }}">Followers</a>
+        </div>
       </div>
 
       {% if upcoming %}
@@ -53,6 +58,14 @@
         <div style="margin-top:12px;">
           <strong>{{ follower_count }}</strong> <span class="eb-muted">followers</span>
         </div>
+        <hr>
+        <h3 class="eb-h3">Email me about new events</h3>
+        <form action="{{ url_for('subscribe_organizer_email', slug=o.slug) }}" method="POST">
+          <input type="email" name="email" required placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %} style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+          <button class="btn btn-outline" type="submit" style="margin-top:8px;width:100%;">Subscribe</button>
+        </form>
+        <hr>
+        <p style="margin:0;"><a href="{{ url_for('report_organizer', slug=o.slug) }}" class="btn-link">Report this organizer</a></p>
       </div>
     </aside>
   </div>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Sitemap | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Sitemap</h1>
+
+  <div class="eb-detail-grid">
+    <main>
+      <h2 class="eb-h2">Cities</h2>
+      <div style="columns:3;column-gap:24px;">
+        {% for cs, cn, st, _, _ in cities %}
+          <p style="break-inside:avoid;"><a href="{{ url_for('city_landing', city_slug=cs) }}">{{ cn }}, {{ st }}</a></p>
+        {% endfor %}
+      </div>
+
+      <h2 class="eb-h2">Categories</h2>
+      <div style="columns:2;column-gap:24px;">
+        {% for cslug, cname, _ in categories %}
+          <div style="break-inside:avoid;margin-bottom:14px;">
+            <strong><a href="{{ url_for('category_landing', cat_slug=cslug) }}">{{ cname }}</a></strong>
+            {% for ss, sn in subcat_index.get(cslug, []) %}
+              · <a href="{{ url_for('subcategory_landing', cat_slug=cslug, sub_slug=ss) }}">{{ sn }}</a>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <h2 class="eb-h2">Date pages</h2>
+      <p>
+        <a href="{{ url_for('date_landing', label='today') }}">Today</a> ·
+        <a href="{{ url_for('date_landing', label='tomorrow') }}">Tomorrow</a> ·
+        <a href="{{ url_for('date_landing', label='this-weekend') }}">This Weekend</a> ·
+        <a href="{{ url_for('date_landing', label='this-week') }}">This Week</a> ·
+        <a href="{{ url_for('date_landing', label='this-month') }}">This Month</a>
+      </p>
+
+      <h2 class="eb-h2">Topic hubs</h2>
+      <p>
+        <a href="{{ url_for('free_events') }}">Free events</a> ·
+        <a href="{{ url_for('online_hub') }}">Online events</a> ·
+        <a href="{{ url_for('causes_hub') }}">Charity & causes</a> ·
+        <a href="{{ url_for('conferences_hub') }}">Conferences</a> ·
+        <a href="{{ url_for('groups_hub') }}">Groups & meetups</a> ·
+        <a href="{{ url_for('spotlight_hub') }}">Spotlight</a> ·
+        <a href="{{ url_for('trending_hub') }}">Trending</a>
+      </p>
+    </main>
+    <aside>
+      <div class="eb-sidebar">
+        <h3 class="eb-h3" style="margin-top:0;">Company</h3>
+        <p><a href="{{ url_for('about_page') }}">About</a></p>
+        <p><a href="{{ url_for('careers_page') }}">Careers</a></p>
+        <p><a href="{{ url_for('press_page') }}">Press</a></p>
+        <p><a href="{{ url_for('investors_page') }}">Investors</a></p>
+        <p><a href="{{ url_for('mobile_app') }}">Mobile apps</a></p>
+        <p><a href="{{ url_for('blog_index') }}">Blog</a></p>
+        <p><a href="{{ url_for('organize_hub') }}">Organize</a></p>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

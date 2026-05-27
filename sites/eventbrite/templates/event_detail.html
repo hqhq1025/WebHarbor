@@ -3,7 +3,8 @@
 {% block content %}
 <div class="eb-container eb-page">
 
-  <div class="eb-event-hero" style="background:{{ event_gradient(ev) }};">
+  {% set hero = event_image_url(ev) %}
+  <div class="eb-event-hero" style="{% if hero %}background-image:linear-gradient(135deg,rgba(0,0,0,.4),rgba(0,0,0,.05)),url('{{ hero }}');background-size:cover;background-position:center;color:#fff;{% else %}background:{{ event_gradient(ev) }};{% endif %}">
     <div>
       <div style="margin-bottom:12px;">
         <span class="eb-chip" style="background:rgba(255,255,255,.92);color:var(--eb-text);">{{ ev.category_name() }}</span>
@@ -17,6 +18,15 @@
   <div class="eb-detail-grid">
     <main>
       <p class="eb-muted" style="margin-top:18px;">{{ ev.summary }}</p>
+
+      <div style="margin:14px 0;font-size:14px;">
+        <a href="{{ url_for('category_landing', cat_slug=ev.category_slug) }}">{{ ev.category_name() }}</a>
+        {% if not ev.is_online %} · <a href="{{ url_for('city_landing', city_slug=ev.city_slug) }}">{{ ev.city_name() }}</a>{% endif %}
+        · <a href="{{ url_for('event_schedule', slug=ev.slug) }}">Schedule</a>
+        · <a href="{{ url_for('event_speakers', slug=ev.slug) }}">Speakers</a>
+        · <a href="{{ url_for('event_faq', slug=ev.slug) }}">FAQ</a>
+        · <a href="{{ url_for('event_refund', slug=ev.slug) }}">Refund</a>
+      </div>
 
       <div class="eb-detail-section">
         <h2>When and where</h2>
@@ -151,7 +161,29 @@
           <a class="eb-chip" href="#">Twitter</a>
           <a class="eb-chip" href="#">LinkedIn</a>
           <a class="eb-chip" href="mailto:?subject={{ ev.title|urlencode }}&body={{ ev.title|urlencode }}%20-%20{{ ev.slug|urlencode }}">Email</a>
+          <a class="eb-chip" href="{{ url_for('invite_friends', slug=ev.slug) }}">Invite friends</a>
+          <a class="eb-chip" href="{{ url_for('report_event', slug=ev.slug) }}">Report</a>
         </div>
+        <form method="POST" action="{{ url_for('share_event_email', slug=ev.slug) }}" style="margin-top:12px;display:flex;gap:8px;max-width:480px;">
+          <input type="email" name="recipient_email" required placeholder="friend@example.com" style="flex:1;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+          <button class="btn btn-outline" type="submit">Email a friend</button>
+        </form>
+      </div>
+
+      <div class="eb-detail-section">
+        <h2>Ask a question / RSVP</h2>
+        <form method="POST" action="{{ url_for('event_qa', slug=ev.slug) }}" style="margin-bottom:14px;">
+          {% if not current_user.is_authenticated %}<input type="text" name="name" placeholder="Your name" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;margin-bottom:8px;">{% endif %}
+          <textarea name="question" rows="2" placeholder="Ask the organizer a public question" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;"></textarea>
+          <button class="btn btn-outline" type="submit" style="margin-top:6px;">Submit question</button>
+        </form>
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('event_rsvp', slug=ev.slug) }}" style="display:flex;gap:6px;">
+          <button name="response" value="yes"   class="btn btn-outline" type="submit">RSVP Yes</button>
+          <button name="response" value="maybe" class="btn btn-outline" type="submit">Maybe</button>
+          <button name="response" value="no"    class="btn btn-outline" type="submit">No</button>
+        </form>
+        {% endif %}
       </div>
 
       {% if reviews %}
@@ -222,8 +254,21 @@
 
         {% if ev.is_sold_out() %}
           <button class="btn btn-outline btn-block btn-large" disabled>Sold out</button>
+          <form method="POST" action="{{ url_for('waitlist_event', slug=ev.slug) }}" style="margin-top:10px;">
+            <input type="email" name="email" placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %} required style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+            <button class="btn btn-outline btn-block" type="submit" style="margin-top:6px;">Notify me when on sale</button>
+          </form>
         {% else %}
           <a class="btn btn-primary btn-block btn-large" href="{{ url_for('checkout', slug=ev.slug) }}">Get tickets</a>
+          {% if current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('cart_add') }}" style="margin-top:6px;display:flex;gap:6px;">
+            <select name="tier_id" style="flex:1;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+              {% for t in ev.tickets %}<option value="{{ t.id }}">{{ t.name }} — {{ t.price_str() }}</option>{% endfor %}
+            </select>
+            <input type="number" name="qty" min="1" max="10" value="1" style="width:64px;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+            <button class="btn btn-outline" type="submit">+ Cart</button>
+          </form>
+          {% endif %}
         {% endif %}
 
         <form method="POST" action="{{ url_for('save_event_form', event_id=ev.id) }}" style="margin-top:10px;">
