@@ -14,7 +14,7 @@
       </div>
     </div>
     {% if person.photo_path %}
-    <img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="">
+    <img loading="lazy" decoding="async" class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="">
     {% endif %}
   </header>
 

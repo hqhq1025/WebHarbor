@@ -9,7 +9,7 @@
 <ul class="card-grid">
   {% for p in people %}
   <li class="card">
-    {% if p.photo_path %}<img src="{{ url_for('static', filename='images/' ~ p.photo_path) }}" alt="">{% endif %}
+    {% if p.photo_path %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ p.photo_path) }}" alt="">{% endif %}
     <a class="card-title" href="{{ url_for('name_detail', nm_id=p.nm_id) }}">{{ p.name }}</a>
     <div class="card-meta">{{ p.primary_profession }}</div>
   </li>

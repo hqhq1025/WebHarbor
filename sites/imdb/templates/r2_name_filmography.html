@@ -4,7 +4,7 @@
 <a class="crumb" href="{{ url_for('name_detail', nm_id=person.nm_id) }}">&lsaquo; {{ person.name }}</a>
 <h1>Full filmography &mdash; {{ person.name }}</h1>
 {% if person.photo_path %}
-<img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
+<img loading="lazy" decoding="async" class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
 {% endif %}
 {% set labels = {'actor':'Actor','director':'Director','writer':'Writer',
                   'producer':'Producer','composer':'Composer'} %}

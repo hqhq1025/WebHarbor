@@ -5,12 +5,12 @@
 <h1>Photo gallery &mdash; {{ title.primary_title }} ({{ title.year }})</h1>
 <section class="photo-grid">
   {% if title.poster_path %}
-  <figure><img src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt=""><figcaption>Official poster</figcaption></figure>
+  <figure><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt=""><figcaption>Official poster</figcaption></figure>
   {% endif %}
   {% for c in cast %}
     {% if c.person.photo_path %}
     <figure>
-      <img src="{{ url_for('static', filename='images/' ~ c.person.photo_path) }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ c.person.photo_path) }}" alt="">
       <figcaption>{{ c.person.name }}{% if c.character %} as {{ c.character }}{% endif %}</figcaption>
     </figure>
     {% endif %}

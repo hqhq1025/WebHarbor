@@ -60,7 +60,7 @@
   </nav>
 
   {% if title.poster_path %}
-  <img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="">
+  <img loading="lazy" decoding="async" class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="">
   {% endif %}
 
   {% if title.taglines() %}
@@ -80,7 +80,7 @@
       {% for c in cast %}
       <li class="cast-card">
         {% if c.person.photo_path %}
-        <img class="cast-photo" src="{{ url_for('static', filename='images/' ~ c.person.photo_path) }}" alt="">
+        <img loading="lazy" decoding="async" class="cast-photo" src="{{ url_for('static', filename='images/' ~ c.person.photo_path) }}" alt="">
         {% endif %}
         <a href="{{ url_for('name_detail', nm_id=c.person.nm_id) }}">{{ c.person.name }}</a>
         {% if c.character %}<div class="character">as {{ c.character }}</div>{% endif %}

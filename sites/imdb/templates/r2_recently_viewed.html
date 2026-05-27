@@ -6,7 +6,7 @@
 <ul class="card-grid">
   {% for t in watchlist %}
   <li class="card">
-    {% if t and t.poster_path %}<img src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">{% endif %}
+    {% if t and t.poster_path %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">{% endif %}
     {% if t %}<a class="card-title" href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a>{% endif %}
   </li>
   {% endfor %}
@@ -16,7 +16,7 @@
   {% for t, r in ratings %}
   {% if t %}
   <li class="card">
-    {% if t.poster_path %}<img src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">{% endif %}
+    {% if t.poster_path %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">{% endif %}
     <a class="card-title" href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a>
     <div class="card-meta">Your rating: {{ r.rating }}/10</div>
   </li>

@@ -17,7 +17,7 @@
       <div class="rank">#{{ t.top_rank }}</div>
       {% if t.poster_path %}
       <a href="{{ url_for('title_detail', tt_id=t.tt_id) }}">
-        <img class="poster" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">
+        <img loading="lazy" decoding="async" class="poster" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">
       </a>
       {% endif %}
       <a class="card-title" href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a>
@@ -40,7 +40,7 @@
     <li class="card">
       {% if t.poster_path %}
       <a href="{{ url_for('title_detail', tt_id=t.tt_id) }}">
-        <img class="poster" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">
+        <img loading="lazy" decoding="async" class="poster" src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">
       </a>
       {% endif %}
       <a class="card-title" href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a>

@@ -4,7 +4,7 @@
 <a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
 <h1>Keywords for {{ title.primary_title }} ({{ title.year }})</h1>
 {% if title.poster_path %}
-<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+<img loading="lazy" decoding="async" class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
 {% endif %}
 <ul class="keyword-list">
   {% for k in keywords %}
