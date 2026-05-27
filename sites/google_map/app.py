@@ -628,6 +628,12 @@ db.Index("ix_place_category_id_lat_lng", Place.category_id, Place.lat, Place.lng
 db.Index("ix_place_chain_brand_rating", Place.chain_brand, Place.rating)
 db.Index("ix_place_subcategory_rating", Place.subcategory, Place.rating)
 db.Index("ix_place_lat_lng", Place.lat, Place.lng)
+# Homepage `/` and `/explore` filter Place.is_featured / Place.is_popular and
+# sort by Place.rating. Without these indexes each `filter_by(...).limit(12)`
+# full-scans the 903k-row catalog (~117ms × 2 per page). Composite turns it
+# into a key seek (<2ms each).
+db.Index("ix_place_is_featured_rating", Place.is_featured, Place.rating)
+db.Index("ix_place_is_popular_rating", Place.is_popular, Place.rating)
 
 
 # --------------------------------------------------------------------------
@@ -877,9 +883,27 @@ app.jinja_env.globals["category_icon_image"] = category_icon_image
 app.jinja_env.globals["city_icon_image"] = city_icon_image
 
 
+# Process-level caches for read-mostly catalog data. These reset on /reset
+# because control_server respawns the worker. Categories are 24 rows and
+# global featured/popular are bounded short lists — caching saves the
+# repeated ORM round-trip on every request hitting the 903k-place catalog.
+_GLOBAL_CATEGORY_CACHE = []
+_HOMEPAGE_CACHE = {}
+
+
+def _cached_global_categories():
+    if not _GLOBAL_CATEGORY_CACHE:
+        _GLOBAL_CATEGORY_CACHE.extend(Category.query.order_by(Category.id).all())
+    return _GLOBAL_CATEGORY_CACHE
+
+
 @app.context_processor
 def inject_globals():
-    categories = Category.query.order_by(Category.id).all()
+    # Categories are static (24 rows, never mutated at request time). Caching
+    # the rendered list saves ~80ms per request on the 903k-place catalog where
+    # the trivial query still hits sqlite + ORM hydration. The cache resets on
+    # every site respawn (control_server's /reset wipes the process).
+    categories = _cached_global_categories()
     saved_count = 0
     if current_user.is_authenticated:
         saved_count = SavedPlace.query.filter_by(user_id=current_user.id).count()
