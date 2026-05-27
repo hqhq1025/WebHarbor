@@ -21,6 +21,26 @@ description: "Produce comprehensive GUI-centric Chinese documentation for one or
 
 **不要用于**：纯后端 endpoint 清单（那是另一种风格）、新建站点（用 `clone-website` skill）、出题（用 `design-tasks` skill）。
 
+## ⚠️ V2 升级：5 Surface + 6 Transition 分类
+
+v2 强制区分 4 种 surface（**Page / Modal / In-place View / State**）和 6 种 transition（**page_navigate / state_change / view_change / open_modal / close_modal / submit_modal**）。详见 `~/webvoyager-analysis/site_specs/_SCHEMA.md`。
+
+| Surface | 例子 | 在 YAML 里怎么写 |
+|---|---|---|
+| **Page** | `/recipe/<slug>` | `pages.<id>` |
+| **Modal** | "Sign in to save" 弹层 / 删除确认 | `modals.<id>` 顶层 |
+| **In-place View** | 商品页 Description/Reviews/Specs tab | `pages.<id>.in_place_views[]` |
+| **State** | anon/auth, saved/unsaved | `pages.<id>.states[]` |
+
+| Transition | 何时用 |
+|---|---|
+| `page_navigate` | 真跳到新 URL |
+| `state_change` | 同页状态切换（toggle ♥）|
+| `view_change` | 同页 tab/section 切换 |
+| `open_modal` | 弹层打开（关键：不写成 page！）|
+| `close_modal` | × / Esc 关闭 |
+| `submit_modal` | 弹层确认按钮（关 modal + side_effect）|
+
 ## ⚠️ 动作空间硬约束：GUI-only
 
 本 skill 产出的文档**只列 GUI 操作**：
