@@ -7,7 +7,7 @@
   <h1>{{ post.title }}</h1>
   <div style="color:var(--c-gray-4); margin-bottom:24px;">By {{ post.author }} · Published {{ post.published_at.strftime('%B %d, %Y') if post.published_at else '' }}</div>
 
-  {% if post.hero_image %}<img src="{{ post.hero_image }}" alt="" style="width:100%; max-height:400px; object-fit:cover; margin-bottom:24px;">{% endif %}
+  {% if post.hero_image %}<img loading="lazy" decoding="async" src="{{ post.hero_image }}" alt="" style="width:100%; max-height:400px; object-fit:cover; margin-bottom:24px;">{% endif %}
 
   <p class="lead">{{ post.excerpt }}</p>
 

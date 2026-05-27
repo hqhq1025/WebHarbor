@@ -11,7 +11,7 @@
 <header class="cx-nav">
   <div class="cx-nav-inner">
     <a class="cx-logo" href="{{ url_for('index') }}" aria-label="Compass">
-      <img src="{{ url_for('static', filename='icons/compass_logo.svg') }}" alt="Compass">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/compass_logo.svg') }}" alt="Compass">
     </a>
     <nav class="cx-nav-links">
       <a href="{{ url_for('homes_for_sale_index') }}">Buy</a>

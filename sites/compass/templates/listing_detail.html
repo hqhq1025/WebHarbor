@@ -8,12 +8,12 @@
   <div class="detail-gallery">
     <div>
       {% if listing.hero_image %}
-        <img src="{{ listing.hero_image }}" alt="{{ listing.address }}">
+        <img loading="lazy" decoding="async" src="{{ listing.hero_image }}" alt="{{ listing.address }}">
       {% endif %}
     </div>
     <div class="thumbs">
       {% for g in gallery[1:4] %}
-        <img src="{{ g }}" alt="{{ listing.address }} photo {{ loop.index + 1 }}">
+        <img loading="lazy" decoding="async" src="{{ g }}" alt="{{ listing.address }} photo {{ loop.index + 1 }}">
       {% endfor %}
     </div>
   </div>

@@ -8,7 +8,7 @@
 
   <div style="position:relative; aspect-ratio:16 / 9; background:var(--c-gray-1); display:flex; align-items:center; justify-content:center; color:var(--c-gray-4); border-radius:8px; margin-top:16px;">
     {% if listing.hero_image %}
-      <img src="{{ listing.hero_image }}" alt="{{ listing.address }}" style="width:100%; height:100%; object-fit:cover; opacity:.6;">
+      <img loading="lazy" decoding="async" src="{{ listing.hero_image }}" alt="{{ listing.address }}" style="width:100%; height:100%; object-fit:cover; opacity:.6;">
     {% endif %}
     <div style="position:absolute; text-align:center;">
       <div style="font-size:64px; line-height:1">▶</div>

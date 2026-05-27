@@ -9,7 +9,7 @@
   <div class="photo-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-top:24px;">
     {% for g in gallery %}
       <figure style="margin:0">
-        <img src="{{ g }}" alt="{{ listing.address }} photo {{ loop.index }}" style="width:100%; height:auto; display:block;">
+        <img loading="lazy" decoding="async" src="{{ g }}" alt="{{ listing.address }} photo {{ loop.index }}" style="width:100%; height:auto; display:block;">
         <figcaption style="font-size:13px; color:var(--c-gray-4); margin-top:6px;">Photo {{ loop.index }} of {{ gallery|length }}</figcaption>
       </figure>
     {% endfor %}

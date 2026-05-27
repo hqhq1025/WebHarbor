@@ -1,7 +1,7 @@
 <a class="card" href="{{ url_for('listing_detail', slug=L.slug) }}">
   <div class="photo">
     {% if L.is_compass_exclusive %}<span class="badge exclusive">Compass Exclusive</span>{% elif L.is_new %}<span class="badge">New</span>{% elif L.is_open_house %}<span class="badge">Open House</span>{% elif L.is_pending %}<span class="badge">Pending</span>{% endif %}
-    {% if L.hero_image %}<img src="{{ L.hero_image }}" alt="{{ L.address }}">{% endif %}
+    {% if L.hero_image %}<img loading="lazy" decoding="async" src="{{ L.hero_image }}" alt="{{ L.address }}">{% endif %}
   </div>
   <div class="price">{{ L.price_display() }}</div>
   <div class="addr">{{ L.address }}{% if L.neighborhood %} · {{ L.neighborhood }}{% endif %}</div>

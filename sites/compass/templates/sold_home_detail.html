@@ -5,7 +5,7 @@
   <p><a href="{{ url_for('sold_homes_city', city_state=sold.city.lower().replace(' ', '-') ~ '-' ~ sold.state.lower()) }}">← Back to recently sold in {{ sold.city }}, {{ sold.state }}</a></p>
 
   {% if sold.hero_image %}
-    <img src="{{ sold.hero_image }}" alt="{{ sold.address }}" style="width:100%; max-height:420px; object-fit:cover;">
+    <img loading="lazy" decoding="async" src="{{ sold.hero_image }}" alt="{{ sold.address }}" style="width:100%; max-height:420px; object-fit:cover;">
   {% endif %}
 
   <h1 style="margin-top:24px">{{ sold.address }}{% if sold.unit %}, Unit {{ sold.unit }}{% endif %}</h1>
