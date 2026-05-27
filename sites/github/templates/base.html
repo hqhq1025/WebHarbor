@@ -7,6 +7,14 @@
   <meta name="description" content="GitHub is where over 100 million developers shape the future of software, together.">
   <link rel="icon" href="/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    /* R7 — horizontal-overflow safety net (gotcha #43): prevent header/footer
+       chip rows or wide tables from causing body to overflow viewport. */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+    .gh-header-inner, .gh-header-right { min-width: 0; }
+    .gh-header-right { flex-shrink: 1; }
+    .gh-search-wrap { min-width: 0; }
+  </style>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {# R7: SEO defaults — pages can override via the extra_head block. #}
   <meta property="og:site_name" content="GitHub">
@@ -270,90 +278,5 @@
 
 <script src="/static/js/main.js"></script>
 
-<!-- R8: command palette / file finder / help modal — keyboard-driven UX -->
-<div id="r8-modal-backdrop" class="r8-modal-backdrop" hidden aria-hidden="true"></div>
-
-<div id="r8-cmdk" class="r8-modal" role="dialog" aria-modal="true"
-     aria-labelledby="r8-cmdk-title" hidden>
-  <div class="r8-modal-head">
-    <h2 id="r8-cmdk-title">Command palette <span class="r8-modal-kbd">Cmd+K / Ctrl+K</span></h2>
-    <button type="button" class="r8-modal-close" data-r8-close>Close</button>
-  </div>
-  <div class="r8-modal-body">
-    <input type="text" id="r8-cmdk-input" class="r8-modal-input"
-           placeholder="Jump to command, page, repo&hellip;" autocomplete="off">
-    <ul id="r8-cmdk-list" class="r8-modal-list" role="listbox"
-        aria-label="Command palette results"></ul>
-  </div>
-</div>
-
-<div id="r8-filefinder" class="r8-modal" role="dialog" aria-modal="true"
-     aria-labelledby="r8-filefinder-title" hidden>
-  <div class="r8-modal-head">
-    <h2 id="r8-filefinder-title">Go to file <span class="r8-modal-kbd">t</span></h2>
-    <button type="button" class="r8-modal-close" data-r8-close>Close</button>
-  </div>
-  <div class="r8-modal-body">
-    <input type="text" id="r8-filefinder-input" class="r8-modal-input"
-           placeholder="Find a file by name&hellip;" autocomplete="off">
-    <ul id="r8-filefinder-list" class="r8-modal-list" role="listbox"
-        aria-label="File finder results"></ul>
-    <p class="r8-modal-hint">Press <kbd>t</kbd> on any repo page to focus this finder.</p>
-  </div>
-</div>
-
-<div id="r8-help" class="r8-modal" role="dialog" aria-modal="true"
-     aria-labelledby="r8-help-title" hidden>
-  <div class="r8-modal-head">
-    <h2 id="r8-help-title">Keyboard shortcuts <span class="r8-modal-kbd">?</span></h2>
-    <button type="button" class="r8-modal-close" data-r8-close>Close</button>
-  </div>
-  <div class="r8-modal-body">
-    <table class="r8-modal-kbtable">
-      <thead><tr><th>Key</th><th>Action</th></tr></thead>
-      <tbody>
-        <tr><td><kbd>/</kbd></td><td>Focus the global search box</td></tr>
-        <tr><td><kbd>?</kbd></td><td>Open this shortcuts panel</td></tr>
-        <tr><td><kbd>t</kbd></td><td>Open the file finder for the current repo</td></tr>
-        <tr><td><kbd>Cmd</kbd>+<kbd>K</kbd></td><td>Open the command palette</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td><td>Open the command palette</td></tr>
-        <tr><td><kbd>g</kbd> <kbd>i</kbd></td><td>Go to Issues on the current repo</td></tr>
-        <tr><td><kbd>g</kbd> <kbd>p</kbd></td><td>Go to Pull Requests on the current repo</td></tr>
-        <tr><td><kbd>g</kbd> <kbd>s</kbd></td><td>Go to Settings</td></tr>
-        <tr><td><kbd>g</kbd> <kbd>n</kbd></td><td>Go to Notifications</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Close any open modal</td></tr>
-      </tbody>
-    </table>
-    <p class="r8-modal-hint">
-      Full glossary at <a href="/help/glossary">/help/glossary</a>.
-      Permission and API terms in the page are underlined &mdash; hover for a one-line definition.
-    </p>
-  </div>
-</div>
-
-<script>
-  // Glossary vocabulary for contextual-help tooltips. Mirrors the
-  // server-side _R8_GLOSSARY list so any term defined on /help/glossary
-  // gets a hover-tip on any page where it appears in body text.
-  window.R8_GLOSSARY = {
-    'repo:status':       'Read/write access to commit status (CI checks).',
-    'public_repo':       'Read/write access to public repositories only.',
-    'read:user':         "Read access to the authenticated user's profile.",
-    'read:org':          'Read access to org membership and team metadata.',
-    'workflow':          'Read/write access to GitHub Actions workflow runs.',
-    'read:packages':     'Read access to the package registry.',
-    'notifications':     'Read/write access to the notifications feed.',
-    'admin:repo_hook':   'Manage webhooks on a repository.',
-    'admin:org_hook':    'Manage org-level webhooks.',
-    'OAuth App':         'A third-party app that uses GitHub OAuth.',
-    'GraphQL':           'Query language for nested graph data in one round-trip.',
-    'webhook':           'An outbound HTTP POST triggered by repo events.',
-    'delivery_id':       'Stable identifier for a single webhook POST.',
-    'JSON-LD':           'Linked-data JSON embedded in HTML for SEO crawlers.',
-    'OpenAPI':           'A REST API description format (formerly Swagger).',
-    'rate limit':        'Caps the number of API calls per unit time.',
-    'CSRF':              'Cross-site request forgery — protected by tokens.'
-  };
-</script>
 </body>
 </html>
