@@ -1,10 +1,12 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>{{ spec.title }} — Print</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
-<style>body{padding:30px;font-family:sans-serif;}h1{color:#003459;}</style>
+<style>body{padding:30px;font-family:sans-serif;}h1{color:#003459;}header{border-bottom:2px solid #003459;padding-bottom:8px;margin-bottom:20px;}</style>
 </head><body>
+<header role="banner">
 <h1>{{ spec.title }}</h1>
 <p>SmartAsset.com — printed {{ now().strftime('%B %d, %Y') }}</p>
+</header>
 <h2>Inputs</h2>
 <table>
   {% for k, v in inputs.items() %}
