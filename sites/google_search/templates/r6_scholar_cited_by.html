@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Cited by - {{ p.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/scholar/paper/{{ p.slug }}">&larr; {{ p.title }}</a></p>
+  <h1 style="font-size: 22px;">Cited by {{ p.citations }} - showing {{ rows|length }} resolved citations</h1>
+  <ol style="padding-left: 18px;">
+    {% for r in rows %}
+    <li style="margin-bottom: 8px;">
+      {% if r.resolved %}
+        <a href="/scholar/paper/{{ r.slug }}">{{ r.title }}</a>
+        - <span class="muted">{{ r.year }} &middot; cited by {{ r.citations }}</span>
+      {% else %}
+        <strong>{{ r.title }}</strong>
+        - <span class="muted">slug <code>{{ r.slug }}</code> (stub)</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/scholar/cited-by/{{ p.slug }}"><code>/api/scholar/cited-by/{{ p.slug }}</code></a></p>
+</div>
+{% endblock %}

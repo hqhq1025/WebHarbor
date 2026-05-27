@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} - Google Scholar{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/scholar/results">&larr; Scholar results</a></p>
+  <h1 style="font-size: 24px; margin: 0 0 4px;">{{ p.title }}</h1>
+  <p class="muted">{{ p.authors|join(', ') }} - <em>{{ venue[1] if venue else p.venue }}</em>, {{ p.year }}</p>
+  <p style="font-size:14px;"><strong>Cited by {{ p.citations }}</strong> &middot;
+    <a href="/scholar/cited-by/{{ p.slug }}">View cited-by list</a> &middot;
+    <a href="/scholar/pdf-preview/{{ p.slug }}">PDF preview</a> &middot;
+    <a href="{{ p.pdf_url }}" rel="nofollow">PDF</a>
+  </p>
+  <h2 style="font-size:16px; margin-top:12px;">Abstract</h2>
+  <p>{{ p.abstract }}</p>
+  {% if cited_by %}
+  <h2 style="font-size:16px; margin-top:12px;">Highly-cited follow-ups</h2>
+  <ul>
+    {% for c in cited_by %}
+    <li><a href="/scholar/paper/{{ c.slug }}">{{ c.title }}</a> ({{ c.year }}) - cited by {{ c.citations }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/scholar/paper/{{ p.slug }}"><code>/api/scholar/paper/{{ p.slug }}</code></a></p>
+</div>
+{% endblock %}

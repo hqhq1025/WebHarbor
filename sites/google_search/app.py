@@ -4123,6 +4123,16 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# === R4 / R5 / R6 / R10 surface routes ===
+import importlib.util as _r4_ilu  # noqa: E402
+_r4_spec = _r4_ilu.spec_from_file_location(
+    '_r4_r10_routes', os.path.join(HERE, '_r4_r10_routes.py'),
+)
+_r4_mod = _r4_ilu.module_from_spec(_r4_spec)
+_r4_spec.loader.exec_module(_r4_mod)
+_r4_mod.register_all(app)
+
+
 if __name__ == '__main__':
     init_db()
     with app.app_context():

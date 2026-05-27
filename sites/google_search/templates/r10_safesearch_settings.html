@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}SafeSearch settings - Google{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 720px; margin: 24px auto; padding: 0 16px;">
+  <h1 style="font-size: 24px;">SafeSearch settings</h1>
+  <p class="muted">SafeSearch filters explicit content from Search results across every Google product. Current level: <strong>{{ current }}</strong>.</p>
+
+  <form method="post" action="/settings/safesearch" style="margin: 16px 0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for key, label, desc in levels %}
+    <label style="display:block; padding: 12px; border:1px solid #dadce0; border-radius:8px; margin-bottom:8px; cursor:pointer; {% if key == current %}background:#e8f0fe;{% endif %}">
+      <input type="radio" name="level" value="{{ key }}" {% if key == current %}checked{% endif %}>
+      <strong>{{ label }}</strong>
+      <div class="muted" style="font-size:13px; margin-left:24px;">{{ desc }}</div>
+    </label>
+    {% endfor %}
+    <button type="submit" style="padding:8px 18px; background:#1a73e8; color:#fff; border:none; border-radius:4px; cursor:pointer;">Save</button>
+  </form>
+
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/safesearch/status"><code>/api/safesearch/status</code></a></p>
+</div>
+{% endblock %}

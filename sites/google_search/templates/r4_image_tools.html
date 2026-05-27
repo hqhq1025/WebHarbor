@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Image search tools - Google{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 980px; margin: 24px auto; padding: 0 16px;">
+  <h1 style="font-size: 26px; margin: 0 0 4px;">Image search tools</h1>
+  <p class="muted">Filter image results by color, size, type, usage rights and time. Each row links to a filtered listing. JSON: <a href="/api/images/tools"><code>/api/images/tools</code></a>.</p>
+
+  <form method="get" action="/search" style="margin: 12px 0;">
+    <input type="hidden" name="tbm" value="images">
+    <input type="search" name="q" value="{{ q }}" placeholder="Image search..."
+           style="width:100%; padding:10px 14px; border:1px solid #dadce0; border-radius:8px; font-size:15px;"
+           aria-label="Image search">
+  </form>
+
+  <h2 style="font-size: 18px; margin-top: 18px;">Color</h2>
+  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+    {% for key, label, swatch in colors %}
+    <a href="/search/images/color/{{ key }}" class="r4-pill"
+       style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid #dadce0; border-radius:16px; text-decoration:none; color:#202124; font-size:13px;">
+      <span style="display:inline-block; width:14px; height:14px; border-radius:50%; background: {{ swatch if swatch.startswith('#') else '#fff' }}; border:1px solid #ccc;"></span>
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 18px; margin-top: 18px;">Size</h2>
+  <ul>
+    {% for key, label, detail in sizes %}
+    <li><a href="/search/images/size/{{ key }}">{{ label }}</a>{% if detail %} - <span class="muted">{{ detail }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+
+  <h2 style="font-size: 18px; margin-top: 18px;">Type</h2>
+  <ul>
+    {% for key, label, detail in types %}
+    <li><strong>{{ label }}</strong> - <span class="muted">{{ detail }}</span></li>
+    {% endfor %}
+  </ul>
+
+  <h2 style="font-size: 18px; margin-top: 18px;">Time</h2>
+  <ul>
+    {% for key, label, cdr in times %}
+    <li><strong>{{ label }}</strong>{% if cdr %} - <code>{{ cdr }}</code>{% endif %}</li>
+    {% endfor %}
+  </ul>
+
+  <h2 style="font-size: 18px; margin-top: 18px;">Usage rights</h2>
+  <ul>
+    {% for key, label, detail in rights %}
+    <li><a href="/search/images/usage-rights?key={{ key }}">{{ label }}</a> - <span class="muted">{{ detail }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

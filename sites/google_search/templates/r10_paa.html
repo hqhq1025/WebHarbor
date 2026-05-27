@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}People also ask: {{ b.question }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/search?q={{ b.question|urlencode }}">&larr; back to search</a></p>
+  <h1 style="font-size: 22px;">People also ask</h1>
+  <p class="muted">Top question: <strong>{{ b.question }}</strong></p>
+  <div>
+    {% for qa in b.questions %}
+    <details style="border:1px solid #dadce0; border-radius:8px; padding:10px 14px; margin-bottom:8px;">
+      <summary style="cursor:pointer; font-weight:500;">{{ qa.q }}</summary>
+      <div style="margin-top: 8px; font-size:14px;">{{ qa.a }}</div>
+    </details>
+    {% endfor %}
+  </div>
+  <h2 style="font-size:16px; margin-top:16px;">All pinned PAA bundles</h2>
+  <ul>
+    {% for x in all_bundles %}
+    <li><a href="/search/people-also-ask/{{ x.slug }}">{{ x.question }}</a></li>
+    {% endfor %}
+  </ul>
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/paa/{{ b.slug }}"><code>/api/paa/{{ b.slug }}</code></a></p>
+</div>
+{% endblock %}

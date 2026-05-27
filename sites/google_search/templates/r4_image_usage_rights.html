@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Image usage rights - Google{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <h1 style="font-size: 24px;">Filter image results by usage rights</h1>
+  <p class="muted">Google Images can filter results by the license attached to each image. Pick a usage-rights bucket below to see which pinned cards fall into it.</p>
+  <ul>
+    {% for key, label, detail in rights %}
+    <li>
+      <strong>{{ label }}</strong> - <span class="muted">{{ detail }}</span>
+      <ul>
+        {% for c in cards if c.license == key %}
+        <li><a href="/search/images/preview/{{ c.id }}">{{ c.title }}</a> ({{ c.dims }}) - {{ c.source }}</li>
+        {% else %}
+        <li class="muted">no cards under this license</li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="muted" style="font-size:12px;">All cards: <a href="/api/images/cards"><code>/api/images/cards</code></a></p>
+</div>
+{% endblock %}

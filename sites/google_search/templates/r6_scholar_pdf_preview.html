@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}PDF preview - {{ p.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/scholar/paper/{{ p.slug }}">&larr; {{ p.title }}</a></p>
+  <h1 style="font-size: 22px;">PDF preview - {{ p.title }}</h1>
+  <p class="muted">Authors: {{ p.authors|join(', ') }} - {{ p.year }} - Cited by {{ p.citations }}</p>
+  <div style="background:#fff; border:2px solid #dadce0; border-radius:4px; padding:24px; font-family: Georgia, serif; min-height:360px; margin:12px 0;">
+    <div style="font-size:18px; text-align:center; font-weight:bold; margin-bottom:8px;">{{ p.title }}</div>
+    <div style="font-size:12px; text-align:center; color:#5f6368; margin-bottom:14px;">{{ p.authors|join(', ') }} &mdash; {{ p.year }}</div>
+    <div style="font-size:11px; font-weight:bold;">Abstract</div>
+    <div style="font-size:11px; line-height:1.5;">{{ p.abstract }}</div>
+    <div style="margin-top:14px; font-size:11px;">
+      {% for f in figures %}
+      <div>&middot; {{ f.caption }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  <p><a href="{{ p.pdf_url }}" rel="nofollow">Open full PDF -&gt;</a></p>
+</div>
+{% endblock %}

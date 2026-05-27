@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Google Scholar results{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 980px; margin: 24px auto; padding: 0 16px;">
+  <h1 style="font-size: 24px;">Google Scholar &mdash; results</h1>
+  <form method="get" action="/scholar/results" style="margin: 12px 0;">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search scholarly literature..."
+           style="width:100%; padding:10px 14px; border:1px solid #dadce0; border-radius:8px; font-size:15px;"
+           aria-label="Search Scholar">
+    <div style="margin-top: 8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <select name="as_ylo" style="padding:4px 8px;">
+        {% for key, lbl in years %}
+        <option value="{{ key }}" {% if key == yr %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+      <select name="sort" style="padding:4px 8px;">
+        {% for key, lbl in sorts %}
+        <option value="{{ key }}" {% if key == sort %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" style="padding:4px 14px;">Apply</button>
+    </div>
+  </form>
+
+  <p class="muted">{{ items|length }} result(s){% if q %} for <code>{{ q }}</code>{% endif %}.</p>
+
+  <ol style="padding-left: 18px;">
+    {% for p in items %}
+    <li style="margin-bottom: 14px;">
+      <a href="/scholar/paper/{{ p.slug }}" style="font-size:16px;">{{ p.title }}</a>
+      <div class="muted" style="font-size:13px;">
+        {{ p.authors|join(', ') }} - <em>{{ venue_index.get(p.venue)[1] if venue_index.get(p.venue) else p.venue }}</em>, {{ p.year }}
+      </div>
+      <div style="font-size:13px;">{{ p.abstract[:220] }}{% if p.abstract|length > 220 %}...{% endif %}</div>
+      <div style="font-size:13px; margin-top:4px;">
+        <a href="/scholar/cited-by/{{ p.slug }}">Cited by {{ p.citations }}</a> &middot;
+        <a href="/scholar/pdf-preview/{{ p.slug }}">PDF preview</a> &middot;
+        <a href="{{ p.pdf_url }}" rel="nofollow">[PDF]</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/scholar/papers"><code>/api/scholar/papers</code></a></p>
+</div>
+{% endblock %}

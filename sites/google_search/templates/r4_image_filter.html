@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Image filter: {{ label }} - Google{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted" style="margin: 0 0 4px;"><a href="/search/images/tools">&larr; Image tools</a></p>
+  <h1 style="font-size: 22px;">Image results &mdash; {{ kind }} = <code>{{ name }}</code> ({{ label }})</h1>
+  <p class="muted">{{ matches|length }} card(s) match this {{ kind }} bucket.</p>
+  <ul>
+    {% for c in matches %}
+    <li>
+      <a href="/search/images/preview/{{ c.id }}">{{ c.title }}</a> -
+      <span class="muted">{{ c.dims }} &middot; color={{ c.color }} &middot; size={{ c.size }} &middot; license={{ c.license }}</span>
+    </li>
+    {% else %}
+    <li class="muted">No matches.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

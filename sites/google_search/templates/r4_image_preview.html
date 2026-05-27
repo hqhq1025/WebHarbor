@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ card.title }} - Image preview{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted" style="margin: 0 0 8px;"><a href="/search/images/tools">&larr; Image tools</a></p>
+  <h1 style="font-size: 24px; margin: 0 0 8px;">{{ card.title }}</h1>
+  <p class="muted" style="margin: 0 0 12px;">id <code>{{ card.id }}</code> &middot; slug <code>{{ card.slug }}</code> &middot; source <a href="https://{{ card.source }}/">{{ card.source }}</a></p>
+  <div style="background:#202124; color:#e8eaed; padding:24px; border-radius:12px; text-align:center; margin: 16px 0;">
+    <div style="font-size:13px; opacity:0.7;">[Preview placeholder for {{ card.dims }}]</div>
+    <div style="margin-top:8px; font-size:11px; opacity:0.6;">thumb: <code>{{ card.thumb }}</code></div>
+  </div>
+  <table style="width:100%; border-collapse: collapse;">
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Dimensions</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.dims }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Color bucket</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.color }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Size bucket</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.size }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Type</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ type_index.get(card.type)[1] if type_index.get(card.type) else card.type }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Usage rights</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ rights_index.get(card.license)[1] if rights_index.get(card.license) else card.license }}</td></tr>
+    <tr><th style="text-align:left; padding:6px 8px; border-bottom:1px solid #eee;">Alt text</th><td style="padding:6px 8px; border-bottom:1px solid #eee;">{{ card.alt }}</td></tr>
+  </table>
+  <p class="muted" style="font-size:12px; margin-top: 12px;">JSON form: <a href="/api/images/preview/{{ card.id }}"><code>/api/images/preview/{{ card.id }}</code></a></p>
+</div>
+{% endblock %}

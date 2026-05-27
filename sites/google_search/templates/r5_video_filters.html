@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Video filters: {{ label }} - Google{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 980px; margin: 24px auto; padding: 0 16px;">
+  <h1 style="font-size: 24px;">Video search filters</h1>
+  <p class="muted">Current filter: <strong>{{ bucket }}</strong> ({{ label }}). {{ matches|length }} videos match. JSON: <a href="/api/videos/durations"><code>/api/videos/durations</code></a>.</p>
+
+  <h2 style="font-size: 16px; margin-top: 14px;">Duration</h2>
+  <div style="display:flex; flex-wrap:wrap; gap: 8px;">
+    {% for key, lbl, det in durations %}
+    <a href="/search/videos/duration/{{ key }}"
+       style="padding:6px 12px; border:1px solid {% if key == bucket %}#4285f4{% else %}#dadce0{% endif %}; border-radius:16px; text-decoration:none; color:#202124; font-size:13px;">
+      {{ lbl }}{% if det %} <span class="muted">({{ det }})</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 16px; margin-top: 14px;">Quality</h2>
+  <div style="display:flex; flex-wrap:wrap; gap: 8px;">
+    {% for key, lbl, det in qualities %}
+    <a href="/search/videos/quality/{{ key }}"
+       style="padding:6px 12px; border:1px solid #dadce0; border-radius:16px; text-decoration:none; color:#202124; font-size:13px;">
+      {{ lbl }}{% if det %} <span class="muted">({{ det }})</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 16px; margin-top: 14px;">Sources</h2>
+  <ul>
+    {% for key, lbl, host in sources %}
+    <li><strong>{{ lbl }}</strong> - <span class="muted">{{ host }}</span></li>
+    {% endfor %}
+  </ul>
+
+  <h2 style="font-size: 16px; margin-top: 14px;">Upload time</h2>
+  <ul>
+    {% for key, lbl, qdr in ages %}
+    <li><strong>{{ lbl }}</strong>{% if qdr %} - <code>{{ qdr }}</code>{% endif %}</li>
+    {% endfor %}
+  </ul>
+
+  <h2 style="font-size: 16px; margin-top: 18px;">Matches</h2>
+  <ul>
+    {% for v in matches %}
+    <li>
+      <a href="/search/videos/captions/{{ v.id }}">{{ v.title }}</a> -
+      <span class="muted">{{ v.duration }} &middot; {{ v.quality }} &middot; {{ v.channel }} ({{ v.source }}) &middot; published {{ v.published }}</span>
+    </li>
+    {% else %}
+    <li class="muted">No videos match.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Captions: {{ v.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/search/videos/duration/{{ v.duration_bucket }}">&larr; back to {{ v.duration_bucket }} videos</a></p>
+  <h1 style="font-size: 22px;">{{ v.title }}</h1>
+  <p class="muted">{{ v.channel }} ({{ v.source }}) &middot; {{ v.duration }} ({{ v.duration_bucket }}) &middot; {{ v.quality }} &middot; published {{ v.published }}</p>
+
+  <h2 style="font-size: 16px; margin-top: 16px;">Closed captions ({{ v.caption_lang }})</h2>
+  <div style="background:#f8f9fa; border:1px solid #dadce0; border-radius:8px; padding:12px; font-family:monospace; font-size:13px; line-height:1.6;">
+    {% for line in v.caption_lines %}
+    <div>{{ '%02d:%02d'|format((loop.index0 * 15) // 60, (loop.index0 * 15) % 60) }} &middot; {{ line }}</div>
+    {% endfor %}
+  </div>
+
+  <h2 style="font-size: 16px; margin-top: 16px;">Other available caption languages</h2>
+  <div style="display:flex; flex-wrap:wrap; gap: 6px;">
+    {% for code, lbl in languages %}
+    <span style="padding:4px 10px; border:1px solid #dadce0; border-radius:14px; font-size:12px;">
+      <code>{{ code }}</code> {{ lbl }}
+    </span>
+    {% endfor %}
+  </div>
+
+  <p class="muted" style="font-size:12px; margin-top:12px;">JSON: <a href="/api/videos/captions/{{ v.id }}"><code>/api/videos/captions/{{ v.id }}</code></a></p>
+</div>
+{% endblock %}

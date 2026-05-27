@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Featured snippet: {{ s.query }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 24px auto; padding: 0 16px;">
+  <p class="muted"><a href="/search?q={{ s.query|urlencode }}">&larr; back to search</a></p>
+  <h1 style="font-size: 22px;">Featured snippet</h1>
+  <div style="border:1px solid #dadce0; border-radius:12px; padding:16px; margin:12px 0; background:#fff;">
+    <div class="muted" style="font-size:12px;">{{ s.source_domain }} - <a href="{{ s.source_url }}" rel="nofollow">{{ s.source_title }}</a></div>
+    <p style="font-size:15px; margin: 8px 0 0;"><strong>{{ s.query }}</strong></p>
+    <div style="margin-top:6px;">{{ s.answer }}</div>
+    <div class="muted" style="margin-top:8px; font-size:12px;">kind: <code>{{ s.kind }}</code></div>
+  </div>
+  <h2 style="font-size:16px; margin-top: 14px;">All pinned featured snippets</h2>
+  <ul>
+    {% for x in all_snippets %}
+    <li><a href="/search/featured-snippet/{{ x.slug }}">{{ x.query }}</a> - <span class="muted">{{ x.source_domain }}</span></li>
+    {% endfor %}
+  </ul>
+  <p class="muted" style="font-size:12px;">JSON: <a href="/api/featured-snippet/{{ s.slug }}"><code>/api/featured-snippet/{{ s.slug }}</code></a></p>
+</div>
+{% endblock %}
