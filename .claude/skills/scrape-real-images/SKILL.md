@@ -9,10 +9,12 @@ This skill exists because WebHarbor mirrors look fake fast when 812 cities share
 
 ## When to use
 
-- After deepen/seed pass when a new image column is populated — verify diversity before declaring done
-- When `image diversity check` (see `seed-database` skill / `harden-env` gotcha #42) fails — top image > 30%
-- When `document-site-gui` audit notices "every place_detail page shows the same map snippet"
-- When user reports "this site looks fake"
+- **Phase 1 (clone-website) — MANDATORY for every entity column with an image field**. Before declaring a site clone done, every `<X>.image_url` column must pass `top duplicate ≤ 5%` check. New per-clone checklist item.
+- **After deepen/seed pass** when a new image column is populated — verify diversity before declaring done
+- **When `image diversity check`** (see `seed-database` skill / `harden-env` gotcha #42) fails — top image > 30%
+- **When `document-site-gui` audit notices** "every place_detail page shows the same map snippet"
+- **When user reports** "this site looks fake"
+- **5 个 P0 站 (2026-05) 实战教训**：fandom 109 角色页用 procedural gradient placeholder / mayo_clinic 220 张程序 SVG / smartasset 0 张真 author 头像 —— 所有这些都因为没在 clone-website 阶段就跑本 skill 而被发现得太晚
 
 Don't use for: pure SVG icon design (use a design tool / gotcha #40 SVG generation), one-off hero images (just commit the file), broken CSS / layout bugs.
 
@@ -154,6 +156,7 @@ img.save(out_path, quality=85, optimize=True)
 
 ## Fallback ladder (try in order)
 
+0. **harvest-real-components bridge** — if `~/webvoyager-analysis/real_components/snapshots/<site>/` already exists (from `harvest-real-components` Phase 0), run `python3 extract_image_urls.py <site>` to dump `_image_urls.jsonl`. Each line has `{page, url, alt, kind}`. **Grep by alt text** to match entity (e.g. `jq 'select(.alt=="Tony Stark")' _image_urls.jsonl`) → get the canonical CDN URL the real upstream site uses, download with `Referer: https://<site>/` header. This is the highest-fidelity source because it gives you the EXACT image the real site shows for that entity. 2026-05 stats: bestbuy 1113 URLs, apple 2551, fandom 1752 (with real character alt text). See [[harvest-real-components]] skill.
 1. **Tavily search + extract** — best quality, broad coverage
 2. **Wikipedia REST summary** — best for famous landmarks / people / brands
 3. **Domain-specific API** — TED/TMDB/GitHub avatars/OpenFlights

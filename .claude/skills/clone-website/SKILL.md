@@ -16,6 +16,17 @@ description: "Phase 1: Clone a real website into a local Flask mirror that fits 
 - You have a fork of `https://github.com/aiming-lab/WebHarbor` cloned locally
 - You have run `./scripts/fetch_assets.sh` to pull current assets from HuggingFace
 - You can run Docker locally
+- **⚠️ MANDATORY Phase 0**: Run [[harvest-real-components]] first to capture real upstream HTML + screenshots + img URLs from the target site. Outputs under `~/webvoyager-analysis/real_components/snapshots/<site>/`. The harvested `full.html` files contain real `<img src>` references that will be needed in Phase 1 image scraping (see below).
+
+## Per-entity real images — MANDATORY pre-ship check (added 2026-05)
+
+Before declaring a clone "done", every entity column with an image field MUST satisfy `top duplicate ≤ 5%`. See [[scrape-real-images]] skill for the canonical workflow:
+
+1. After Phase 0 harvest: `python3 ~/webvoyager-analysis/real_components/extract_image_urls.py <site>` → `_image_urls.jsonl` with `{page, url, alt, kind}` per image (real CDN URLs the upstream site actually uses for each entity)
+2. Grep by alt text or URL pattern to match entity → download with `Referer: https://<site>/` header (see [[scrape-real-images]] §"harvest-real-components bridge")
+3. Fall back to Tavily / Wikipedia / domain-specific APIs / md5-over-pool / procedural SVG (last resort) per the ladder in [[scrape-real-images]]
+4. Validate diversity: `python3 -c "..."` (skill provides the snippet)
+5. **5 个 P0 站 (2026-05) 实战教训**：fandom 109 角色页用 gradient placeholder / mayo 220 张程序 SVG / smartasset 0 张真 author 头像 —— 都是因为跳过这步而后来需要补 deepen pass。**不要重复这个错误**。
 
 ## Repo layout (this is the source of truth)
 

@@ -79,6 +79,20 @@ python3 index_site.py --all       # 全站
 
 每次 harvest 后跑一遍 `--all`，立刻看到哪些站需要 Round 2 重抓。
 
+`~/webvoyager-analysis/real_components/extract_image_urls.py` — 桥工具，从 snapshots 抽真 img URL 给 [[scrape-real-images]] 用：
+
+```bash
+python3 extract_image_urls.py <site>      # 单站
+python3 extract_image_urls.py --all       # 全站
+```
+
+输出 `snapshots/<site>/_image_urls.jsonl`，每行 `{page, url, alt, kind}`：
+- `kind`: `img-src` / `img-srcset` / `source-srcset` / `css-bg`
+- `alt`: 真站给的 alt text（"Tony Stark" / "iPhone 15 Pro" / "LeBron James" 等 — 直接拿 entity 名）
+- `url`: 真 CDN 完整路径，可直接 `curl --referer https://<site>/` 拉
+
+2026-05 实战 stats：bestbuy 1113 / apple 2551 / fandom 1752 distinct img URL，alt 里就有 character / product / player 名。这是 per-entity 真图最便宜的来源。
+
 每次产出 `~/webvoyager-analysis/real_components/snapshots/<site>/<page_name>/`：
 - `full.html` + `full.png` — 整页
 - `page-header.html`、`nav.html`、`hero.html`、`main.html`、`footer.html`、`container.html`、`wrap.html`、`sidebar.html`
