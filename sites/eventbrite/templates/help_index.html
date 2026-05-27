@@ -4,12 +4,18 @@
 <div class="eb-container eb-page" style="max-width:920px;">
   <h1 class="eb-h1">Help Center</h1>
   <p class="eb-muted">Find answers to common questions about attending and organizing events.</p>
+  <form method="GET" action="{{ url_for('help_search') }}" style="margin:14px 0 22px 0;display:flex;gap:8px;max-width:520px;">
+    <input type="text" name="q" placeholder="Search help articles" style="flex:1;padding:9px 12px;border:1px solid var(--eb-border);border-radius:4px;">
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
   {% for section, items in sections.items() %}
-    <h2 class="eb-h2">{{ section }}</h2>
+    {% set section_slug = section|lower|replace(' ', '-') %}
+    <h2 class="eb-h2"><a href="{{ url_for('help_section', name=section_slug) }}" style="color:inherit;text-decoration:none;">{{ section }}</a></h2>
     <ul>
       {% for a in items %}
         <li><a href="{{ url_for('help_article', slug=a.slug) }}">{{ a.title }}</a></li>
       {% endfor %}
+      <li><a href="{{ url_for('help_section', name=section_slug) }}" class="eb-muted">See all {{ section }} articles &rarr;</a></li>
     </ul>
   {% endfor %}
 </div>
