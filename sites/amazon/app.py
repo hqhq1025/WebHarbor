@@ -2623,41 +2623,114 @@ def cart_add():
 
 @app.route('/api/cart/update', methods=['POST'])
 @csrf.exempt
-@login_required
 def cart_update():
+    """Update item quantity. Supports both authed (DB CartItem) and anon
+    (session-based anon_cart) users — matches /cart/add anon behavior so the
+    bag.html +/- buttons work without a login wall mid-task."""
     data = request.get_json() or {}
     item_id = data.get('item_id')
     qty = int(data.get('quantity', 1))
-    item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first()
-    if not item:
-        return jsonify({'success': False, 'error': 'Not found'}), 404
-    if qty <= 0:
-        db.session.delete(item)
+    if current_user.is_authenticated:
+        item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first()
+        if not item:
+            return jsonify({'success': False, 'error': 'Not found'}), 404
+        if qty <= 0:
+            db.session.delete(item)
+        else:
+            item.quantity = qty
+        db.session.commit()
+        items = CartItem.query.filter_by(user_id=current_user.id).all()
+        subtotal = sum(i.product.price * i.quantity for i in items)
+        cart_count = sum(i.quantity for i in items)
     else:
-        item.quantity = qty
-    db.session.commit()
-
-    items = CartItem.query.filter_by(user_id=current_user.id).all()
-    subtotal = sum(i.product.price * i.quantity for i in items)
-    cart_count = sum(i.quantity for i in items)
-    return jsonify({'success': True, 'cart_count': cart_count, 'subtotal': round(subtotal, 2)})
+        cart = session.get('anon_cart', [])
+        new_cart = []
+        for ci in cart:
+            if ci.get('id') == item_id:
+                if qty > 0:
+                    ci['quantity'] = qty
+                    new_cart.append(ci)
+                # qty<=0 -> drop the entry
+            else:
+                new_cart.append(ci)
+        session['anon_cart'] = new_cart
+        session.modified = True
+        items = [_AnonItem(d) for d in _anon_cart_items()]
+        subtotal = sum(i.product.price * i.quantity for i in items)
+        cart_count = sum(i.quantity for i in items)
+    return jsonify({'success': True, 'cart_count': int(cart_count), 'subtotal': round(subtotal, 2)})
 
 
 @app.route('/api/cart/remove', methods=['POST'])
 @csrf.exempt
-@login_required
 def cart_remove():
+    """Remove item from cart. Supports both authed and anon users."""
     data = request.get_json() or {}
     item_id = data.get('item_id')
-    item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first()
-    if not item:
-        return jsonify({'success': False}), 404
-    db.session.delete(item)
-    db.session.commit()
-    items = CartItem.query.filter_by(user_id=current_user.id).all()
-    subtotal = sum(i.product.price * i.quantity for i in items)
-    cart_count = sum(i.quantity for i in items)
-    return jsonify({'success': True, 'cart_count': cart_count, 'subtotal': round(subtotal, 2)})
+    if current_user.is_authenticated:
+        item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first()
+        if not item:
+            return jsonify({'success': False}), 404
+        db.session.delete(item)
+        db.session.commit()
+        items = CartItem.query.filter_by(user_id=current_user.id).all()
+        subtotal = sum(i.product.price * i.quantity for i in items)
+        cart_count = sum(i.quantity for i in items)
+    else:
+        cart = session.get('anon_cart', [])
+        new_cart = [ci for ci in cart if ci.get('id') != item_id]
+        if len(new_cart) == len(cart):
+            return jsonify({'success': False}), 404
+        session['anon_cart'] = new_cart
+        session.modified = True
+        items = [_AnonItem(d) for d in _anon_cart_items()]
+        subtotal = sum(i.product.price * i.quantity for i in items)
+        cart_count = sum(i.quantity for i in items)
+    return jsonify({'success': True, 'cart_count': int(cart_count), 'subtotal': round(subtotal, 2)})
+
+
+@app.route('/cart/update/<int:item_id>', methods=['POST'])
+@csrf.exempt
+def cart_update_form(item_id):
+    """Non-AJAX form POST fallback for update-quantity (browser-agent friendly,
+    same pattern as apple/booking). Handles both authed and anon carts."""
+    qty = int(request.form.get('quantity', 1))
+    if current_user.is_authenticated:
+        item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first_or_404()
+        if qty <= 0:
+            db.session.delete(item)
+        else:
+            item.quantity = qty
+        db.session.commit()
+    else:
+        cart = session.get('anon_cart', [])
+        new_cart = []
+        for ci in cart:
+            if ci.get('id') == item_id:
+                if qty > 0:
+                    ci['quantity'] = qty
+                    new_cart.append(ci)
+            else:
+                new_cart.append(ci)
+        session['anon_cart'] = new_cart
+        session.modified = True
+    return redirect(url_for('bag'))
+
+
+@app.route('/cart/remove/<int:item_id>', methods=['POST'])
+@csrf.exempt
+def cart_remove_form(item_id):
+    """Non-AJAX form POST fallback for remove-from-cart. Handles authed + anon."""
+    if current_user.is_authenticated:
+        item = CartItem.query.filter_by(id=item_id, user_id=current_user.id).first_or_404()
+        db.session.delete(item)
+        db.session.commit()
+    else:
+        cart = session.get('anon_cart', [])
+        session['anon_cart'] = [ci for ci in cart if ci.get('id') != item_id]
+        session.modified = True
+    flash('Item removed from cart.', 'info')
+    return redirect(url_for('bag'))
 
 
 # ----- Routes: Checkout / Orders -----
