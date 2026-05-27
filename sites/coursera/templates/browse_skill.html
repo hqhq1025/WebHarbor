@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ skill.name }} Courses | Coursera Browse Skill{% endblock %}
+{% block content %}
+<div class="browse-skill" id="main-content">
+  <header class="container" style="padding:32px 16px 16px;">
+    <nav style="font-size:13px;color:#6b7280;margin-bottom:8px;">
+      <a href="{{ url_for('browse_index') }}">Browse</a>
+      &rsaquo; <span>Skills</span>
+      &rsaquo; <span>{{ skill.name }}</span>
+    </nav>
+    <h1 style="font-size:32px;margin:0 0 6px 0;">Courses tagged with "{{ skill.name }}"</h1>
+    <p style="font-size:14px;color:#6b7280;margin:0;">{{ courses|length }} of {{ skill.course_count }} courses on Coursera teach this skill.</p>
+  </header>
+
+  <div class="container" style="padding:16px;">
+    <div class="course-grid">
+      {% for c in courses %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner"><span>{{ c.partner.name if c.partner else '' }}</span></div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta"><span class="course-level">{{ c.level }}</span></div>
+          <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(c.rating) }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% if not courses %}
+    <p style="padding:24px;color:#6b7280;text-align:center;">No courses found for this skill.</p>
+    {% endif %}
+  </div>
+
+  {% if related_skills %}
+  <section class="container" style="padding:24px 16px 48px;">
+    <h2 style="font-size:18px;margin:0 0 12px 0;">Related skills</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for s in related_skills %}
+      <a href="{{ url_for('browse_skill', slug=s.slug) }}"
+         class="browse-related-skill"
+         style="padding:6px 12px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#0056d2;text-decoration:none;font-size:13px;">
+        {{ s.name }} <span style="color:#9ca3af;font-size:11px;">({{ s.course_count }})</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

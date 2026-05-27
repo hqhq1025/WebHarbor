@@ -227,6 +227,72 @@ class Review(db.Model):
     body = db.Column(db.Text, default='')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+# ─── Browse-hub taxonomy models (Subject / Skill / CareerRole / Collection) ──
+# Added to power /browse hub with subject pages, skill-tag pages, partner index,
+# career-role pages and curated collections. All idempotent + deterministic.
+
+class Subject(db.Model):
+    __tablename__ = 'subjects'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    db_category = db.Column(db.String(120), nullable=False, default='')  # joins on Course.category
+    blurb = db.Column(db.Text, default='')
+    sub_categories_json = db.Column(db.Text, default='[]')  # JSON list of strings
+    sort_order = db.Column(db.Integer, default=0)
+
+    def get_sub_categories(self):
+        try:
+            return json.loads(self.sub_categories_json or '[]')
+        except Exception:
+            return []
+
+
+class Skill(db.Model):
+    __tablename__ = 'browse_skills'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(160), nullable=False)
+    course_count = db.Column(db.Integer, default=0)  # denormalized for sort
+
+
+class CareerRole(db.Model):
+    __tablename__ = 'browse_career_roles'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(160), nullable=False)
+    blurb = db.Column(db.Text, default='')
+    skills_json = db.Column(db.Text, default='[]')  # JSON list of skill names
+
+    def get_skills(self):
+        try:
+            return json.loads(self.skills_json or '[]')
+        except Exception:
+            return []
+
+
+class Collection(db.Model):
+    __tablename__ = 'browse_collections'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    blurb = db.Column(db.Text, default='')
+    sort_order = db.Column(db.Integer, default=0)
+
+    items = db.relationship('CollectionCourse', backref='collection',
+                            lazy=True, cascade='all, delete-orphan',
+                            order_by='CollectionCourse.order_index')
+
+
+class CollectionCourse(db.Model):
+    __tablename__ = 'browse_collection_courses'
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(db.Integer, db.ForeignKey('browse_collections.id'), nullable=False, index=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False, index=True)
+    order_index = db.Column(db.Integer, default=0)
+
+
 # ─── Forms ────────────────────────────────────────────────────────────────────
 
 class LoginForm(FlaskForm):
@@ -948,17 +1014,306 @@ def browse(category_slug):
         'language-learning': 'Language Learning',
         'math-logic': 'Math and Logic',
         'physical-science': 'Physical Science and Engineering',
+        'physical-science-engineering': 'Physical Science and Engineering',
         'social-sciences': 'Social Sciences',
         'arts-humanities': 'Arts and Humanities',
         'health': 'Health',
         'personal-development': 'Personal Development',
     }
     cat_name = cat_map.get(category_slug, category_slug.replace('-', ' ').title())
-    courses = Course.query.filter(
-        Course.category.ilike(f'%{cat_name}%')
-    ).order_by(Course.enrolled_count.desc()).all()
-    return render_template('browse.html', courses=courses, category_name=cat_name,
-                           category_slug=category_slug)
+    # Pull the Subject row if it exists so the template can show the real
+    # 8-subdomain nav + featured + filter bar. Fall back to the legacy
+    # category-only view if the slug is unknown.
+    subject = Subject.query.filter_by(slug=category_slug).first()
+    if not subject:
+        # Try matching via db_category for legacy slug aliases
+        subject = Subject.query.filter_by(db_category=cat_name).first()
+
+    # Filter args (from filter form or sort form)
+    level = request.args.get('level', '').strip()
+    duration = request.args.get('duration', '').strip()
+    ctype = request.args.get('type', '').strip()
+    skill = request.args.get('skill', '').strip()
+    partner = request.args.get('partner', '').strip()
+    language = request.args.get('language', '').strip()
+    sub = request.args.get('sub', '').strip()
+    sort = request.args.get('sort', 'popularity').strip() or 'popularity'
+
+    q = Course.query.filter(Course.category.ilike(f'%{cat_name}%'))
+    if level:
+        q = q.filter(Course.level == level)
+    if ctype:
+        q = q.filter(Course.course_type == ctype)
+    if duration == 'short':
+        q = q.filter(Course.duration_hours <= 10.0)
+    elif duration == 'medium':
+        q = q.filter(Course.duration_hours > 10.0, Course.duration_hours <= 40.0)
+    elif duration == 'long':
+        q = q.filter(Course.duration_hours > 40.0)
+    if skill:
+        q = q.filter(Course.skills.ilike(f'%{skill}%'))
+    if partner:
+        p = Partner.query.filter_by(slug=partner).first()
+        if p:
+            q = q.filter(Course.partner_id == p.id)
+    if language == 'es':
+        q = q.filter(db.or_(Course.title.ilike('%Spanish%'),
+                            Course.description.ilike('%Spanish%')))
+    if sub:
+        # Best-effort subcategory matching on title/skill text
+        q = q.filter(db.or_(Course.title.ilike(f'%{sub}%'),
+                            Course.skills.ilike(f'%{sub}%')))
+
+    if sort == 'recency':
+        q = q.order_by(Course.sort_date.desc(), Course.id.asc())
+    elif sort == 'rating':
+        q = q.order_by(Course.rating.desc(), Course.enrolled_count.desc(),
+                       Course.id.asc())
+    else:
+        q = q.order_by(Course.enrolled_count.desc(), Course.id.asc())
+
+    courses = q.limit(96).all()
+
+    # If we don't have a Subject row, fall back to the legacy template so we
+    # never 404 a known category slug.
+    if not subject:
+        return render_template('browse.html', courses=courses,
+                               category_name=cat_name,
+                               category_slug=category_slug)
+
+    # Featured partners for this subject (top by course count within category)
+    top_partner_rows = db.session.query(
+        Partner, db.func.count(Course.id).label('n')
+    ).join(Course, Course.partner_id == Partner.id) \
+     .filter(Course.category.ilike(f'%{cat_name}%')) \
+     .group_by(Partner.id) \
+     .order_by(db.func.count(Course.id).desc(), Partner.id.asc()).limit(8).all()
+    return render_template('browse_subject.html',
+                           subject=subject,
+                           category_name=cat_name,
+                           category_slug=category_slug,
+                           courses=courses,
+                           top_partners=[p for p, n in top_partner_rows],
+                           filters={'level': level, 'duration': duration,
+                                    'type': ctype, 'skill': skill,
+                                    'partner': partner, 'language': language,
+                                    'sub': sub, 'sort': sort})
+
+
+# ── /browse hub — subjects, skills, partners, careers, collections ────────────
+
+@app.route('/browse')
+@app.route('/browse/')
+def browse_index():
+    """Top-level browse hub — 11 subject tiles + featured collections +
+    recently added courses + top career roles."""
+    subjects = Subject.query.order_by(Subject.sort_order.asc()).all()
+    # Counts per subject for tile blurbs
+    subj_counts = {}
+    for s in subjects:
+        subj_counts[s.slug] = Course.query.filter(
+            Course.category.ilike(f'%{s.db_category}%')).count()
+    featured_collections = Collection.query.order_by(Collection.sort_order.asc()).limit(6).all()
+    recently_added = (Course.query.filter_by(is_new=True)
+                      .order_by(Course.sort_date.desc(), Course.id.asc())
+                      .limit(8).all())
+    top_careers = CareerRole.query.order_by(CareerRole.id.asc()).limit(8).all()
+    return render_template('browse_index.html',
+                           subjects=subjects, subj_counts=subj_counts,
+                           featured_collections=featured_collections,
+                           recently_added=recently_added,
+                           top_careers=top_careers)
+
+
+@app.route('/browse/skill/<slug>')
+def browse_skill(slug):
+    """Skill-tag page — all courses tagged with X skill."""
+    sk = Skill.query.filter_by(slug=slug).first_or_404()
+    courses = (Course.query.filter(Course.skills.ilike(f'%"{sk.name}"%'))
+               .order_by(Course.enrolled_count.desc(), Course.id.asc())
+               .limit(96).all())
+    if not courses:
+        # Fall back to substring match if the JSON-quoted match is empty
+        courses = (Course.query.filter(Course.skills.ilike(f'%{sk.name}%'))
+                   .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                   .limit(96).all())
+    related = (Skill.query.filter(Skill.id != sk.id)
+               .order_by(Skill.course_count.desc(), Skill.id.asc()).limit(12).all())
+    return render_template('browse_skill.html', skill=sk,
+                           courses=courses, related_skills=related)
+
+
+@app.route('/browse/partner')
+@app.route('/browse/partners')
+def browse_partner_index():
+    """Partner index — list every partner alphabetically with a course
+    count + country."""
+    rows = db.session.query(
+        Partner, db.func.count(Course.id).label('n')
+    ).outerjoin(Course, Course.partner_id == Partner.id) \
+     .group_by(Partner.id) \
+     .order_by(Partner.name.asc()).all()
+    return render_template('browse_partner.html',
+                           mode='index', partner=None,
+                           courses=[], rows=rows)
+
+
+@app.route('/browse/partner/<slug>')
+def browse_partner_detail(slug):
+    """Single partner page — all courses by that partner."""
+    p = Partner.query.filter_by(slug=slug).first_or_404()
+    courses = (Course.query.filter_by(partner_id=p.id)
+               .order_by(Course.enrolled_count.desc(), Course.id.asc())
+               .limit(96).all())
+    return render_template('browse_partner.html',
+                           mode='detail', partner=p,
+                           courses=courses, rows=[])
+
+
+@app.route('/browse/career/<slug>')
+def browse_career_role(slug):
+    """Career role view — aggregated courses for the role's skill set."""
+    role = CareerRole.query.filter_by(slug=slug).first_or_404()
+    skills = role.get_skills() or []
+    if skills:
+        clauses = [Course.skills.ilike(f'%{s}%') for s in skills]
+        clauses += [Course.title.ilike(f'%{s}%') for s in skills]
+        courses = (Course.query.filter(db.or_(*clauses))
+                   .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                   .limit(96).all())
+    else:
+        courses = []
+    return render_template('browse_career_role.html',
+                           role=role, courses=courses, skills=skills)
+
+
+@app.route('/browse/collection/<slug>')
+def browse_collection(slug):
+    """Curated collection page — a hand-picked list of courses."""
+    coll = Collection.query.filter_by(slug=slug).first_or_404()
+    course_ids = [it.course_id for it in coll.items]
+    if course_ids:
+        # Preserve curated order
+        rows = Course.query.filter(Course.id.in_(course_ids)).all()
+        by_id = {c.id: c for c in rows}
+        courses = [by_id[cid] for cid in course_ids if cid in by_id]
+    else:
+        courses = []
+    other_collections = (Collection.query.filter(Collection.id != coll.id)
+                         .order_by(Collection.sort_order.asc()).limit(6).all())
+    return render_template('browse_collection.html',
+                           collection=coll, courses=courses,
+                           other_collections=other_collections)
+
+
+# ── /browse POST handlers ─────────────────────────────────────────────────────
+
+@app.route('/browse/filter', methods=['POST'])
+@csrf.exempt
+def browse_filter():
+    """Combine filter form fields into a /browse/<subject> URL with query
+    args. Subject defaults to data-science if not supplied."""
+    subject = (request.form.get('subject') or 'data-science').strip()
+    args = {}
+    for key in ('level', 'duration', 'type', 'skill', 'partner', 'language',
+                'sub', 'sort'):
+        v = (request.form.get(key) or '').strip()
+        if v:
+            args[key] = v
+    # Validate subject; if unknown, redirect to /browse hub.
+    if not Subject.query.filter_by(slug=subject).first():
+        flash(f'Unknown subject "{subject}"', 'error')
+        return redirect(url_for('browse_index'))
+    flash(f'Filters applied to {subject}.', 'success')
+    return redirect(url_for('browse', category_slug=subject, **args))
+
+
+@app.route('/browse/save-search', methods=['POST'])
+@csrf.exempt
+def browse_save_search():
+    """Save current filter combo to the session so the learner can re-open
+    it later. No DB write — byte-id safe."""
+    subject = (request.form.get('subject') or '').strip()
+    label = (request.form.get('label') or 'My saved search').strip()
+    if not subject:
+        flash('Save failed — subject is required.', 'error')
+        return redirect(url_for('browse_index'))
+    saved = session.get('browse_saved_searches', [])
+    payload = {'subject': subject, 'label': label,
+               'level': request.form.get('level', ''),
+               'duration': request.form.get('duration', ''),
+               'type': request.form.get('type', ''),
+               'skill': request.form.get('skill', ''),
+               'partner': request.form.get('partner', ''),
+               'language': request.form.get('language', ''),
+               'sort': request.form.get('sort', 'popularity')}
+    saved.append(payload)
+    session['browse_saved_searches'] = saved[-10:]  # cap at 10
+    flash(f'Search "{label}" saved.', 'success')
+    return redirect(url_for('browse', category_slug=subject))
+
+
+@app.route('/browse/collection/<int:collection_id>/follow', methods=['POST'])
+@csrf.exempt
+def browse_collection_follow(collection_id):
+    """Follow a curated collection. Stores follow state in session so the
+    seed DB stays byte-identical across resets."""
+    coll = Collection.query.get_or_404(collection_id)
+    follows = set(session.get('browse_followed_collections', []))
+    if coll.id in follows:
+        follows.discard(coll.id)
+        flash(f'Unfollowed "{coll.name}".', 'info')
+    else:
+        follows.add(coll.id)
+        flash(f'Following "{coll.name}".', 'success')
+    session['browse_followed_collections'] = list(follows)
+    return redirect(url_for('browse_collection', slug=coll.slug))
+
+
+@app.route('/browse/career/<int:role_id>/save', methods=['POST'])
+@csrf.exempt
+def browse_career_save(role_id):
+    """Save a career role. Session-only."""
+    role = CareerRole.query.get_or_404(role_id)
+    saved = set(session.get('browse_saved_careers', []))
+    if role.id in saved:
+        saved.discard(role.id)
+        flash(f'Removed "{role.name}" from saved roles.', 'info')
+    else:
+        saved.add(role.id)
+        flash(f'Saved "{role.name}" to your career list.', 'success')
+    session['browse_saved_careers'] = list(saved)
+    return redirect(url_for('browse_career_role', slug=role.slug))
+
+
+@app.route('/browse/partner/<int:partner_id>/follow', methods=['POST'])
+@csrf.exempt
+def browse_partner_follow(partner_id):
+    """Follow a partner. Session-only."""
+    p = Partner.query.get_or_404(partner_id)
+    follows = set(session.get('browse_followed_partners', []))
+    if p.id in follows:
+        follows.discard(p.id)
+        flash(f'Unfollowed {p.name}.', 'info')
+    else:
+        follows.add(p.id)
+        flash(f'Following {p.name}.', 'success')
+    session['browse_followed_partners'] = list(follows)
+    return redirect(url_for('browse_partner_detail', slug=p.slug))
+
+
+@app.route('/browse/<subject>/sort', methods=['POST'])
+@csrf.exempt
+def browse_subject_sort(subject):
+    """Re-sort a subject browse page by popularity / recency / rating."""
+    if not Subject.query.filter_by(slug=subject).first():
+        abort(404)
+    sort = (request.form.get('sort') or 'popularity').strip()
+    if sort not in ('popularity', 'recency', 'rating'):
+        sort = 'popularity'
+    flash(f'Sorted by {sort}.', 'success')
+    return redirect(url_for('browse', category_slug=subject, sort=sort))
+
 
 # ─── Routes: Search ───────────────────────────────────────────────────────────
 
@@ -4274,19 +4629,294 @@ def seed_testimonials_and_extras():
         print(f"  + seeded testimonials on {updated} courses")
 
 
+# ── Browse-hub taxonomy seed ────────────────────────────────────────────────
+# 11 real Coursera subjects × 8 real sub-categories each (sourced from
+# coursera.org/browse/<subject> nav). Sub-cats are display labels;
+# attribution to existing courses is best-effort via title/skill keyword.
+BROWSE_SUBJECTS = [
+    ('data-science',                 'Data Science',                       'Data Science',
+     'Master data analysis, machine learning, and visualization to turn raw data into actionable insight.',
+     ['Data Analysis', 'Machine Learning', 'Probability and Statistics',
+      'Data Visualization', 'Data Engineering', 'Deep Learning',
+      'Big Data', 'Business Analytics']),
+    ('business',                     'Business',                            'Business',
+     'Build the skills to lead, manage, and grow a modern business — from finance and marketing to entrepreneurship.',
+     ['Leadership and Management', 'Finance', 'Marketing', 'Entrepreneurship',
+      'Business Strategy', 'Business Essentials', 'Communication', 'Sales']),
+    ('computer-science',             'Computer Science',                    'Computer Science',
+     'Learn programming, algorithms, software design and the foundations of computing.',
+     ['Algorithms', 'Computer Security and Networks', 'Design and Product',
+      'Mobile and Web Development', 'Software Development', 'Programming Languages',
+      'Data Structures', 'Cloud Computing']),
+    ('arts-humanities',              'Arts and Humanities',                 'Arts and Humanities',
+     'Explore history, music, philosophy, writing and the broader liberal arts.',
+     ['History', 'Music and Art', 'Philosophy', 'Liberal Arts',
+      'Religion', 'Writing', 'Architecture', 'Languages']),
+    ('health',                       'Health',                              'Health',
+     'Train in clinical, public, mental and global health — from nutrition to healthcare leadership.',
+     ['Animal Health', 'Basic Science', 'Health Informatics', 'Healthcare Management',
+      'Nutrition', 'Patient Care', 'Psychology', 'Public Health']),
+    ('language-learning',            'Language Learning',                   'Language Learning',
+     'Pick up a new language — speak, read and write with confidence.',
+     ['Learning English', 'Spanish', 'Chinese', 'French',
+      'German', 'Japanese', 'Korean', 'Other Languages']),
+    ('math-logic',                   'Math and Logic',                      'Math and Logic',
+     'From algebra and calculus to discrete math and formal logic.',
+     ['Algebra', 'Calculus', 'Geometry', 'Statistics',
+      'Logic', 'Discrete Math', 'Probability', 'Number Theory']),
+    ('personal-development',         'Personal Development',                'Personal Development',
+     'Strengthen the skills that drive personal and career growth.',
+     ['Career Development', 'Communication Skills', 'Leadership Skills', 'Personal Wellness',
+      'Self-Improvement', 'Time Management', 'Mindfulness', 'Creativity']),
+    ('physical-science-engineering', 'Physical Science and Engineering',    'Physical Science and Engineering',
+     'Engineering disciplines plus the physical sciences that underpin them.',
+     ['Chemistry', 'Electrical Engineering', 'Environmental Science',
+      'Mechanical Engineering', 'Physics and Astronomy', 'Civil Engineering',
+      'Materials Science', 'Aerospace']),
+    ('social-sciences',              'Social Sciences',                     'Social Sciences',
+     'Economics, education, law and society — understand how people and institutions work.',
+     ['Economics', 'Education', 'Governance and Society', 'Law',
+      'Sociology', 'International Relations', 'Anthropology', 'Political Science']),
+    ('information-technology',       'Information Technology',              'Information Technology',
+     'Cloud, networking, security and the systems that keep modern businesses running.',
+     ['Cloud Computing', 'Networking', 'Security', 'Support and Operations',
+      'Data Management', 'IT Infrastructure', 'IT Service Management', 'Cyber Defense']),
+]
+
+BROWSE_CAREER_ROLES = [
+    ('data-analyst',           'Data Analyst',
+     'Turn raw data into business decisions with SQL, statistics and visualization.',
+     ['SQL', 'Excel', 'Python', 'Data Visualization', 'Statistics', 'Tableau']),
+    ('data-scientist',         'Data Scientist',
+     'Build predictive models and ML systems at the intersection of math, code and business.',
+     ['Python', 'Machine Learning', 'Statistics', 'Deep Learning', 'SQL', 'Pandas']),
+    ('software-engineer',      'Software Engineer',
+     'Design, build and ship reliable software systems.',
+     ['Algorithms', 'Data Structures', 'Programming', 'System Design', 'Git', 'Testing']),
+    ('ux-designer',            'UX Designer',
+     'Design human-centered digital products through research, wireframes and prototypes.',
+     ['User Research', 'Wireframing', 'Prototyping', 'Figma', 'Accessibility', 'Design Thinking']),
+    ('cybersecurity-analyst',  'Cybersecurity Analyst',
+     'Defend systems and networks against threats — from incident response to risk assessment.',
+     ['Cybersecurity', 'Network Security', 'Risk Management', 'Linux', 'SIEM', 'Cryptography']),
+    ('product-manager',        'Product Manager',
+     'Define product strategy, prioritize roadmaps and ship features customers love.',
+     ['Product Strategy', 'Agile', 'User Research', 'Roadmapping', 'Communication', 'Data Analysis']),
+    ('project-manager',        'Project Manager',
+     'Plan, execute and deliver projects on scope, on time and on budget.',
+     ['Project Management', 'Agile', 'Scrum', 'Risk Management', 'Communication', 'Leadership']),
+    ('cloud-architect',        'Cloud Architect',
+     'Design scalable, secure cloud systems across AWS, Azure and GCP.',
+     ['AWS', 'Azure', 'GCP', 'Networking', 'Security', 'Kubernetes']),
+    ('machine-learning-engineer', 'Machine Learning Engineer',
+     'Productionize machine learning models — from training pipelines to deployment.',
+     ['Python', 'TensorFlow', 'PyTorch', 'MLOps', 'Docker', 'Cloud Computing']),
+    ('digital-marketer',       'Digital Marketer',
+     'Drive growth across SEO, social, paid media and analytics.',
+     ['SEO', 'Google Ads', 'Social Media Marketing', 'Content Marketing', 'Analytics', 'Email Marketing']),
+    ('financial-analyst',      'Financial Analyst',
+     'Model financial performance, value businesses and inform investment decisions.',
+     ['Excel', 'Financial Modeling', 'Valuation', 'Accounting', 'SQL', 'Power BI']),
+    ('full-stack-developer',   'Full-Stack Developer',
+     'Build complete web applications — front-end UI through back-end APIs and databases.',
+     ['JavaScript', 'React', 'Node.js', 'SQL', 'HTML', 'CSS']),
+]
+
+BROWSE_COLLECTIONS = [
+    ('top-100-free-courses',          'Top 100 Free Courses',
+     'The 100 most popular completely free courses on Coursera — audit any of them at no cost.'),
+    ('most-popular-certificates',     'Most Popular Professional Certificates',
+     'The Professional Certificate programs that put the most learners into in-demand jobs.'),
+    ('top-business-courses',          'Top Business Courses',
+     'A curated set of high-rated business courses spanning leadership, finance and strategy.'),
+    ('top-data-science-courses',      'Top Data Science Courses',
+     'The best-rated, highest-enrolled data science programs.'),
+    ('top-rated-courses',             'Top-Rated Courses',
+     'Courses rated 4.8 or higher by tens of thousands of learners.'),
+    ('ai-and-ml-essentials',          'AI and ML Essentials',
+     'Start with AI, generative AI and machine learning fundamentals.'),
+    ('beginner-friendly-picks',       'Beginner-Friendly Picks',
+     'Approachable, no-prerequisites courses for new learners.'),
+    ('career-changer-bundles',        'Career-Changer Bundles',
+     'Multi-course bundles built for learners switching careers.'),
+    ('learn-in-under-10-hours',       'Learn in Under 10 Hours',
+     'Short, focused courses you can finish in a weekend.'),
+    ('skills-for-2026',               'Skills for 2026',
+     'The skills employers are hiring for in 2026 — AI, data, cybersecurity and more.'),
+]
+
+
+def _browse_taxonomy_skill_pool():
+    """Deterministically gather skills across the catalog. Returns a sorted
+    list of (slug, name, count). Forces a curated set of well-known skills
+    (Python / SQL / Excel / ML / ...) into the pool so the Skill index page
+    always has the recognizable industry tags learners search for, then
+    appends the top-by-count tags up to a 120-item cap. Sort is fully
+    deterministic so two rebuilds emit identical rows."""
+    counts = {}
+    rows = Course.query.with_entities(Course.skills).all()
+    for (s,) in rows:
+        if not s:
+            continue
+        try:
+            arr = json.loads(s)
+        except Exception:
+            continue
+        if not isinstance(arr, list):
+            continue
+        for tag in arr:
+            if not isinstance(tag, str):
+                continue
+            name = tag.strip()
+            if not name or len(name) > 80:
+                continue
+            counts[name] = counts.get(name, 0) + 1
+
+    # Curated "always include if present" set — the industry skill tags
+    # learners actually search for on the real Coursera browse hub.
+    CURATED = [
+        'Python', 'SQL', 'Excel', 'JavaScript', 'Java', 'R Programming',
+        'Machine Learning', 'Deep Learning', 'Data Analysis', 'Statistics',
+        'Pandas', 'NumPy', 'TensorFlow', 'PyTorch', 'Tableau', 'Power BI',
+        'AWS', 'Azure', 'GCP', 'Kubernetes', 'Docker', 'Linux',
+        'Cybersecurity', 'Network Security', 'Cryptography',
+        'Project Management', 'Agile', 'Scrum', 'Leadership', 'Communication',
+        'Finance', 'Accounting', 'Marketing', 'SEO', 'Sales',
+        'HTML', 'CSS', 'React', 'Node.js',
+        'User Research', 'Figma', 'Design Thinking', 'Prototyping',
+        'Negotiation', 'Public Speaking', 'Critical Thinking', 'Problem Solving',
+    ]
+    picked = []
+    seen_slugs = set()
+
+    def _slugify(name):
+        return re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+
+    for name in CURATED:
+        if name in counts:
+            slug = _slugify(name)
+            if slug and slug not in seen_slugs:
+                picked.append((slug, name, counts[name]))
+                seen_slugs.add(slug)
+
+    # Append top tags by count up to a 120-item cap.
+    items = []
+    for name, n in counts.items():
+        slug = _slugify(name)
+        if not slug or slug in seen_slugs:
+            continue
+        items.append((slug, name, n))
+    items.sort(key=lambda r: (-r[2], r[0]))
+    for entry in items:
+        if len(picked) >= 120:
+            break
+        picked.append(entry)
+        seen_slugs.add(entry[0])
+    return picked
+
+
+def _browse_collection_courses(slug):
+    """Deterministic curated course pick per collection. Always returns a
+    consistent ordered list of (course_id, order_index)."""
+    if slug == 'top-100-free-courses':
+        rows = (Course.query.filter_by(is_free=True)
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(100).all())
+    elif slug == 'most-popular-certificates':
+        rows = (Course.query.filter_by(course_type='Professional Certificate')
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'top-business-courses':
+        rows = (Course.query.filter(Course.category.ilike('%Business%'))
+                .order_by(Course.rating.desc(), Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'top-data-science-courses':
+        rows = (Course.query.filter(Course.category.ilike('%Data Science%'))
+                .order_by(Course.rating.desc(), Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'top-rated-courses':
+        rows = (Course.query.filter(Course.rating >= 4.8)
+                .order_by(Course.rating.desc(), Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'ai-and-ml-essentials':
+        like = '%machine learning%'
+        rows = (Course.query.filter(db.or_(
+                    Course.title.ilike(like),
+                    Course.title.ilike('%artificial intelligence%'),
+                    Course.title.ilike('%generative ai%'),
+                    Course.title.ilike('%deep learning%')))
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'beginner-friendly-picks':
+        rows = (Course.query.filter_by(level='Beginner')
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'career-changer-bundles':
+        rows = (Course.query.filter(Course.course_type.in_(
+                    ['Specialization', 'Professional Certificate']))
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'learn-in-under-10-hours':
+        rows = (Course.query.filter(Course.duration_hours <= 10.0)
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    elif slug == 'skills-for-2026':
+        like_terms = ['%generative ai%', '%cybersecurity%', '%data%', '%cloud%']
+        rows = (Course.query.filter(db.or_(
+                    *[Course.title.ilike(t) for t in like_terms]))
+                .order_by(Course.enrolled_count.desc(), Course.id.asc())
+                .limit(60).all())
+    else:
+        rows = []
+    return [(c.id, i) for i, c in enumerate(rows)]
+
+
+def seed_browse_taxonomy():
+    """Seed Subject / Skill / CareerRole / Collection tables that back the
+    /browse hub. Idempotent — early-returns if Subject has any rows."""
+    if Subject.query.count() > 0:
+        return
+
+    for i, (slug, name, db_cat, blurb, subs) in enumerate(BROWSE_SUBJECTS):
+        db.session.add(Subject(slug=slug, name=name, db_category=db_cat,
+                               blurb=blurb,
+                               sub_categories_json=json.dumps(subs),
+                               sort_order=i))
+
+    for slug, name, n in _browse_taxonomy_skill_pool():
+        db.session.add(Skill(slug=slug, name=name, course_count=n))
+
+    for slug, name, blurb, skills in BROWSE_CAREER_ROLES:
+        db.session.add(CareerRole(slug=slug, name=name, blurb=blurb,
+                                  skills_json=json.dumps(skills)))
+
+    for i, (slug, name, blurb) in enumerate(BROWSE_COLLECTIONS):
+        coll = Collection(slug=slug, name=name, blurb=blurb, sort_order=i)
+        db.session.add(coll)
+        db.session.flush()
+        for course_id, order_index in _browse_collection_courses(slug):
+            db.session.add(CollectionCourse(collection_id=coll.id,
+                                            course_id=course_id,
+                                            order_index=order_index))
+
+    db.session.commit()
+    print(f"  + seeded browse taxonomy: {Subject.query.count()} subjects, "
+          f"{Skill.query.count()} skills, {CareerRole.query.count()} careers, "
+          f"{Collection.query.count()} collections")
+
+
 def _normalize_seed_db_layout():
     """Re-emit indexes in alpha order + VACUUM the SQLite file so two
     independent rebuilds produce byte-identical .db files. Gated on the
     presence of a sentinel pragma so it only runs once (the first build);
-    subsequent warm restarts skip it. Sentinel bumped to 4 in R10 because
-    seed_v11 backfills modules + missing R5 columns on legacy rows; the new
-    backfill alters index page contents so the previous sentinel must miss.
-    See harden-env/gotchas.md item #2."""
+    subsequent warm restarts skip it. Sentinel bumped to 5 in this round
+    because the new browse_* tables add CREATE TABLE / index rows to
+    sqlite_master; first build must re-VACUUM to stabilize page layout."""
     from sqlalchemy import text
     conn = db.engine.connect()
     try:
         sentinel = conn.execute(text("PRAGMA user_version")).scalar()
-        if sentinel == 4:
+        if sentinel == 5:
             return  # already normalized
         idx_rows = conn.execute(text(
             "SELECT name, sql FROM sqlite_master "
@@ -4297,7 +4927,7 @@ def _normalize_seed_db_layout():
         for name, sql in sorted(idx_rows, key=lambda r: r[0]):
             if sql:
                 conn.execute(text(sql))
-        conn.execute(text("PRAGMA user_version = 4"))
+        conn.execute(text("PRAGMA user_version = 5"))
         conn.commit()
         conn.execute(text("VACUUM"))
         conn.commit()
@@ -4439,6 +5069,10 @@ with app.app_context():
         'Review': Review,
     })
     seed_testimonials_and_extras()
+    # Browse-hub taxonomy: Subject / Skill / CareerRole / Collection tables
+    # that back the /browse hub. Must run AFTER all course-seeding rounds so
+    # the skill pool + collection picks reflect the full catalog.
+    seed_browse_taxonomy()
     # Re-emit indexes alphabetically + VACUUM so two independent rebuilds
     # produce byte-identical sqlite files (SQLAlchemy index emission order
     # depends on Python set iteration → id(); harden-env gotcha #2).

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ subject.name }} Courses | Coursera Browse{% endblock %}
+{% block content %}
+<div class="browse-subject" id="main-content">
+  <header class="browse-subject-hero container" style="padding:32px 16px 16px;">
+    <nav style="font-size:13px;color:#6b7280;margin-bottom:8px;">
+      <a href="{{ url_for('browse_index') }}">Browse</a>
+      &rsaquo; <span>{{ subject.name }}</span>
+    </nav>
+    <h1 style="font-size:32px;margin:0 0 8px 0;">{{ subject.name }}</h1>
+    <p style="font-size:16px;color:#4b5563;margin:0 0 12px 0;">{{ subject.blurb }}</p>
+    <p style="font-size:14px;color:#6b7280;margin:0;">{{ courses|length }} courses shown</p>
+  </header>
+
+  <section class="browse-subject-subnav container" style="padding:8px 16px 16px;">
+    <h2 style="font-size:16px;margin:0 0 10px 0;color:#374151;">Sub-categories</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for sub in subject.get_sub_categories() %}
+      <a href="{{ url_for('browse', category_slug=subject.slug, sub=sub) }}"
+         class="browse-subcat-chip"
+         data-subcat="{{ sub }}"
+         style="padding:6px 12px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;text-decoration:none;font-size:13px;">
+        {{ sub }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="container" style="display:grid;grid-template-columns:240px 1fr;gap:24px;padding:16px;">
+    {# ── Filter sidebar ────────────────────────────────────────────────── #}
+    <aside class="browse-filter-bar" style="padding:16px;border:1px solid #e5e7eb;border-radius:8px;background:#fafbfc;">
+      <form id="browse-filter-form" method="POST" action="{{ url_for('browse_filter') }}">
+        <input type="hidden" name="subject" value="{{ subject.slug }}">
+
+        <h3 style="font-size:15px;margin:0 0 10px 0;">Level</h3>
+        <label style="display:block;font-size:14px;margin:4px 0;"><input type="radio" name="level" value="" {% if not filters.level %}checked{% endif %}> Any</label>
+        {% for lv in ['Beginner', 'Intermediate', 'Advanced', 'Mixed'] %}
+        <label style="display:block;font-size:14px;margin:4px 0;"><input type="radio" name="level" value="{{ lv }}" {% if filters.level == lv %}checked{% endif %}> {{ lv }}</label>
+        {% endfor %}
+
+        <h3 style="font-size:15px;margin:14px 0 10px 0;">Duration</h3>
+        {% for v, label in [('', 'Any'), ('short', 'Under 10 hours'), ('medium', '10–40 hours'), ('long', 'Over 40 hours')] %}
+        <label style="display:block;font-size:14px;margin:4px 0;"><input type="radio" name="duration" value="{{ v }}" {% if filters.duration == v %}checked{% endif %}> {{ label }}</label>
+        {% endfor %}
+
+        <h3 style="font-size:15px;margin:14px 0 10px 0;">Type</h3>
+        {% for t in ['', 'Course', 'Specialization', 'Professional Certificate', 'Guided Project', 'Degree'] %}
+        <label style="display:block;font-size:14px;margin:4px 0;"><input type="radio" name="type" value="{{ t }}" {% if filters.type == t %}checked{% endif %}> {{ t or 'Any' }}</label>
+        {% endfor %}
+
+        <h3 style="font-size:15px;margin:14px 0 10px 0;">Skills</h3>
+        <input type="text" name="skill" value="{{ filters.skill }}" placeholder="e.g. Python" style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:4px;">
+
+        <h3 style="font-size:15px;margin:14px 0 10px 0;">Partner</h3>
+        <input type="text" name="partner" value="{{ filters.partner }}" placeholder="partner slug" style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:4px;">
+
+        <h3 style="font-size:15px;margin:14px 0 10px 0;">Language</h3>
+        {% for lang_v, lang_l in [('', 'Any'), ('en', 'English'), ('es', 'Spanish')] %}
+        <label style="display:block;font-size:14px;margin:4px 0;"><input type="radio" name="language" value="{{ lang_v }}" {% if filters.language == lang_v %}checked{% endif %}> {{ lang_l }}</label>
+        {% endfor %}
+
+        <input type="hidden" name="sort" value="{{ filters.sort }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <button type="submit" class="btn btn-primary" style="margin-top:14px;width:100%;padding:8px;background:#0056d2;color:#fff;border:none;border-radius:4px;cursor:pointer;">Apply filters</button>
+      </form>
+
+      <form method="POST" action="{{ url_for('browse_save_search') }}" style="margin-top:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="subject" value="{{ subject.slug }}">
+        <input type="hidden" name="level" value="{{ filters.level }}">
+        <input type="hidden" name="duration" value="{{ filters.duration }}">
+        <input type="hidden" name="type" value="{{ filters.type }}">
+        <input type="hidden" name="skill" value="{{ filters.skill }}">
+        <input type="hidden" name="partner" value="{{ filters.partner }}">
+        <input type="hidden" name="language" value="{{ filters.language }}">
+        <input type="hidden" name="sort" value="{{ filters.sort }}">
+        <input type="text" name="label" placeholder="Search name" style="width:100%;padding:6px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;">
+        <button type="submit" style="margin-top:6px;width:100%;padding:6px;background:#fff;color:#0056d2;border:1px solid #0056d2;border-radius:4px;cursor:pointer;font-size:13px;">Save this search</button>
+      </form>
+    </aside>
+
+    {# ── Results column ────────────────────────────────────────────────── #}
+    <div class="browse-results">
+      <div class="browse-sort-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 12px;background:#f3f4f6;border-radius:6px;">
+        <span style="font-size:14px;color:#374151;">Sort by:</span>
+        <form method="POST" action="{{ url_for('browse_subject_sort', subject=subject.slug) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" name="sort" value="popularity" class="sort-opt {% if filters.sort == 'popularity' %}active{% endif %}" style="margin-right:6px;padding:4px 10px;background:{% if filters.sort == 'popularity' %}#0056d2{% else %}#fff{% endif %};color:{% if filters.sort == 'popularity' %}#fff{% else %}#0056d2{% endif %};border:1px solid #0056d2;border-radius:4px;cursor:pointer;font-size:13px;">Popularity</button>
+          <button type="submit" name="sort" value="recency" class="sort-opt {% if filters.sort == 'recency' %}active{% endif %}" style="margin-right:6px;padding:4px 10px;background:{% if filters.sort == 'recency' %}#0056d2{% else %}#fff{% endif %};color:{% if filters.sort == 'recency' %}#fff{% else %}#0056d2{% endif %};border:1px solid #0056d2;border-radius:4px;cursor:pointer;font-size:13px;">Recency</button>
+          <button type="submit" name="sort" value="rating" class="sort-opt {% if filters.sort == 'rating' %}active{% endif %}" style="padding:4px 10px;background:{% if filters.sort == 'rating' %}#0056d2{% else %}#fff{% endif %};color:{% if filters.sort == 'rating' %}#fff{% else %}#0056d2{% endif %};border:1px solid #0056d2;border-radius:4px;cursor:pointer;font-size:13px;">Rating</button>
+        </form>
+      </div>
+
+      {% if top_partners %}
+      <div class="browse-top-partners" style="margin-bottom:16px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;">
+        <h3 style="font-size:14px;margin:0 0 8px 0;color:#374151;">Top partners in {{ subject.name }}</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          {% for p in top_partners %}
+          <a href="{{ url_for('browse_partner_detail', slug=p.slug) }}" style="padding:4px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;font-size:13px;color:#0056d2;text-decoration:none;">{{ p.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="course-grid">
+        {% for c in courses %}
+        <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+          <div class="course-card-thumb {{ c.color_class }}">
+            {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+            <span class="course-type-badge">{{ c.course_type }}</span>
+          </div>
+          <div class="course-card-body">
+            <div class="course-partner">
+              {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+              <span>{{ c.partner.name if c.partner else '' }}</span>
+            </div>
+            <h3 class="course-title">{{ c.title }}</h3>
+            <div class="course-meta">
+              <span class="course-level">{{ c.level }}</span>
+              {% if c.is_free %}<span class="course-free-badge">Free</span>{% endif %}
+            </div>
+            <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(c.rating) }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      {% if not courses %}
+      <p style="padding:24px;color:#6b7280;text-align:center;">No courses match the current filter combination.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

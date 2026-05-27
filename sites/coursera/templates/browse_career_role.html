@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Become a {{ role.name }} | Coursera Browse Career{% endblock %}
+{% block content %}
+<div class="browse-career" id="main-content">
+  <header class="container" style="padding:32px 16px 16px;">
+    <nav style="font-size:13px;color:#6b7280;margin-bottom:8px;">
+      <a href="{{ url_for('browse_index') }}">Browse</a>
+      &rsaquo; <span>Career roles</span>
+      &rsaquo; <span>{{ role.name }}</span>
+    </nav>
+    <h1 style="font-size:32px;margin:0 0 6px 0;">Become a {{ role.name }}</h1>
+    <p style="font-size:16px;color:#4b5563;margin:0 0 12px 0;">{{ role.blurb }}</p>
+    <form method="POST" action="{{ url_for('browse_career_save', role_id=role.id) }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-save-career" style="padding:8px 18px;background:#0056d2;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">Save this career role</button>
+    </form>
+  </header>
+
+  {% if skills %}
+  <section class="container" style="padding:16px;">
+    <h2 style="font-size:18px;margin:0 0 10px 0;">Core skills for {{ role.name }}</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for s in skills %}
+      <span class="career-skill-chip" style="padding:6px 12px;background:#e0e7ff;color:#3730a3;border-radius:14px;font-size:13px;">{{ s }}</span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="container" style="padding:16px;">
+    <h2 style="font-size:18px;margin:0 0 12px 0;">Recommended courses for {{ role.name }}</h2>
+    <div class="course-grid">
+      {% for c in courses %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner"><span>{{ c.partner.name if c.partner else '' }}</span></div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta"><span class="course-level">{{ c.level }}</span></div>
+          <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(c.rating) }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% if not courses %}
+    <p style="padding:24px;color:#6b7280;text-align:center;">No matching courses for this career role.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

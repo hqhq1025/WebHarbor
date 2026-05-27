@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Browse Courses by Subject | Coursera{% endblock %}
+{% block content %}
+<div class="browse-hub" id="main-content">
+  <header class="browse-hero container" style="padding:48px 16px 24px;">
+    <h1 style="font-size:36px;margin:0 0 8px 0;">Browse Coursera</h1>
+    <p style="font-size:18px;color:#4b5563;margin:0;">
+      Explore 13,000+ courses across {{ subjects|length }} subject areas.
+      Browse by subject, partner institution, career role, or curated collection.
+    </p>
+  </header>
+
+  <section class="browse-subjects container" style="padding:24px 16px;">
+    <h2 style="font-size:22px;margin:0 0 16px 0;">Browse by subject</h2>
+    <div class="browse-subject-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+      {% for s in subjects %}
+      <a href="{{ url_for('browse', category_slug=s.slug) }}"
+         class="browse-subject-tile"
+         data-subject-slug="{{ s.slug }}"
+         style="display:block;padding:18px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;text-decoration:none;color:#111827;">
+        <h3 style="font-size:17px;margin:0 0 6px 0;">{{ s.name }}</h3>
+        <p style="margin:0;color:#6b7280;font-size:13px;">
+          {{ subj_counts.get(s.slug, 0) }} courses
+        </p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="browse-careers container" style="padding:24px 16px;">
+    <h2 style="font-size:22px;margin:0 0 16px 0;">Browse by career role</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      {% for role in top_careers %}
+      <a href="{{ url_for('browse_career_role', slug=role.slug) }}"
+         class="browse-career-chip"
+         style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:18px;background:#f8fafc;color:#0f172a;text-decoration:none;font-size:14px;">
+        {{ role.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="browse-collections container" style="padding:24px 16px;">
+    <h2 style="font-size:22px;margin:0 0 16px 0;">Featured collections</h2>
+    <div class="browse-collection-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+      {% for c in featured_collections %}
+      <a href="{{ url_for('browse_collection', slug=c.slug) }}"
+         class="browse-collection-card"
+         data-collection-slug="{{ c.slug }}"
+         style="display:block;padding:18px;border:1px solid #e5e7eb;border-radius:8px;background:#fafbfc;color:#111827;text-decoration:none;">
+        <h3 style="font-size:17px;margin:0 0 8px 0;">{{ c.name }}</h3>
+        <p style="margin:0;color:#4b5563;font-size:14px;">{{ c.blurb }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="browse-recent container" style="padding:24px 16px 48px;">
+    <h2 style="font-size:22px;margin:0 0 16px 0;">Recently added</h2>
+    <div class="course-grid">
+      {% for c in recently_added %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="course-level">{{ c.level }}</span>
+          </div>
+          <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(c.rating) }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="browse-partner-link container" style="padding:0 16px 48px;">
+    <p style="margin:0;">
+      Looking for a specific institution?
+      <a href="{{ url_for('browse_partner_index') }}">Browse all partner universities and companies &rsaquo;</a>
+    </p>
+  </section>
+</div>
+{% endblock %}
