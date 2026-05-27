@@ -6674,7 +6674,7 @@ else:
 def _add_static_cache_headers(resp):
     try:
         if request.path.startswith('/static/'):
-            resp.headers.setdefault('Cache-Control', 'public, max-age=86400, immutable')
+            resp.headers['Cache-Control'] = 'public, max-age=86400, immutable'
     except Exception:
         pass
     return resp
