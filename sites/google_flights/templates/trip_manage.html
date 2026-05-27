@@ -34,7 +34,7 @@
       {% if fl %}
       <div style="display:grid;grid-template-columns:60px 1fr auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid #f1f3f4;">
         <div>
-          <img src="{{ fl.airline_logo }}" alt="{{ fl.airline }}" style="width:48px;height:48px;border-radius:8px;background:#f8f9fa;object-fit:contain;"
+          <img loading="lazy" decoding="async" src="{{ fl.airline_logo }}" alt="{{ fl.airline }}" style="width:48px;height:48px;border-radius:8px;background:#f8f9fa;object-fit:contain;"
                onerror="this.style.display='none'">
         </div>
         <div>

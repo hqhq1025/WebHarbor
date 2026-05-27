@@ -28,7 +28,7 @@
         {% set f = flights_by_dest.get(d.iata) %}
         <a href="{{ url_for('destination', slug=d.city_slug) }}" class="explore-dest-card">
           {% if d.image %}
-            <img src="{{ d.image }}" class="explore-dest-thumb" alt="{{ d.city }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ d.image }}" class="explore-dest-thumb" alt="{{ d.city }}" onerror="this.style.display='none'">
           {% else %}
             <div class="explore-dest-thumb" style="background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
           {% endif %}

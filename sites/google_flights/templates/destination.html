@@ -6,7 +6,7 @@
 {% set gallery = airport.get_gallery() %}
 <section class="dest-hero">
   {% if airport.image %}
-    <img src="{{ airport.image }}" alt="{{ airport.city }}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
+    <img loading="lazy" decoding="async" src="{{ airport.image }}" alt="{{ airport.city }}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
   {% endif %}
   <div class="dest-hero-overlay">
     <div class="dest-hero-eyebrow">Destination</div>
@@ -22,11 +22,11 @@
       <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">Explore {{ airport.city }}</h2>
       <div class="dest-gallery">
         <div class="dest-gallery-main pd-gallery-img">
-          <img src="{{ gallery[0] }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
+          <img loading="lazy" decoding="async" src="{{ gallery[0] }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
         </div>
         {% for img in gallery[1:5] %}
           <div class="pd-gallery-img">
-            <img src="{{ img }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
           </div>
         {% endfor %}
       </div>
@@ -54,7 +54,7 @@
           <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card">
             <div class="deal-image">
               {% if f.origin.image %}
-                <img src="{{ f.origin.image }}" alt="{{ f.origin.city }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ f.origin.image }}" alt="{{ f.origin.city }}" onerror="this.style.display='none'">
               {% else %}
                 <div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--g-grey-100);color:var(--g-grey-700);">{{ f.origin.city }}</div>
               {% endif %}
@@ -80,7 +80,7 @@
           <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card">
             <div class="deal-image">
               {% if f.destination.image %}
-                <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ f.destination.image }}" alt="{{ f.destination.city }}" onerror="this.style.display='none'">
               {% else %}
                 <div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--g-grey-100);">{{ f.destination.city }}</div>
               {% endif %}

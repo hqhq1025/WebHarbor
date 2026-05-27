@@ -94,7 +94,7 @@
       <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card" data-origin="{{ f.origin.iata }}">
         <div class="deal-image">
           {% if f.destination.image %}
-            <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}"
+            <img loading="lazy" decoding="async" src="{{ f.destination.image }}" alt="{{ f.destination.city }}"
                  onerror="this.parentElement.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,#1a73e8,#34a853);color:white;font-family:Google Sans;&quot;>' + this.alt + '</div>';">
           {% else %}
             <div style="display:flex;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));color:white;font-family:Google Sans;">
@@ -125,7 +125,7 @@
     {% for d in popular_dests %}
       <a href="{{ url_for('destination', slug=d.city_slug) }}" class="dest-card">
         {% if d.image %}
-          <img src="{{ d.image }}" alt="{{ d.city }}"
+          <img loading="lazy" decoding="async" src="{{ d.image }}" alt="{{ d.city }}"
                onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
         {% else %}
           <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>

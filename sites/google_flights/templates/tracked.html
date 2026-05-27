@@ -17,7 +17,7 @@
           <a href="{{ url_for('flight_detail', flight_id=t.flight.id) }}">
             <div class="deal-image">
               {% if t.flight.destination.image %}
-                <img src="{{ t.flight.destination.image }}" alt="{{ t.flight.destination.city }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ t.flight.destination.image }}" alt="{{ t.flight.destination.city }}" onerror="this.style.display='none'">
               {% else %}
                 <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
               {% endif %}
