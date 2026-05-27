@@ -9,7 +9,7 @@
 
 <section class="buy-hero" style="max-width:1100px;margin:32px auto 8px;padding:0 20px;display:grid;grid-template-columns:300px 1fr;gap:32px;align-items:start;">
   <div style="background:#f5f5f7;border-radius:18px;padding:24px;text-align:center;">
-    <img src="{{ cfg.image }}" alt="{{ cfg.name }}" style="max-width:100%;max-height:240px;object-fit:contain;" onerror="this.style.display='none'">
+    <img loading="lazy" decoding="async" src="{{ cfg.image }}" alt="{{ cfg.name }}" style="max-width:100%;max-height:240px;object-fit:contain;" onerror="this.style.display='none'">
   </div>
   <div>
     <h1 style="font-size:40px;font-weight:700;margin:0 0 6px;">Buy {{ cfg.name }}</h1>

@@ -296,14 +296,14 @@
         </div>
         {% if feature.images|length == 1 %}
         <div class="pd-gallery-single">
-            <img src="{{ feature.images[0] }}" alt="{{ feature.title }}"
+            <img loading="lazy" decoding="async" src="{{ feature.images[0] }}" alt="{{ feature.title }}"
                  onerror="this.style.display='none'">
         </div>
         {% elif feature.images|length > 1 %}
         <div class="pd-gallery-images">
             {% for img in feature.images %}
             <div class="pd-gallery-img">
-                <img src="{{ img }}" alt="{{ feature.title }}"
+                <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ feature.title }}"
                      onerror="this.parentElement.style.display='none'">
             </div>
             {% endfor %}
@@ -624,7 +624,7 @@
     <div class="related-grid">
         {% for item in related %}
         <a href="{{ url_for('product_detail', slug=item.slug) }}" class="related-card">
-            <img src="{{ item.image }}" alt="{{ item.name }}"
+            <img loading="lazy" decoding="async" src="{{ item.image }}" alt="{{ item.name }}"
                  onerror="this.style.display='none'">
             <h3>{{ item.name }}</h3>
             <p class="price">From ${{ "%.2f"|format(item.price) }}</p>
@@ -638,7 +638,7 @@
 <div class="sticky-buy-bar" id="sticky-bar">
     <div class="sticky-buy-inner">
         <div class="sticky-buy-info">
-            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ product.image }}" alt="{{ product.name }}" onerror="this.style.display='none'">
             <div>
                 <div class="sticky-buy-name">{{ product.name }}</div>
                 <div class="sticky-buy-price">From ${{ "%.2f"|format(product.price) }}</div>

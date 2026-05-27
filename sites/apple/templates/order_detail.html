@@ -46,7 +46,7 @@
         {% for item in order.items %}
         <div style="display:flex;gap:16px;padding:16px 0;{% if not loop.last %}border-bottom:1px solid var(--color-border){% endif %};align-items:center">
             <a href="{{ url_for('product_detail', slug=item.product.slug) }}">
-                <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                <img loading="lazy" decoding="async" src="{{ item.product.image }}" alt="{{ item.product.name }}"
                      style="width:80px;height:80px;object-fit:contain;background:#fff;border-radius:12px;padding:8px"
                      onerror="this.style.display='none'">
             </a>

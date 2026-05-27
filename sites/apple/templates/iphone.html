@@ -27,7 +27,7 @@
         {% for product in products %}
         <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
             <div class="lineup-card-image">
-                <img src="{{ product.image }}" alt="{{ product.name }}"
+                <img loading="lazy" decoding="async" src="{{ product.image }}" alt="{{ product.name }}"
                      onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:160px;height:220px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px\'>&#128241;</div>'">
             </div>
             {% if product.is_new %}<span class="badge-new">New</span>{% endif %}

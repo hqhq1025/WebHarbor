@@ -18,7 +18,7 @@
         <div style="background:var(--color-bg-secondary);border-radius:20px;overflow:hidden;transition:transform 0.3s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
             <a href="{{ url_for('product_detail', slug=item.product.slug) }}" style="text-decoration:none;color:var(--color-text)">
                 <div style="height:200px;display:flex;align-items:center;justify-content:center;background:#fff;padding:20px">
-                    <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                    <img loading="lazy" decoding="async" src="{{ item.product.image }}" alt="{{ item.product.name }}"
                          style="max-height:100%;max-width:100%;object-fit:contain"
                          onerror="this.style.display='none'">
                 </div>

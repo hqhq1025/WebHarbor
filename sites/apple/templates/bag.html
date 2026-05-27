@@ -46,7 +46,7 @@
 
     <div class="bag-item">
         <div class="bag-item-image">
-            <img src="{{ product.image }}" alt="{{ product.name }}"
+            <img loading="lazy" decoding="async" src="{{ product.image }}" alt="{{ product.name }}"
                  onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:120px;height:120px;border-radius:8px\'>{{ product.name }}</div>'">
         </div>
         <div class="bag-item-details">
