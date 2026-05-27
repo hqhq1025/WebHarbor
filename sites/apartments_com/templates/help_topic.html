@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Help — {{ title }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('help_page') }}">Help Center</a> › <span>{{ title }}</span>
+  </nav>
+
+  <div class="row">
+    <div style="flex:1;min-width:220px;max-width:260px;">
+      <div class="section-block">
+        <h3>Help topics</h3>
+        {% for slug, (t_title, _) in topics.items() %}
+          <a href="{{ url_for('help_topic', topic=slug) }}" style="display:block;padding:6px 0;{% if slug == topic %}font-weight:700;color:var(--ink);{% endif %}">{{ t_title }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="flex:3;min-width:300px;">
+      <h1>{{ title }}</h1>
+      <p style="color:var(--muted);font-size:16px;">{{ intro }}</p>
+
+      <div class="section-block">
+        <h2>Common questions</h2>
+        <details><summary><strong>{{ title }} — most asked question</strong></summary>
+          <p>Detailed answer for the most common question on this topic. Renters working through this stage typically encounter a few specific pain points; we cover them step-by-step below.</p>
+        </details>
+        <details><summary><strong>How long does this stage take?</strong></summary>
+          <p>It depends on the market and your preparation. With docs ready, most renters complete this in 3–5 business days.</p>
+        </details>
+        <details><summary><strong>What documents do I need?</strong></summary>
+          <p>Photo ID, two most recent pay stubs (or 2 years of tax returns if self-employed), bank statements, and references for any prior landlords.</p>
+        </details>
+        <details><summary><strong>Can I do this with bad credit?</strong></summary>
+          <p>Yes — landlords accept letters of explanation, larger deposits, co-signers, or guarantor-service alternatives.</p>
+        </details>
+      </div>
+
+      <div class="section-block">
+        <h2>Step-by-step checklist</h2>
+        <ol>
+          <li>Identify your target neighborhoods and budget.</li>
+          <li>Gather application documents.</li>
+          <li>Apply within 48 hours of touring — units move fast.</li>
+          <li>Negotiate concessions if the market is soft.</li>
+          <li>Read the lease before signing — flag anything unclear.</li>
+        </ol>
+      </div>
+
+      <div class="section-block">
+        <h2>Still need help?</h2>
+        <p>Email <a href="mailto:support@apartments.com">support@apartments.com</a> or call (800) 555-RENT.</p>
+      </div>
+
+      <h2>Related topics</h2>
+      <div class="row">
+        {% for r in related %}
+          <a href="{{ url_for('help_topic', topic=r) }}" class="chip">{{ topics[r][0] }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Move-In Cost Calculator | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <h1>Move-In Cost Estimator</h1>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+      <div class="form-field" style="flex:1;"><label>Monthly rent ($)</label><input type="number" name="rent" value="{{ rent or '' }}"></div>
+      <div class="form-field" style="flex:1;"><label>Deposit (months of rent)</label><input type="number" name="deposit_months" value="1"></div>
+      <div class="form-field" style="flex:1;"><label>Application fee</label><input type="number" name="app_fee" value="75"></div>
+      <div class="form-field" style="flex:1;"><label>Admin fee</label><input type="number" name="admin_fee" value="200"></div>
+      <div class="form-field" style="flex:1;"><label>Moving cost</label><input type="number" name="moving" value="800"></div>
+    </div>
+    <button class="btn" type="submit">Calculate</button>
+  </form>
+
+  {% if rent %}
+  <div class="section-block">
+    <h2>Total move-in cost: ${{ '{:,}'.format(total) }}</h2>
+    <table class="units">
+      <tr><td>First month's rent</td><td>${{ '{:,}'.format(rent) }}</td></tr>
+      <tr><td>Security deposit</td><td>${{ '{:,}'.format(deposit) }}</td></tr>
+      <tr><td>Application fee</td><td>${{ app_fee }}</td></tr>
+      <tr><td>Admin fee</td><td>${{ admin }}</td></tr>
+      <tr><td>Moving cost</td><td>${{ '{:,}'.format(moving) }}</td></tr>
+      <tr><th>Total</th><th>${{ '{:,}'.format(total) }}</th></tr>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

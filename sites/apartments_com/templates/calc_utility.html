@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Utility Cost Estimator | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <h1>Estimate monthly utility cost</h1>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+      <div class="form-field" style="flex:1;"><label>Square footage</label><input type="number" name="sqft" value="{{ sqft }}"></div>
+      <div class="form-field" style="flex:1;"><label>Bedrooms</label><input type="number" name="beds" value="{{ beds }}"></div>
+      <div class="form-field" style="flex:1;"><label>State</label><input type="text" maxlength="2" name="state" value="{{ state }}"></div>
+    </div>
+    <button class="btn" type="submit">Calculate</button>
+  </form>
+
+  <div class="section-block">
+    <h2>Estimated monthly utilities: ${{ total }}</h2>
+    <table class="units">
+      <tr><td>Electric</td><td>${{ elec }}</td></tr>
+      <tr><td>Gas / Heat</td><td>${{ gas }}</td></tr>
+      <tr><td>Water / Sewer / Trash</td><td>${{ water }}</td></tr>
+      <tr><td>Internet</td><td>${{ internet }}</td></tr>
+      <tr><th>Total</th><th>${{ total }}</th></tr>
+    </table>
+    <p style="color:var(--muted);font-size:13px;">Estimates based on rates for {{ state }} as of May 2026. Actual bills vary with weather, occupancy, and provider.</p>
+  </div>
+</div>
+{% endblock %}

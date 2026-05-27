@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} | Property Manager | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> › <span>{{ p.name }}</span>
+  </nav>
+  <div class="spec-banner">
+    <h1>{{ p.name }}</h1>
+    <p>{{ p.blurb }}</p>
+  </div>
+  <div class="row" style="margin-top:18px;">
+    <div class="section-block" style="flex:1;min-width:200px;"><h3>Headquarters</h3><p>{{ p.headquarters }}</p></div>
+    <div class="section-block" style="flex:1;min-width:200px;"><h3>Portfolio</h3><p>{{ '{:,}'.format(p.portfolio_size) }}+ units nationally</p></div>
+    <div class="section-block" style="flex:1;min-width:200px;"><h3>Avg Rating</h3><p>★ {{ '%.1f'|format(p.avg_rating) }} across resident reviews</p></div>
+    <div class="section-block" style="flex:1;min-width:200px;"><h3>Contact</h3><p>{{ p.contact_phone }}<br>{{ p.contact_email }}</p></div>
+  </div>
+
+  <h2>Portfolio in our database ({{ portfolio|length }} buildings)</h2>
+  <div class="grid">
+    {% for b in portfolio %}{% include "_card.html" %}{% endfor %}
+  </div>
+</div>
+{% endblock %}

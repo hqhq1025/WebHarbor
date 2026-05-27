@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mortgage Pre-Approval | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <h1>Mortgage Pre-Approval</h1>
+  <p style="color:var(--muted);">A quick estimate of the loan amount you might qualify for. Pairs with our <a href="{{ url_for('calc_rent_vs_buy') }}">rent-vs-buy tool</a>.</p>
+
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+      <div class="form-field" style="flex:1;"><label>Annual income ($)</label><input type="number" name="income" required></div>
+      <div class="form-field" style="flex:1;"><label>Annual debt payments ($)</label><input type="number" name="debts" value="0"></div>
+      <div class="form-field" style="flex:1;"><label>Credit score</label><input type="number" name="credit_score" value="700" min="500" max="850"></div>
+    </div>
+    <button class="btn" type="submit">Estimate</button>
+  </form>
+
+  {% if submitted %}
+  <div class="section-block">
+    <h2>Estimated loan amount: ${{ '{:,}'.format(loan_max) }}</h2>
+    <p>Based on income ${{ '{:,}'.format(income) }}, debts ${{ '{:,}'.format(debts) }}, credit {{ credit }}.</p>
+    <p style="color:var(--muted);">This is a pre-qualification estimate, not a binding commitment. A loan officer will follow up to start a formal pre-approval.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

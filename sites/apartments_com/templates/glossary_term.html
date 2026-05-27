@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t.term }} | Glossary | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('glossary_index') }}">Glossary</a> › <span>{{ t.term }}</span>
+  </nav>
+  <h1>{{ t.term }}</h1>
+  <div class="section-block">
+    <p>{{ t.definition }}</p>
+  </div>
+  {% if related %}
+  <div class="section-block">
+    <h2>Related terms</h2>
+    {% for r in related %}
+      <a class="chip" href="{{ url_for('glossary_term', slug=r.slug) }}">{{ r.term }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

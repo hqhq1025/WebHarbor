@@ -15,8 +15,10 @@
       <nav>
         <a href="{{ url_for('search') }}">Search</a>
         <a href="{{ url_for('cities_index') }}">Cities</a>
-        <a href="{{ url_for('schools_index') }}">Schools</a>
         <a href="{{ url_for('articles_index') }}">Renters Guide</a>
+        <a href="{{ url_for('roommates_index') }}">Roommates</a>
+        <a href="{{ url_for('renters_insurance') }}">Insurance</a>
+        <a href="{{ url_for('moving_services') }}">Movers</a>
         <a href="{{ url_for('list_property') }}">List a Property</a>
       </nav>
       <div class="spacer"></div>
@@ -25,6 +27,7 @@
           <a href="{{ url_for('compare') }}">Compare ({{ compare_buildings|length }})</a>
         {% endif %}
         {% if current_user.is_authenticated %}
+          <a href="{{ url_for('notifications') }}">🔔{% if unread_notifications %} ({{ unread_notifications }}){% endif %}</a>
           <a href="{{ url_for('favorites_list') }}">Favorites</a>
           <a href="{{ url_for('account') }}">{{ current_user.name.split(' ')[0] }}</a>
           <a href="{{ url_for('logout') }}">Sign out</a>
@@ -49,7 +52,7 @@
   <main>{% block content %}{% endblock %}</main>
 
   <footer class="site-footer">
-    <div class="cols">
+    <div class="cols" style="grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;">
       <div>
         <h4>Apartments.com</h4>
         <p style="font-size:13px;color:#cbd5e1;">The leading marketplace for apartment rentals in the United States.
@@ -62,26 +65,68 @@
         </form>
       </div>
       <div>
+        <h4>Top Metros</h4>
+        {% for label, slug in footer_metros[:8] %}
+          <a href="{{ url_for('city_page', city_slug=slug) }}">{{ label }}</a>
+        {% endfor %}
+        <a href="{{ url_for('cities_index') }}">All cities →</a>
+      </div>
+      <div>
+        <h4>By Amenity</h4>
+        {% for label, slug in footer_amenities[:6] %}
+          <a href="/{{ slug }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <div>
+        <h4>By Bedrooms &amp; Price</h4>
+        {% for label, slug in footer_beds %}
+          <a href="/{{ slug }}">{{ label }}</a>
+        {% endfor %}
+        <a href="/apartments-under-1500">Under $1,500</a>
+        <a href="/apartments-under-2000">Under $2,000</a>
+        <a href="/luxury-3000-plus">Luxury $3,000+</a>
+      </div>
+      <div>
+        <h4>Tools &amp; More</h4>
+        <a href="{{ url_for('calc_affordability') }}">Affordability Calculator</a>
+        <a href="{{ url_for('calc_rent_vs_buy') }}">Rent vs Buy</a>
+        <a href="{{ url_for('renters_insurance') }}">Renters Insurance</a>
+        <a href="{{ url_for('moving_services') }}">Moving Services</a>
+        <a href="{{ url_for('roommates_index') }}">Find a Roommate</a>
+        <a href="{{ url_for('glossary_index') }}">Glossary</a>
+      </div>
+    </div>
+    <div class="cols" style="grid-template-columns: 1fr 1fr 1fr 1fr;margin-top:24px;">
+      <div>
         <h4>Renters</h4>
         <a href="{{ url_for('articles_index') }}">Renters Guide</a>
-        <a href="{{ url_for('articles_index') }}?category=Moving%20Tips">Moving Tips</a>
+        <a href="{{ url_for('blog_category', category='Moving-Tips') }}">Moving Tips</a>
         <a href="{{ url_for('search') }}?mode=student">Student Housing</a>
-        <a href="{{ url_for('search') }}?mode=senior">Senior Housing</a>
+        <a href="/senior-55-plus">Senior 55+</a>
         <a href="{{ url_for('search') }}?mode=military">Military Housing</a>
       </div>
       <div>
-        <h4>Pros</h4>
+        <h4>Property Pros</h4>
         <a href="{{ url_for('list_property') }}">List a Property</a>
         <a href="{{ url_for('list_property') }}">Property Management Tools</a>
-        <a href="{{ url_for('about') }}">About</a>
-        <a href="{{ url_for('help_page') }}">Help</a>
+        <a href="{{ url_for('investors') }}">Investor Relations</a>
       </div>
       <div>
-        <h4>Discover</h4>
-        <a href="{{ url_for('cities_index') }}">Browse All Cities</a>
-        <a href="{{ url_for('schools_index') }}">Schools</a>
-        <a href="{{ url_for('search') }}?mode=luxury">Luxury Apartments</a>
-        <a href="{{ url_for('search_draw') }}">Draw Search</a>
+        <h4>Help &amp; Account</h4>
+        <a href="{{ url_for('help_page') }}">Help Center</a>
+        <a href="{{ url_for('help_topic', topic='applying') }}">Applying</a>
+        <a href="{{ url_for('help_topic', topic='lease-signing') }}">Lease Signing</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('notifications') }}">Notifications{% if unread_notifications %} ({{ unread_notifications }}){% endif %}</a>
+        {% endif %}
+        <a href="{{ url_for('sitemap_root') }}">Sitemap</a>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('careers') }}">Careers</a>
+        <a href="{{ url_for('press') }}">Press</a>
+        <a href="{{ url_for('mobile_app') }}">Mobile App</a>
       </div>
     </div>
     <div class="copy">© {{ current_year }} Apartments.com Mirror — WebHarbor benchmark site. Not affiliated with apartments.com.</div>

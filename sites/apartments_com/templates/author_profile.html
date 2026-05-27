@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('articles_index') }}">Renters Guide</a> › <span>{{ a.name }}</span>
+  </nav>
+
+  <div class="row">
+    <div class="section-block" style="flex:1;max-width:300px;">
+      {% if a.avatar %}<img src="{{ a.avatar }}" alt="{{ a.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
+      <h2 style="margin-top:14px;">{{ a.name }}</h2>
+      <p style="color:var(--muted);">{{ a.title }}</p>
+      {% if a.twitter %}<p>Twitter: {{ a.twitter }}</p>{% endif %}
+    </div>
+    <div style="flex:2;min-width:300px;">
+      <div class="section-block">
+        <h3>About</h3>
+        <p>{{ a.bio }}</p>
+      </div>
+      <div class="section-block">
+        <h3>Recent articles by {{ a.name.split(' ')[0] }}</h3>
+        {% for art in articles %}
+        <div style="border-bottom:1px solid var(--line);padding:10px 0;">
+          <a href="{{ url_for('article_detail', slug=art.slug) }}" style="font-weight:600;">{{ art.title }}</a>
+          <div style="color:var(--muted);font-size:13px;">{{ art.category }} · {{ art.published_at.strftime('%b %d, %Y') }} · {{ art.reading_time_min }} min read</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Renter's Glossary | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1>Renter's Glossary</h1>
+  <p style="color:var(--muted);">{{ terms|length }} terms, plain-English definitions for the words you'll hear during your apartment search.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+    {% for l in letters %}
+      <a href="#letter-{{ l }}" class="chip">{{ l }}</a>
+    {% endfor %}
+  </div>
+
+  {% for l in letters %}
+  <div class="section-block" id="letter-{{ l }}">
+    <h2>{{ l }}</h2>
+    {% for t in terms %}
+      {% if (t.term[:1] or '?')|upper == l %}
+        <p style="margin:6px 0;">
+          <a href="{{ url_for('glossary_term', slug=t.slug) }}" style="font-weight:600;">{{ t.term }}</a>
+          — {{ t.definition[:200] }}{% if t.definition|length > 200 %}…{% endif %}
+        </p>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

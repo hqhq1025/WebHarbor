@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Rent vs Buy Calculator | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <h1>Rent vs Buy</h1>
+  <p style="color:var(--muted);">A simple total-cost comparison over your holding period. Inputs auto-fill with a typical scenario.</p>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+      <div class="form-field" style="flex:1;"><label>Monthly rent ($)</label><input type="number" name="rent" value="{{ rent }}"></div>
+      <div class="form-field" style="flex:1;"><label>Home price ($)</label><input type="number" name="price" value="{{ price }}"></div>
+    </div>
+    <div class="row">
+      <div class="form-field" style="flex:1;"><label>Down payment ($)</label><input type="number" name="down" value="{{ down }}"></div>
+      <div class="form-field" style="flex:1;"><label>Years to compare</label><input type="number" name="years" value="{{ years }}"></div>
+    </div>
+    <button class="btn" type="submit">Calculate</button>
+  </form>
+
+  <div class="row">
+    <div class="section-block" style="flex:1;">
+      <h2>Owning</h2>
+      <p>Monthly mortgage (PI): <strong>${{ '{:,}'.format(mortgage) }}</strong></p>
+      <p>Property tax: ${{ '{:,}'.format(taxes) }}/mo</p>
+      <p>Insurance: ${{ '{:,}'.format(insurance) }}/mo</p>
+      <hr>
+      <p>Total monthly cost: <strong>${{ '{:,}'.format(own_total) }}</strong></p>
+      <p>{{ years }}-year cost: ${{ '{:,}'.format(own_paid) }}</p>
+    </div>
+    <div class="section-block" style="flex:1;">
+      <h2>Renting</h2>
+      <p>Monthly: <strong>${{ '{:,}'.format(rent) }}</strong></p>
+      <p>{{ years }}-year cost: ${{ '{:,}'.format(rent_total) }}</p>
+      <hr>
+      <p style="color:var(--muted);">Renting frees up your down payment for other investments — be sure to compare against opportunity cost too.</p>
+    </div>
+  </div>
+  <p style="color:var(--muted);font-size:13px;">Calculator is illustrative only. Mortgage assumes 6.75% APR over {{ years }}× 12 monthly payments.</p>
+</div>
+{% endblock %}
