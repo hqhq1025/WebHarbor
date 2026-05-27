@@ -602,8 +602,7 @@ def airpods():
 @app.route('/accessories')
 @app.route('/accessories/')
 def accessories():
-    products = Product.query.filter_by(category='accessories').all()
-    return render_template('accessories.html', products=products)
+    return _cached_catalog_render('accessories')
 
 
 # ---------------------------------------------------------------------------
@@ -613,9 +612,66 @@ def accessories():
 @app.route('/shop')
 @app.route('/shop/')
 def shop():
-    products = Product.query.all()
-    categories = db.session.query(Product.category).distinct().all()
-    return render_template('shop.html', products=products, categories=[c[0] for c in categories])
+    return _cached_catalog_render('shop')
+
+
+# ---------------------------------------------------------------------------
+# Catalog cache for /shop and /accessories.
+#
+# Why this is here: both routes render the entire product catalog (5526 rows
+# for /shop, 4902 for /accessories) into a single HTML response. The page is
+# 5MB and a clean Jinja render takes ~150ms — 16k+ ``url_for`` calls dominate
+# CPU. The product catalog is static between control_server /reset calls
+# (which respawn the worker, naturally wiping any module-level cache), so we
+# can render the full HTML once per (authed, cart_count) variant and serve
+# subsequent hits from a string.
+#
+# Personalization in base.html depends only on ``current_user.is_authenticated``
+# and ``cart_count`` (no csrf_token / no per-user product data inside these
+# two templates), so the (authed, cart_count) cache key is sufficient. On a
+# cache HIT we skip render_template entirely, which also skips the
+# inject_cart_count / inject_r6_context processors and their DB queries.
+# ---------------------------------------------------------------------------
+
+_CATALOG_DATA_CACHE: dict = {}     # route -> (products, categories)
+_CATALOG_HTML_CACHE: dict = {}     # (route, authed, cart_count) -> html
+
+
+def _catalog_data(route: str):
+    data = _CATALOG_DATA_CACHE.get(route)
+    if data is None:
+        if route == 'shop':
+            products = Product.query.all()
+            categories = [c[0] for c in db.session.query(
+                Product.category).distinct().all()]
+        else:  # 'accessories'
+            products = Product.query.filter_by(category='accessories').all()
+            categories = None
+        data = (products, categories)
+        _CATALOG_DATA_CACHE[route] = data
+    return data
+
+
+def _cached_catalog_render(route: str) -> str:
+    if current_user.is_authenticated:
+        cart_count = CartItem.query.filter_by(
+            user_id=current_user.id).count()
+        authed = True
+    else:
+        cart_count = len(session.get('cart', []))
+        authed = False
+    key = (route, authed, cart_count)
+    html = _CATALOG_HTML_CACHE.get(key)
+    if html is None:
+        products, categories = _catalog_data(route)
+        if route == 'shop':
+            html = render_template(
+                'shop.html', products=products, categories=categories)
+        else:
+            html = render_template(
+                'accessories.html', products=products)
+        _CATALOG_HTML_CACHE[key] = html
+    return html
 
 
 @app.route('/product/<slug>')
