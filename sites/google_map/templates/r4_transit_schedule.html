@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ payload.title }} | Google Maps{% endblock %}
+{% block body %}
+<div class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">
+    <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+    <span>Google Maps</span>
+  </a>
+</div>
+<div style="max-width:880px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;">
+  {% if line %}
+    <a href="{{ url_for('transit_line_detail', line_slug=line.slug) }}" style="color:#1a73e8;font-size:13px;text-decoration:none;">&larr; back to {{ line.short_name }} {{ line.name }}</a>
+  {% endif %}
+  <h1 style="font-size:22px;margin:8px 0 4px;">{{ payload.title }}</h1>
+  <div style="color:#5f6368;font-size:13px;margin-bottom:18px;">{{ payload.subtitle or '' }}</div>
+
+  {% if days and day %}
+  <nav class="r4-day-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;">
+    {% for d in days %}
+      <a href="{{ url_for('r4_transit_schedule', slug=line.slug, day=d) }}"
+         style="padding:6px 12px;border-radius:16px;font-size:13px;text-decoration:none;
+                background:{% if d == day %}#1a73e8{% else %}#f1f3f4{% endif %};
+                color:{% if d == day %}#fff{% else %}#202124{% endif %};">
+        {{ d.title() }}
+      </a>
+    {% endfor %}
+    <a href="{{ url_for('r4_transit_first_last', slug=line.slug) }}"
+       style="padding:6px 12px;border-radius:16px;font-size:13px;text-decoration:none;background:#f1f3f4;">First/Last</a>
+    <a href="{{ url_for('r4_transit_headway', slug=line.slug) }}"
+       style="padding:6px 12px;border-radius:16px;font-size:13px;text-decoration:none;background:#f1f3f4;">Headway</a>
+    <a href="{{ url_for('r4_transit_fare', slug=line.slug) }}"
+       style="padding:6px 12px;border-radius:16px;font-size:13px;text-decoration:none;background:#f1f3f4;">Fare</a>
+  </nav>
+  {% endif %}
+
+  {% if payload.fields %}
+  <dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+    {% for k, v in payload.fields.items() %}
+    <div style="background:#f1f3f4;border-radius:8px;padding:12px 14px;">
+      <dt style="font-size:11px;color:#5f6368;text-transform:uppercase;letter-spacing:.4px;">{{ k }}</dt>
+      <dd style="margin:4px 0 0;font-size:14px;font-weight:500;">{{ v }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+  {% endif %}
+
+  {% if payload.table %}
+  <table style="border-collapse:collapse;width:100%;margin-top:18px;font-size:13px;">
+    <thead>
+      <tr>{% for h in payload.table.cols %}<th style="text-align:left;padding:8px 10px;border-bottom:2px solid #dadce0;background:#fafafa;">{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in payload.table.rows %}
+      <tr>{% for cell in row %}<td style="padding:6px 10px;border-bottom:1px solid #f1f3f4;">{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

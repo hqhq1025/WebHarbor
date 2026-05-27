@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ payload.title }} | Google Maps{% endblock %}
+{% block body %}
+<div class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">
+    <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+    <span>Google Maps</span>
+  </a>
+</div>
+<div style="max-width:820px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;">
+  {% if place %}
+    <a href="{{ url_for('place_detail', slug=place.slug) }}" style="color:#1a73e8;font-size:13px;text-decoration:none;">&larr; back to {{ place.name }}</a>
+  {% endif %}
+  <h1 style="font-size:22px;margin:8px 0 4px;display:flex;align-items:center;gap:8px;">
+    <span class="material-icons-outlined" style="color:#34a853;">ev_station</span>
+    {{ payload.title }}
+  </h1>
+  <div style="color:#5f6368;font-size:13px;margin-bottom:18px;">{{ payload.subtitle or '' }}</div>
+
+  {% if connectors %}
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;">
+    {% for c in connectors %}
+    <span style="background:#e6f4ea;color:#137333;padding:4px 10px;border-radius:16px;font-size:12px;">{{ c }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if payload.fields %}
+  <dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+    {% for k, v in payload.fields.items() %}
+    <div style="background:#f1f3f4;border-radius:8px;padding:12px 14px;">
+      <dt style="font-size:11px;color:#5f6368;text-transform:uppercase;letter-spacing:.4px;">{{ k }}</dt>
+      <dd style="margin:4px 0 0;font-size:14px;font-weight:500;">{{ v }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+  {% endif %}
+
+  {% if payload.table %}
+  <table style="border-collapse:collapse;width:100%;margin-top:18px;font-size:13px;">
+    <thead>
+      <tr>{% for h in payload.table.cols %}<th style="text-align:left;padding:8px 10px;border-bottom:2px solid #dadce0;background:#fafafa;">{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in payload.table.rows %}
+      <tr>{% for cell in row %}<td style="padding:6px 10px;border-bottom:1px solid #f1f3f4;">{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

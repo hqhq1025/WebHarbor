@@ -5338,6 +5338,841 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# === R4-R6 backfill BEGIN — auto-generated, do not hand-edit between markers ===
+# Added 2026-05-27 to fill the mid-round gap (R4 transit deep dive,
+# R5 EV/gas/parking vertical detail, R6 street-view & photosphere).
+# All data is *derived* from md5(slug) — no DB writes, instance_seed
+# md5 unchanged, byte-identical reset still passes.
+#
+# Marker convention: every function and constant uses the r4_ / r5_ /
+# r6_ (or R4_/R5_/R6_) prefix so grep -nE '\br[4-6]_' surfaces it.
+# --------------------------------------------------------------------------
+R4_DAYS = ("monday", "tuesday", "wednesday", "thursday",
+           "friday", "saturday", "sunday")
+R4_DIRECTIONS = ("northbound", "southbound", "eastbound", "westbound")
+R4_FARE_ZONES = ("local", "express", "premium")
+
+
+def _r46_int(slug, salt, lo, hi):
+    h = hashlib.md5(f"{salt}:{slug}".encode()).digest()
+    n = int.from_bytes(h[:4], "big")
+    return lo + (n % max(1, hi - lo + 1))
+
+
+def _r46_pick(slug, options, salt):
+    h = hashlib.md5(f"{salt}:{slug}".encode()).digest()
+    n = int.from_bytes(h[:4], "big")
+    return options[n % len(options)]
+
+
+def _r46_render(payload, template, **ctx):
+    """JSON if ?format=json, else HTML template (inline fallback)."""
+    want_json = (request.args.get("format") == "json"
+                 or "application/json" in (request.headers.get("Accept", "")))
+    if want_json:
+        return jsonify(payload)
+    try:
+        return render_template(template, payload=payload, **ctx)
+    except TemplateNotFound:
+        return render_template_string(
+            "<!doctype html><meta charset='utf-8'>"
+            "<title>{{ payload.title }} | Maps</title>"
+            "<style>body{font-family:Roboto,Arial,sans-serif;max-width:820px;"
+            "margin:32px auto;padding:0 16px;color:#202124}"
+            "h1{font-size:22px;margin-bottom:4px}"
+            ".sub{color:#5f6368;font-size:13px;margin-bottom:18px}"
+            "dt{font-weight:600;margin-top:8px;font-size:13px;color:#5f6368;"
+            "text-transform:uppercase;letter-spacing:.4px}"
+            "dd{margin:2px 0 8px 0;font-size:14px}"
+            "table{border-collapse:collapse;margin:8px 0;width:100%}"
+            "th,td{border:1px solid #dadce0;padding:6px 10px;font-size:13px;"
+            "text-align:left}th{background:#f1f3f4}"
+            "a{color:#1a73e8;text-decoration:none}</style>"
+            "<h1>{{ payload.title }}</h1>"
+            "<p class='sub'>{{ payload.subtitle or '' }}</p>"
+            "<dl>{% for k, v in (payload.fields or {}).items() %}"
+            "<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>"
+            "{% if payload.table %}<table><thead><tr>"
+            "{% for h in payload.table.cols %}<th>{{ h }}</th>{% endfor %}"
+            "</tr></thead><tbody>"
+            "{% for row in payload.table.rows %}<tr>"
+            "{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>"
+            "{% endfor %}</tbody></table>{% endif %}"
+            "{% if payload.back %}<p><a href='{{ payload.back }}'>"
+            "&larr; back</a></p>{% endif %}",
+            payload=payload,
+        )
+
+
+def _r4_line(slug):
+    return TransitLine.query.filter_by(slug=slug).first()
+
+
+def _r4_freq_minutes(line):
+    txt = (line.frequency_peak or "").lower()
+    digits = "".join(ch for ch in txt if ch.isdigit())
+    try:
+        return max(2, int(digits or 10))
+    except ValueError:
+        return 10
+
+
+def _r4_hours(line):
+    h = (line.hours or "").strip()
+    if not h or h.lower() in ("24 hours", "24h"):
+        return 0, 24 * 60
+    parts = h.replace("—", "–").split("–")
+    if len(parts) != 2:
+        return 5 * 60, 24 * 60
+    def parse(t):
+        t = t.strip().lower().replace(" ", "")
+        ampm = "am"
+        if t.endswith("pm"): ampm = "pm"; t = t[:-2]
+        elif t.endswith("am"): t = t[:-2]
+        try:
+            hh, mm = t.split(":")
+            hh = int(hh); mm = int(mm)
+        except ValueError:
+            return 5 * 60
+        if ampm == "pm" and hh != 12: hh += 12
+        if ampm == "am" and hh == 12: hh = 0
+        return hh * 60 + mm
+    return parse(parts[0]), parse(parts[1])
+
+
+def _r4_schedule_entries(line, day):
+    freq = _r4_freq_minutes(line)
+    if day in ("saturday", "sunday"):
+        freq = max(freq + 2, int(freq * 1.4))
+    start_m, end_m = _r4_hours(line)
+    if end_m <= start_m:
+        end_m += 24 * 60
+    entries = []
+    t = start_m
+    seq = 0
+    while t < end_m and len(entries) < 60:
+        hh = (t // 60) % 24
+        mm = t % 60
+        direction = R4_DIRECTIONS[seq % 2]
+        entries.append({
+            "seq": seq + 1,
+            "time": f"{hh:02d}:{mm:02d}",
+            "direction": direction,
+            "headway_min": freq,
+        })
+        t += freq
+        seq += 1
+    return entries
+
+
+@app.route("/transit/lines/<slug>/schedule")
+@app.route("/transit/lines/<slug>/schedule/<day>")
+def r4_transit_schedule(slug, day=None):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    day = (day or "weekday").lower()
+    canon = day if day in R4_DAYS else ("saturday" if day == "weekend"
+                                        else "monday")
+    entries = _r4_schedule_entries(line, canon)
+    head = entries[0]["time"] if entries else "—"
+    tail = entries[-1]["time"] if entries else "—"
+    payload = {
+        "title": f"{line.short_name} {line.name} — {canon.title()} schedule",
+        "subtitle": f"{line.agency} · {len(entries)} schedule_entry rows",
+        "fields": {
+            "First departure": head,
+            "Last departure": tail,
+            "Headway (peak)": f"{_r4_freq_minutes(line)} min",
+            "Service window": line.hours or "—",
+            "Day": canon,
+        },
+        "table": {
+            "cols": ["#", "Time", "Direction", "Headway"],
+            "rows": [[e["seq"], e["time"], e["direction"],
+                      f"{e['headway_min']} min"] for e in entries],
+        },
+        "back": url_for("transit_line_detail", line_slug=line.slug),
+    }
+    return _r46_render(payload, "r4_transit_schedule.html",
+                       line=line, day=canon, entries=entries,
+                       days=R4_DAYS)
+
+
+@app.route("/transit/lines/<slug>/first-last")
+@app.route("/transit/lines/<slug>/first_last")
+def r4_transit_first_last(slug):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    rows = []
+    for day in R4_DAYS:
+        entries = _r4_schedule_entries(line, day)
+        first_t = entries[0]["time"] if entries else "—"
+        last_t = entries[-1]["time"] if entries else "—"
+        rows.append([day.title(), first_t, last_t, f"{len(entries)} trips"])
+    payload = {
+        "title": f"{line.short_name} {line.name} — First/Last by day",
+        "subtitle": f"{line.agency}",
+        "fields": {"Service window": line.hours or "—"},
+        "table": {"cols": ["Day", "First", "Last", "Trip count"],
+                  "rows": rows},
+        "back": url_for("transit_line_detail", line_slug=line.slug),
+    }
+    return _r46_render(payload, "r4_transit_schedule.html",
+                       line=line, day="overview", entries=[],
+                       days=R4_DAYS)
+
+
+@app.route("/transit/lines/<slug>/headway")
+def r4_transit_headway(slug):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    peak = _r4_freq_minutes(line)
+    off = max(peak + 2, int(peak * 1.6))
+    night = max(off + 3, int(peak * 2.2))
+    rows = [
+        ("Weekday AM peak (06:00–10:00)", f"{peak} min"),
+        ("Weekday midday (10:00–15:00)",  f"{off} min"),
+        ("Weekday PM peak (15:00–19:00)", f"{peak} min"),
+        ("Weekday evening (19:00–22:00)", f"{off} min"),
+        ("Weekday late-night (22:00–06:00)", f"{night} min"),
+        ("Weekend daytime", f"{off} min"),
+        ("Weekend overnight", f"{night + 4} min"),
+    ]
+    payload = {
+        "title": f"{line.short_name} {line.name} — Headway analytics",
+        "subtitle": f"{line.agency} · derived from frequency_peak",
+        "fields": dict(rows),
+        "back": url_for("r4_transit_schedule", slug=line.slug),
+    }
+    return _r46_render(payload, "r4_transit_schedule.html",
+                       line=line, day="headway", entries=[],
+                       days=R4_DAYS)
+
+
+@app.route("/transit/lines/<slug>/fare")
+def r4_transit_fare(slug):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    base = round(2.0 + _r46_int(line.slug, "fare", 0, 30) / 10.0, 2)
+    monthly = round(base * 40 + _r46_int(line.slug, "month", 0, 25), 2)
+    payload = {
+        "title": f"{line.short_name} {line.name} — Fare",
+        "subtitle": f"{line.agency} fare card",
+        "fields": {
+            "Single ride": f"${base:.2f}",
+            "Day pass": f"${base * 4:.2f}",
+            "7-day pass": f"${base * 14:.2f}",
+            "Monthly pass": f"${monthly:.2f}",
+            "Reduced fare": f"${base / 2:.2f}",
+            "Free transfer window": "2 hours",
+            "Fare zone": _r46_pick(line.slug, R4_FARE_ZONES, "zone"),
+        },
+        "back": url_for("transit_line_detail", line_slug=line.slug),
+    }
+    return _r46_render(payload, "r4_transit_schedule.html",
+                       line=line, day="fare", entries=[],
+                       days=R4_DAYS)
+
+
+@app.route("/transit/lines/<slug>/stop/<int:stop_idx>")
+def r4_transit_stop(slug, stop_idx):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    stops = line.get_stops()
+    if stop_idx < 1 or stop_idx > len(stops):
+        abort(404)
+    stop_name = stops[stop_idx - 1]
+    stop_slug = re.sub(r"[^a-z0-9]+", "-",
+                       f"{line.slug}-{stop_name}".lower()).strip("-")
+    accessible = (_r46_int(stop_slug, "access", 0, 9) >= 3)
+    elevators = _r46_int(stop_slug, "elev", 0, 4)
+    payload = {
+        "title": f"{stop_name} ({line.short_name})",
+        "subtitle": f"Stop {stop_idx} of {len(stops)} · {line.name}",
+        "fields": {
+            "Line": line.name,
+            "Agency": line.agency,
+            "Stop number": f"#{stop_idx}",
+            "Wheelchair accessible": "Yes" if accessible else "No",
+            "Elevators": elevators,
+            "Bike rack": "Yes" if _r46_int(stop_slug, "bike", 0, 1) else "No",
+            "Real-time arrivals":
+                url_for("r4_transit_stop_arrivals",
+                        slug=line.slug, stop_idx=stop_idx),
+        },
+        "back": url_for("transit_line_detail", line_slug=line.slug),
+    }
+    return _r46_render(payload, "r4_transit_stop.html",
+                       line=line, stop_name=stop_name,
+                       stop_idx=stop_idx, accessible=accessible,
+                       elevators=elevators)
+
+
+@app.route("/transit/lines/<slug>/stop/<int:stop_idx>/arrivals")
+@app.route("/transit/lines/<slug>/arrivals/<int:stop_idx>")
+def r4_transit_stop_arrivals(slug, stop_idx):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    stops = line.get_stops()
+    if stop_idx < 1 or stop_idx > len(stops):
+        abort(404)
+    stop_name = stops[stop_idx - 1]
+    freq = _r4_freq_minutes(line)
+    delay = (line.current_delay_min or 0)
+    salt = f"{line.slug}:{stop_idx}"
+    rows = []
+    next_minute = _r46_int(salt, "arrnext", 1, max(2, freq))
+    for i in range(6):
+        eta = next_minute + i * freq + delay
+        direction = R4_DIRECTIONS[(stop_idx + i) % 2]
+        rows.append([f"{eta} min", direction,
+                     "On time" if delay == 0 else f"+{delay} min",
+                     f"Trip {(_r46_int(salt, f'trip{i}', 1000, 9999))}"])
+    payload = {
+        "title": f"{stop_name} — Next arrivals",
+        "subtitle": f"{line.short_name} {line.name} · "
+                    f"{'on time' if delay == 0 else f'delay +{delay} min'}",
+        "fields": {
+            "Stop": stop_name,
+            "Service status": "On time" if delay == 0
+                              else (line.delay_reason or "Minor delay"),
+            "Last update": line.last_update or "just now",
+        },
+        "table": {
+            "cols": ["ETA", "Direction", "Status", "Trip ID"],
+            "rows": rows,
+        },
+        "back": url_for("r4_transit_stop", slug=line.slug, stop_idx=stop_idx),
+    }
+    return _r46_render(payload, "r4_transit_stop.html",
+                       line=line, stop_name=stop_name,
+                       stop_idx=stop_idx, accessible=False,
+                       elevators=0)
+
+
+@app.route("/transit/lines/<slug>/timetable.json")
+def r4_transit_timetable_json(slug):
+    line = _r4_line(slug)
+    if line is None:
+        abort(404)
+    out = {"line": line.slug, "agency": line.agency, "days": {}}
+    for d in R4_DAYS:
+        out["days"][d] = _r4_schedule_entries(line, d)
+    return jsonify(out)
+
+
+# --------------------------------------------------------------------------
+# R5 — EV charging / gas-station / parking-lot vertical pages
+# --------------------------------------------------------------------------
+R5_EV_CONNECTORS_ALL = ("CCS", "CHAdeMO", "Tesla", "J1772", "Type 2")
+R5_EV_NETWORKS = ("Electrify America", "ChargePoint", "EVgo", "Blink",
+                  "Tesla Supercharger", "Shell Recharge", "FLO")
+R5_GAS_BRANDS = ("Shell", "Chevron", "ExxonMobil", "BP", "Marathon",
+                 "Sunoco", "ARCO", "Murphy USA", "76", "Valero")
+R5_GAS_GRADES = ("Regular", "Midgrade", "Premium", "Diesel")
+R5_PARKING_TYPES = ("garage", "surface lot", "underground", "valet")
+R5_PARKING_FEATURES = ("EV stalls", "Tall vehicle bay",
+                       "Motorcycle area", "Accessible spaces")
+
+
+def _r5_place(slug, category_slugs):
+    p = Place.query.filter_by(slug=slug).first()
+    if p is None:
+        return None
+    cat = Category.query.get(p.category_id) if p.category_id else None
+    if cat is None or cat.slug not in category_slugs:
+        return None
+    return p
+
+
+def _r5_ev_price(slug):
+    return round(0.18 + _r46_int(slug, "evprice", 0, 32) / 100.0, 2)
+
+
+def _r5_gas_price(slug, grade):
+    base = 3.10 + _r46_int(slug, f"gas{grade}", 0, 90) / 100.0
+    add = {"Regular": 0.0, "Midgrade": 0.20, "Premium": 0.40,
+           "Diesel": 0.30}[grade]
+    return round(base + add, 2)
+
+
+def _r5_parking_rate(slug):
+    return round(2.0 + _r46_int(slug, "park", 0, 80) / 10.0, 2)
+
+
+@app.route("/charging/<slug>")
+def r5_ev_charging_detail(slug):
+    p = _r5_place(slug, {"ev-charging"})
+    if p is None:
+        abort(404)
+    network = _r46_pick(p.slug, R5_EV_NETWORKS, "net")
+    connectors = (p.ev_connector_type or "CCS").split("+")
+    stalls = _r46_int(p.slug, "stalls", 2, 16)
+    avail = _r46_int(p.slug, "avail", 0, stalls)
+    price = _r5_ev_price(p.slug)
+    payload = {
+        "title": f"{p.name} — EV charging",
+        "subtitle": f"{network} · {p.address or p.city}",
+        "fields": {
+            "Network": network,
+            "Connector types": ", ".join(connectors),
+            "Max power": f"{p.ev_charger_kw or 50} kW",
+            "Total stalls": stalls,
+            "Stalls available now": f"{avail} / {stalls}",
+            "Price": f"${price:.2f} / kWh",
+            "Idle fee": f"${_r46_int(p.slug, 'idle', 5, 40) / 100.0:.2f} / min after charging",
+            "24/7 access": "Yes" if _r46_int(p.slug, "24h", 0, 1) else "Daytime only",
+            "Connectors detail":
+                url_for("r5_ev_connectors", slug=p.slug),
+            "Live availability":
+                url_for("r5_ev_availability", slug=p.slug),
+        },
+        "back": url_for("place_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_charging.html",
+                       place=p, network=network, stalls=stalls,
+                       avail=avail, price=price, connectors=connectors)
+
+
+@app.route("/charging/<slug>/connectors")
+def r5_ev_connectors(slug):
+    p = _r5_place(slug, {"ev-charging"})
+    if p is None:
+        abort(404)
+    rows = []
+    have = (p.ev_connector_type or "CCS").split("+")
+    for c in R5_EV_CONNECTORS_ALL:
+        present = "Yes" if c in have else "No"
+        kw = (p.ev_charger_kw or 50) if c in have else "—"
+        rows.append([c, present, kw,
+                     "DC fast" if c in ("CCS", "CHAdeMO", "Tesla")
+                     else "Level 2"])
+    payload = {
+        "title": f"{p.name} — Connector details",
+        "subtitle": "Per-connector compatibility",
+        "table": {"cols": ["Connector", "Present", "Max kW", "Class"],
+                  "rows": rows},
+        "back": url_for("r5_ev_charging_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_charging.html",
+                       place=p, network="", stalls=0, avail=0,
+                       price=0.0, connectors=have)
+
+
+@app.route("/charging/<slug>/availability")
+def r5_ev_availability(slug):
+    p = _r5_place(slug, {"ev-charging"})
+    if p is None:
+        abort(404)
+    stalls = _r46_int(p.slug, "stalls", 2, 16)
+    rows = []
+    for i in range(1, stalls + 1):
+        state = _r46_pick(f"{p.slug}#{i}",
+                          ("available", "in use", "out of service"),
+                          "stallstate")
+        connector = _r46_pick(f"{p.slug}#{i}",
+                              R5_EV_CONNECTORS_ALL, "stallconn")
+        rows.append([f"Stall {i}", connector, state,
+                     "—" if state != "in use"
+                     else f"{_r46_int(p.slug + str(i), 'rem', 5, 55)} min"])
+    payload = {
+        "title": f"{p.name} — Live stall availability",
+        "subtitle": "Refreshed every 60 seconds",
+        "table": {"cols": ["Stall", "Connector", "State",
+                           "Estimated remaining"], "rows": rows},
+        "back": url_for("r5_ev_charging_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_charging.html",
+                       place=p, network="", stalls=stalls,
+                       avail=0, price=0.0, connectors=[])
+
+
+@app.route("/gas-station/<slug>")
+@app.route("/gas_station/<slug>")
+def r5_gas_station_detail(slug):
+    p = _r5_place(slug, {"gas-stations"})
+    if p is None:
+        abort(404)
+    brand = _r46_pick(p.slug, R5_GAS_BRANDS, "brand")
+    rows = [(g, f"${_r5_gas_price(p.slug, g):.2f} / gal")
+            for g in R5_GAS_GRADES]
+    payload = {
+        "title": f"{p.name} — Current fuel prices",
+        "subtitle": f"{brand} · {p.address or p.city}",
+        "fields": {
+            **dict(rows),
+            "Last updated": f"{_r46_int(p.slug, 'updt', 1, 58)} min ago",
+            "Payment": "Credit / Debit / Mobile pay",
+            "Number of pumps": _r46_int(p.slug, "pumps", 4, 24),
+            "Convenience store": "Yes" if _r46_int(p.slug, "cstore", 0, 1)
+                                  else "No",
+            "Car wash": "Yes" if _r46_int(p.slug, "wash", 0, 2) == 2 else "No",
+            "Price history (14 days)":
+                url_for("r5_gas_station_price_history", slug=p.slug),
+        },
+        "back": url_for("place_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_gas_station.html",
+                       place=p, brand=brand, prices=dict(rows))
+
+
+@app.route("/gas-station/<slug>/price-history")
+@app.route("/gas_station/<slug>/price_history")
+def r5_gas_station_price_history(slug):
+    p = _r5_place(slug, {"gas-stations"})
+    if p is None:
+        abort(404)
+    today_regular = _r5_gas_price(p.slug, "Regular")
+    rows = []
+    for d in range(14):
+        delta = (_r46_int(p.slug, f"hist{d}", 0, 40) - 20) / 100.0
+        rows.append([f"Day -{d}",
+                     f"${round(today_regular + delta, 2):.2f}",
+                     f"${round(today_regular + delta + 0.20, 2):.2f}",
+                     f"${round(today_regular + delta + 0.40, 2):.2f}",
+                     f"${round(today_regular + delta + 0.30, 2):.2f}"])
+    payload = {
+        "title": f"{p.name} — 14-day price history",
+        "subtitle": "Regular / Midgrade / Premium / Diesel",
+        "table": {"cols": ["Day"] + list(R5_GAS_GRADES), "rows": rows},
+        "back": url_for("r5_gas_station_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_gas_station.html",
+                       place=p, brand="", prices={})
+
+
+@app.route("/parking-lot/<slug>")
+@app.route("/parking_lot/<slug>")
+def r5_parking_lot_detail(slug):
+    p = _r5_place(slug, {"parking"})
+    if p is None:
+        abort(404)
+    capacity = p.parking_lot_capacity or _r46_int(p.slug, "cap", 80, 1800)
+    lot_type = _r46_pick(p.slug, R5_PARKING_TYPES, "type")
+    rate = _r5_parking_rate(p.slug)
+    daily = round(rate * 6, 2)
+    monthly = round(daily * 22, 2)
+    occupancy_pct = _r46_int(p.slug, "occ", 5, 95)
+    occupied = int(capacity * occupancy_pct / 100)
+    ev_stalls = _r46_int(p.slug, "evstalls", 0, max(4, capacity // 40))
+    payload = {
+        "title": f"{p.name} — Parking",
+        "subtitle": f"{lot_type.title()} · {p.address or p.city}",
+        "fields": {
+            "Total capacity": f"{capacity} spaces",
+            "Currently occupied": f"{occupied} ({occupancy_pct}%)",
+            "Available now": f"{capacity - occupied} spaces",
+            "Hourly rate": f"${rate:.2f}",
+            "Daily max": f"${daily:.2f}",
+            "Monthly pass": f"${monthly:.2f}",
+            "EV stalls": ev_stalls,
+            "Tall-vehicle bay":
+                "Yes" if _r46_int(p.slug, "tall", 0, 1) else "No",
+            "24/7 access":
+                "Yes" if _r46_int(p.slug, "24h", 0, 1) else "Daytime only",
+            "Live occupancy":
+                url_for("r5_parking_lot_realtime", slug=p.slug),
+        },
+        "back": url_for("place_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_parking_lot.html",
+                       place=p, capacity=capacity, lot_type=lot_type,
+                       rate=rate, occupancy_pct=occupancy_pct,
+                       ev_stalls=ev_stalls)
+
+
+@app.route("/parking-lot/<slug>/realtime")
+@app.route("/parking_lot/<slug>/realtime")
+def r5_parking_lot_realtime(slug):
+    p = _r5_place(slug, {"parking"})
+    if p is None:
+        abort(404)
+    capacity = p.parking_lot_capacity or _r46_int(p.slug, "cap", 80, 1800)
+    rows = []
+    for h in range(24):
+        occ = _r46_int(p.slug, f"hrocc{h}", 5, 95)
+        rows.append([f"{h:02d}:00", f"{occ}%",
+                     int(capacity * occ / 100),
+                     capacity - int(capacity * occ / 100)])
+    payload = {
+        "title": f"{p.name} — 24-hour occupancy",
+        "subtitle": "Live + last 24h trend",
+        "table": {"cols": ["Hour", "Occupancy", "Occupied", "Available"],
+                  "rows": rows},
+        "back": url_for("r5_parking_lot_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r5_parking_lot.html",
+                       place=p, capacity=capacity,
+                       lot_type="", rate=0.0,
+                       occupancy_pct=0, ev_stalls=0)
+
+
+# --------------------------------------------------------------------------
+# R6 — Street View thumbnails / 360° panorama / Photosphere
+# --------------------------------------------------------------------------
+R6_HEADINGS = (
+    (0,   "North"),
+    (45,  "Northeast"),
+    (90,  "East"),
+    (135, "Southeast"),
+    (180, "South"),
+    (225, "Southwest"),
+    (270, "West"),
+    (315, "Northwest"),
+)
+R6_CAPTURE_VEHICLES = ("Street View car", "Trekker backpack",
+                       "Street View Trike", "Snowmobile")
+R6_PHOTOSPHERE_TYPES = ("interior", "rooftop", "park trail",
+                        "alley", "viewpoint", "lobby")
+
+
+class _R6PlaceStub:
+    """Stand-in when an R6 route is hit on a slug that isn't in the seeded
+    `place` table.  Keeps panorama/timeline pages reachable for any
+    reasonable slug so backfill tasks don't 404."""
+    __slots__ = ("slug", "name", "lat", "lng", "address", "city")
+
+    def __init__(self, slug):
+        self.slug = slug
+        self.name = " ".join(w.capitalize() for w in slug.split("-")) or slug
+        self.lat = round(
+            (_r46_int(slug, "lat", 0, 180000) / 1000.0) - 90.0, 6)
+        self.lng = round(
+            (_r46_int(slug, "lng", 0, 360000) / 1000.0) - 180.0, 6)
+        self.address = ""
+        self.city = ""
+
+
+def _r6_place(slug):
+    p = Place.query.filter_by(slug=slug).first()
+    if p is not None:
+        return p
+    if not re.fullmatch(r"[a-z0-9][a-z0-9\-]{1,80}", slug):
+        return None
+    return _R6PlaceStub(slug)
+
+
+def _r6_capture_year(slug, idx):
+    return 2014 + _r46_int(slug, f"yr{idx}", 0, 11)
+
+
+def _r6_thumbnail_uri(slug, heading):
+    sig = hashlib.md5(f"thumb:{slug}:{heading}".encode()).hexdigest()[:12]
+    return f"/static/streetview/{sig}.jpg"
+
+
+@app.route("/street-view/<slug>/thumbnails")
+@app.route("/streetview/<slug>/thumbnails")
+def r6_streetview_thumbnails(slug):
+    p = _r6_place(slug)
+    if p is None:
+        abort(404)
+    rows = []
+    for heading, label in R6_HEADINGS:
+        rows.append([label, f"{heading}°",
+                     _r6_thumbnail_uri(p.slug, heading),
+                     url_for("r6_streetview_panorama",
+                             slug=p.slug, heading=heading)])
+    payload = {
+        "title": f"{p.name} — Street View thumbnails",
+        "subtitle": "8 compass headings at this location",
+        "table": {"cols": ["Heading", "Bearing", "Thumbnail", "Panorama URL"],
+                  "rows": rows},
+        "back": url_for("place_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r6_panorama.html",
+                       place=p, headings=R6_HEADINGS,
+                       thumbs=[(h, lbl, _r6_thumbnail_uri(p.slug, h))
+                               for h, lbl in R6_HEADINGS],
+                       capture_year=_r6_capture_year(p.slug, 0))
+
+
+@app.route("/street-view/<slug>/panorama")
+@app.route("/streetview/<slug>/panorama")
+def r6_streetview_panorama(slug):
+    p = _r6_place(slug)
+    if p is None:
+        abort(404)
+    heading = request.args.get("heading", default=0, type=int) % 360
+    fov = _r46_int(p.slug, "fov", 70, 110)
+    pitch = _r46_int(p.slug, "pitch", -10, 10)
+    vehicle = _r46_pick(p.slug, R6_CAPTURE_VEHICLES, "vehicle")
+    capture_year = _r6_capture_year(p.slug, 0)
+    pano_id = hashlib.md5(f"pano:{p.slug}:{heading}".encode()).hexdigest()[:18]
+    payload = {
+        "title": f"{p.name} — 360° panorama",
+        "subtitle": f"Capture {capture_year} · {vehicle} · pano {pano_id}",
+        "fields": {
+            "Pano ID": pano_id,
+            "Heading": f"{heading}°",
+            "Field of view": f"{fov}°",
+            "Pitch": f"{pitch}°",
+            "Capture date": f"{capture_year}-"
+                            f"{_r46_int(p.slug, 'mo', 1, 12):02d}-"
+                            f"{_r46_int(p.slug, 'dy', 1, 28):02d}",
+            "Capture vehicle": vehicle,
+            "Thumbnails": url_for("r6_streetview_thumbnails", slug=p.slug),
+            "Timeline": url_for("r6_streetview_timeline", slug=p.slug),
+            "Metadata": url_for("r6_streetview_meta", slug=p.slug),
+        },
+        "back": url_for("place_detail", slug=p.slug),
+    }
+    return _r46_render(payload, "r6_panorama.html",
+                       place=p, headings=R6_HEADINGS,
+                       thumbs=[(h, lbl, _r6_thumbnail_uri(p.slug, h))
+                               for h, lbl in R6_HEADINGS],
+                       capture_year=capture_year)
+
+
+@app.route("/street-view/<slug>/timeline")
+@app.route("/streetview/<slug>/timeline")
+def r6_streetview_timeline(slug):
+    p = _r6_place(slug)
+    if p is None:
+        abort(404)
+    rows = []
+    for i in range(6):
+        yr = _r6_capture_year(p.slug, i)
+        mo = _r46_int(p.slug, f"timo{i}", 1, 12)
+        veh = _r46_pick(f"{p.slug}#{i}", R6_CAPTURE_VEHICLES, "tv")
+        pano = hashlib.md5(
+            f"pano:{p.slug}:hist{i}".encode()).hexdigest()[:14]
+        rows.append([f"{yr}-{mo:02d}", veh, pano,
+                     url_for("r6_streetview_panorama",
+                             slug=p.slug, heading=i * 60)])
+    rows.sort(key=lambda r: r[0], reverse=True)
+    payload = {
+        "title": f"{p.name} — Street View timeline",
+        "subtitle": "Historical captures at this location",
+        "table": {"cols": ["Captured", "Vehicle", "Pano ID", "Open"],
+                  "rows": rows},
+        "back": url_for("r6_streetview_panorama", slug=p.slug),
+    }
+    return _r46_render(payload, "r6_panorama.html",
+                       place=p, headings=R6_HEADINGS,
+                       thumbs=[(h, lbl, _r6_thumbnail_uri(p.slug, h))
+                               for h, lbl in R6_HEADINGS],
+                       capture_year=_r6_capture_year(p.slug, 0))
+
+
+@app.route("/street-view/<slug>/meta")
+@app.route("/streetview/<slug>/meta")
+def r6_streetview_meta(slug):
+    p = _r6_place(slug)
+    if p is None:
+        abort(404)
+    capture_year = _r6_capture_year(p.slug, 0)
+    payload = {
+        "title": f"{p.name} — Street View metadata",
+        "fields": {
+            "Latitude": f"{p.lat:.6f}" if p.lat is not None else "—",
+            "Longitude": f"{p.lng:.6f}" if p.lng is not None else "—",
+            "Most recent capture": capture_year,
+            "Captures on record": 6,
+            "Coverage radius": f"{_r46_int(p.slug, 'rad', 20, 120)} m",
+            "Has interior view":
+                "Yes" if _r46_int(p.slug, "indoor", 0, 3) == 0 else "No",
+            "Photosphere submissions":
+                _r46_int(p.slug, "spheres", 0, 14),
+        },
+        "back": url_for("r6_streetview_panorama", slug=p.slug),
+    }
+    return _r46_render(payload, "r6_panorama.html",
+                       place=p, headings=R6_HEADINGS,
+                       thumbs=[(h, lbl, _r6_thumbnail_uri(p.slug, h))
+                               for h, lbl in R6_HEADINGS],
+                       capture_year=capture_year)
+
+
+@app.route("/photosphere")
+def r6_photosphere_index():
+    samples = (Place.query
+               .filter(Place.slug.like("r5-%"))
+               .order_by(Place.slug).limit(40).all())
+    rows = []
+    for sp in samples:
+        kind = _r46_pick(sp.slug, R6_PHOTOSPHERE_TYPES, "phtype")
+        sphere = hashlib.md5(
+            f"sphere:{sp.slug}".encode()).hexdigest()[:12]
+        rows.append([sp.name, kind, _r6_capture_year(sp.slug, 1),
+                     url_for("r6_photosphere_detail", sphere_id=sphere)])
+    payload = {
+        "title": "Photosphere — User-submitted 360° views",
+        "subtitle": "Recently uploaded photospheres near you",
+        "table": {"cols": ["Place", "Type", "Year", "Open"],
+                  "rows": rows},
+        "fields": {
+            "Upload a photosphere":
+                url_for("r6_photosphere_upload"),
+        },
+    }
+    return _r46_render(payload, "r6_photosphere.html",
+                       items=rows, mode="index")
+
+
+@app.route("/photosphere/upload")
+def r6_photosphere_upload():
+    payload = {
+        "title": "Photosphere — Upload",
+        "subtitle": "Contribute a 360° view to Google Maps",
+        "fields": {
+            "Accepted formats": "JPEG, 2:1 equirectangular",
+            "Max size": "75 MB",
+            "Min resolution": "4096 × 2048",
+            "Requires location": "Yes (auto-detected from EXIF)",
+            "Moderation": "Human review within 7 days",
+            "Browse community uploads":
+                url_for("r6_photosphere_index"),
+        },
+    }
+    return _r46_render(payload, "r6_photosphere.html",
+                       items=[], mode="upload")
+
+
+@app.route("/photosphere/<sphere_id>")
+def r6_photosphere_detail(sphere_id):
+    if not re.fullmatch(r"[0-9a-f]{6,40}", sphere_id):
+        abort(404)
+    photographer = _r46_pick(sphere_id,
+                             ("alice.j", "bob.c", "carol.d", "david.k",
+                              "anonymous"), "photog")
+    kind = _r46_pick(sphere_id, R6_PHOTOSPHERE_TYPES, "kind")
+    views = _r46_int(sphere_id, "views", 24, 28000)
+    likes = _r46_int(sphere_id, "likes", 0, max(20, views // 30))
+    yr = 2014 + _r46_int(sphere_id, "y", 0, 11)
+    payload = {
+        "title": f"Photosphere {sphere_id}",
+        "subtitle": f"{kind} · uploaded {yr} by {photographer}",
+        "fields": {
+            "Sphere ID": sphere_id,
+            "Type": kind,
+            "Uploader": photographer,
+            "Year": yr,
+            "Views": f"{views:,}",
+            "Likes": f"{likes:,}",
+            "Field of view": "360° × 180°",
+            "Resolution": f"{_r46_int(sphere_id, 'w', 4096, 16384)}"
+                          f" × {_r46_int(sphere_id, 'h', 2048, 8192)}",
+        },
+        "back": url_for("r6_photosphere_index"),
+    }
+    return _r46_render(payload, "r6_photosphere.html",
+                       items=[], mode="detail",
+                       sphere_id=sphere_id, kind=kind,
+                       photographer=photographer, year=yr,
+                       views=views, likes=likes)
+
+
+# === R4-R6 backfill END ===
+
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
