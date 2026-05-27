@@ -11,7 +11,7 @@
           <h1>Earn a degree online</h1>
           <p>Degrees from leading universities — 100% online. Study on your schedule with the world's best educators.</p>
         </div>
-        <div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>
+        <div class="hero-photo"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=_h) }}" alt=""></div>
       </div>
       {% else %}
       <h1>Earn a degree online</h1>
@@ -20,7 +20,7 @@
       <div class="partners-logos" style="margin-top:32px;gap:24px;justify-content:flex-start;">
         {% for slug, name in [('michigan','Michigan'),('imperial-college-london','Imperial'),('illinois','Illinois'),('johns-hopkins','Johns Hopkins'),('colorado-boulder','Colorado'),('northeastern','Northeastern'),('pennsylvania','Penn')] %}
           {% set logo = partner_logo({'slug': slug, 'name': name}) %}
-          {% if logo %}<img class="partner-logo-img" style="filter:brightness(0) invert(1) opacity(.95);height:32px;" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}">{% endif %}
+          {% if logo %}<img loading="lazy" decoding="async" class="partner-logo-img" style="filter:brightness(0) invert(1) opacity(.95);height:32px;" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}">{% endif %}
         {% endfor %}
       </div>
     </div>
@@ -37,12 +37,12 @@
       {% for d in degrees %}
       <a href="{{ url_for('course_detail', slug=d.slug) }}" class="degree-card">
         <div class="degree-thumb {{ d.color_class }}">
-          {% if course_thumb(d) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(d)) }}" alt="">{% endif %}
+          {% if course_thumb(d) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(d)) }}" alt="">{% endif %}
           <span class="degree-type-label">{{ d.degree_type|replace('MasterAdvancedStudy','MAS') }}</span>
         </div>
         <div class="degree-body">
           <div class="degree-university">
-            {% set _pl = partner_logo(d.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(d.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             {{ d.partner.name if d.partner else '' }}
           </div>
           <h3>{{ d.title }}</h3>

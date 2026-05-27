@@ -14,7 +14,7 @@
             <a href="{{ url_for('register') }}" class="btn-primary" style="background:#fff;color:var(--c-primary);border-color:#fff;">Try free for 7 days</a>
           </div>
         </div>
-        <div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>
+        <div class="hero-photo"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=_h) }}" alt=""></div>
       </div>
       {% else %}
       <h1>Coursera Plus</h1>

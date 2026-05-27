@@ -15,7 +15,7 @@
           </div>
         </div>
         {% set _h = hero_image('business') %}
-        {% if _h %}<div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
+        {% if _h %}<div class="hero-photo"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
       </div>
     </div>
   </div>

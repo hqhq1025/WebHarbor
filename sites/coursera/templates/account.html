@@ -23,12 +23,12 @@
       {% for e in enrollments %}
       <a href="{{ url_for('course_detail', slug=e.course.slug) }}" class="enrollment-card">
         <div class="enroll-thumb {{ e.course.color_class }}">
-          {% if course_thumb(e.course) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(e.course)) }}" alt="">{% endif %}
+          {% if course_thumb(e.course) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(e.course)) }}" alt="">{% endif %}
           <span class="enroll-type">{{ e.course.course_type }}</span>
         </div>
         <div class="enroll-body">
           <div class="enroll-partner">
-            {% set _pl = partner_logo(e.course.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(e.course.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ e.course.partner.name if e.course.partner else '' }}</span>
           </div>
           <h3>{{ e.course.title }}</h3>

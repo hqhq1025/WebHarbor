@@ -63,7 +63,7 @@
   <div class="nav-inner">
     <a href="{{ url_for('index') }}" class="nav-logo" aria-label="Coursera home">
       {% if site_logo %}
-      <img class="logo-img" src="{{ url_for('static', filename=site_logo) }}" alt="Coursera">
+      <img loading="lazy" decoding="async" class="logo-img" src="{{ url_for('static', filename=site_logo) }}" alt="Coursera">
       {% else %}
       <span class="logo-text">coursera</span>
       {% endif %}
@@ -202,14 +202,14 @@
     <div class="fb-badges">
       {% if app_store_badge %}
       <a href="#" class="fb-badge is-img" aria-label="Download on the App Store">
-        <img src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
       </a>
       {% else %}
       <span class="fb-badge"><span><span class="fb-badge-sub">Download on the</span>App Store</span></span>
       {% endif %}
       {% if play_store_badge %}
       <a href="#" class="fb-badge is-img" aria-label="Get it on Google Play">
-        <img src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
       </a>
       {% else %}
       <span class="fb-badge"><span><span class="fb-badge-sub">Get it on</span>Google Play</span></span>
@@ -230,7 +230,7 @@
     <div class="footer-social" aria-label="Social links">
       {% for key, label in [('facebook','Facebook'),('linkedin','LinkedIn'),('twitter','Twitter'),('youtube','YouTube'),('instagram','Instagram')] %}
       <a href="#" aria-label="{{ label }}">
-        {% if social_icons.get(key) %}<img src="{{ url_for('static', filename=social_icons[key]) }}" alt="">{% else %}{{ label[0] }}{% endif %}
+        {% if social_icons.get(key) %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=social_icons[key]) }}" alt="">{% else %}{{ label[0] }}{% endif %}
       </a>
       {% endfor %}
     </div>

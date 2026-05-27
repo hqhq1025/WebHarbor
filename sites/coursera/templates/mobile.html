@@ -12,12 +12,12 @@
           <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;align-items:center;">
             {% if app_store_badge %}
             <a href="#" class="fb-badge is-img" aria-label="Download on the App Store">
-              <img src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
+              <img loading="lazy" decoding="async" src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
             </a>
             {% endif %}
             {% if play_store_badge %}
             <a href="#" class="fb-badge is-img" aria-label="Get it on Google Play">
-              <img src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
+              <img loading="lazy" decoding="async" src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
             </a>
             {% endif %}
           </div>
@@ -58,8 +58,8 @@
     <section class="enterprise-cta">
       <h2>Free to download. 7,000+ courses ready to go.</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:18px;">
-        {% if app_store_badge %}<a href="#" class="fb-badge is-img"><img src="{{ url_for('static', filename=app_store_badge) }}" alt="App Store"></a>{% endif %}
-        {% if play_store_badge %}<a href="#" class="fb-badge is-img"><img src="{{ url_for('static', filename=play_store_badge) }}" alt="Google Play"></a>{% endif %}
+        {% if app_store_badge %}<a href="#" class="fb-badge is-img"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=app_store_badge) }}" alt="App Store"></a>{% endif %}
+        {% if play_store_badge %}<a href="#" class="fb-badge is-img"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=play_store_badge) }}" alt="Google Play"></a>{% endif %}
       </div>
     </section>
   </div>

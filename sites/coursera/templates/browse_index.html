@@ -61,7 +61,7 @@
       {% for c in recently_added %}
       <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
         <div class="course-card-thumb {{ c.color_class }}">
-          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          {% if course_thumb(c) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
           <span class="course-type-badge">{{ c.course_type }}</span>
         </div>
         <div class="course-card-body">

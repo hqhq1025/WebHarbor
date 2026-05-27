@@ -9,12 +9,12 @@
     <div class="course-card-wrapper">
       <a href="{{ url_for('course_detail', slug=s.course.slug) }}" class="course-card">
         <div class="course-card-thumb {{ s.course.color_class }}">
-          {% if course_thumb(s.course) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(s.course)) }}" alt="">{% endif %}
+          {% if course_thumb(s.course) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(s.course)) }}" alt="">{% endif %}
           <span class="course-type-badge">{{ s.course.course_type }}</span>
         </div>
         <div class="course-card-body">
           <div class="course-partner">
-            {% set _pl = partner_logo(s.course.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(s.course.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ s.course.partner.name if s.course.partner else '' }}</span>
           </div>
           <h3 class="course-title">{{ s.course.title }}</h3>

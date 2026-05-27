@@ -14,7 +14,7 @@
           </div>
         </div>
         {% set _h = hero_image('business') %}
-        {% if _h %}<div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
+        {% if _h %}<div class="hero-photo"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
       </div>
     </div>
   </div>
@@ -77,7 +77,7 @@
         {% for slug, name in [('airbus','Airbus'),('loreal','L\'Oréal'),('merck','Merck'),('tata','Tata'),('danone','Danone'),('petrobras','Petrobras'),('leidos','Leidos'),('unilever','Unilever'),('accenture','Accenture'),('pwc','PwC')] %}
           {% set logo = partner_logo({'slug': slug, 'name': name}) %}
           {% if logo %}
-            <img class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
+            <img loading="lazy" decoding="async" class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
           {% endif %}
         {% endfor %}
       </div>

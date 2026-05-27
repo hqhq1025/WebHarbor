@@ -7,7 +7,7 @@
       <div class="instructor-hero-inner">
         <div class="instructor-avatar-lg">
           {% set _ip = instructor_photo(slug) or instructor_photo(name) %}
-          {% if _ip %}<img src="{{ url_for('static', filename=_ip) }}" alt="{{ name }}">{% else %}{{ name[0]|upper }}{% endif %}
+          {% if _ip %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=_ip) }}" alt="{{ name }}">{% else %}{{ name[0]|upper }}{% endif %}
         </div>
         <div class="instructor-hero-text">
           <h1>{{ name }}</h1>

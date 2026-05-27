@@ -13,7 +13,7 @@
     </div>
     {% if hero_home %}
     <div class="hero-art has-img" aria-hidden="true">
-      <img class="hero-art-img" src="{{ url_for('static', filename=hero_home) }}" alt="">
+      <img loading="lazy" decoding="async" class="hero-art-img" src="{{ url_for('static', filename=hero_home) }}" alt="">
     </div>
     {% else %}
     <div class="hero-art" aria-hidden="true">
@@ -41,7 +41,7 @@
       {% for slug, name in [('stanford','Stanford'),('ibm','IBM'),('yale','Yale'),('duke','Duke'),('michigan','Michigan'),('deeplearning-ai','DeepLearning.AI'),('johns-hopkins','Johns Hopkins'),('imperial-college-london','Imperial College London'),('princeton','Princeton'),('illinois','Illinois')] %}
         {% set logo = partner_logo({'slug': slug, 'name': name}) %}
         {% if logo %}
-          <img class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
+          <img loading="lazy" decoding="async" class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
         {% else %}
           <span class="partner-chip">{{ name }}</span>
         {% endif %}
@@ -60,13 +60,13 @@
       {% for c in featured %}
       <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
         <div class="course-card-thumb {{ c.color_class }}">
-          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          {% if course_thumb(c) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
           <span class="course-type-badge">{{ c.course_type }}</span>
           <span class="course-thumb-title">{{ c.title[:40] }}{% if c.title|length > 40 %}...{% endif %}</span>
         </div>
         <div class="course-card-body">
           <div class="course-partner">
-            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ c.partner.name if c.partner else '' }}</span>
           </div>
           <h3 class="course-title">{{ c.title }}</h3>
@@ -96,13 +96,13 @@
       {% for c in free_courses %}
       <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
         <div class="course-card-thumb {{ c.color_class }}">
-          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          {% if course_thumb(c) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
           <span class="course-type-badge">{{ c.course_type }}</span>
           <span class="course-free-label">FREE</span>
         </div>
         <div class="course-card-body">
           <div class="course-partner">
-            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ c.partner.name if c.partner else '' }}</span>
           </div>
           <h3 class="course-title">{{ c.title }}</h3>
@@ -148,13 +148,13 @@
       {% for c in new_courses[:6] %}
       <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
         <div class="course-card-thumb {{ c.color_class }}">
-          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          {% if course_thumb(c) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
           <span class="course-type-badge">{{ c.course_type }}</span>
           <span class="new-label">NEW</span>
         </div>
         <div class="course-card-body">
           <div class="course-partner">
-            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ c.partner.name if c.partner else '' }}</span>
           </div>
           <h3 class="course-title">{{ c.title }}</h3>

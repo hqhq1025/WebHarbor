@@ -5,7 +5,7 @@
   <header style="background:#fff;border-bottom:1px solid #DAE1ED;padding:36px 0;">
     <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;display:flex;gap:22px;align-items:center;">
       {% set _pl = partner_logo(partner) %}
-      {% if _pl %}<img src="{{ url_for('static', filename=_pl) }}" alt="" style="width:84px;height:84px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid #DAE1ED;padding:6px;">{% endif %}
+      {% if _pl %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=_pl) }}" alt="" style="width:84px;height:84px;border-radius:14px;object-fit:contain;background:#fff;border:1px solid #DAE1ED;padding:6px;">{% endif %}
       <div>
         <nav style="font-size:12px;color:#5B6780;margin-bottom:6px;"><a href="{{ url_for('partners') }}" style="color:#0056D2;">Partners</a> &rsaquo; <a href="{{ url_for('partner_detail', slug=partner.slug) }}" style="color:#0056D2;">{{ partner.name }}</a> &rsaquo; All courses</nav>
         <h1 style="font-size:30px;margin:0 0 4px;">All courses by {{ partner.name }}</h1>

@@ -168,11 +168,11 @@
          {% if c.preview_video_url %}data-preview-url="{{ c.preview_video_url }}"{% endif %}
          aria-label="{{ c.title }} by {{ c.partner.name if c.partner else 'Coursera' }}">
         <div class="result-thumb {{ c.color_class }}">
-          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          {% if course_thumb(c) %}<img loading="lazy" decoding="async" class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
         </div>
         <div class="result-body">
           <div class="result-partner">
-            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img loading="lazy" decoding="async" class="cp-logo" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
             <span>{{ c.partner.name if c.partner else '' }}</span>
           </div>
           <h3 class="result-title">{{ c.title }}</h3>

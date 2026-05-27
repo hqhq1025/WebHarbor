@@ -18,7 +18,7 @@
     <article style="background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:22px;display:flex;gap:18px;align-items:flex-start;">
       <div style="width:84px;height:84px;border-radius:50%;background:#E5F0FF;color:#0056D2;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:28px;flex-shrink:0;overflow:hidden;">
         {% set _p = instructor_photo(ins.slug) or instructor_photo(ins.name) %}
-        {% if _p %}<img src="{{ url_for('static', filename=_p) }}" alt="{{ ins.name }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ ins.name[0]|upper }}{% endif %}
+        {% if _p %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=_p) }}" alt="{{ ins.name }}" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ ins.name[0]|upper }}{% endif %}
       </div>
       <div style="flex:1;">
         <a href="{{ url_for('instructor_profile', slug=ins.slug) }}" style="text-decoration:none;color:inherit;"><h2 style="margin:0 0 4px;font-size:19px;">{{ ins.name }}</h2></a>
