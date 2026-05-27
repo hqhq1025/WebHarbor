@@ -3,7 +3,7 @@
 {% block content %}
 <article>
   <div class="banner-image" style="margin-bottom:18px;">
-    <img src="/static-gen/banner/subsite-{{ name }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
+    <img loading="lazy" decoding="async" src="/static-gen/banner/subsite-{{ name }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
   </div>
   <h1>{{ title }}</h1>
   <p class="lede">{{ tagline }}</p>
@@ -11,7 +11,7 @@
     {% for a in articles %}
       <article class="card">
         {% if a.image_filename %}
-          <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+          <a href="{{ url_for('article_detail', slug=a.slug) }}"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
         {% endif %}
         <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
         <div class="byline">{{ a.author_name }} · {{ a.category.name if a.category else '' }} · {{ a.published_str }}</div>

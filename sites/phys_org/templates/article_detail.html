@@ -24,7 +24,7 @@
 
     {% if article.image_filename %}
       <div class="hero-image">
-        <img src="{{ url_for('static', filename='images/' ~ article.image_filename) }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ article.image_filename) }}" alt="">
       </div>
     {% endif %}
 

@@ -4,7 +4,7 @@
 <div class="layout">
   <article>
     <div class="banner-image" style="margin-bottom:14px;">
-      <img src="/static-gen/banner/topic-{{ slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
+      <img loading="lazy" decoding="async" src="/static-gen/banner/topic-{{ slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
     </div>
     <div class="crumbs"><a href="/topics">Topics</a> / {{ label }}</div>
     <h1>{{ label }}</h1>
@@ -20,7 +20,7 @@
       {% for a in articles %}
         <article class="card">
           {% if a.image_filename %}
-            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
           {% endif %}
           <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
           <div class="byline">{{ a.author_name }} · {{ a.published_str }}</div>

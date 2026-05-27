@@ -2,7 +2,7 @@
 {% block title %}{{ video.title }} — Phys.org Video{% endblock %}
 {% block content %}
 <article>
-  <img src="/static-gen/video/{{ video.slug }}.svg" alt="" style="width:100%;max-width:760px;display:block;border-radius:8px;">
+  <img loading="lazy" decoding="async" src="/static-gen/video/{{ video.slug }}.svg" alt="" style="width:100%;max-width:760px;display:block;border-radius:8px;">
   <h1>{{ video.title }}</h1>
   <div class="meta">{{ video.minutes }} min · {{ video.views }} views · Category: {{ video.category }} · Published {{ video.published_at.strftime('%b %d, %Y') }}</div>
   <h3>Transcript excerpt</h3>

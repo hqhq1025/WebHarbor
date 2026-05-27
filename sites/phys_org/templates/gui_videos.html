@@ -6,7 +6,7 @@
 <div class="video-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
   {% for v in videos %}
     <div class="video-card">
-      <a href="/video/{{ v.slug }}"><img src="/static-gen/video/{{ v.slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;"></a>
+      <a href="/video/{{ v.slug }}"><img loading="lazy" decoding="async" src="/static-gen/video/{{ v.slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;"></a>
       <h3 style="margin:8px 0 4px;"><a href="/video/{{ v.slug }}">{{ v.title }}</a></h3>
       <div class="meta">{{ v.minutes }} min · {{ v.views }} views · {{ v.category }}</div>
     </div>

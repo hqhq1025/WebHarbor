@@ -4,7 +4,7 @@
 <div class="layout">
   <article>
     <div style="display:flex;gap:18px;align-items:flex-start;">
-      <img src="/static-gen/avatar/{{ slug }}.svg" alt="" style="width:140px;height:140px;border-radius:50%;flex:0 0 auto;">
+      <img loading="lazy" decoding="async" src="/static-gen/avatar/{{ slug }}.svg" alt="" style="width:140px;height:140px;border-radius:50%;flex:0 0 auto;">
       <div>
         <h1 style="margin:0;">{{ name }}</h1>
         <p class="lede">{{ bio }}</p>
@@ -24,7 +24,7 @@
       {% for a in articles %}
         <article class="card">
           {% if a.image_filename %}
-            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
           {% endif %}
           <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
           <div class="byline">{{ a.published_str }} · {{ a.category.name if a.category else '' }}</div>
