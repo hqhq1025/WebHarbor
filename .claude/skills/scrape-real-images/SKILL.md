@@ -116,20 +116,54 @@ def wiki_thumb(name):
         return r.json().get('thumbnail', {}).get('source')
 ```
 
-## Direct CDN scraping (when the upstream pattern is known)
+## Direct CDN scraping (battle-tested per-domain registry)
 
 For known sources, use direct CDN URLs:
 
-| Upstream | Pattern |
-|---|---|
-| TED talks | `https://pi.tedcdn.com/r/talkstar-photos.s3.amazonaws.com/uploads/{slug}.jpg` (battle-tested) |
-| TMDB (movies) | API: `https://api.themoviedb.org/3/movie/{id}` → `poster_path` (needs API token) |
-| Rotten Tomatoes | scrape page, regex extract flixster CDN URLs |
-| GitHub avatars | `https://avatars.githubusercontent.com/u/{user_id}?v=4` |
-| HuggingFace | `https://huggingface.co/avatars/{username}.svg` |
-| OpenStreetMap places | Wikipedia REST summary (above) — most landmarks have Wiki page |
+| Upstream | Pattern | Note |
+|---|---|---|
+| **TED talks** | `https://pi.tedcdn.com/r/talkstar-photos.s3.amazonaws.com/uploads/{slug}.jpg` | battle-tested across 480 talks |
+| **TMDB (movies/TV)** | API: `https://api.themoviedb.org/3/movie/{id}` → `poster_path` | needs API token |
+| **Rotten Tomatoes** | scrape page, regex extract flixster CDN URLs → store in `scraped_data/movies.json` `poster_url` → curl per slug (see `rotten_tomatoes/download_posters.py` for canonical impl, 748 posters) | RT page → flixster CDN |
+| **IMDb posters / headshots** | `https://m.media-amazon.com/images/M/{hash}._V1_.jpg` extracted from imdb.com page parse | 4283 images via this path |
+| **GitHub avatars** | `https://avatars.githubusercontent.com/u/{user_id}?v=4` | unauth 60/h |
+| **HuggingFace avatars** | `https://huggingface.co/avatars/{username}.svg` | works for users + orgs |
+| **BoardGameGeek covers** | `https://cf.geekdo-images.com/{hash}__imagepage/img/{path}` extracted from BGG game page meta | 11339 game covers harvested |
+| **Fandom (Wikia) images** | `https://static.wikia.nocookie.net/{wiki}/images/{a}/{ab}/{filename}.jpg/revision/latest` OR `https://vignette.wikia.nocookie.net/{wiki-id}/scale-to-width-down/...` — extract from harvest snapshots (1752 URLs for MCU/SW/Genshin) | per-character infobox |
+| **Best Buy product** | `https://pisces.bbystatic.com/image2/BestBuy_US/dam/{filename}.jpg` per SKU — extract from PDP page or harvest snapshot | 1113 URLs via Phase 0 |
+| **Apple product** | `https://www.apple.com/v/iphone/.../images/...` and `www.apple.com/v/mac/...` | extract from harvest snapshot, 2551 URLs |
+| **OpenStreetMap places** | Wikipedia REST summary (above) — most landmarks have Wiki page | google_map used this for 1227 places |
+| **MusicBrainz / Discogs covers** | `https://i.discogs.com/{hash}-{size}.jpeg` extracted from release page | works for indie / non-mainstream |
 
-See `data-sources.md` in `seed-database/` for the full battle-tested registry.
+See `data-sources.md` in `seed-database/` for the full battle-tested registry. Also see `~/webvoyager-analysis/real_components/snapshots/<site>/_image_urls.jsonl` for harvested-URL alternative.
+
+## Wikipedia Commons category-page HTML scrape (the rate-limit-friendly trick)
+
+For medical / anatomy / nature / building-type imagery, the Wikipedia REST API hits rate limits fast. **Workaround**: scrape Wikipedia Commons category pages directly (mayo_clinic battle-tested in `_fetch_images.py`):
+
+```python
+# Fetch e.g. https://commons.wikimedia.org/wiki/Category:Anatomy_of_the_human_heart
+# Parse <a class="image"><img src=".../thumb/.../{file}.jpg/200px-..."> from gallery
+# Rewrite thumb URL to original (strip the /thumb/.../200px- part)
+# Download with browser UA + Referer
+```
+
+Categories with broad public-domain imagery:
+- Anatomy / medical: `Anatomy_of_the_human_heart` / `Lungs` / `Human_brain` / `Digestive_system` / etc.
+- Buildings: `<City>_skylines` / `Universities_in_<state>` / `Hospitals_in_<state>`
+- Nature: `National_parks_of_the_United_States` / `<Animal>_breeds`
+
+## Generic per-entity sources (lighter weight than Tavily)
+
+When Tavily quota is exhausted or the entity is not famous enough for Wikipedia:
+
+| Source | URL pattern | Use case |
+|---|---|---|
+| **loremflickr** | `https://loremflickr.com/640/480/{tag1},{tag2}?lock={index}` | category-tagged real Flickr photos. Deterministic via `lock=`. Eventbrite seeded 500+ event images this way |
+| **pravatar.cc** | `https://i.pravatar.cc/300?img={1-70}` or `?u={email}` | random-but-real headshot (70 unique). SmartAsset used for 12 authors |
+| **randomuser.me** | `https://randomuser.me/api/portraits/{men,women}/{0-99}.jpg` | 200 unique real headshots, gender-filterable. SmartAsset used for 153 advisors |
+| **Pexels / Unsplash via Tavily image_url** | Tavily `tavily_search query='X' include_images=true` returns Pexels/Unsplash URLs | apartments used for 443 unit photos |
+| **Lorem Picsum** | `https://picsum.photos/seed/{slug}/640/480` | deterministic-by-seed Unsplash photo. Last resort before SVG |
 
 ## Storage convention
 
@@ -157,13 +191,35 @@ img.save(out_path, quality=85, optimize=True)
 ## Fallback ladder (try in order)
 
 0. **harvest-real-components bridge** — if `~/webvoyager-analysis/real_components/snapshots/<site>/` already exists (from `harvest-real-components` Phase 0), run `python3 extract_image_urls.py <site>` to dump `_image_urls.jsonl`. Each line has `{page, url, alt, kind}`. **Grep by alt text** to match entity (e.g. `jq 'select(.alt=="Tony Stark")' _image_urls.jsonl`) → get the canonical CDN URL the real upstream site uses, download with `Referer: https://<site>/` header. This is the highest-fidelity source because it gives you the EXACT image the real site shows for that entity. 2026-05 stats: bestbuy 1113 URLs, apple 2551, fandom 1752 (with real character alt text). See [[harvest-real-components]] skill.
-1. **Tavily search + extract** — best quality, broad coverage
-2. **Wikipedia REST summary** — best for famous landmarks / people / brands
-3. **Domain-specific API** — TED/TMDB/GitHub avatars/OpenFlights
-4. **md5-over-pool** — when entity is generic enough that any of N real photos works (e.g. "studio apartment floor plan" — any real studio plan reads ok)
-5. **SVG-generated per entity** — last resort (gotcha #40 pattern)
+1. **Direct CDN scrape** — if upstream has a known CDN URL pattern (see table above), use it. Bypasses any image-search API and gives canonical pixels per entity.
+2. **Tavily search + extract** — `tavily_search query='...' include_images=true` → page URLs + image_url. Best general-purpose discovery; throttle 1/sec.
+3. **Wikipedia REST summary** — best for famous landmarks / people / brands. `https://en.wikipedia.org/api/rest_v1/page/summary/{Title}` → `thumbnail.source`. Throttle ≤4 parallel.
+4. **Wikipedia Commons category-page HTML scrape** — rate-limit-friendly alternative when REST is throttled. Hit `https://commons.wikimedia.org/wiki/Category:{cat}` directly, parse gallery `<img>` thumbs. Battle-tested in mayo_clinic.
+5. **Generic per-entity** — loremflickr (tagged real Flickr) / pravatar.cc (real headshots by seed) / randomuser.me (real portraits by index) / picsum.photos (Unsplash by seed). Cheap, deterministic, real pixels — but generic, not per-entity-truthful.
+6. **md5-over-pool** — when entity is generic enough that any of N real photos works (e.g. "studio apartment floor plan" — any real studio plan reads ok)
+7. **SVG-generated per entity** — last resort (gotcha #40 pattern; arxiv `visual_assets.py` / berkeley `generate_svgs.py` / fandom `_generate_procedural_image()` Pillow gradient — only when no real pixels available)
 
-Don't ship a column where strategy 5 is the dominant source unless the field truly has no real-world analog (e.g. r6_dict slugs).
+Don't ship a column where strategy 7 is the dominant source unless the field truly has no real-world analog (e.g. r6_dict slugs).
+
+## 36-site image strategy summary (2026-05 audit)
+
+Inherited approaches across WebHarbor's existing site set:
+
+| Strategy | Sites using it | Entity types it works for |
+|---|---|---|
+| **Direct CDN scrape** | rotten_tomatoes (748 posters via flixster), imdb (4283 via media-amazon), boardgamegeek (11339 via geekdo), ted (480 via tedcdn), github (526 via avatars), huggingface (715 via hf avatars) | movies / shows / books / boardgames / talks / users — when CDN URL is exposed in page meta |
+| **Wikipedia REST + Commons scrape** | google_map (1227 places via REST + commons), mayo_clinic (Commons category scrape pattern, then 220 procedural fallback), arxiv (institution logos) | landmarks / cities / anatomy / institutions / authors |
+| **Tavily image-search** | apartments (443 building/interior via Pexels-via-Tavily), eventbrite (8 hero via Tavily fallback) | events / properties / generic |
+| **loremflickr category** | eventbrite (526 event-themed photos), fallback for everything else | events / generic-by-category |
+| **pravatar / randomuser** | smartasset (12 authors + 153 advisors) | people headshots when not famous |
+| **Procedural SVG** | arxiv (60 figure SVGs), berkeley (icons), fandom (109 character + 210 file: placeholders), mayo (220 medical) | **last-resort fallback only**; flag if it dominates |
+| **Pre-scraped JSON gallery** | compass (1947 via `photos.py` scrape), apartments (837 via `scraped_data/photos.py`), booking (2725 via R10 expansion) | properties / hotels — pre-scrape once, ship JSON |
+
+## Storage convention
+
+```
+sites/<slug>/static/images/<category>/<entity-slug>.{jpg,png,svg}
+```
 
 ## Throttling & polite scraping
 
