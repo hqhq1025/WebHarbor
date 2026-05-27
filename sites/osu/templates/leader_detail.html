@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ leader.name }} — Ohio State Leadership{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('about') }}">About</a><span>/</span>
+  <a href="{{ url_for('about_leadership') }}">Leadership</a><span>/</span>
+  <span>{{ leader.name }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:240px 1fr;gap:30px;margin-bottom:30px;align-items:start">
+  <div style="background:#1d3557;color:#fff;height:240px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:80px;font-weight:bold;font-family:Georgia,serif">
+    {{ leader.name.split()[0][0] }}{{ leader.name.split()[-1][0] }}
+  </div>
+  <div>
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--scarlet);font-family:sans-serif">Office of the President &middot; #{{ leader.rank }}</div>
+    <h1 style="font-size:36px;color:#1d3557;margin-top:4px">{{ leader.name }}</h1>
+    <p style="font-size:18px;color:var(--gray);font-family:sans-serif;margin-top:6px">{{ leader.title }}</p>
+    {% if leader.email %}<p style="font-size:14px;margin-top:8px">📧 <a href="mailto:{{ leader.email }}">{{ leader.email }}</a></p>{% endif %}
+  </div>
+</div>
+
+<div style="background:#fff;border:1px solid var(--gray-mid);border-top:5px solid #1d3557;padding:28px 32px;border-radius:6px;line-height:1.8;font-size:16px">
+  <h2 style="font-size:20px;color:#1d3557;margin-bottom:14px">Biography</h2>
+  <p>{{ leader.bio }}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} vs. {{ game.opponent }} — Tickets{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('athletics_tickets') }}">Tickets</a><span>/</span>
+  <span>{{ team.sport }} &middot; {{ game.game_date.strftime('%b %d') }}</span>
+</div>
+
+<div style="background:#000;color:#fff;padding:40px;margin:-30px -20px 30px;text-align:center">
+  <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">{{ game.venue }} &middot; {{ game.tv }} BROADCAST</div>
+  <h1 style="font-size:42px;margin:10px 0;font-family:Impact,sans-serif">{{ team.name }}</h1>
+  <div style="font-size:24px;opacity:0.85;font-family:sans-serif">vs. <b>{{ game.opponent }}</b></div>
+  <div style="margin-top:8px;font-size:14px;opacity:0.7;font-family:sans-serif">{{ game.game_date.strftime('%A, %B %d, %Y &middot; %I:%M %p')|safe }}</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:30px">
+  <div>
+    <h2 class="section-title">Seating Sections</h2>
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:8px;padding:20px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-family:sans-serif">
+        {% for sec, price in [('Section 1A — 50 Yard Line', '$185'), ('Section 18A — End Zone', '$95'), ('Section 24A — South Stands', '$80'), ('Section 30A — Block O Student', '$60'), ('Section AA — Suite Level', '$425'), ('Section 102 — Lower Bowl Mid', '$125'), ('Section 201 — Upper Bowl Corner', '$70'), ('Section 207 — Upper Bowl End', '$45')] %}
+        <div style="background:var(--gray-light);padding:12px;text-align:center;border-radius:4px;border-top:3px solid var(--scarlet)">
+          <div style="font-size:12px;color:var(--gray);text-transform:uppercase">{{ sec.split(' — ')[0] }}</div>
+          <div style="font-size:14px;font-weight:bold;margin-top:2px">{{ sec.split(' — ')[1] }}</div>
+          <div style="font-size:16px;color:var(--scarlet);font-weight:bold;margin-top:4px">{{ price }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <h2 class="section-title">Stadium Map</h2>
+    <div style="background:var(--gray-light);padding:60px;text-align:center;border-radius:8px;font-family:sans-serif;color:var(--gray)">
+      <div style="font-size:60px">🏟</div>
+      <div style="margin-top:8px;font-size:14px">{{ game.venue }} interactive seating chart</div>
+    </div>
+  </div>
+
+  <div>
+    <form method="post" action="{{ url_for('athletics_ticket_detail', game_id=game.id) }}" style="background:var(--scarlet);color:#fff;padding:28px;border-radius:8px;position:sticky;top:20px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3 style="font-size:18px;margin-bottom:14px;font-family:sans-serif">Purchase Tickets</h3>
+      <div class="form-group"><label style="color:#fff">Name *</label><input type="text" name="full_name" required></div>
+      <div class="form-group"><label style="color:#fff">Email *</label><input type="email" name="email" required></div>
+      <div class="form-group"><label style="color:#fff">Section</label><select name="section">
+        <option>1A</option><option>18A</option><option>24A</option><option selected>30A</option>
+        <option>AA</option><option>102</option><option>201</option><option>207</option>
+      </select></div>
+      <div class="form-group"><label style="color:#fff">Quantity</label><input type="number" name="quantity" value="2" min="1" max="8"></div>
+      <button type="submit" class="btn" style="background:#fff;color:var(--scarlet);width:100%;font-weight:bold">Checkout &rarr;</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

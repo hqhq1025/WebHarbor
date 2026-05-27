@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} Schedule{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('athletics') }}">Athletics</a><span>/</span>
+  <a href="{{ url_for('athletics_team', slug=team.slug) }}">{{ team.name }}</a><span>/</span>
+  <span>Schedule</span>
+</div>
+
+<div style="background:#BB0000;background-image:linear-gradient(45deg,#BB0000 0%,#8B0000 100%);color:#fff;padding:30px 36px;margin:-30px -20px 30px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;align-items:center">
+  <div>
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">{{ team.sport }} &middot; {{ team.gender }}</div>
+    <h1 style="font-size:34px;margin-top:4px">{{ team.name }} Schedule</h1>
+    <div style="margin-top:4px;font-size:14px;opacity:0.9;font-family:sans-serif">Head Coach: {{ team.coach }} &middot; Home: {{ team.home_venue }}</div>
+  </div>
+  <div style="display:flex;gap:14px;font-family:sans-serif">
+    <a href="{{ url_for('athletics_roster', slug=team.slug) }}" style="color:#fff;background:rgba(0,0,0,0.25);padding:10px 18px;border-radius:4px;text-decoration:none">Roster</a>
+    <a href="{{ url_for('athletics_stats', slug=team.slug) }}" style="color:#fff;background:rgba(0,0,0,0.25);padding:10px 18px;border-radius:4px;text-decoration:none">Stats</a>
+  </div>
+</div>
+
+<table>
+  <thead><tr><th style="width:110px">Date</th><th>Opponent</th><th style="width:90px">Home/Away</th><th>Venue</th><th style="width:90px">TV</th><th style="width:100px">Result</th></tr></thead>
+  <tbody>
+  {% for g in games %}
+  <tr>
+    <td><b>{{ g.game_date.strftime('%b %d') }}</b><br><span style="font-size:11px;color:var(--gray)">{{ g.game_date.strftime('%Y') }}</span></td>
+    <td>{% if g.home_away == 'Home' %}vs.{% else %}@{% endif %} {{ g.opponent }}</td>
+    <td>{% if g.home_away == 'Home' %}<span class="badge badge-scarlet">Home</span>{% else %}<span class="badge badge-gray">Away</span>{% endif %}</td>
+    <td style="font-size:13px">{{ g.venue }}</td>
+    <td>{{ g.tv }}</td>
+    <td><b style="color:{% if g.result and g.result.startswith('W') %}#27ae60{% elif g.result and g.result.startswith('L') %}#c0392b{% else %}var(--gray){% endif %}">{{ g.result or '—' }}</b></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if not games %}<p class="empty-state">No games scheduled yet.</p>{% endif %}
+{% endblock %}

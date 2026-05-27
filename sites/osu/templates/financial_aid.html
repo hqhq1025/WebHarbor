@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid — Ohio State{% endblock %}
+{% block content %}
+<div style="background:#3c6e47;color:#fff;padding:50px 40px;margin:-30px -20px 30px">
+  <div style="max-width:1160px;margin:0 auto">
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">Buckeye Opportunity Program</div>
+    <h1 style="font-size:42px;margin:8px 0 14px;line-height:1.1">Affording Ohio State</h1>
+    <p style="font-size:17px;opacity:0.92;font-family:sans-serif;max-width:720px">For 60% of incoming Ohio Pell-eligible first-year students, OSU tuition is fully covered. Apply for aid in 30 minutes by filing the FAFSA.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:34px;font-family:sans-serif">
+  <div style="padding:18px;background:#fff;border-top:3px solid #3c6e47">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--gray)">Avg net price</div>
+    <div style="font-size:28px;color:#3c6e47;font-weight:bold;margin-top:4px">$18,200</div>
+    <div style="font-size:11px;color:var(--gray)">after aid (in-state)</div>
+  </div>
+  <div style="padding:18px;background:#fff;border-top:3px solid #3c6e47">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--gray)">Students receiving aid</div>
+    <div style="font-size:28px;color:#3c6e47;font-weight:bold;margin-top:4px">76%</div>
+    <div style="font-size:11px;color:var(--gray)">undergrad average</div>
+  </div>
+  <div style="padding:18px;background:#fff;border-top:3px solid #3c6e47">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--gray)">Total aid disbursed</div>
+    <div style="font-size:28px;color:#3c6e47;font-weight:bold;margin-top:4px">$1.4B</div>
+    <div style="font-size:11px;color:var(--gray)">2023–24 academic year</div>
+  </div>
+  <div style="padding:18px;background:#fff;border-top:3px solid #3c6e47">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--gray)">FAFSA Code</div>
+    <div style="font-size:28px;color:#3c6e47;font-weight:bold;margin-top:4px">003090</div>
+    <div style="font-size:11px;color:var(--gray)">Ohio State University</div>
+  </div>
+</div>
+
+<h2 class="section-title">Types of Aid</h2>
+<div class="grid-3">
+  {% for t in types[:9] %}
+  <div class="card">
+    <div class="card-body">
+      <span class="badge" style="background:#3c6e47;color:#fff">{{ t.category }}</span>
+      <h3 style="font-size:17px;margin:8px 0;color:#3c6e47"><a href="{{ url_for('financial_aid_type_detail', slug=t.slug) }}">{{ t.name }}</a></h3>
+      <p style="font-size:13px;line-height:1.5;color:var(--gray)">{{ t.award_range }} &middot; Deadline {{ t.deadline }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div style="margin-top:16px;text-align:center">
+  <a href="{{ url_for('financial_aid_types') }}" class="btn btn-outline">Browse all aid types &rarr;</a>
+</div>
+
+<h2 class="section-title" style="margin-top:40px">Required Forms</h2>
+<table>
+  <thead><tr><th>Form</th><th>Audience</th><th>Window</th><th></th></tr></thead>
+  <tbody>
+    {% for f in forms %}
+    <tr>
+      <td><strong>{{ f.name }}</strong></td>
+      <td>{{ f.audience }}</td>
+      <td>{{ f.submit_window }}</td>
+      <td><a href="{{ url_for('financial_aid_form_detail', slug=f.slug) }}" class="btn btn-primary btn-sm">Submit</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div style="margin-top:36px;background:#3c6e47;color:#fff;padding:24px 28px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px;font-family:sans-serif">
+  <div>
+    <div style="font-size:13px;opacity:0.8">Net Price Calculator</div>
+    <div style="font-size:22px;font-weight:bold">Estimate your aid package</div>
+  </div>
+  <a href="{{ url_for('financial_aid_forms') }}" style="background:#fff;color:#3c6e47;padding:12px 22px;border-radius:4px;font-weight:bold;font-size:15px;text-decoration:none">View All Forms &rarr;</a>
+</div>
+{% endblock %}

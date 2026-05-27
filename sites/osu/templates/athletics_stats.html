@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} Stats{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('athletics') }}">Athletics</a><span>/</span>
+  <a href="{{ url_for('athletics_team', slug=team.slug) }}">{{ team.name }}</a><span>/</span>
+  <span>Stats</span>
+</div>
+
+<div style="background:linear-gradient(90deg,#000 0%,#BB0000 50%,#000 100%);color:#fff;padding:30px 36px;margin:-30px -20px 30px">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">Team Stats &middot; 2025–26</div>
+  <h1 style="font-size:34px;margin-top:4px">{{ team.name }}</h1>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:34px;font-family:Impact,sans-serif">
+  <div style="background:#fff;border:1px solid var(--gray-mid);padding:30px 20px;text-align:center;border-top:4px solid var(--scarlet)">
+    <div style="font-size:48px;color:#27ae60">{{ wins }}</div>
+    <div style="font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:2px;margin-top:4px">Wins</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--gray-mid);padding:30px 20px;text-align:center;border-top:4px solid #c0392b">
+    <div style="font-size:48px;color:#c0392b">{{ losses }}</div>
+    <div style="font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:2px;margin-top:4px">Losses</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--gray-mid);padding:30px 20px;text-align:center;border-top:4px solid #2c4b6e">
+    <div style="font-size:48px;color:#2c4b6e">{{ total_games }}</div>
+    <div style="font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:2px;margin-top:4px">Total Games</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--gray-mid);padding:30px 20px;text-align:center;border-top:4px solid var(--scarlet)">
+    <div style="font-size:48px;color:var(--scarlet)">{{ home_games }}</div>
+    <div style="font-size:13px;color:var(--gray);text-transform:uppercase;letter-spacing:2px;margin-top:4px">Home Games</div>
+  </div>
+</div>
+
+<div style="background:var(--gray-light);padding:24px 28px;border-radius:8px;font-family:sans-serif">
+  <h2 style="font-size:20px;color:var(--scarlet);margin-bottom:14px">Season Highlights</h2>
+  <ul style="padding-left:18px;line-height:1.8;font-size:14px">
+    <li>Win percentage: <b>{{ '%.1f'|format(wins / total_games * 100 if total_games else 0) }}%</b></li>
+    <li>Big Ten Conference standing: under review by the conference office</li>
+    <li>National ranking ({{ team.national_titles }} all-time titles)</li>
+    <li>Recent record: {{ team.recent_record }}</li>
+  </ul>
+</div>
+{% endblock %}

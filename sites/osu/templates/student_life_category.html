@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ cat.name }} — Ohio State Student Life{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('student_life') }}">Student Life</a><span>/</span>
+  <span>{{ cat.name }}</span>
+</div>
+
+<div style="background:linear-gradient(160deg,#a02830 0%,#222b45 100%);color:#fff;padding:50px 40px;margin:-30px -20px 30px;display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:center">
+  <div style="font-size:96px;text-align:center">{{ cat.icon|safe }}</div>
+  <div>
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;font-family:sans-serif">Office of Student Life</div>
+    <h1 style="font-size:40px;line-height:1.05;margin:6px 0">{{ cat.name }}</h1>
+    <p style="font-size:16px;opacity:0.92;font-family:sans-serif">{{ cat.tagline }}</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:30px">
+  <div style="font-size:16px;line-height:1.75">
+    <h2 style="font-size:22px;color:var(--scarlet);margin-bottom:14px;border-bottom:3px solid var(--scarlet);padding-bottom:6px">About {{ cat.name }}</h2>
+    {% for p in cat.body.split('\n\n') %}
+    <p style="margin-bottom:14px">{{ p }}</p>
+    {% endfor %}
+    <p style="margin-top:18px;padding:16px;background:var(--gray-light);border-left:4px solid var(--scarlet);font-size:14px;font-family:sans-serif">
+      Have a question? Email <a href="mailto:{{ cat.contact_email }}">{{ cat.contact_email }}</a> or visit 3rd floor of the Ohio Union.
+    </p>
+  </div>
+  <aside class="sidebar">
+    <h3>More in Student Life</h3>
+    {% for other in colleges %}{% endfor %}
+    {% set siblings = [] %}
+    <div style="font-size:13px;line-height:1.7">
+      <a href="{{ url_for('student_life') }}" style="display:block;padding:6px 0;border-bottom:1px solid var(--gray-mid)">&laquo; All Categories</a>
+      <a href="{{ url_for('buckeye_link') }}" style="display:block;padding:6px 0;border-bottom:1px solid var(--gray-mid)">Buckeye Link</a>
+      <a href="{{ url_for('services_index') }}" style="display:block;padding:6px 0;border-bottom:1px solid var(--gray-mid)">Campus Services</a>
+      <a href="{{ url_for('events') }}" style="display:block;padding:6px 0">Upcoming Events</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

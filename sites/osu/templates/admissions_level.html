@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ level|title }} Admissions — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('admissions') }}">Admissions</a><span>/</span>
+  <span>{{ level|title }}</span>
+</div>
+
+<div style="background:#222b45;color:#fff;padding:40px;margin:-30px -20px 36px;display:grid;grid-template-columns:2fr 1fr;gap:30px;align-items:center">
+  <div>
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif;margin-bottom:10px">{{ level|upper }} ADMISSIONS</div>
+    <h1 style="font-size:36px;margin-bottom:10px;line-height:1.15">{% if level == 'undergraduate' %}Begin Your Buckeye Journey{% elif level == 'graduate' %}Advance Your Career at Ohio State{% elif level == 'transfer' %}Transfer to The Ohio State University{% elif level == 'international' %}Join 4,800+ International Buckeyes{% else %}College Credit Plus &amp; Pathway Programs{% endif %}</h1>
+    <p style="font-size:16px;opacity:0.85;font-family:sans-serif">{{ pathways|length }} pathway{{ 's' if pathways|length != 1 else '' }} into Ohio State for {{ level }} students.</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.08);padding:18px 22px;border-left:4px solid #ffcc00;font-family:sans-serif">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;opacity:0.75;margin-bottom:6px">Need help?</div>
+    <div style="font-size:15px;font-weight:bold">(614) 292-3980</div>
+    <div style="font-size:13px;opacity:0.85;margin-top:4px">askabuckeye@osu.edu</div>
+    <a href="{{ url_for('info_request') }}" style="color:#ffcc00;font-size:13px;display:block;margin-top:10px">Request more information &rarr;</a>
+  </div>
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px;font-family:sans-serif">
+  {% for tab in ['undergraduate', 'graduate', 'transfer', 'international', 'pathways'] %}
+  <a href="{{ url_for('admissions_level', level=tab) }}" style="padding:10px 18px;border-radius:24px;font-size:14px;{% if tab == level %}background:var(--scarlet);color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">{{ tab|title }}</a>
+  {% endfor %}
+</div>
+
+<h2 class="section-title">Application Pathways</h2>
+{% if pathways %}
+<div class="grid-2">
+  {% for p in pathways %}
+  <div class="card" style="border-left:4px solid var(--scarlet)">
+    <div class="card-body">
+      <h3 style="font-size:18px;color:var(--scarlet);margin-bottom:8px">{{ p.name }}</h3>
+      {% if p.requirements %}<div style="font-size:13px;background:var(--gray-light);padding:10px 12px;border-radius:4px;margin-bottom:10px"><b>Requirements:</b> {{ p.requirements }}</div>{% endif %}
+      <p style="font-size:14px;line-height:1.6;color:var(--text)">{{ p.description }}</p>
+      <div style="display:flex;gap:18px;margin-top:14px;font-family:sans-serif;font-size:13px">
+        <div><div style="color:var(--gray);font-size:11px;text-transform:uppercase">Deadline</div><div style="font-weight:bold">{{ p.deadline }}</div></div>
+        <div><div style="color:var(--gray);font-size:11px;text-transform:uppercase">App Fee</div><div style="font-weight:bold">${{ p.application_fee }}</div></div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p>No pathways currently listed.</p>
+{% endif %}
+
+<div style="margin-top:40px;padding:24px 28px;background:var(--scarlet);color:#fff;border-radius:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;font-family:sans-serif">
+  <div>
+    <div style="font-size:13px;text-transform:uppercase;letter-spacing:2px;opacity:0.8">Ready to apply?</div>
+    <div style="font-size:22px;font-weight:bold;margin-top:4px">Start your application today</div>
+  </div>
+  <a href="{{ url_for('admissions_apply') }}" style="background:#fff;color:var(--scarlet);padding:12px 24px;border-radius:4px;font-weight:bold;font-size:15px;text-decoration:none">Apply Now &rarr;</a>
+</div>
+{% endblock %}

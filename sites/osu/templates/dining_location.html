@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ location.name }} — Ohio State Dining{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('dining_index') }}">Dining</a><span>/</span>
+  <span>{{ location.name }}</span>
+</div>
+
+<div style="background:#fff;border:1px solid var(--gray-mid);border-radius:8px;overflow:hidden;margin-bottom:24px">
+  <div style="background:linear-gradient(135deg,#ffcc00 0%,var(--scarlet) 100%);height:140px;display:flex;align-items:center;justify-content:center">
+    <div style="font-size:72px">🍽</div>
+  </div>
+  <div style="padding:24px 30px">
+    <h1 style="font-size:30px;color:var(--scarlet);margin-bottom:4px">{{ location.name }}</h1>
+    <p style="font-size:14px;color:var(--gray);font-family:sans-serif">{{ location.cuisine }} &middot; {{ location.location }} &middot; {{ location.hours }}</p>
+    <p style="font-size:15px;line-height:1.7;margin-top:14px">{{ location.description }}</p>
+    <div style="margin-top:14px;display:flex;gap:12px;font-family:sans-serif;font-size:13px">
+      <span class="badge {% if location.accepts_meal_plan %}badge-scarlet{% else %}badge-gray{% endif %}">{% if location.accepts_meal_plan %}Meal Plan Accepted{% else %}À La Carte Only{% endif %}</span>
+      <span class="badge badge-light">🪑 {{ location.seats }} seats</span>
+      <a href="{{ url_for('dining_menu', slug=location.slug, date='today') }}" class="badge badge-light">📅 Today's Menu</a>
+    </div>
+  </div>
+</div>
+
+<h2 class="section-title">Menu</h2>
+{% set meals = {} %}
+{% for it in items %}{% if meals.update({it.meal: meals.get(it.meal, []) + [it]}) %}{% endif %}{% endfor %}
+
+{% for meal in ['Breakfast', 'Lunch', 'Dinner', 'Snack'] %}
+{% if meals.get(meal) %}
+<div style="margin-bottom:24px">
+  <h3 style="font-size:18px;color:var(--scarlet);text-transform:uppercase;letter-spacing:2px;font-family:sans-serif;margin-bottom:10px;border-bottom:2px solid var(--scarlet);padding-bottom:4px">{{ meal }}</h3>
+  <div class="grid-2">
+    {% for it in meals[meal] %}
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid {% if it.is_vegan %}#27ae60{% elif it.is_vegetarian %}#73a857{% else %}var(--scarlet){% endif %};padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <h4 style="font-size:15px">{{ it.name }}</h4>
+        <span style="color:var(--scarlet);font-weight:bold">${{ '%.2f'|format(it.price) }}</span>
+      </div>
+      <div style="font-size:12px;color:var(--gray);margin-top:4px;font-family:sans-serif">{{ it.description }}</div>
+      <div style="font-size:11px;color:var(--gray);margin-top:6px;font-family:sans-serif">{{ it.calories }} cal {% if it.is_vegan %} &middot; <b style="color:#27ae60">VEGAN</b>{% elif it.is_vegetarian %} &middot; <b style="color:#73a857">VEG</b>{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

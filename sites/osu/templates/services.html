@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Campus Services — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <span>Campus Services</span>
+</div>
+
+<h1 style="font-size:32px;color:var(--scarlet);margin-bottom:8px">Campus Services</h1>
+<p style="color:var(--gray);font-family:sans-serif;margin-bottom:24px">{{ services|length }} services supporting Buckeye students, faculty, and staff.</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;font-family:sans-serif">
+  <a href="{{ url_for('services_index') }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if not current_category %}background:var(--scarlet);color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">All Categories</a>
+  {% for c in categories %}
+  <a href="{{ url_for('services_index') }}?category={{ c }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if current_category == c %}background:var(--scarlet);color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<div class="grid-2">
+  {% for s in services %}
+  <a href="{{ url_for('service_detail', slug=s.slug) }}" style="display:block;text-decoration:none;color:inherit">
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-left:5px solid var(--scarlet);padding:18px 22px;border-radius:4px">
+      <span class="badge badge-light">{{ s.category }}</span>
+      <h3 style="font-size:17px;margin:8px 0 4px;color:var(--scarlet)">{{ s.name }}</h3>
+      <div style="font-size:13px;color:var(--gray);font-family:sans-serif">📞 {{ s.phone }} &middot; 📍 {{ s.location }}</div>
+      <p style="font-size:13px;line-height:1.5;margin-top:8px">{{ s.description[:140] }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

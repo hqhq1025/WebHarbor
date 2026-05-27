@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Leadership — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('about') }}">About</a><span>/</span>
+  <span>Leadership</span>
+</div>
+
+<div style="background:#1d3557;color:#fff;padding:50px 40px;margin:-30px -20px 30px">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.8;font-family:sans-serif">Office of the President</div>
+  <h1 style="font-size:42px;margin-top:6px">University Leadership</h1>
+  <p style="font-size:16px;opacity:0.92;font-family:sans-serif;max-width:700px">The administrative team guiding Ohio State's research enterprise, academic mission, athletics, and global engagement.</p>
+</div>
+
+<div class="grid-2">
+  {% for l in leaders %}
+  <a href="{{ url_for('leader_detail', slug=l.slug) }}" style="display:block;text-decoration:none;color:inherit">
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;padding:24px;display:grid;grid-template-columns:90px 1fr;gap:18px;align-items:start">
+      <div style="background:#1d3557;color:#fff;width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;font-family:Georgia,serif">
+        {{ l.name.split()[0][0] }}{{ l.name.split()[-1][0] }}
+      </div>
+      <div>
+        <h3 style="font-size:18px;color:#1d3557">{{ l.name }}</h3>
+        <div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-top:4px">{{ l.title }}</div>
+        {% if l.email %}<div style="font-size:12px;color:var(--gray);font-family:sans-serif;margin-top:4px">{{ l.email }}</div>{% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

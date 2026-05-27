@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ branch.name }} — Ohio State Libraries{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('library_index') }}">Libraries</a><span>/</span>
+  <span>{{ branch.name }}</span>
+</div>
+
+<div style="background:#6e4c1e;color:#fff;padding:40px 36px;margin:-30px -20px 30px;border-bottom:6px solid #3d2912">
+  <h1 style="font-size:34px;margin-bottom:8px;line-height:1.1">{{ branch.name }}</h1>
+  <p style="font-size:15px;opacity:0.85;font-family:sans-serif">{{ branch.address }}</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:30px">
+  <div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:sans-serif;margin-bottom:24px">
+      <div style="background:#fff;padding:16px;border-left:4px solid #6e4c1e">
+        <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Volumes</div>
+        <div style="font-size:22px;font-weight:bold;color:#6e4c1e">{{ '{:,}'.format(branch.collection_size) }}</div>
+      </div>
+      <div style="background:#fff;padding:16px;border-left:4px solid #6e4c1e">
+        <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Hours</div>
+        <div style="font-size:14px;margin-top:4px">{{ branch.hours }}</div>
+      </div>
+      <div style="background:#fff;padding:16px;border-left:4px solid #6e4c1e">
+        <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Study Rooms</div>
+        <div style="font-size:14px;margin-top:4px">{% if branch.has_study_rooms %}<a href="{{ url_for('library_study_room_reserve') }}">Reserve →</a>{% else %}Not available{% endif %}</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">About This Library</h2>
+    <p style="font-size:16px;line-height:1.7">{{ branch.description }}</p>
+
+    <h2 class="section-title" style="margin-top:30px">Services</h2>
+    <ul style="font-size:14px;line-height:1.8;padding-left:18px;font-family:sans-serif">
+      <li>Borrowing privileges with BuckeyeID</li>
+      <li>Interlibrary loan (OhioLINK)</li>
+      <li>Course reserves</li>
+      <li>Research consultations with subject librarians</li>
+      <li>3D printing and digital scholarship lab</li>
+      <li>Quiet study floors and group rooms</li>
+    </ul>
+  </div>
+
+  <aside class="sidebar">
+    <h3>Contact</h3>
+    <table style="font-size:13px">
+      <tr><td>Phone</td><td>{{ branch.phone }}</td></tr>
+      <tr><td>Head</td><td>{{ branch.head_librarian }}</td></tr>
+      <tr><td>Address</td><td>{{ branch.address }}</td></tr>
+    </table>
+    <div style="margin-top:18px">
+      <a href="{{ url_for('library_study_room_reserve') }}" class="btn btn-primary" style="width:100%;display:block;text-align:center">Reserve Study Room</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Diversity, Equity &amp; Inclusion — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('about') }}">About</a><span>/</span>
+  <span>Diversity</span>
+</div>
+
+<div style="background:linear-gradient(45deg,#c0392b 0%,#8e44ad 33%,#2980b9 66%,#27ae60 100%);color:#fff;padding:50px 40px;margin:-30px -20px 30px">
+  <div style="max-width:1160px;margin:0 auto">
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.92;font-family:sans-serif">Office of Diversity and Inclusion</div>
+    <h1 style="font-size:42px;line-height:1.1;margin:6px 0 10px">Inclusive Excellence</h1>
+    <p style="font-size:16px;opacity:0.95;font-family:sans-serif;max-width:700px">Programs and centers across campus advancing access, opportunity, and belonging for every Buckeye.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  {% for p in programs %}
+  <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;overflow:hidden">
+    <div style="background:#a02830;color:#fff;padding:14px 18px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;opacity:0.85">{{ p.audience }}</div>
+      <h3 style="font-size:18px;margin-top:4px">{{ p.name }}</h3>
+    </div>
+    <div style="padding:16px 20px">
+      {% if p.director %}<div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-bottom:6px"><b>Director:</b> {{ p.director }}</div>{% endif %}
+      <p style="font-size:14px;line-height:1.6">{{ p.description }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

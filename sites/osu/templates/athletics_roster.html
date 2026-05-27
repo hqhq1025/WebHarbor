@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} Roster{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('athletics') }}">Athletics</a><span>/</span>
+  <a href="{{ url_for('athletics_team', slug=team.slug) }}">{{ team.name }}</a><span>/</span>
+  <span>Roster</span>
+</div>
+
+<div style="background:#000;color:#fff;padding:30px 36px;margin:-30px -20px 30px;border-bottom:6px solid var(--scarlet)">
+  <div style="font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">{{ team.sport }} Roster &middot; 2025–26</div>
+  <h1 style="font-size:34px;margin-top:4px;font-family:Impact,sans-serif">{{ team.name }}</h1>
+  <div style="margin-top:6px;font-family:sans-serif;font-size:14px;opacity:0.85">{{ roster|length }} student-athletes &middot; Big Ten Conference &middot; Coach {{ team.coach }}</div>
+</div>
+
+<div style="display:flex;gap:14px;margin-bottom:24px;font-family:sans-serif">
+  <a href="{{ url_for('athletics_team', slug=team.slug) }}" class="btn btn-outline btn-sm">Overview</a>
+  <a href="{{ url_for('athletics_schedule', slug=team.slug) }}" class="btn btn-outline btn-sm">Schedule</a>
+  <a href="{{ url_for('athletics_stats', slug=team.slug) }}" class="btn btn-outline btn-sm">Stats</a>
+</div>
+
+<table>
+  <thead><tr><th style="width:50px">#</th><th>Name</th><th style="width:80px">Pos</th><th style="width:100px">Year</th><th>Hometown</th><th style="width:80px">Ht</th><th style="width:80px">Wt</th></tr></thead>
+  <tbody>
+  {% for r in roster %}
+  <tr>
+    <td><span style="display:inline-block;background:var(--scarlet);color:#fff;width:34px;height:34px;border-radius:50%;text-align:center;line-height:34px;font-weight:bold;font-family:Impact,sans-serif">{{ r.jersey_number }}</span></td>
+    <td><b>{{ r.name }}</b></td>
+    <td>{{ r.position }}</td>
+    <td>{{ r.year }}</td>
+    <td style="font-size:13px">{{ r.hometown }}</td>
+    <td>{{ r.height }}</td>
+    <td>{{ r.weight }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if not roster %}<p class="empty-state">No roster published yet.</p>{% endif %}
+{% endblock %}

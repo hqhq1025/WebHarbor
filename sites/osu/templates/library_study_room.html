@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Reserve a Study Room — Ohio State Libraries{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('library_index') }}">Libraries</a><span>/</span>
+  <span>Reserve Study Room</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:30px">
+  <div>
+    <h1 style="font-size:30px;color:#6e4c1e;margin-bottom:8px">Reserve a Study Room</h1>
+    <p style="font-size:14px;color:var(--gray);font-family:sans-serif;margin-bottom:24px">Group study rooms can be reserved 14 days in advance, up to 2 hours per day per student.</p>
+
+    <form method="post" action="{{ url_for('library_study_room_reserve') }}" style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid #6e4c1e;padding:30px;border-radius:6px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="form-group">
+          <label>Your Name *</label>
+          <input type="text" name="full_name" required>
+        </div>
+        <div class="form-group">
+          <label>Library Branch *</label>
+          <select name="branch_id" required>
+            <option value="">— Select Branch —</option>
+            {% for b in branches %}
+            <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="text" name="reserve_date" required placeholder="2026-06-15">
+        </div>
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="text" name="start_time" value="13:00">
+        </div>
+        <div class="form-group">
+          <label>Duration (hours)</label>
+          <select name="duration_hours">
+            <option value="1">1 hour</option>
+            <option value="2" selected>2 hours</option>
+            <option value="3">3 hours</option>
+            <option value="4">4 hours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Preferred Room #</label>
+          <input type="text" name="room_number" placeholder="A101" value="A101">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Purpose (optional)</label>
+        <input type="text" name="purpose" placeholder="Group study for CSE 2231 final">
+      </div>
+      <button type="submit" class="btn btn-primary">Reserve Room</button>
+    </form>
+  </div>
+
+  <aside class="sidebar" style="background:#fdf6ee;border:1px solid #d9c8af">
+    <h3 style="color:#6e4c1e;border-bottom-color:#6e4c1e">Policies</h3>
+    <ul style="padding-left:18px;font-size:13px;line-height:1.6">
+      <li>BuckeyeID required at check-in</li>
+      <li>Max 2 hours per day per student</li>
+      <li>Up to 14 days in advance</li>
+      <li>15-minute grace period; rooms released after</li>
+      <li>Some rooms require 3+ people</li>
+    </ul>
+    <h3 style="color:#6e4c1e;border-bottom-color:#6e4c1e;margin-top:18px">Branches with Rooms</h3>
+    <ul style="padding-left:0;list-style:none;font-size:13px;line-height:1.7">
+      {% for b in branches %}
+      <li><a href="{{ url_for('library_branch', slug=b.slug) }}">{{ b.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+</div>
+{% endblock %}

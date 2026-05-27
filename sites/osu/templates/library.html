@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}University Libraries — Ohio State{% endblock %}
+{% block content %}
+<div style="background:#6e4c1e;color:#fff;padding:50px 40px;margin:-30px -20px 30px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;right:0;width:50%;height:100%;background:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22><rect width=%22400%22 height=%22300%22 fill=%22%23000%22 opacity=%220.2%22/><rect x=%2240%22 y=%2240%22 width=%2240%22 height=%22220%22 fill=%22%23fff%22 opacity=%220.15%22/><rect x=%2290%22 y=%2240%22 width=%2240%22 height=%22220%22 fill=%22%23fff%22 opacity=%220.15%22/><rect x=%22140%22 y=%2240%22 width=%2240%22 height=%22220%22 fill=%22%23fff%22 opacity=%220.15%22/><rect x=%22190%22 y=%2240%22 width=%2240%22 height=%22220%22 fill=%22%23fff%22 opacity=%220.15%22/><rect x=%22240%22 y=%2240%22 width=%2240%22 height=%22220%22 fill=%22%23fff%22 opacity=%220.15%22/></svg>') center/cover"></div>
+  <div style="position:relative;max-width:1160px;margin:0 auto">
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">Ohio State Libraries</div>
+    <h1 style="font-size:42px;line-height:1.1;margin:6px 0 12px">University Libraries</h1>
+    <p style="font-size:16px;opacity:0.92;font-family:sans-serif;max-width:680px">{{ branches|length }} branches across six campuses serving 60,000 Buckeyes — 5.8 million volumes, 2,000 study seats, and 24/5 hours at Thompson during the semester.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px;font-family:sans-serif">
+  <div style="background:#fff;padding:18px;border-left:4px solid #6e4c1e">
+    <div style="font-size:12px;color:var(--gray);text-transform:uppercase">Open Now</div>
+    <div style="font-size:22px;font-weight:bold;margin-top:2px">Thompson, 18th Ave, Prior</div>
+  </div>
+  <a href="{{ url_for('library_study_room_reserve') }}" style="background:#6e4c1e;color:#fff;padding:18px;text-decoration:none">
+    <div style="font-size:12px;opacity:0.8;text-transform:uppercase">Reserve</div>
+    <div style="font-size:22px;font-weight:bold;margin-top:2px">Study Rooms &rarr;</div>
+  </a>
+  <div style="background:#fff;padding:18px;border-left:4px solid #6e4c1e">
+    <div style="font-size:12px;color:var(--gray);text-transform:uppercase">Ask a Librarian</div>
+    <div style="font-size:22px;font-weight:bold;margin-top:2px">24/7 chat</div>
+  </div>
+</div>
+
+<h2 class="section-title">Library Branches</h2>
+<div class="grid-2">
+  {% for b in branches %}
+  <a href="{{ url_for('library_branch', slug=b.slug) }}" style="display:block;text-decoration:none;color:inherit">
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-left:5px solid #6e4c1e;padding:20px;border-radius:4px">
+      <h3 style="font-size:18px;margin-bottom:6px;color:#6e4c1e">{{ b.name }}</h3>
+      <div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-bottom:4px">{{ b.address }}</div>
+      <div style="font-size:13px;font-family:sans-serif">Hours: {{ b.hours }}</div>
+      <div style="margin-top:10px;display:flex;gap:12px;font-size:12px;color:var(--gray);font-family:sans-serif">
+        <span>📚 {{ '{:,}'.format(b.collection_size) }} volumes</span>
+        {% if b.has_study_rooms %}<span>🪑 Study rooms</span>{% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

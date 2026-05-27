@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Request Transcript — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <span>Transcript Request</span>
+</div>
+
+<div style="background:#222b45;color:#fff;padding:40px 36px;margin:-30px -20px 30px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
+  <div>
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">Office of the University Registrar</div>
+    <h1 style="font-size:36px;margin-top:6px">Order an Official Transcript</h1>
+  </div>
+  <div style="background:rgba(255,255,255,0.08);padding:18px;border-radius:6px;font-family:sans-serif">
+    <table style="font-size:13px;color:#fff">
+      <tr><td style="opacity:0.7">Electronic</td><td>$8</td><td>Same day</td></tr>
+      <tr><td style="opacity:0.7">Mailed</td><td>$15</td><td>7–10 days</td></tr>
+      <tr><td style="opacity:0.7">Express</td><td>$30</td><td>2–3 days</td></tr>
+    </table>
+  </div>
+</div>
+
+<form method="post" action="{{ url_for('transcript_request') }}" style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid var(--scarlet);padding:30px;border-radius:6px;max-width:760px;margin:0 auto">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2 style="font-size:22px;color:var(--scarlet);margin-bottom:18px">Submit Request</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="form-group">
+      <label>Full Legal Name (as on record) *</label>
+      <input type="text" name="full_name" required>
+    </div>
+    <div class="form-group">
+      <label>Email *</label>
+      <input type="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label>Student ID (.# or OSU ID) *</label>
+      <input type="text" name="student_id" required placeholder=".buckeye.1">
+    </div>
+    <div class="form-group">
+      <label>Delivery Method</label>
+      <select name="delivery">
+        <option value="electronic">Electronic ($8)</option>
+        <option value="mailed">Mailed ($15)</option>
+        <option value="express">Express ($30)</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Recipient (school, employer, or self)</label>
+    <input type="text" name="recipient" placeholder="University of Michigan Graduate Admissions">
+  </div>
+  <button type="submit" class="btn btn-primary">Submit Transcript Request</button>
+  <p style="font-size:12px;color:var(--gray);font-family:sans-serif;margin-top:14px">By submitting, you authorize OSU to release your official academic record per FERPA disclosure consent.</p>
+</form>
+{% endblock %}

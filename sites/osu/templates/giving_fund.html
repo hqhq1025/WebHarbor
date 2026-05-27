@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Give to {{ fund.name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('giving_index') }}">Giving</a><span>/</span>
+  <span>{{ fund.name }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:30px">
+  <div>
+    <span class="badge badge-scarlet">{{ fund.purpose }}</span>
+    <h1 style="font-size:34px;color:var(--scarlet);margin:10px 0 6px;line-height:1.15">{{ fund.name }}</h1>
+
+    {% set pct = (fund.raised_amount / fund.goal_amount * 100) | int if fund.goal_amount else 0 %}
+    <div style="background:#fff;border:1px solid var(--gray-mid);padding:20px 24px;border-radius:6px;margin:20px 0">
+      <div style="display:flex;justify-content:space-between;font-family:sans-serif;font-size:13px">
+        <span>${{ '{:,}'.format(fund.raised_amount) }} raised</span>
+        <span>Goal: ${{ '{:,}'.format(fund.goal_amount) }}</span>
+      </div>
+      <div style="background:var(--gray-light);height:14px;border-radius:7px;overflow:hidden;margin-top:6px">
+        <div style="background:linear-gradient(90deg,var(--scarlet),#ffcc00);height:100%;width:{{ pct }}%"></div>
+      </div>
+      <div style="font-size:20px;font-weight:bold;color:var(--scarlet);margin-top:6px;font-family:sans-serif">{{ pct }}% of goal</div>
+    </div>
+
+    <p style="font-size:16px;line-height:1.7">{{ fund.description }}</p>
+  </div>
+
+  <div>
+    <form method="post" action="{{ url_for('giving_fund', slug=fund.slug) }}" style="background:var(--scarlet);color:#fff;padding:30px;border-radius:8px;position:sticky;top:20px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3 style="font-size:22px;margin-bottom:14px;font-family:sans-serif">Make Your Gift</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+        {% for amt in [25, 100, 500, 1000] %}
+        <button type="submit" name="amount" value="{{ amt }}" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:10px 6px;border-radius:4px;cursor:pointer;font-size:14px;font-family:sans-serif;font-weight:bold">${{ amt }}</button>
+        {% endfor %}
+      </div>
+      <div class="form-group"><label style="color:#fff">Name *</label><input type="text" name="full_name" required></div>
+      <div class="form-group"><label style="color:#fff">Email *</label><input type="email" name="email" required></div>
+      <div class="form-group"><label style="color:#fff">Custom Amount ($)</label><input type="number" name="amount" placeholder="{{ fund.minimum_gift }}" min="{{ fund.minimum_gift }}"></div>
+      <div class="form-group"><label style="color:#fff">In Honor / Memory of</label><input type="text" name="in_honor_of" placeholder="(optional)"></div>
+      <div style="margin:14px 0;font-family:sans-serif"><label style="color:#fff;font-size:13px"><input type="checkbox" name="is_recurring"> Make this a monthly recurring gift</label></div>
+      <button type="submit" class="btn" style="background:#fff;color:var(--scarlet);width:100%;font-weight:bold;padding:12px">Give Now →</button>
+      <p style="font-size:11px;opacity:0.8;margin-top:10px;font-family:sans-serif">Minimum gift to this fund: ${{ fund.minimum_gift }}. Tax-deductible.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}

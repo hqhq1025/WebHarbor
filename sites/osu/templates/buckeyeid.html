@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}BuckeyeID — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <span>BuckeyeID</span>
+</div>
+
+<div style="background:#000;color:#fff;padding:50px 40px;margin:-30px -20px 30px;border-bottom:6px solid var(--scarlet);position:relative;overflow:hidden">
+  <div style="position:absolute;right:40px;top:50%;transform:translateY(-50%);background:linear-gradient(135deg,var(--scarlet),#8B0000);width:260px;height:160px;border-radius:14px;padding:18px;font-family:sans-serif;box-shadow:0 8px 20px rgba(0,0,0,0.5)">
+    <div style="font-size:11px;letter-spacing:2px;opacity:0.8">BUCKEYEID</div>
+    <div style="font-size:18px;font-weight:bold;margin-top:6px">Jane Buckeye</div>
+    <div style="font-size:12px;opacity:0.85;margin-top:2px">Student &middot; 2025–26</div>
+    <div style="position:absolute;bottom:14px;left:18px;font-size:18px;letter-spacing:6px">5500 8888</div>
+    <div style="position:absolute;bottom:14px;right:18px;font-size:28px">🅾</div>
+  </div>
+  <div style="max-width:560px">
+    <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">Official OSU ID</div>
+    <h1 style="font-size:42px;margin:6px 0">BuckeyeID</h1>
+    <p style="font-size:16px;opacity:0.9;font-family:sans-serif">Your one card for campus — meal plan, building access, library checkout, RPAC, athletics, and BuckID dollars across 200+ vendors.</p>
+  </div>
+</div>
+
+<div class="grid-3" style="margin-bottom:30px">
+  {% for title, body in [
+    ('Get Your First Card', 'Pick up your initial BuckeyeID at the ID Office in 3040 Ohio Union after you accept admission.'),
+    ('Add BuckID Money', 'Use the BuckID web portal to add funds — accepted at all dining locations, vending, laundry, and printers.'),
+    ('Lost or Stolen?', 'Deactivate immediately at buckeyeid.osu.edu/lost or call (614) 292-0400.'),
+    ('Replacement Cards', 'Replacement is $25. Visit 3040 Ohio Union with another photo ID.'),
+    ('Faculty &amp; Staff', 'Same card type — issued at HR onboarding. Doubles as building access badge.'),
+    ('Mobile BuckeyeID', 'Add your BuckeyeID to Apple Wallet and Google Wallet — coming Fall 2026.')
+  ] %}
+  <div style="background:#fff;border:1px solid var(--gray-mid);border-top:3px solid var(--scarlet);padding:22px;border-radius:4px">
+    <h3 style="font-size:17px;color:var(--scarlet);margin-bottom:8px">{{ title|safe }}</h3>
+    <p style="font-size:13px;line-height:1.6;color:var(--gray);font-family:sans-serif">{{ body|safe }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div style="background:var(--gray-light);padding:24px;border-left:5px solid var(--scarlet);font-family:sans-serif">
+  <h3 style="font-size:18px;color:var(--scarlet);margin-bottom:8px">BuckID Office Hours</h3>
+  <table style="font-size:14px">
+    <tr><td>Mon–Thu</td><td>8:00 AM – 6:00 PM</td></tr>
+    <tr><td>Fri</td><td>8:00 AM – 5:00 PM</td></tr>
+    <tr><td>Sat–Sun</td><td>Closed</td></tr>
+  </table>
+</div>
+{% endblock %}

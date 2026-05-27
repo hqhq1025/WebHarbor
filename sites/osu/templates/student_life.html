@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Student Life — Ohio State{% endblock %}
+{% block content %}
+<div style="background:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22260%22><rect width=%22800%22 height=%22260%22 fill=%22%23a02830%22/><polygon points=%220,260 200,180 400,240 600,160 800,260%22 fill=%22%23222b45%22 opacity=%220.5%22/><text x=%22400%22 y=%22130%22 font-family=%22Georgia%22 font-size=%2248%22 fill=%22white%22 text-anchor=%22middle%22 font-weight=%22bold%22>Buckeye Life</text></svg>') center/cover;color:#fff;padding:60px 40px;margin:-30px -20px 40px;text-align:center">
+  <h1 style="font-size:44px;line-height:1.1">Student Life at Ohio State</h1>
+  <p style="font-size:17px;opacity:0.9;font-family:sans-serif;margin-top:10px;max-width:740px;margin-left:auto;margin-right:auto">Beyond the classroom — 1,400+ student organizations, 36 varsity sports, the world-class RPAC, six campuses, and a thriving culture that makes 50,000 Buckeyes feel at home.</p>
+</div>
+
+<div class="grid-3">
+  {% for c in cats %}
+  <a href="{{ url_for('student_life_category', slug=c.slug) }}" style="background:#fff;border:1px solid var(--gray-mid);border-radius:8px;overflow:hidden;display:block;text-decoration:none;color:inherit;transition:all 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+    <div style="background:linear-gradient(135deg,var(--scarlet) 0%,var(--scarlet-dark) 100%);color:#fff;padding:24px;text-align:center">
+      <div style="font-size:42px">{{ c.icon|safe }}</div>
+      <h3 style="font-size:18px;margin-top:6px;font-family:sans-serif">{{ c.name }}</h3>
+    </div>
+    <div style="padding:16px 18px">
+      <p style="font-size:13px;color:var(--gray);line-height:1.5;font-family:sans-serif">{{ c.tagline }}</p>
+      <div style="margin-top:10px;font-size:12px;color:var(--scarlet);font-family:sans-serif">Explore &rarr;</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

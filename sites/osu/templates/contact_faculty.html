@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Contact {{ member.name }} — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('faculty') }}">Faculty</a><span>/</span>
+  <a href="{{ url_for('faculty_profile', slug=member.slug) }}">{{ member.name }}</a><span>/</span>
+  <span>Contact</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:30px">
+  <div>
+    <h1 style="font-size:30px;color:var(--scarlet);margin-bottom:6px">Contact {{ member.name }}</h1>
+    <p style="font-size:14px;color:var(--gray);font-family:sans-serif;margin-bottom:24px">{{ member.title }}{% if member.department %} &middot; {{ member.department.name }}{% endif %}</p>
+
+    <form method="post" action="{{ url_for('contact_faculty', slug=member.slug) }}" style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid var(--scarlet);padding:30px;border-radius:6px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Your Name *</label>
+        <input type="text" name="full_name" required>
+      </div>
+      <div class="form-group">
+        <label>Your Email *</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label>Subject</label>
+        <input type="text" name="subject" placeholder="Question about CSE 2231">
+      </div>
+      <div class="form-group">
+        <label>Message *</label>
+        <textarea name="message" rows="6" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+  </div>
+
+  <aside class="sidebar">
+    <h3>{{ member.name }}</h3>
+    <div style="font-size:13px;line-height:1.7;font-family:sans-serif">
+      {% if member.email %}<div>📧 {{ member.email }}</div>{% endif %}
+      {% if member.phone %}<div>📞 {{ member.phone }}</div>{% endif %}
+      {% if member.office %}<div>🏢 {{ member.office }}</div>{% endif %}
+    </div>
+    {% if member.research_interests %}
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--gray-mid)">
+      <h3>Research Interests</h3>
+      <div>{% for r in member.research_interests.split(',')[:6] %}<span class="tag">{{ r.strip() }}</span>{% endfor %}</div>
+    </div>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

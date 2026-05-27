@@ -201,6 +201,361 @@ class Bookmark(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# ─── Extended catalog models (vanilla deepen) ────────────────────────────────
+
+class StudentLifeCategory(db.Model):
+    __tablename__ = 'student_life_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    tagline = db.Column(db.String(300), default='')
+    description = db.Column(db.Text, default='')
+    icon = db.Column(db.String(50), default='')
+    body = db.Column(db.Text, default='')
+    contact_email = db.Column(db.String(120), default='')
+
+
+class LibraryBranch(db.Model):
+    __tablename__ = 'library_branches'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    address = db.Column(db.String(300), default='')
+    phone = db.Column(db.String(40), default='')
+    hours = db.Column(db.String(200), default='')
+    description = db.Column(db.Text, default='')
+    head_librarian = db.Column(db.String(150), default='')
+    collection_size = db.Column(db.Integer, default=0)
+    has_study_rooms = db.Column(db.Boolean, default=True)
+
+
+class DiningLocation(db.Model):
+    __tablename__ = 'dining_locations'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    location = db.Column(db.String(200), default='')
+    hours = db.Column(db.String(200), default='')
+    cuisine = db.Column(db.String(100), default='')
+    accepts_meal_plan = db.Column(db.Boolean, default=True)
+    description = db.Column(db.Text, default='')
+    seats = db.Column(db.Integer, default=100)
+
+
+class DiningMenuItem(db.Model):
+    __tablename__ = 'dining_menu_items'
+    id = db.Column(db.Integer, primary_key=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('dining_locations.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(400), default='')
+    meal = db.Column(db.String(30), default='Lunch')
+    price = db.Column(db.Float, default=8.5)
+    calories = db.Column(db.Integer, default=400)
+    is_vegetarian = db.Column(db.Boolean, default=False)
+    is_vegan = db.Column(db.Boolean, default=False)
+
+
+class AthleticGame(db.Model):
+    __tablename__ = 'athletic_games'
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('athletic_teams.id'), nullable=False)
+    opponent = db.Column(db.String(150), nullable=False)
+    home_away = db.Column(db.String(10), default='Home')
+    game_date = db.Column(db.DateTime, nullable=False)
+    venue = db.Column(db.String(200), default='')
+    result = db.Column(db.String(40), default='')
+    tv = db.Column(db.String(40), default='')
+
+
+class AthleticRosterMember(db.Model):
+    __tablename__ = 'athletic_roster'
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('athletic_teams.id'), nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    jersey_number = db.Column(db.String(8), default='')
+    position = db.Column(db.String(50), default='')
+    year = db.Column(db.String(20), default='Freshman')
+    hometown = db.Column(db.String(150), default='')
+    height = db.Column(db.String(20), default='')
+    weight = db.Column(db.String(20), default='')
+
+
+class AlumniChapter(db.Model):
+    __tablename__ = 'alumni_chapters'
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(120), nullable=False)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    city = db.Column(db.String(120), default='')
+    state = db.Column(db.String(60), default='')
+    president = db.Column(db.String(150), default='')
+    members = db.Column(db.Integer, default=0)
+    founded_year = db.Column(db.Integer, default=1990)
+    next_event = db.Column(db.String(300), default='')
+    description = db.Column(db.Text, default='')
+
+
+class GivingFund(db.Model):
+    __tablename__ = 'giving_funds'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    purpose = db.Column(db.String(120), default='Scholarship')
+    goal_amount = db.Column(db.Integer, default=100000)
+    raised_amount = db.Column(db.Integer, default=0)
+    college_id = db.Column(db.Integer, db.ForeignKey('colleges.id'), nullable=True)
+    description = db.Column(db.Text, default='')
+    minimum_gift = db.Column(db.Integer, default=25)
+
+
+class FinancialAidType(db.Model):
+    __tablename__ = 'financial_aid_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    category = db.Column(db.String(50), default='Grant')
+    eligibility = db.Column(db.String(400), default='')
+    award_range = db.Column(db.String(120), default='')
+    deadline = db.Column(db.String(120), default='March 1')
+    description = db.Column(db.Text, default='')
+
+
+class FinancialAidForm(db.Model):
+    __tablename__ = 'financial_aid_forms'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    audience = db.Column(db.String(100), default='Undergraduate')
+    submit_window = db.Column(db.String(120), default='Oct 1 – March 1')
+    description = db.Column(db.Text, default='')
+
+
+class CollegeLeader(db.Model):
+    __tablename__ = 'college_leaders'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    slug = db.Column(db.String(150), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(200), default='')
+    bio = db.Column(db.Text, default='')
+    rank = db.Column(db.Integer, default=10)
+    email = db.Column(db.String(120), default='')
+
+
+class HistoryMilestone(db.Model):
+    __tablename__ = 'history_milestones'
+    id = db.Column(db.Integer, primary_key=True)
+    year = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default='')
+
+
+class DiversityProgram(db.Model):
+    __tablename__ = 'diversity_programs'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    audience = db.Column(db.String(120), default='All Students')
+    director = db.Column(db.String(150), default='')
+    description = db.Column(db.Text, default='')
+
+
+class CampusService(db.Model):
+    __tablename__ = 'campus_services'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    category = db.Column(db.String(80), default='Academic')
+    phone = db.Column(db.String(40), default='')
+    location = db.Column(db.String(200), default='')
+    description = db.Column(db.Text, default='')
+
+
+class AdmissionsPathway(db.Model):
+    __tablename__ = 'admissions_pathways'
+    id = db.Column(db.Integer, primary_key=True)
+    level = db.Column(db.String(40), nullable=False, index=True)  # undergrad/grad/transfer/international/pathways
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text, default='')
+    requirements = db.Column(db.Text, default='')
+    deadline = db.Column(db.String(120), default='February 1')
+    application_fee = db.Column(db.Integer, default=70)
+
+
+# ─── Transactional / write tables ─────────────────────────────────────────────
+
+class Application(db.Model):
+    __tablename__ = 'applications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    level = db.Column(db.String(40), default='undergraduate')
+    program = db.Column(db.String(200), default='')
+    citizenship = db.Column(db.String(80), default='United States')
+    high_school = db.Column(db.String(200), default='')
+    statement = db.Column(db.Text, default='')
+    status = db.Column(db.String(30), default='submitted')
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class TourBooking(db.Model):
+    __tablename__ = 'tour_bookings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    tour_date = db.Column(db.String(40), nullable=False)
+    tour_type = db.Column(db.String(40), default='in-person')  # in-person | virtual
+    group_size = db.Column(db.Integer, default=1)
+    notes = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class EventRSVP(db.Model):
+    __tablename__ = 'event_rsvps'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    guests = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class LibraryRoomReservation(db.Model):
+    __tablename__ = 'library_room_reservations'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    branch_id = db.Column(db.Integer, db.ForeignKey('library_branches.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    room_number = db.Column(db.String(20), default='A101')
+    reserve_date = db.Column(db.String(40), nullable=False)
+    start_time = db.Column(db.String(10), default='13:00')
+    duration_hours = db.Column(db.Integer, default=2)
+    purpose = db.Column(db.String(300), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AlumniMembership(db.Model):
+    __tablename__ = 'alumni_memberships'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    chapter_id = db.Column(db.Integer, db.ForeignKey('alumni_chapters.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    graduation_year = db.Column(db.Integer, default=2020)
+    degree = db.Column(db.String(120), default='BA')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Donation(db.Model):
+    __tablename__ = 'donations'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    fund_id = db.Column(db.Integer, db.ForeignKey('giving_funds.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    amount = db.Column(db.Integer, default=50)
+    is_recurring = db.Column(db.Boolean, default=False)
+    in_honor_of = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class DiningOrder(db.Model):
+    __tablename__ = 'dining_orders'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    location_id = db.Column(db.Integer, db.ForeignKey('dining_locations.id'), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('dining_menu_items.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    pickup_time = db.Column(db.String(10), default='12:00')
+    quantity = db.Column(db.Integer, default=1)
+    special_instructions = db.Column(db.String(300), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ContactInquiry(db.Model):
+    __tablename__ = 'contact_inquiries'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    faculty_id = db.Column(db.Integer, db.ForeignKey('faculty.id'), nullable=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), default='')
+    message = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ServiceRequest(db.Model):
+    __tablename__ = 'service_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    service_slug = db.Column(db.String(200), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    request_type = db.Column(db.String(80), default='general')
+    description = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class TicketPurchase(db.Model):
+    __tablename__ = 'ticket_purchases'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('athletic_games.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    section = db.Column(db.String(40), default='30A')
+    quantity = db.Column(db.Integer, default=2)
+    total_price = db.Column(db.Integer, default=120)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class TranscriptRequest(db.Model):
+    __tablename__ = 'transcript_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    student_id = db.Column(db.String(40), default='')
+    delivery = db.Column(db.String(20), default='electronic')
+    recipient = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class InfoRequest(db.Model):
+    __tablename__ = 'info_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    program_interest = db.Column(db.String(200), default='')
+    home_state = db.Column(db.String(60), default='Ohio')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class NewsComment(db.Model):
+    __tablename__ = 'news_comments'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('news_articles.id'), nullable=False)
+    author_name = db.Column(db.String(150), default='Guest')
+    body = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class FinancialAidSubmission(db.Model):
+    __tablename__ = 'financial_aid_submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    form_id = db.Column(db.Integer, db.ForeignKey('financial_aid_forms.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    family_income = db.Column(db.Integer, default=60000)
+    dependents = db.Column(db.Integer, default=2)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 # ─── Forms ────────────────────────────────────────────────────────────────────
 
 class LoginForm(FlaskForm):
@@ -238,6 +593,37 @@ def inject_globals():
         'now': datetime.utcnow(),
         'colleges': College.query.order_by(College.name).all(),
     }
+
+
+# ─── SVG placeholder helper (image utilization) ───────────────────────────────
+
+@app.context_processor
+def inject_svg_helper():
+    def svg_tile(label, kind='generic', w=320, h=180):
+        # deterministic palette by hash
+        h_int = abs(hash(f'{kind}:{label}')) % (10**8)
+        palette = [
+            ('#BB0000', '#fff'), ('#8B0000', '#fff'), ('#222b45', '#fff'),
+            ('#2c4b6e', '#fff'), ('#3c6e47', '#fff'), ('#6e4c1e', '#fff'),
+            ('#888', '#fff'), ('#444', '#fff'), ('#a02830', '#fff'),
+            ('#1d3557', '#fff'),
+        ]
+        bg, fg = palette[h_int % len(palette)]
+        text = (label or '?')[:18]
+        initials = ''.join([w[0] for w in (label or 'O S U').split()[:3]]).upper()[:3]
+        return (
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+            f'viewBox="0 0 {w} {h}" role="img" aria-label="{text}" '
+            f'class="osu-tile osu-tile-{kind}">'
+            f'<rect width="{w}" height="{h}" fill="{bg}"/>'
+            f'<text x="{w//2}" y="{h//2 - 6}" fill="{fg}" font-size="{min(54, h//3)}" '
+            f'font-family="Georgia, serif" font-weight="bold" text-anchor="middle">{initials}</text>'
+            f'<text x="{w//2}" y="{h - 18}" fill="{fg}" font-size="13" '
+            f'font-family="sans-serif" opacity="0.85" text-anchor="middle">{text}</text>'
+            f'</svg>'
+        )
+    from markupsafe import Markup
+    return {'svg_tile': lambda *a, **kw: Markup(svg_tile(*a, **kw))}
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
@@ -781,6 +1167,561 @@ def bookmark_remove():
     return redirect(request.referrer or url_for('account'))
 
 
+# ─── New routes (admissions / aid / dining / library / alumni / giving etc) ──
+
+@app.route('/academics/colleges/<slug>')
+def college_detail(slug):
+    college = College.query.filter_by(slug=slug).first_or_404()
+    dept_list = Department.query.filter_by(college_id=college.id).order_by(Department.name).all()
+    prog_list = Program.query.filter_by(college_id=college.id).order_by(Program.name).all()
+    centers = ResearchCenter.query.filter_by(college_id=college.id).all()
+    return render_template('college_detail.html', college=college,
+                           dept_list=dept_list, prog_list=prog_list, centers=centers)
+
+
+@app.route('/admissions/<level>', methods=['GET'])
+def admissions_level(level):
+    valid = {'undergraduate', 'graduate', 'transfer', 'international', 'pathways'}
+    if level not in valid:
+        abort(404)
+    pathways = AdmissionsPathway.query.filter_by(level=level).order_by(
+        AdmissionsPathway.name).all()
+    return render_template('admissions_level.html', level=level, pathways=pathways)
+
+
+@app.route('/admissions/visit', methods=['GET', 'POST'])
+def admissions_visit():
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        tour_date = (request.form.get('tour_date') or '').strip()
+        group_size = request.form.get('group_size', type=int) or 1
+        if full_name and email and tour_date:
+            b = TourBooking(full_name=full_name, email=email,
+                            tour_date=tour_date, tour_type='in-person',
+                            group_size=group_size,
+                            notes=(request.form.get('notes') or '').strip(),
+                            user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(b)
+            db.session.commit()
+            flash(f'Campus visit booked for {tour_date}. Confirmation #{b.id} sent to {email}.', 'success')
+            return redirect(url_for('admissions_visit'))
+        flash('Please provide name, email, and a tour date.', 'danger')
+    upcoming = TourBooking.query.filter_by(tour_type='in-person').count()
+    return render_template('admissions_visit.html', upcoming=upcoming)
+
+
+@app.route('/admissions/virtual-tour', methods=['GET', 'POST'])
+def admissions_virtual_tour():
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        tour_date = (request.form.get('tour_date') or '').strip()
+        if full_name and email and tour_date:
+            b = TourBooking(full_name=full_name, email=email,
+                            tour_date=tour_date, tour_type='virtual',
+                            group_size=1,
+                            user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(b)
+            db.session.commit()
+            flash(f'Virtual tour reserved for {tour_date}. Zoom link sent to {email}.', 'success')
+            return redirect(url_for('admissions_virtual_tour'))
+        flash('Please provide name, email, and a tour date.', 'danger')
+    return render_template('admissions_virtual_tour.html')
+
+
+@app.route('/admissions/apply', methods=['GET', 'POST'])
+def admissions_apply():
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        level = (request.form.get('level') or 'undergraduate').strip()
+        program = (request.form.get('program') or '').strip()
+        if full_name and email and program:
+            a = Application(full_name=full_name, email=email, level=level,
+                            program=program,
+                            citizenship=(request.form.get('citizenship') or 'United States').strip(),
+                            high_school=(request.form.get('high_school') or '').strip(),
+                            statement=(request.form.get('statement') or '').strip(),
+                            user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(a)
+            db.session.commit()
+            flash(f'Application submitted. Application #{a.id}. Decision letter by April 1.', 'success')
+            return redirect(url_for('admissions_apply'))
+        flash('Please complete all required fields.', 'danger')
+    programs = Program.query.order_by(Program.name).limit(50).all()
+    return render_template('admissions_apply.html', programs=programs)
+
+
+@app.route('/financial-aid')
+def financial_aid():
+    types = FinancialAidType.query.order_by(FinancialAidType.name).all()
+    forms_list = FinancialAidForm.query.order_by(FinancialAidForm.name).all()
+    return render_template('financial_aid.html', types=types, forms=forms_list)
+
+
+@app.route('/financial-aid/types')
+def financial_aid_types():
+    category = request.args.get('category', '')
+    query = FinancialAidType.query
+    if category:
+        query = query.filter(FinancialAidType.category == category)
+    types = query.order_by(FinancialAidType.name).all()
+    cats = ['Grant', 'Scholarship', 'Loan', 'Work-Study']
+    return render_template('financial_aid_types.html', types=types,
+                           categories=cats, current_category=category)
+
+
+@app.route('/financial-aid/types/<slug>')
+def financial_aid_type_detail(slug):
+    aid = FinancialAidType.query.filter_by(slug=slug).first_or_404()
+    return render_template('financial_aid_type_detail.html', aid=aid)
+
+
+@app.route('/financial-aid/forms')
+def financial_aid_forms():
+    audience = request.args.get('audience', '')
+    query = FinancialAidForm.query
+    if audience:
+        query = query.filter(FinancialAidForm.audience == audience)
+    forms_list = query.order_by(FinancialAidForm.name).all()
+    audiences = ['Undergraduate', 'Graduate', 'International', 'Transfer']
+    return render_template('financial_aid_forms.html', forms=forms_list,
+                           audiences=audiences, current_audience=audience)
+
+
+@app.route('/financial-aid/forms/<slug>', methods=['GET', 'POST'])
+def financial_aid_form_detail(slug):
+    form = FinancialAidForm.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        if full_name and email:
+            s = FinancialAidSubmission(
+                form_id=form.id, full_name=full_name, email=email,
+                family_income=request.form.get('family_income', type=int) or 0,
+                dependents=request.form.get('dependents', type=int) or 0,
+                user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(s)
+            db.session.commit()
+            flash(f'{form.name} submitted. Confirmation #{s.id} sent to {email}.', 'success')
+            return redirect(url_for('financial_aid_form_detail', slug=slug))
+        flash('Name and email are required.', 'danger')
+    return render_template('financial_aid_form_detail.html', form=form)
+
+
+@app.route('/student-life')
+def student_life():
+    cats = StudentLifeCategory.query.order_by(StudentLifeCategory.name).all()
+    return render_template('student_life.html', cats=cats)
+
+
+@app.route('/student-life/<slug>')
+def student_life_category(slug):
+    cat = StudentLifeCategory.query.filter_by(slug=slug).first_or_404()
+    return render_template('student_life_category.html', cat=cat)
+
+
+@app.route('/athletics/buckeyes/<slug>')
+def athletics_buckeyes_team(slug):
+    AthleticTeam.query.filter_by(slug=slug).first_or_404()
+    return redirect(url_for('athletics_team', slug=slug), code=301)
+
+
+@app.route('/athletics/buckeyes/<slug>/schedule')
+def athletics_schedule(slug):
+    team = AthleticTeam.query.filter_by(slug=slug).first_or_404()
+    games = AthleticGame.query.filter_by(team_id=team.id).order_by(
+        AthleticGame.game_date).all()
+    return render_template('athletics_schedule.html', team=team, games=games)
+
+
+@app.route('/athletics/buckeyes/<slug>/roster')
+def athletics_roster(slug):
+    team = AthleticTeam.query.filter_by(slug=slug).first_or_404()
+    roster = AthleticRosterMember.query.filter_by(team_id=team.id).order_by(
+        AthleticRosterMember.jersey_number).all()
+    return render_template('athletics_roster.html', team=team, roster=roster)
+
+
+@app.route('/athletics/buckeyes/<slug>/stats')
+def athletics_stats(slug):
+    team = AthleticTeam.query.filter_by(slug=slug).first_or_404()
+    games = AthleticGame.query.filter_by(team_id=team.id).all()
+    wins = sum(1 for g in games if g.result and g.result.startswith('W'))
+    losses = sum(1 for g in games if g.result and g.result.startswith('L'))
+    home_games = sum(1 for g in games if g.home_away == 'Home')
+    return render_template('athletics_stats.html', team=team,
+                           wins=wins, losses=losses,
+                           home_games=home_games, total_games=len(games))
+
+
+@app.route('/athletics/tickets')
+def athletics_tickets():
+    sport = request.args.get('sport', '')
+    query = AthleticGame.query.filter(AthleticGame.home_away == 'Home')
+    if sport:
+        team_ids = [t.id for t in AthleticTeam.query.filter(
+            AthleticTeam.sport == sport).all()]
+        query = query.filter(AthleticGame.team_id.in_(team_ids))
+    games = query.order_by(AthleticGame.game_date).all()
+    sports = sorted({t.sport for t in AthleticTeam.query.all()})
+    return render_template('athletics_tickets.html', games=games,
+                           sports=sports, current_sport=sport)
+
+
+@app.route('/athletics/tickets/<int:game_id>', methods=['GET', 'POST'])
+def athletics_ticket_detail(game_id):
+    game = db.session.get(AthleticGame, game_id)
+    if game is None:
+        abort(404)
+    team = db.session.get(AthleticTeam, game.team_id)
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        section = (request.form.get('section') or '30A').strip()
+        qty = request.form.get('quantity', type=int) or 1
+        if full_name and email and qty > 0:
+            price_per = 60 if team.sport == 'Football' else 25
+            t = TicketPurchase(game_id=game.id, full_name=full_name,
+                               email=email, section=section, quantity=qty,
+                               total_price=price_per * qty,
+                               user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(t)
+            db.session.commit()
+            flash(f'Tickets purchased. Confirmation #{t.id}. Total ${t.total_price}.', 'success')
+            return redirect(url_for('athletics_ticket_detail', game_id=game.id))
+        flash('Name, email, and quantity required.', 'danger')
+    return render_template('athletics_ticket_detail.html', game=game, team=team)
+
+
+@app.route('/library')
+def library_index():
+    branches = LibraryBranch.query.order_by(LibraryBranch.name).all()
+    return render_template('library.html', branches=branches)
+
+
+@app.route('/library/study-room/reserve', methods=['GET', 'POST'])
+def library_study_room_reserve():
+    branches = LibraryBranch.query.filter_by(has_study_rooms=True).order_by(
+        LibraryBranch.name).all()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        branch_id = request.form.get('branch_id', type=int)
+        reserve_date = (request.form.get('reserve_date') or '').strip()
+        start_time = (request.form.get('start_time') or '13:00').strip()
+        duration = request.form.get('duration_hours', type=int) or 2
+        room = (request.form.get('room_number') or 'A101').strip()
+        purpose = (request.form.get('purpose') or '').strip()
+        if full_name and branch_id and reserve_date:
+            r = LibraryRoomReservation(
+                branch_id=branch_id, full_name=full_name,
+                room_number=room, reserve_date=reserve_date,
+                start_time=start_time, duration_hours=duration,
+                purpose=purpose,
+                user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(r)
+            db.session.commit()
+            flash(f'Study room {room} reserved on {reserve_date} at {start_time}. '
+                  f'Confirmation #{r.id}.', 'success')
+            return redirect(url_for('library_study_room_reserve'))
+        flash('Please complete all required fields.', 'danger')
+    return render_template('library_study_room.html', branches=branches)
+
+
+@app.route('/library/<slug>')
+def library_branch(slug):
+    branch = LibraryBranch.query.filter_by(slug=slug).first_or_404()
+    return render_template('library_branch.html', branch=branch)
+
+
+@app.route('/dining')
+def dining_index():
+    locations = DiningLocation.query.order_by(DiningLocation.name).all()
+    return render_template('dining.html', locations=locations)
+
+
+@app.route('/dining/order', methods=['GET', 'POST'])
+def dining_order():
+    locations = DiningLocation.query.order_by(DiningLocation.name).all()
+    items = DiningMenuItem.query.order_by(DiningMenuItem.name).limit(60).all()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        item_id = request.form.get('item_id', type=int)
+        location_id = request.form.get('location_id', type=int)
+        qty = request.form.get('quantity', type=int) or 1
+        pickup = (request.form.get('pickup_time') or '12:00').strip()
+        if full_name and item_id and location_id:
+            o = DiningOrder(location_id=location_id, item_id=item_id,
+                            full_name=full_name, pickup_time=pickup,
+                            quantity=qty,
+                            special_instructions=(request.form.get('special_instructions') or '').strip(),
+                            user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(o)
+            db.session.commit()
+            flash(f'Order #{o.id} placed for pickup at {pickup}.', 'success')
+            return redirect(url_for('dining_order'))
+        flash('Name, item, and location are required.', 'danger')
+    return render_template('dining_order.html', locations=locations, items=items)
+
+
+@app.route('/dining/menu/<slug>/<date>')
+def dining_menu(slug, date):
+    location = DiningLocation.query.filter_by(slug=slug).first_or_404()
+    items = DiningMenuItem.query.filter_by(location_id=location.id).order_by(
+        DiningMenuItem.meal, DiningMenuItem.name).all()
+    return render_template('dining_menu.html', location=location,
+                           items=items, date=date)
+
+
+@app.route('/dining/<slug>')
+def dining_location(slug):
+    location = DiningLocation.query.filter_by(slug=slug).first_or_404()
+    items = DiningMenuItem.query.filter_by(location_id=location.id).order_by(
+        DiningMenuItem.meal, DiningMenuItem.name).all()
+    return render_template('dining_location.html', location=location, items=items)
+
+
+@app.route('/buckeye-link')
+def buckeye_link():
+    services = CampusService.query.order_by(CampusService.category,
+                                            CampusService.name).all()
+    return render_template('buckeye_link.html', services=services)
+
+
+@app.route('/buckeyeid')
+def buckeyeid():
+    return render_template('buckeyeid.html')
+
+
+@app.route('/services')
+def services_index():
+    category = request.args.get('category', '')
+    query = CampusService.query
+    if category:
+        query = query.filter(CampusService.category == category)
+    services = query.order_by(CampusService.name).all()
+    cats = sorted({s.category for s in CampusService.query.all()})
+    return render_template('services.html', services=services,
+                           categories=cats, current_category=category)
+
+
+@app.route('/services/<slug>', methods=['GET', 'POST'])
+def service_detail(slug):
+    service = CampusService.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        rtype = (request.form.get('request_type') or 'general').strip()
+        desc = (request.form.get('description') or '').strip()
+        if full_name and email and desc:
+            sr = ServiceRequest(
+                service_slug=service.slug, full_name=full_name,
+                email=email, request_type=rtype, description=desc,
+                user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(sr)
+            db.session.commit()
+            flash(f'Service request submitted. Ticket #{sr.id}.', 'success')
+            return redirect(url_for('service_detail', slug=slug))
+        flash('Please complete name, email, and description.', 'danger')
+    return render_template('service_detail.html', service=service)
+
+
+@app.route('/alumni')
+def alumni_index():
+    chapters = AlumniChapter.query.order_by(AlumniChapter.region).all()
+    total_members = sum(c.members for c in chapters)
+    return render_template('alumni.html', chapters=chapters,
+                           total_members=total_members)
+
+
+@app.route('/alumni/chapter/<slug>', methods=['GET', 'POST'])
+def alumni_chapter(slug):
+    chapter = AlumniChapter.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        grad_year = request.form.get('graduation_year', type=int) or 2020
+        degree = (request.form.get('degree') or 'BA').strip()
+        if full_name and email:
+            m = AlumniMembership(
+                chapter_id=chapter.id, full_name=full_name,
+                email=email, graduation_year=grad_year, degree=degree,
+                user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(m)
+            chapter.members = (chapter.members or 0) + 1
+            db.session.commit()
+            flash(f'Welcome to the {chapter.region} chapter! Membership #{m.id}.', 'success')
+            return redirect(url_for('alumni_chapter', slug=slug))
+        flash('Name and email required.', 'danger')
+    return render_template('alumni_chapter.html', chapter=chapter)
+
+
+@app.route('/giving')
+def giving_index():
+    funds = GivingFund.query.order_by(GivingFund.name).all()
+    return render_template('giving.html', funds=funds)
+
+
+@app.route('/giving/<slug>', methods=['GET', 'POST'])
+def giving_fund(slug):
+    fund = GivingFund.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        amount = request.form.get('amount', type=int) or fund.minimum_gift
+        recurring = (request.form.get('is_recurring') == 'on')
+        honor = (request.form.get('in_honor_of') or '').strip()
+        if full_name and email and amount >= fund.minimum_gift:
+            d = Donation(fund_id=fund.id, full_name=full_name, email=email,
+                         amount=amount, is_recurring=recurring,
+                         in_honor_of=honor,
+                         user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(d)
+            fund.raised_amount = (fund.raised_amount or 0) + amount
+            db.session.commit()
+            flash(f'Thank you for your ${amount} gift! Receipt #{d.id}.', 'success')
+            return redirect(url_for('giving_fund', slug=slug))
+        flash(f'Minimum gift is ${fund.minimum_gift}.', 'danger')
+    return render_template('giving_fund.html', fund=fund)
+
+
+@app.route('/about/leadership')
+def about_leadership():
+    leaders = CollegeLeader.query.order_by(CollegeLeader.rank,
+                                            CollegeLeader.name).all()
+    return render_template('about_leadership.html', leaders=leaders)
+
+
+@app.route('/about/leadership/<slug>')
+def leader_detail(slug):
+    leader = CollegeLeader.query.filter_by(slug=slug).first_or_404()
+    return render_template('leader_detail.html', leader=leader)
+
+
+@app.route('/about/history')
+def about_history():
+    milestones = HistoryMilestone.query.order_by(HistoryMilestone.year).all()
+    return render_template('about_history.html', milestones=milestones)
+
+
+@app.route('/about/diversity')
+def about_diversity():
+    programs = DiversityProgram.query.order_by(DiversityProgram.name).all()
+    return render_template('about_diversity.html', programs=programs)
+
+
+@app.route('/contact-faculty/<slug>', methods=['GET', 'POST'])
+def contact_faculty(slug):
+    member = Faculty.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        subject = (request.form.get('subject') or '').strip()
+        message = (request.form.get('message') or '').strip()
+        if full_name and email and message:
+            c = ContactInquiry(faculty_id=member.id, full_name=full_name,
+                               email=email, subject=subject, message=message,
+                               user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(c)
+            db.session.commit()
+            flash(f'Message sent to {member.name}. Reference #{c.id}.', 'success')
+            return redirect(url_for('contact_faculty', slug=slug))
+        flash('Name, email, and message are required.', 'danger')
+    return render_template('contact_faculty.html', member=member)
+
+
+@app.route('/events/<int:event_id>/rsvp', methods=['POST'])
+def event_rsvp(event_id):
+    event = db.session.get(Event, event_id)
+    if event is None:
+        abort(404)
+    full_name = (request.form.get('full_name') or '').strip()
+    email = (request.form.get('email') or '').strip()
+    guests = request.form.get('guests', type=int) or 0
+    if full_name and email:
+        r = EventRSVP(event_id=event.id, full_name=full_name, email=email,
+                      guests=guests,
+                      user_id=(current_user.id if current_user.is_authenticated else None))
+        db.session.add(r)
+        db.session.commit()
+        flash(f'RSVP confirmed for "{event.title}". Reference #{r.id}.', 'success')
+    else:
+        flash('Name and email required for RSVP.', 'danger')
+    return redirect(url_for('event_detail', event_id=event.id))
+
+
+@app.route('/transcript/request', methods=['GET', 'POST'])
+def transcript_request():
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        student_id = (request.form.get('student_id') or '').strip()
+        delivery = (request.form.get('delivery') or 'electronic').strip()
+        recipient = (request.form.get('recipient') or '').strip()
+        if full_name and email and student_id:
+            t = TranscriptRequest(full_name=full_name, email=email,
+                                  student_id=student_id, delivery=delivery,
+                                  recipient=recipient,
+                                  user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(t)
+            db.session.commit()
+            flash(f'Transcript request submitted. Ticket #{t.id}.', 'success')
+            return redirect(url_for('transcript_request'))
+        flash('Name, email, and student ID required.', 'danger')
+    return render_template('transcript_request.html')
+
+
+@app.route('/info/request', methods=['GET', 'POST'])
+def info_request():
+    if request.method == 'POST':
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        program = (request.form.get('program_interest') or '').strip()
+        state = (request.form.get('home_state') or 'Ohio').strip()
+        if full_name and email:
+            ir = InfoRequest(full_name=full_name, email=email,
+                             program_interest=program, home_state=state,
+                             user_id=(current_user.id if current_user.is_authenticated else None))
+            db.session.add(ir)
+            db.session.commit()
+            flash(f'Information packet on the way to {email}. Reference #{ir.id}.', 'success')
+            return redirect(url_for('info_request'))
+        flash('Name and email required.', 'danger')
+    return render_template('info_request.html')
+
+
+@app.route('/news/<slug>/comment', methods=['POST'])
+def news_comment(slug):
+    article = NewsArticle.query.filter_by(slug=slug).first_or_404()
+    author_name = (request.form.get('author_name') or '').strip()
+    body = (request.form.get('body') or '').strip()
+    if author_name and body:
+        c = NewsComment(article_id=article.id, author_name=author_name,
+                        body=body,
+                        user_id=(current_user.id if current_user.is_authenticated else None))
+        db.session.add(c)
+        db.session.commit()
+        flash('Comment posted.', 'success')
+    else:
+        flash('Name and comment body required.', 'danger')
+    return redirect(url_for('news_article', slug=slug))
+
+
+@app.route('/account/update', methods=['POST'])
+@login_required
+def account_update():
+    full_name = (request.form.get('full_name') or '').strip()
+    bio = (request.form.get('bio') or '').strip()
+    if full_name:
+        current_user.full_name = full_name
+    if bio is not None:
+        current_user.bio = bio
+    db.session.commit()
+    flash('Profile updated.', 'success')
+    return redirect(url_for('account'))
+
+
 @app.route('/_health')
 def health():
     try:
@@ -809,9 +1750,26 @@ def server_error(e):
 # ─── Startup ──────────────────────────────────────────────────────────────────
 
 with app.app_context():
+    fresh = not os.path.exists(os.path.join(BASE_DIR, 'instance', 'osu.db'))
     db.create_all()
     from seed_data import seed
     seed()
+    from seed_extras2 import seed_extended
+    seed_extended()
+    if fresh:
+        from sqlalchemy import text
+        conn = db.engine.connect()
+        idx_rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _ in idx_rows:
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+        conn.execute(text("VACUUM"))
+        conn.commit()
+        conn.close()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=40015, debug=False)

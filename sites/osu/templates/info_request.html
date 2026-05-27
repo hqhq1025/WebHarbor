@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Request Information — Ohio State{% endblock %}
+{% block content %}
+<div style="background:linear-gradient(110deg,var(--scarlet),#8B0000);color:#fff;padding:50px 40px;margin:-30px -20px 30px;text-align:center">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">Future Buckeyes</div>
+  <h1 style="font-size:40px;margin-top:6px">Get the Ohio State Story</h1>
+  <p style="font-size:16px;opacity:0.92;font-family:sans-serif;max-width:600px;margin:8px auto 0">Tell us a little about yourself and we'll send you a personalized prospective-student packet within 5 business days.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:30px;max-width:1100px;margin:0 auto">
+  <form method="post" action="{{ url_for('info_request') }}" style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid var(--scarlet);padding:30px;border-radius:6px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2 style="font-size:22px;color:var(--scarlet);margin-bottom:18px">Tell Us About You</h2>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" name="full_name" required>
+    </div>
+    <div class="form-group">
+      <label>Email *</label>
+      <input type="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label>Program of Interest</label>
+      <input type="text" name="program_interest" placeholder="Computer Science and Engineering">
+    </div>
+    <div class="form-group">
+      <label>Home State / Country</label>
+      <select name="home_state">
+        <option>Ohio</option><option>Michigan</option><option>Pennsylvania</option>
+        <option>Illinois</option><option>New York</option><option>California</option>
+        <option>Texas</option><option>Florida</option><option>Other U.S. State</option>
+        <option>International</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Send My Packet →</button>
+  </form>
+
+  <aside class="sidebar" style="background:#fff5e6;border:1px solid #f1d68b">
+    <h3 style="color:#b27a07;border-bottom-color:#f39c12">What You'll Receive</h3>
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Glossy prospective-student magazine</li>
+      <li>Application checklist tailored to your level</li>
+      <li>Scholarship and aid one-pager</li>
+      <li>Invite to the next on-campus visit day</li>
+      <li>Email from a Buckeye ambassador in your major</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}

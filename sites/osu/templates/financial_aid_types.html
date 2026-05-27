@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid Types — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('financial_aid') }}">Financial Aid</a><span>/</span>
+  <span>Types of Aid</span>
+</div>
+
+<h1 style="font-size:32px;color:#3c6e47;margin-bottom:8px">Types of Financial Aid</h1>
+<p style="color:var(--gray);font-family:sans-serif;margin-bottom:24px">{{ types|length }} aid programs available to Ohio State students.</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;font-family:sans-serif">
+  <a href="{{ url_for('financial_aid_types') }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if not current_category %}background:#3c6e47;color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">All</a>
+  {% for c in categories %}
+  <a href="{{ url_for('financial_aid_types') }}?category={{ c }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if current_category == c %}background:#3c6e47;color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<div class="grid-2">
+  {% for t in types %}
+  <div class="card" style="border-left:5px solid {% if t.category == 'Scholarship' %}#bb0000{% elif t.category == 'Grant' %}#3c6e47{% elif t.category == 'Loan' %}#2c4b6e{% else %}#6e4c1e{% endif %}">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <span class="badge" style="background:{% if t.category == 'Scholarship' %}#bb0000{% elif t.category == 'Grant' %}#3c6e47{% elif t.category == 'Loan' %}#2c4b6e{% else %}#6e4c1e{% endif %};color:#fff">{{ t.category }}</span>
+        <span style="font-size:12px;color:var(--gray)">Deadline {{ t.deadline }}</span>
+      </div>
+      <h2 style="font-size:18px;margin:10px 0 6px"><a href="{{ url_for('financial_aid_type_detail', slug=t.slug) }}">{{ t.name }}</a></h2>
+      <div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-bottom:8px">Award: <b style="color:var(--text)">{{ t.award_range }}</b></div>
+      <p style="font-size:13px;line-height:1.55">{{ t.description[:160] }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

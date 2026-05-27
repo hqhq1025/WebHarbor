@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Alumni Association — Ohio State{% endblock %}
+{% block content %}
+<div style="background:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22260%22><rect width=%22800%22 height=%22260%22 fill=%22%23BB0000%22/><polygon points=%220,0 800,0 800,80 0,200%22 fill=%22%23ffcc00%22 opacity=%220.25%22/><text x=%22400%22 y=%22155%22 font-family=%22Georgia%22 font-size=%2248%22 fill=%22white%22 text-anchor=%22middle%22 font-weight=%22bold%22>Buckeye for Life</text></svg>') center/cover;color:#fff;padding:50px 40px;margin:-30px -20px 30px;text-align:center">
+  <h1 style="font-size:46px;line-height:1.05">Alumni Association</h1>
+  <p style="font-size:17px;opacity:0.9;font-family:sans-serif;margin-top:10px">600,000+ Buckeyes in {{ chapters|length }} regional chapters worldwide.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:34px;font-family:sans-serif">
+  <div style="background:#fff;padding:18px;border-top:3px solid var(--scarlet)">
+    <div style="font-size:12px;color:var(--gray);text-transform:uppercase">Living Alumni</div>
+    <div style="font-size:26px;color:var(--scarlet);font-weight:bold;margin-top:4px">600,000+</div>
+  </div>
+  <div style="background:#fff;padding:18px;border-top:3px solid var(--scarlet)">
+    <div style="font-size:12px;color:var(--gray);text-transform:uppercase">Chapters</div>
+    <div style="font-size:26px;color:var(--scarlet);font-weight:bold;margin-top:4px">{{ chapters|length }}</div>
+  </div>
+  <div style="background:#fff;padding:18px;border-top:3px solid var(--scarlet)">
+    <div style="font-size:12px;color:var(--gray);text-transform:uppercase">Chapter Members</div>
+    <div style="font-size:26px;color:var(--scarlet);font-weight:bold;margin-top:4px">{{ '{:,}'.format(total_members) }}</div>
+  </div>
+  <div style="background:var(--scarlet);color:#fff;padding:18px">
+    <div style="font-size:12px;opacity:0.85;text-transform:uppercase">Annual Dues</div>
+    <div style="font-size:26px;font-weight:bold;margin-top:4px">$0</div>
+    <div style="font-size:11px;opacity:0.85">Membership free for life</div>
+  </div>
+</div>
+
+<h2 class="section-title">Regional Chapters</h2>
+<div class="grid-3">
+  {% for c in chapters %}
+  <a href="{{ url_for('alumni_chapter', slug=c.slug) }}" style="display:block;text-decoration:none;color:inherit">
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,var(--scarlet),#8B0000);color:#fff;padding:18px 20px">
+        <h3 style="font-size:17px">{{ c.region }}</h3>
+        <div style="font-size:13px;opacity:0.85;font-family:sans-serif">{{ c.city }}{% if c.state %}, {{ c.state }}{% endif %} &middot; Est. {{ c.founded_year }}</div>
+      </div>
+      <div style="padding:14px 18px;font-family:sans-serif">
+        <div style="font-size:12px;color:var(--gray)">President</div>
+        <div style="font-size:14px;font-weight:bold">{{ c.president }}</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--gray)">{{ '{:,}'.format(c.members) }} members</div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

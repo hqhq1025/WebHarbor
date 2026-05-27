@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}History — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('about') }}">About</a><span>/</span>
+  <span>History</span>
+</div>
+
+<div style="background:linear-gradient(135deg,#6e4c1e 0%,#3d2912 100%);color:#fff;padding:60px 40px;margin:-30px -20px 30px;text-align:center;border-bottom:6px solid var(--scarlet)">
+  <div style="font-size:13px;letter-spacing:4px;text-transform:uppercase;opacity:0.85;font-family:sans-serif">Since 1870</div>
+  <h1 style="font-size:46px;line-height:1.05;margin-top:6px">A Land-Grant Legacy</h1>
+  <p style="font-size:16px;opacity:0.92;font-family:sans-serif;max-width:680px;margin:8px auto 0">Founded on the principles of the 1862 Morrill Act — making higher education accessible to the children of farmers and mechanics.</p>
+</div>
+
+<div style="position:relative;padding-left:40px">
+  <div style="position:absolute;left:14px;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--scarlet),#6e4c1e)"></div>
+  {% for m in milestones %}
+  <div style="position:relative;margin-bottom:30px">
+    <div style="position:absolute;left:-40px;top:0;width:32px;height:32px;border-radius:50%;background:var(--scarlet);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;font-family:sans-serif;box-shadow:0 0 0 4px #fff">●</div>
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-left:5px solid var(--scarlet);padding:18px 24px;border-radius:4px">
+      <div style="font-size:13px;letter-spacing:2px;color:var(--scarlet);font-family:sans-serif;font-weight:bold">{{ m.year }}</div>
+      <h3 style="font-size:20px;margin:4px 0 8px">{{ m.title }}</h3>
+      <p style="font-size:14px;line-height:1.6;color:var(--text)">{{ m.description }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

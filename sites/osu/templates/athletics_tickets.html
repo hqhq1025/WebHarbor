@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Buckeye Athletics — Tickets{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('athletics') }}">Athletics</a><span>/</span>
+  <span>Tickets</span>
+</div>
+
+<div style="background:#000;color:#fff;padding:40px;margin:-30px -20px 30px;position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;right:0;width:300px;height:100%;background:linear-gradient(90deg,transparent 0%,var(--scarlet) 100%);opacity:0.3"></div>
+  <div style="position:relative">
+    <div style="font-size:14px;letter-spacing:4px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">Ohio Stadium &middot; Value City Arena &middot; Bill Davis</div>
+    <h1 style="font-size:42px;margin:8px 0;font-family:Impact,sans-serif;letter-spacing:1px">BUCKEYE TICKETS</h1>
+    <p style="opacity:0.85;font-family:sans-serif">{{ games|length }} home games available — Big Ten action, Buckeye traditions.</p>
+  </div>
+</div>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;font-family:sans-serif">
+  <a href="{{ url_for('athletics_tickets') }}" style="padding:8px 16px;border-radius:0;font-size:13px;{% if not current_sport %}background:var(--scarlet);color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">All Sports</a>
+  {% for s in sports %}
+  <a href="{{ url_for('athletics_tickets') }}?sport={{ s }}" style="padding:8px 16px;font-size:13px;{% if current_sport == s %}background:var(--scarlet);color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<table>
+  <thead><tr><th>Date</th><th>Opponent</th><th>Venue</th><th>TV</th><th></th></tr></thead>
+  <tbody>
+  {% for g in games %}
+  <tr>
+    <td><b>{{ g.game_date.strftime('%b %d, %Y') }}</b><br><span style="font-size:12px;color:var(--gray)">{{ g.game_date.strftime('%I:%M %p') }}</span></td>
+    <td>vs. {{ g.opponent }}</td>
+    <td>{{ g.venue }}</td>
+    <td>{{ g.tv }}</td>
+    <td><a href="{{ url_for('athletics_ticket_detail', game_id=g.id) }}" class="btn btn-primary btn-sm">Buy Tickets</a></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if not games %}<p class="empty-state">No upcoming home games for the current selection.</p>{% endif %}
+{% endblock %}

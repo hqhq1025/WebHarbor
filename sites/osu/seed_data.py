@@ -1036,13 +1036,17 @@ def seed():
     # BENCHMARK USERS
     # ─────────────────────────────────────────────────────────────────────────
     if not User.query.filter_by(email='alice@osu.edu').first():
+        # Pinned created_at — User.created_at defaults to datetime.utcnow,
+        # which breaks byte-identical reset; override with a constant.
+        _PINNED_CREATED = datetime(2026, 5, 12, 12, 0, 0)
         for username, name, email, role in [
             ('alice', 'Alice Anderson', 'alice@osu.edu', 'student'),
             ('bob', 'Bob Baker', 'bob@osu.edu', 'student'),
             ('carol', 'Carol Chen', 'carol@osu.edu', 'faculty'),
             ('dave', 'Dave Davis', 'dave@osu.edu', 'staff'),
         ]:
-            u = User(username=username, email=email, full_name=name, role=role)
+            u = User(username=username, email=email, full_name=name, role=role,
+                     created_at=_PINNED_CREATED)
             # Pinned bcrypt hash for 'test1234' — set_password() uses
             # bcrypt.generate_password_hash with a random salt every call,
             # which breaks the byte-identical reset invariant.

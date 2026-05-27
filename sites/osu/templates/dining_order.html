@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Order Ahead — Ohio State Dining{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('dining_index') }}">Dining</a><span>/</span>
+  <span>Order Ahead</span>
+</div>
+
+<div style="background:linear-gradient(135deg,#ffcc00 0%,var(--scarlet) 100%);color:#fff;padding:40px;margin:-30px -20px 30px;display:grid;grid-template-columns:1fr 200px;align-items:center;gap:24px">
+  <div>
+    <h1 style="font-size:38px;line-height:1.05">Skip the Line</h1>
+    <p style="font-size:16px;opacity:0.92;font-family:sans-serif;margin-top:6px">Order ahead at {{ locations|length }} dining locations. Pay with BuckID, meal swipes, or card.</p>
+  </div>
+  <div style="font-size:96px;text-align:center">📱</div>
+</div>
+
+<form method="post" action="{{ url_for('dining_order') }}" style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid var(--scarlet);padding:30px;border-radius:6px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="form-group">
+      <label>Your Name *</label>
+      <input type="text" name="full_name" required>
+    </div>
+    <div class="form-group">
+      <label>Dining Location *</label>
+      <select name="location_id" required>
+        <option value="">— Select Location —</option>
+        {% for loc in locations %}
+        <option value="{{ loc.id }}">{{ loc.name }} ({{ loc.location }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Menu Item *</label>
+      <select name="item_id" required>
+        <option value="">— Select Item —</option>
+        {% for it in items %}
+        <option value="{{ it.id }}">{{ it.name }} — ${{ '%.2f'|format(it.price) }} ({{ it.meal }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Quantity</label>
+      <input type="number" name="quantity" value="1" min="1" max="6">
+    </div>
+    <div class="form-group">
+      <label>Pickup Time</label>
+      <input type="text" name="pickup_time" value="12:00" placeholder="HH:MM">
+    </div>
+    <div class="form-group">
+      <label>Special Instructions</label>
+      <input type="text" name="special_instructions" placeholder="No onions, extra sauce, etc.">
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Place Order →</button>
+</form>
+
+<div style="margin-top:30px;background:var(--gray-light);padding:20px 24px;border-radius:6px;font-family:sans-serif;font-size:13px;line-height:1.7">
+  <h3 style="font-size:15px;color:var(--scarlet);margin-bottom:8px">How It Works</h3>
+  <ol style="padding-left:18px">
+    <li>Pick a location and a menu item.</li>
+    <li>Choose a pickup time at least 15 minutes out.</li>
+    <li>You'll receive a confirmation #. Show it at pickup.</li>
+    <li>Pay with BuckID, meal swipes, or any major card.</li>
+  </ol>
+</div>
+{% endblock %}

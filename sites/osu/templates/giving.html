@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Give to Ohio State{% endblock %}
+{% block content %}
+<div style="background:#000;color:#fff;padding:60px 40px;margin:-30px -20px 30px;text-align:center;position:relative;overflow:hidden">
+  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,var(--scarlet) 0%,transparent 70%);opacity:0.4"></div>
+  <div style="position:relative">
+    <div style="font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">The Time Is Now</div>
+    <h1 style="font-size:48px;margin:8px 0;line-height:1.05">Give to Ohio State</h1>
+    <p style="font-size:17px;opacity:0.9;font-family:sans-serif;max-width:680px;margin:8px auto 0">Every gift — scholarships, research, libraries, athletics — drives the land-grant mission forward for the next generation of Buckeyes.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:34px;font-family:sans-serif">
+  <div style="background:#fff;padding:20px;border-top:4px solid #ffcc00">
+    <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Raised Annually</div>
+    <div style="font-size:32px;color:var(--scarlet);font-weight:bold;margin-top:4px">$450M+</div>
+  </div>
+  <div style="background:#fff;padding:20px;border-top:4px solid #ffcc00">
+    <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Active Funds</div>
+    <div style="font-size:32px;color:var(--scarlet);font-weight:bold;margin-top:4px">{{ funds|length }}</div>
+  </div>
+  <div style="background:#fff;padding:20px;border-top:4px solid #ffcc00">
+    <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Donor Match</div>
+    <div style="font-size:32px;color:var(--scarlet);font-weight:bold;margin-top:4px">1:1</div>
+  </div>
+</div>
+
+<h2 class="section-title">Featured Giving Funds</h2>
+<div class="grid-2">
+  {% for f in funds %}
+  <a href="{{ url_for('giving_fund', slug=f.slug) }}" style="display:block;text-decoration:none;color:inherit">
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;overflow:hidden">
+      <div style="padding:18px 22px;border-bottom:1px solid var(--gray-mid)">
+        <span class="badge badge-scarlet">{{ f.purpose }}</span>
+        <h3 style="font-size:18px;margin:8px 0 4px;color:var(--scarlet)">{{ f.name }}</h3>
+        <div style="font-size:13px;color:var(--gray);font-family:sans-serif">Minimum gift ${{ f.minimum_gift }} &middot; Goal ${{ '{:,}'.format(f.goal_amount) }}</div>
+      </div>
+      <div style="padding:14px 22px;font-family:sans-serif">
+        {% set pct = (f.raised_amount / f.goal_amount * 100) | int if f.goal_amount else 0 %}
+        <div style="background:var(--gray-light);height:10px;border-radius:5px;overflow:hidden">
+          <div style="background:var(--scarlet);height:100%;width:{{ pct }}%"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray);margin-top:6px">${{ '{:,}'.format(f.raised_amount) }} raised ({{ pct }}%)</div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid Forms — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('financial_aid') }}">Financial Aid</a><span>/</span>
+  <span>Forms</span>
+</div>
+
+<h1 style="font-size:32px;color:#3c6e47;margin-bottom:6px">Financial Aid Forms</h1>
+<p style="color:var(--gray);font-family:sans-serif;margin-bottom:24px">All forms required to apply for OSU financial aid — by audience.</p>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;font-family:sans-serif">
+  <a href="{{ url_for('financial_aid_forms') }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if not current_audience %}background:#3c6e47;color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">All</a>
+  {% for a in audiences %}
+  <a href="{{ url_for('financial_aid_forms') }}?audience={{ a }}" style="padding:8px 16px;border-radius:24px;font-size:13px;{% if current_audience == a %}background:#3c6e47;color:#fff{% else %}background:var(--gray-light);color:var(--text);border:1px solid var(--gray-mid){% endif %}">{{ a }}</a>
+  {% endfor %}
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+  {% for f in forms %}
+  <div style="background:#fff;border:1px solid var(--gray-mid);border-left:5px solid #3c6e47;padding:20px 24px;border-radius:4px;display:grid;grid-template-columns:1fr 200px 130px;gap:18px;align-items:center">
+    <div>
+      <h3 style="font-size:17px;margin-bottom:4px"><a href="{{ url_for('financial_aid_form_detail', slug=f.slug) }}">{{ f.name }}</a></h3>
+      <div style="font-size:13px;color:var(--gray);font-family:sans-serif">{{ f.description[:140] }}</div>
+    </div>
+    <div style="font-size:13px;font-family:sans-serif">
+      <div style="font-size:11px;color:var(--gray);text-transform:uppercase">Audience</div>
+      <div style="font-weight:bold">{{ f.audience }}</div>
+      <div style="font-size:11px;color:var(--gray);text-transform:uppercase;margin-top:6px">Window</div>
+      <div>{{ f.submit_window }}</div>
+    </div>
+    <a href="{{ url_for('financial_aid_form_detail', slug=f.slug) }}" class="btn btn-primary btn-sm" style="text-align:center">Open Form</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

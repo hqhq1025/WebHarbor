@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Virtual Campus Tour — Ohio State{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('admissions') }}">Admissions</a><span>/</span>
+  <span>Virtual Tour</span>
+</div>
+
+<div style="background:linear-gradient(110deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:50px 40px;margin:-30px -20px 30px;border-radius:0">
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:30px;align-items:center">
+    <div>
+      <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ffcc00;font-family:sans-serif">Live Virtual Tour &middot; Zoom</div>
+      <h1 style="font-size:38px;margin:8px 0 12px">Ohio State from Anywhere</h1>
+      <p style="font-size:16px;opacity:0.85;font-family:sans-serif">Live, interactive tours led by current Buckeye students. Ask questions, see the Oval and Horseshoe, peek inside residence halls — all from your couch.</p>
+    </div>
+    <div style="background:rgba(255,255,255,0.1);padding:18px;border-radius:6px;font-family:sans-serif;text-align:center">
+      <div style="font-size:36px;color:#ffcc00;font-weight:bold">45 min</div>
+      <div style="font-size:13px;opacity:0.8">average duration</div>
+      <div style="margin-top:12px;font-size:13px">Tue, Wed, Thu &middot; 4 p.m. EST</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-3" style="margin-bottom:30px">
+  {% for title, body, icon in [
+    ('360&deg; Campus', 'Explore the Oval, Mirror Lake, and Ohio Stadium in panoramic VR.', '🎥'),
+    ('Student-Led Q&amp;A', 'Live chat with current Buckeyes about classes, housing, and life.', '💬'),
+    ('Custom College Visit', 'Choose your prospective college for a tailored experience.', '🎯')
+  ] %}
+  <div style="text-align:center;padding:24px;background:var(--gray-light);border-top:3px solid var(--scarlet);border-radius:6px">
+    <div style="font-size:42px">{{ icon|safe }}</div>
+    <h3 style="margin-top:8px;font-size:17px;color:var(--scarlet);font-family:sans-serif">{{ title|safe }}</h3>
+    <p style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-top:6px">{{ body|safe }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<form method="post" action="{{ url_for('admissions_virtual_tour') }}" style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;padding:30px;max-width:760px;margin:0 auto">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2 style="font-size:22px;color:var(--scarlet);margin-bottom:18px;font-family:sans-serif">Reserve Your Zoom Spot</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="form-group"><label>Name *</label><input type="text" name="full_name" required></div>
+    <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+    <div class="form-group" style="grid-column:1/-1"><label>Tour Date *</label><input type="text" name="tour_date" required placeholder="2026-09-22"></div>
+  </div>
+  <button type="submit" class="btn btn-primary">Reserve Zoom Link</button>
+</form>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ aid.name }} — Ohio State Financial Aid{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('financial_aid') }}">Financial Aid</a><span>/</span>
+  <a href="{{ url_for('financial_aid_types') }}">Types</a><span>/</span>
+  <span>{{ aid.name }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:30px">
+  <div>
+    <span class="badge badge-scarlet" style="font-size:14px;padding:5px 12px">{{ aid.category }}</span>
+    <h1 style="font-size:34px;color:#3c6e47;margin:10px 0 8px;line-height:1.1">{{ aid.name }}</h1>
+    <p style="font-size:18px;color:var(--text);font-family:sans-serif;margin-bottom:8px"><b>Award Range:</b> {{ aid.award_range }}</p>
+    <p style="font-size:14px;color:var(--gray);font-family:sans-serif;margin-bottom:24px"><b>Deadline:</b> {{ aid.deadline }}</p>
+
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid #3c6e47;padding:24px;border-radius:6px;margin-bottom:24px">
+      <h2 style="font-size:18px;color:#3c6e47;margin-bottom:10px">Eligibility</h2>
+      <p style="font-size:15px;line-height:1.7">{{ aid.eligibility }}</p>
+    </div>
+
+    <div style="font-size:16px;line-height:1.7">
+      <h2 style="font-size:18px;color:#3c6e47;margin-bottom:10px">Overview</h2>
+      <p>{{ aid.description }}</p>
+    </div>
+  </div>
+  <aside class="sidebar" style="background:#f0fcf3;border:1px solid #c5e1ca">
+    <h3 style="color:#3c6e47;border-bottom-color:#3c6e47">How to Apply</h3>
+    <ol style="padding-left:18px;font-size:14px;line-height:1.7">
+      <li>Complete the FAFSA at studentaid.gov (OSU code 003090).</li>
+      <li>Complete the OSU Scholarship Application.</li>
+      <li>Submit any supplemental documents by the deadline.</li>
+      <li>Watch your buckeyemail.osu.edu for follow-up requests.</li>
+    </ol>
+    <div style="margin-top:20px">
+      <a href="{{ url_for('financial_aid_forms') }}" class="btn btn-primary" style="width:100%;display:block;text-align:center">Browse Forms</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}
