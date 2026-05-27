@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Patient &amp; Visitor Guide{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('patient_visitor_guide') }}">Patient &amp; Visitor Info</a><span>&rsaquo;</span>
+  {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="two-col">
+    <div>
+      <h1>{{ title }}</h1>
+      <div class="article-body">
+        <p>{{ blurb }}</p>
+        <p>Mayo Clinic strives to make every visit as seamless as possible. The information on this page applies to all three Mayo Clinic campuses (Rochester, Jacksonville, and Phoenix) unless otherwise noted. Specific procedures may vary by location, and your care team will provide details tailored to your situation.</p>
+        <p>If you have questions, contact your care coordinator or the Patient and Visitor Information desk at your campus. For international patients, the international office at each campus offers dedicated coordinators who can assist with translation, accommodations, and travel logistics.</p>
+        <p>For appointments, please use the <a href="{{ url_for('appointments_landing') }}">Request an Appointment</a> form. For physician referrals, see <a href="{{ url_for('refer_a_patient') }}">Refer a Patient</a>.</p>
+      </div>
+
+      {% if topic_slug == 'billing-insurance' %}
+      <h2>Insurance plans accepted</h2>
+      <ul>
+        <li>Medicare and Medicaid</li>
+        <li>BlueCross BlueShield</li>
+        <li>UnitedHealthcare</li>
+        <li>Aetna</li>
+        <li>Cigna</li>
+        <li>Tricare</li>
+        <li>Veterans Administration</li>
+        <li>Most major commercial insurers</li>
+      </ul>
+      {% endif %}
+
+      {% if topic_slug == 'financial-assistance' %}
+      <h2>Eligibility</h2>
+      <p>Patients with income at or below 200% of the federal poverty level may qualify for free care. Patients at 200-400% may qualify for discounted services. Applications are reviewed confidentially.</p>
+      {% endif %}
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>More patient &amp; visitor topics</h4>
+        <ul>
+          {% for slug, (t, _) in topics %}
+            {% if slug != topic_slug %}
+              <li><a href="{{ url_for('patient_visitor_topic', topic=slug) }}">{{ t }}</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="appointment-block">
+        <h4>Request an appointment</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

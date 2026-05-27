@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mayo Clinic Newsroom{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Newsroom
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Mayo Clinic Newsroom</h1>
+  <p>Research breakthroughs, programmatic milestones, and announcements from Mayo Clinic's three campuses.</p>
+  <div class="related-grid">
+    {% for a in articles %}
+      {% set img = pick_image('trials', a.slug) %}
+      <div class="card-with-image">
+        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        <div class="card-body">
+          <div class="kind">{{ a.published_date }}</div>
+          <h4><a href="{{ url_for('news_detail', slug=a.slug) }}">{{ a.title }}</a></h4>
+          <p>{{ a.summary[:200] }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

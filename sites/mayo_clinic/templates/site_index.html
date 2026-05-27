@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}A-Z Site Index{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Site Index
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Mayo Clinic Site Index</h1>
+  <p>Browse every condition, procedure, drug, department, and glossary term alphabetically.</p>
+
+  <div class="az-strip">
+    <a href="{{ url_for('site_index') }}" class="{{ 'active' if not active_letter else '' }}">All</a>
+    {% for L in letters %}
+      <a href="{{ url_for('site_index', letter=L) }}" class="{{ 'active' if active_letter == L else '' }}">{{ L }}</a>
+    {% endfor %}
+  </div>
+
+  <p class="muted">{{ entries|length }} entries{% if active_letter %} starting with {{ active_letter }}{% endif %}.</p>
+  <ul style="column-count: 2; column-gap: 36px; padding-left: 18px;">
+    {% for name, kind, url in entries %}
+      <li><a href="{{ url }}">{{ name }}</a> <span class="muted" style="font-size:12px;">{{ kind }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

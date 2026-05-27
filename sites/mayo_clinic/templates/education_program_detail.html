@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ program[0] }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('research_education') }}">Research &amp; Education</a><span>&rsaquo;</span>
+  {{ program[0] }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ program[0] }}</h1>
+  <p class="muted">{{ program[1] }} program at {{ program[3] }}</p>
+  <p>{{ program[2] }}</p>
+
+  <h2>Program details</h2>
+  <ul>
+    {% if program[4] %}<li><strong>Duration:</strong> {{ program[4] }} years</li>{% endif %}
+    {% if program[5] %}<li><strong>Class size:</strong> {{ program[5] }} students/trainees</li>{% endif %}
+    <li><strong>Location(s):</strong> {{ program[3] }}</li>
+    <li><strong>Type:</strong> {{ program[1] }}</li>
+  </ul>
+
+  <h2>How to apply</h2>
+  <p>Each Mayo Clinic education program has its own application process. Programs typically begin in July of each year, with applications opening 12-18 months prior. Applicants are encouraged to review specific requirements on this page and contact the program coordinator for guidance.</p>
+
+  <h2>Why Mayo Clinic</h2>
+  <p>Mayo Clinic offers one of the largest integrated medical education infrastructures in the United States. Trainees benefit from the Mayo Clinic Model of Care — multidisciplinary, team-based, and patient-centered — combined with strong research opportunities.</p>
+
+  <h2>Related programs</h2>
+  <ul>
+    {% for other in all_programs %}
+      {% if other[0] != program[0] %}
+        <li><a href="{{ url_for('education_program_detail', slug=other[0]|lower|replace(' ', '-')|replace(',', '')|replace('.', '')|replace("'", '')) }}">{{ other[0] }}</a></li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

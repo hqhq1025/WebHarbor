@@ -45,11 +45,16 @@
     </div>
   </form>
 
-  <p class="muted" style="margin-top:16px;">{{ doctors|length }} physician{{ '' if doctors|length == 1 else 's' }} found.</p>
+  <p class="muted" style="margin-top:16px;">{{ doctors|length }} physician{{ '' if doctors|length == 1 else 's' }} found. <a href="{{ url_for('find_doctor_advanced') }}">Advanced search &rsaquo;</a></p>
   {% for d in doctors %}
+    {% set img = pick_image('doctors', d.slug) %}
     <div class="doctor-card">
-      <div class="avatar">{{ d.name[0] }}</div>
-      <div>
+      {% if img %}
+        <img class="doctor-headshot-row" src="{{ url_for('static', filename=img) }}" alt="{{ d.name }}">
+      {% else %}
+        <div class="avatar" style="width:80px;height:80px;font-size:30px;background:var(--mayo-blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--mayo-blue);font-weight:700;flex-shrink:0;">{{ d.name[0] }}</div>
+      {% endif %}
+      <div class="doctor-info">
         <h4><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></h4>
         <div class="specialty">{{ d.specialty }}</div>
         <div class="meta">Department: {% if d.department %}<a href="{{ url_for('department_detail', slug=d.department.slug) }}">{{ d.department.name }}</a>{% else %}{{ d.dept_slug }}{% endif %}</div>

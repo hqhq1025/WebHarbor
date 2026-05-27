@@ -49,6 +49,17 @@
     </div>
     <aside class="sidebar">
       <div class="sidebar-card">
+        <h4>Patient services</h4>
+        <ul>
+          <li><a href="{{ url_for('portal_appointments') }}">My appointments</a></li>
+          <li><a href="{{ url_for('portal_messages') }}">Messages</a></li>
+          <li><a href="{{ url_for('portal_medications') }}">Medications &amp; refills</a></li>
+          <li><a href="{{ url_for('portal_billing') }}">Billing</a></li>
+          <li><a href="{{ url_for('portal_health_records') }}">Health records</a></li>
+          <li><a href="{{ url_for('portal_profile') }}">Profile</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
         <h4>Profile</h4>
         <p><strong>{{ user.display_name }}</strong></p>
         <p>{{ user.email }}<br>{{ user.phone }}</p>

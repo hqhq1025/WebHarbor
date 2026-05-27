@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Patient &amp; Visitor Information{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  Patient &amp; Visitor Information
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('locations', 'visitor') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
+  <h1>Patient &amp; Visitor Information</h1>
+  <p>Everything you need to prepare for your visit: from billing and insurance to accommodations, dining, parking, and accessibility services.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='what-to-expect') }}">What to Expect</a></h3>
+      <p>Your first visit, check-in, the team-based model, and follow-up.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='billing-insurance') }}">Billing &amp; Insurance</a></h3>
+      <p>Insurance accepted, billing process, and payment options.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='financial-assistance') }}">Financial Assistance</a></h3>
+      <p>Eligibility, application, and charity care policies.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='international-patients') }}">International Patients</a></h3>
+      <p>Services for international patients and their families.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='accommodations') }}">Accommodations</a></h3>
+      <p>On-campus and partner lodging at each campus.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='dining') }}">Dining</a></h3>
+      <p>Cafés, cafeterias, and restaurant options.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='parking') }}">Parking &amp; Transportation</a></h3>
+      <p>Patient parking and free shuttle services.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='accessibility') }}">Accessibility</a></h3>
+      <p>Services for patients with disabilities.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='interpreter-services') }}">Interpreter Services</a></h3>
+      <p>Free language interpretation in 100+ languages.</p>
+    </div>
+    <div class="feature-card">
+      <h3><a href="{{ url_for('patient_visitor_topic', topic='support-groups') }}">Support Groups</a></h3>
+      <p>Patient and family peer support.</p>
+    </div>
+  </div>
+
+  <h2>Mayo Clinic Campuses</h2>
+  <div class="related-grid">
+    {% for c in campuses %}
+      <div class="related-card">
+        <h4><a href="{{ url_for('location_detail', slug=c.slug) }}">{{ c.name }}</a></h4>
+        <p>{{ c.address }}</p>
+        <p>Phone: {{ c.phone }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

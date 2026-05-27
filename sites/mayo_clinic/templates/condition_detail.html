@@ -13,6 +13,14 @@
   <p class="muted" style="font-size:1.05rem;">{{ cond.summary }}</p>
   {% if dept %}<p class="muted">Care at Mayo Clinic: <a href="{{ url_for('department_detail', slug=dept.slug) }}">{{ dept.name }}</a></p>{% endif %}
 
+  {% set anat = pick_image('anatomy', cond.slug) %}
+  {% if anat %}
+  <figure class="anatomy-fig">
+    <img src="{{ url_for('static', filename=anat) }}" alt="Illustration related to {{ cond.name }}">
+    <figcaption>Illustrative anatomy. Mayo Clinic Health Library.</figcaption>
+  </figure>
+  {% endif %}
+
   <div class="two-col">
     <div class="article-body">
       <section id="overview"><h2>Overview</h2><p>{{ cond.overview }}</p></section>
@@ -48,6 +56,19 @@
         <button class="btn-secondary" type="submit">Save to my portal</button>
       </form>
       {% endif %}
+
+      <form action="{{ url_for('share_article') }}" method="post" style="margin-top: 18px; padding: 14px; background: var(--mayo-bg-alt); border-radius: 4px;">
+        <strong>Share this article</strong>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <input type="hidden" name="slug" value="{{ cond.slug }}">
+          <input type="hidden" name="kind" value="condition">
+          <input type="email" name="sender_email" placeholder="Your email" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <input type="email" name="recipient_email" placeholder="Recipient email" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <button class="btn-secondary" type="submit">Share</button>
+        </div>
+      </form>
+
+      <p style="margin-top: 16px;"><a href="{{ url_for('print_view', kind='condition', slug=cond.slug) }}">Print-friendly view &rsaquo;</a></p>
     </div>
 
     <aside class="sidebar">

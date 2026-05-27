@@ -17,7 +17,7 @@ def _resolve_app():
         'db', 'bcrypt', 'User', 'Department', 'Doctor', 'Condition',
         'Procedure', 'Drug', 'Symptom', 'SymptomRule', 'ClinicalTrial',
         'Article', 'SavedItem', 'AppointmentRequest', 'slugify',
-        'MIRROR_REFERENCE_DATE',
+        'MIRROR_REFERENCE_DATE', 'GlossaryTerm', 'PortalMessage',
     ):
         _BOUND[name] = getattr(m, name)
     return _BOUND
@@ -33,6 +33,7 @@ from content_doctors import (
     DEPT_SPECIALTY, FOCUS_BY_DEPT, LOCATIONS,
 )
 from content_lifestyle import HEALTHY_LIFESTYLE, NEWS_ARTICLES, PATIENT_STORIES
+from content_extra import GLOSSARY
 
 
 # ---------------------------------------------------------------------------
@@ -412,6 +413,21 @@ def _seed_articles():
     db.session.commit()
 
 
+def _seed_glossary():
+    if GlossaryTerm.query.count() > 0:
+        return
+    seen = set()
+    for term, category, definition in GLOSSARY:
+        slug = slugify(term)
+        if slug in seen:
+            continue
+        seen.add(slug)
+        db.session.add(GlossaryTerm(
+            slug=slug, term=term, category=category, definition=definition,
+        ))
+    db.session.commit()
+
+
 # ---------------------------------------------------------------------------
 # Public seed_database — calls all sub-seeders, each function-gated
 # ---------------------------------------------------------------------------
@@ -427,6 +443,7 @@ def seed_database():
     _seed_doctors()
     _seed_clinical_trials()
     _seed_articles()
+    _seed_glossary()
 
 
 def seed_benchmark_users():

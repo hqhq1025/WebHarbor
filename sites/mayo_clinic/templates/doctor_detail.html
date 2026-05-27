@@ -9,7 +9,12 @@
 {% block content %}
 <section class="container">
   <div class="doctor-card" style="grid-template-columns:130px 1fr;">
-    <div class="avatar" style="width:130px;height:130px;font-size:42px;">{{ doc.name[0] }}</div>
+    {% set img = pick_image('doctors', doc.slug) %}
+    {% if img %}
+      <img class="doctor-headshot" style="width:130px;height:130px;" src="{{ url_for('static', filename=img) }}" alt="{{ doc.name }}">
+    {% else %}
+      <div class="avatar" style="width:130px;height:130px;font-size:42px;background:var(--mayo-blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--mayo-blue);font-weight:700;">{{ doc.name[0] }}</div>
+    {% endif %}
     <div>
       <h1 style="margin:0;">{{ doc.name }}</h1>
       <div class="specialty" style="font-size:1.1rem;">{{ doc.specialty }}</div>
@@ -34,6 +39,31 @@
         <ul>{% for line in doc.education.split('\n') %}<li>{{ line }}</li>{% endfor %}</ul>
       </section>
       <section><h2>Research interests</h2><p>{{ doc.research_interests }}</p></section>
+      <section><h2>Professional appointments &amp; activities</h2>
+        <ul>
+          <li>Active staff, Mayo Clinic — {{ doc.locations.split(',')[0] }} campus</li>
+          <li>Mayo Clinic College of Medicine and Science</li>
+          <li>American Board of Medical Specialties certified</li>
+          <li>Member, multidisciplinary {{ doc.dept_slug }} program</li>
+        </ul>
+      </section>
+      <section><h2>Awards and recognition</h2>
+        <ul>
+          <li>America's Top Doctors (Castle Connolly)</li>
+          <li>Mayo Clinic Distinguished Mayo Clinician</li>
+          <li>Best Doctors in America</li>
+        </ul>
+      </section>
+      <section><h2>Selected publications</h2>
+        <ol>
+          <li>{{ doc.name }} et al. <em>Mayo Clinic Proceedings</em>, 2025.</li>
+          <li>{{ doc.name }} et al. <em>New England Journal of Medicine</em>, 2024.</li>
+          <li>{{ doc.name }} et al. <em>JAMA Internal Medicine</em>, 2023.</li>
+        </ol>
+      </section>
+      <section><h2>Philosophy of care</h2>
+        <p>Dr. {{ doc.name.split(',')[0].split()[-1] }} believes that excellent care begins with listening — understanding each patient's goals, values, and life circumstances, then partnering with them to design a care plan that fits.</p>
+      </section>
       {% if trials %}
       <section><h2>Current clinical trials</h2>
         {% for t in trials %}

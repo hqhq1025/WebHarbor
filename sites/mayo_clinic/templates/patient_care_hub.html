@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Patient Care &amp; Health Information{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Patient Care &amp; Health Information
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('brand', 'patient-care') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
+  <h1>Patient Care &amp; Health Information</h1>
+  <p>From hundreds of disease guides to symptom checkers, drug references, and ways to find a Mayo Clinic doctor, our health library is built for patients and families researching care.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon-wrap">&#128218;</div>
+      <h3>Diseases &amp; Conditions</h3>
+      <p>{{ cond_count }} conditions, A-Z. Symptoms, causes, treatment, prevention, and references.</p>
+      <a class="feature-link" href="{{ url_for('diseases_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128300;</div>
+      <h3>Tests &amp; Procedures</h3>
+      <p>{{ proc_count }} procedures with how-to-prepare and what-to-expect details.</p>
+      <a class="feature-link" href="{{ url_for('procedures_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128137;</div>
+      <h3>Drugs &amp; Supplements</h3>
+      <p>{{ drug_count }} medications with usage, dosing, side effects, and interactions.</p>
+      <a class="feature-link" href="{{ url_for('drugs_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#129489;&#8205;&#9877;&#65039;</div>
+      <h3>Find a Doctor</h3>
+      <p>{{ doc_count }} Mayo Clinic physicians across three campuses.</p>
+      <a class="feature-link" href="{{ url_for('find_doctor') }}">Search physicians &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#129488;</div>
+      <h3>Healthy Lifestyle</h3>
+      <p>Nutrition, fitness, stress, sleep, and lifelong wellness guides.</p>
+      <a class="feature-link" href="{{ url_for('lifestyle_index') }}">Explore &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128202;</div>
+      <h3>Clinical Trials</h3>
+      <p>Search Mayo Clinic clinical trials by condition, phase, or location.</p>
+      <a class="feature-link" href="{{ url_for('trials_index') }}">Find trials &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128221;</div>
+      <h3>Symptom Checker</h3>
+      <p>Identify possible causes by region, age, and duration.</p>
+      <a class="feature-link" href="{{ url_for('symptom_checker') }}">Start wizard &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#129352;</div>
+      <h3>Browse by Body System</h3>
+      <p>Conditions and procedures grouped by anatomical system.</p>
+      <a class="feature-link" href="{{ url_for('body_systems_index') }}">Browse systems &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128214;</div>
+      <h3>Medical Glossary</h3>
+      <p>Plain-language definitions for hundreds of medical terms.</p>
+      <a class="feature-link" href="{{ url_for('glossary_index') }}">Open glossary &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#127973;</div>
+      <h3>Cancer Center</h3>
+      <p>Information for patients across more than 20 cancer types.</p>
+      <a class="feature-link" href="{{ url_for('cancer_center') }}">Cancer Center &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128338;</div>
+      <h3>Patient &amp; Visitor Guide</h3>
+      <p>Billing, insurance, accommodations, dining, and accessibility.</p>
+      <a class="feature-link" href="{{ url_for('patient_visitor_guide') }}">View guide &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#128279;</div>
+      <h3>Patient Stories</h3>
+      <p>Real Mayo Clinic patient experiences across conditions.</p>
+      <a class="feature-link" href="{{ url_for('stories_index') }}">Read stories &rsaquo;</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

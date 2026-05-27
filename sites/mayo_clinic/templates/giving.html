@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Giving to Mayo Clinic{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Giving
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('brand', 'giving') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
+  <h1>Support Mayo Clinic</h1>
+  <p>Generous donors help Mayo Clinic accelerate research, train the next generation of clinicians, and provide care to patients who otherwise could not afford it.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3><a href="{{ url_for('donate') }}">Make a gift</a></h3>
+      <p>One-time or recurring gifts to support Mayo Clinic priorities.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Planned giving</h3>
+      <p>Include Mayo Clinic in your estate plans. Contact the Office of Development.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Named gifts</h3>
+      <p>Endow a research lab, a chair, or a clinical program.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Corporate &amp; foundation</h3>
+      <p>Partnerships for industry, foundations, and grant makers.</p>
+    </div>
+  </div>
+
+  <h2>Impact of donor support</h2>
+  <ul>
+    <li><strong>$1.2 billion</strong> in donor commitments in the past five years.</li>
+    <li><strong>4,000+</strong> active research studies, many supported entirely or partially through philanthropy.</li>
+    <li><strong>30+</strong> endowed chairs created or strengthened through named gifts.</li>
+    <li><strong>$700M+</strong> in charity care annually, supported in part by donor generosity.</li>
+  </ul>
+</section>
+{% endblock %}

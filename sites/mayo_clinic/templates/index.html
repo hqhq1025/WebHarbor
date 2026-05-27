@@ -75,10 +75,14 @@
   <h2>Featured conditions</h2>
   <div class="related-grid">
     {% for c in featured_conditions %}
-      <div class="related-card">
-        <div class="kind">Condition</div>
-        <h4><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></h4>
-        <p>{{ c.summary[:160] }}{% if c.summary|length > 160 %}...{% endif %}</p>
+      {% set img = pick_image('anatomy', c.slug) %}
+      <div class="card-with-image">
+        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        <div class="card-body">
+          <div class="kind">Condition</div>
+          <h4><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></h4>
+          <p>{{ c.summary[:160] }}{% if c.summary|length > 160 %}...{% endif %}</p>
+        </div>
       </div>
     {% endfor %}
   </div>
@@ -86,10 +90,14 @@
   <h2>Healthy Lifestyle highlights</h2>
   <div class="related-grid">
     {% for a in featured_articles %}
-      <div class="related-card">
-        <div class="kind">{{ a.category }}</div>
-        <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>
-        <p>{{ a.summary[:150] }}</p>
+      {% set img = pick_image('articles', a.slug) %}
+      <div class="card-with-image">
+        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        <div class="card-body">
+          <div class="kind">{{ a.category }}</div>
+          <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>
+          <p>{{ a.summary[:150] }}</p>
+        </div>
       </div>
     {% endfor %}
   </div>

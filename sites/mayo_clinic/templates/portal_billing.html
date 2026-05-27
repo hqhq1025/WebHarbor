@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Billing{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Billing &amp; Payments</h1>
+  {% if bills %}
+    <table style="width:100%; border-collapse: collapse;">
+      <tr style="background:var(--mayo-blue-light); text-align:left;">
+        <th style="padding:8px;">Date of service</th>
+        <th>Department</th>
+        <th>Amount</th>
+        <th>Status</th>
+      </tr>
+      {% for b in bills %}
+        <tr style="border-bottom:1px solid var(--mayo-grey-light);">
+          <td style="padding:8px;">{{ b.date }}</td>
+          <td>{{ b.department|title }}</td>
+          <td>${{ b.amount }}.00</td>
+          <td>{{ b.status }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}<p>No bills on file.</p>{% endif %}
+
+  <p style="margin-top:18px;"><a href="{{ url_for('patient_visitor_topic', topic='financial-assistance') }}">Financial assistance program &rsaquo;</a></p>
+</section>
+{% endblock %}

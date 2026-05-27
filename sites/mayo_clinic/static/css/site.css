@@ -398,3 +398,150 @@ table.data th { background: var(--mayo-blue-light); color: var(--mayo-blue-dark)
 .trial-card .status.recruiting { background: #ecf6df; color: #2d6a0f; }
 .trial-card .status.active { background: #fff4d1; color: #6b4f00; }
 .trial-card .status.completed { background: var(--mayo-grey-light); color: var(--mayo-grey); }
+
+/* --- Image content --- */
+.hero-image { width: 100%; max-height: 380px; object-fit: cover; border-radius: 8px; margin-bottom: 16px; }
+.thumb { width: 100%; height: 180px; object-fit: cover; border-radius: 4px; }
+.thumb-small { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; }
+.doctor-headshot { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 50%; background: var(--mayo-blue-light); }
+.doctor-headshot-row { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; flex-shrink: 0; }
+.anatomy-fig { background: #fff; border: 1px solid var(--mayo-border); padding: 12px; border-radius: 4px; text-align: center; margin: 14px 0; }
+.anatomy-fig img { max-width: 100%; max-height: 320px; }
+.anatomy-fig figcaption { font-size: 13px; color: var(--mayo-grey); margin-top: 6px; font-style: italic; }
+.condition-hero, .article-hero { width: 100%; max-height: 320px; object-fit: cover; border-radius: 6px; margin-bottom: 22px; }
+
+/* --- Cards with images --- */
+.card-with-image {
+  border: 1px solid var(--mayo-border); border-radius: 6px;
+  background: #fff; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: box-shadow .15s, transform .15s;
+}
+.card-with-image:hover { box-shadow: 0 6px 20px rgba(0,60,113,.10); transform: translateY(-2px); }
+.card-with-image .card-img { height: 160px; background: #e6eaee; object-fit: cover; }
+.card-with-image .card-body { padding: 14px; }
+.card-with-image h4 { margin: 0 0 6px; font-size: 1.05rem; }
+.card-with-image p { font-size: 13px; color: var(--mayo-grey); margin: 4px 0 8px; }
+
+.doctor-card {
+  border: 1px solid var(--mayo-border); border-radius: 6px;
+  padding: 16px; background: #fff;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.doctor-card .doctor-info { flex: 1; min-width: 0; }
+.doctor-card h4 { margin: 0 0 4px; font-size: 1.05rem; }
+.doctor-card .specialty { color: var(--mayo-blue); font-size: 13px; font-weight: 600; }
+.doctor-card .focus { font-size: 12px; color: var(--mayo-grey); margin-top: 4px; }
+
+/* --- Cancer center hub grid --- */
+.cancer-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+.cancer-card {
+  background: #fff; border: 1px solid var(--mayo-border); border-radius: 6px;
+  overflow: hidden;
+}
+.cancer-card img { width: 100%; height: 140px; object-fit: cover; }
+.cancer-card .body { padding: 14px; }
+.cancer-card h4 { margin: 0 0 4px; }
+
+/* --- Body system landing --- */
+.body-systems {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.body-system-card {
+  background: #fff; border-left: 4px solid var(--mayo-blue);
+  border-top: 1px solid var(--mayo-border); border-right: 1px solid var(--mayo-border);
+  border-bottom: 1px solid var(--mayo-border);
+  padding: 18px; border-radius: 0 6px 6px 0;
+}
+.body-system-card h3 { margin: 0 0 6px; font-size: 1.15rem; }
+.body-system-card .conditions-list { font-size: 13px; color: var(--mayo-grey); margin-top: 8px; }
+
+/* --- Glossary --- */
+.glossary-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px 24px;
+}
+.glossary-entry {
+  padding: 8px 0; border-bottom: 1px dotted var(--mayo-grey-light);
+}
+.glossary-entry .term { font-weight: 700; color: var(--mayo-blue-dark); }
+.glossary-entry .cat { display: inline-block; font-size: 11px; padding: 2px 6px; background: var(--mayo-blue-light); color: var(--mayo-blue-dark); border-radius: 3px; margin-left: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.glossary-entry .def { font-size: 14px; color: var(--mayo-text); margin-top: 2px; }
+
+/* --- Campus / Location detail --- */
+.campus-info {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+  padding: 20px; background: var(--mayo-blue-light); border-radius: 6px;
+}
+@media (max-width: 720px) { .campus-info { grid-template-columns: 1fr; } }
+.campus-info dt { font-size: 12px; color: var(--mayo-grey); text-transform: uppercase; letter-spacing: .6px; margin-top: 8px; }
+.campus-info dd { font-size: 15px; margin: 0 0 6px; color: var(--mayo-text); }
+
+/* --- Job listings --- */
+.job-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--mayo-grey-light);
+  align-items: center;
+}
+.job-row .title { font-weight: 600; color: var(--mayo-blue-dark); }
+.job-row .badge {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  background: var(--mayo-blue-light); color: var(--mayo-blue-dark);
+  font-size: 12px; font-weight: 600;
+}
+
+/* --- Live chat --- */
+.chat-window {
+  background: #fff; border: 1px solid var(--mayo-border);
+  border-radius: 8px; padding: 18px; max-height: 460px; overflow-y: auto;
+}
+.chat-msg { padding: 8px 12px; border-radius: 6px; margin: 6px 0; max-width: 75%; }
+.chat-msg.patient { background: var(--mayo-blue); color: #fff; margin-left: auto; }
+.chat-msg.mayo { background: var(--mayo-bg-alt); color: var(--mayo-text); }
+.chat-msg .sender { font-size: 11px; opacity: .7; margin-bottom: 2px; }
+
+/* --- Print-friendly --- */
+.print-view { background: #fff; padding: 30px; max-width: 720px; margin: 24px auto; border: 1px solid var(--mayo-border); }
+@media print { .site-header, .top-utility, .main-nav, .site-footer { display: none; } .print-view { border: none; padding: 0; } }
+
+/* --- Form layout --- */
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px;
+  margin: 18px 0;
+}
+@media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
+.form-grid label { display: block; font-size: 13px; font-weight: 600; color: var(--mayo-grey); margin-bottom: 4px; }
+.form-grid input, .form-grid select, .form-grid textarea {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--mayo-border);
+  border-radius: 4px; font-size: 15px; box-sizing: border-box;
+  font-family: inherit;
+}
+.form-grid .span-2 { grid-column: span 2; }
+
+/* --- Body map --- */
+.body-map-wrap { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
+@media (max-width: 720px) { .body-map-wrap { grid-template-columns: 1fr; } }
+.body-map-img { background: var(--mayo-bg-alt); padding: 22px; border-radius: 6px; text-align: center; }
+.body-map-img img { max-width: 100%; max-height: 380px; }
+.body-region {
+  background: #fff; border: 1px solid var(--mayo-border); border-radius: 6px;
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.body-region h4 { margin: 0 0 6px; font-size: 1.0rem; }
+
+/* --- Hub feature row --- */
+.hub-list {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px; margin-top: 14px;
+}
+.hub-list a {
+  display: block; padding: 12px 14px;
+  background: #fff; border: 1px solid var(--mayo-border); border-radius: 4px;
+  font-weight: 600; color: var(--mayo-blue-dark);
+}
+.hub-list a:hover { background: var(--mayo-blue-light); }

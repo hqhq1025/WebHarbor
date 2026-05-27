@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ name }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('body_systems_index') }}">Conditions by Body System</a><span>&rsaquo;</span>
+  {{ name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('anatomy', system_slug) %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ name }}">{% endif %}
+  <h1>{{ name }}</h1>
+  <p class="muted">{{ desc }}</p>
+
+  <div class="two-col">
+    <div>
+      <h2>Conditions</h2>
+      {% if conditions %}
+        <ul>
+          {% for c in conditions %}
+            <li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a> &mdash; <span class="muted">{{ c.summary[:120] }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p>No conditions catalogued in this system.</p>{% endif %}
+
+      <h2>Procedures</h2>
+      {% if procedures %}
+        <ul>
+          {% for p in procedures %}
+            <li><a href="{{ url_for('procedure_detail', slug=p.slug) }}">{{ p.name }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p>No procedures.</p>{% endif %}
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Departments</h4>
+        <ul>
+          {% for d in departments %}
+            <li><a href="{{ url_for('department_detail', slug=d.slug) }}">{{ d.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="sidebar-card">
+        <h4>Doctors</h4>
+        <ul>
+          {% for d in doctors %}
+            <li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a><br><span class="muted" style="font-size:12px;">{{ d.specialty }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="appointment-block">
+        <h4>Request an appointment</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ job[0] }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('careers') }}">Careers</a><span>&rsaquo;</span>
+  <a href="{{ url_for('careers_jobs') }}">Job listings</a><span>&rsaquo;</span>
+  {{ job[0] }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ job[0] }}</h1>
+  <p><span class="badge" style="background:var(--mayo-blue-light); padding:3px 10px; border-radius:12px;">{{ job[1] }}</span> &middot; {{ job[2] }} &middot; {{ job[3] }} &middot; {{ job[4] }}</p>
+
+  <h2>About the role</h2>
+  <p>Mayo Clinic is seeking a {{ job[0].lower() }} to join our {{ job[1].lower() }} team at the {{ job[2] }} campus. This is a {{ job[3].lower() }} position offering competitive benefits, including continuing-education support and Mayo Clinic's industry-leading retirement plan.</p>
+
+  <h2>Responsibilities</h2>
+  <ul>
+    <li>Deliver care or service consistent with Mayo Clinic's standards of excellence and patient-centeredness.</li>
+    <li>Collaborate with multidisciplinary teams.</li>
+    <li>Participate in continuous quality improvement initiatives.</li>
+    <li>Contribute to a respectful, inclusive workplace culture.</li>
+  </ul>
+
+  <h2>Qualifications</h2>
+  <ul>
+    <li>Active license/certification appropriate to the role.</li>
+    <li>Excellent communication skills.</li>
+    <li>Commitment to patient-centered care.</li>
+    <li>Bachelor's degree or equivalent experience (varies by role).</li>
+  </ul>
+
+  <h2>Benefits</h2>
+  <ul>
+    <li>Comprehensive medical, dental, and vision coverage</li>
+    <li>403(b) retirement plan with employer match</li>
+    <li>Tuition reimbursement and professional development</li>
+    <li>Paid time off and parental leave</li>
+    <li>On-site wellness and behavioral-health support</li>
+  </ul>
+
+  <a class="btn-primary" href="{{ url_for('career_apply', job=job[0]) }}">Apply now</a>
+</section>
+{% endblock %}

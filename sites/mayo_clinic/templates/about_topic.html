@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('about') }}">About Mayo Clinic</a><span>&rsaquo;</span> {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="two-col">
+    <div>
+      <h1>{{ title }}</h1>
+      <p>{{ body }}</p>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>More about Mayo Clinic</h4>
+        <ul>
+          {% for slug, (t, _) in topics %}
+            {% if slug != topic_slug %}
+              <li><a href="{{ url_for('about_topic', topic=slug) }}">{{ t }}</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}
