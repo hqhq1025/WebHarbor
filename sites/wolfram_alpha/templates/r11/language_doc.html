@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_title }} — Wolfram Language Documentation{% endblock %}
+{% block body_class %}page-r11 r11-language-doc{% endblock %}
+{% block content %}
+<style>
+.r11-ld-wrap{max-width:1100px;margin:14px auto;padding:0 20px;
+  display:grid;grid-template-columns:240px 1fr;gap:24px}
+@media(max-width:760px){.r11-ld-wrap{grid-template-columns:1fr}}
+.r11-ld-toc{background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:14px;font-size:.92rem;height:fit-content;position:sticky;top:12px}
+.r11-ld-toc h4{margin:0 0 8px;font-size:.78rem;text-transform:uppercase;letter-spacing:.6px;color:#666}
+.r11-ld-toc a{display:block;padding:5px 4px;color:#333;text-decoration:none;border-left:2px solid transparent}
+.r11-ld-toc a:hover{border-left-color:#cc4400;background:#fff;color:#cc4400}
+.r11-ld-toc a.active{border-left-color:#cc4400;color:#cc4400;font-weight:600}
+.r11-ld-main h1{font-size:1.95rem;margin:0 0 6px;font-family:Georgia,serif;font-weight:500}
+.r11-ld-summary{background:#eef5ff;border-left:4px solid #0066cc;padding:12px 16px;margin:14px 0 20px;font-size:.95rem;color:#1a1a1a;border-radius:0 4px 4px 0}
+.r11-ld-section{margin-bottom:24px}
+.r11-ld-section h2{font-size:1.2rem;margin:18px 0 8px;color:#1a1a1a;border-bottom:1px solid #eee;padding-bottom:4px;font-family:Georgia,serif;font-weight:500}
+.r11-ld-section p{color:#333;line-height:1.6;font-size:.96rem}
+.r11-ld-code{background:#1e1e2e;color:#dcdcdc;font-family:'Courier New',monospace;
+  padding:12px 14px;border-radius:4px;font-size:.86rem;line-height:1.5;overflow-x:auto}
+.r11-ld-code .keyword{color:#cc7eff}
+.r11-ld-code .string{color:#c2e88a}
+.r11-ld-next{margin-top:24px;border-top:1px solid #eee;padding-top:14px;display:flex;justify-content:space-between;font-size:.9rem}
+.r11-ld-next a{color:#0066cc;text-decoration:none}
+</style>
+<div class="r11-ld-wrap">
+  <aside class="r11-ld-toc">
+    <h4>Wolfram Language</h4>
+    {% for t in r11_toc %}
+    <a href="{{ t.url }}" class="{% if t.slug==r11_active_slug %}active{% endif %}">{{ t.title }}</a>
+    {% endfor %}
+  </aside>
+  <main class="r11-ld-main">
+    {% include "r11/_partial_breadcrumb.html" %}
+    <h1>{{ r11_title }}</h1>
+    <div class="r11-ld-summary">{{ r11_intro }}</div>
+    <div class="r11-ld-section">
+      <h2>Overview</h2>
+      <p>{{ r11_overview }}</p>
+    </div>
+    <div class="r11-ld-section">
+      <h2>Example</h2>
+      <div class="r11-ld-code"><span class="keyword">In[1]:=</span> {{ r11_example_in }}
+<span class="keyword">Out[1]=</span> <span class="string">{{ r11_example_out }}</span></div>
+    </div>
+    {% for k,v in r11_payload_rows %}
+    <div class="r11-ld-section"><h2>{{ k }}</h2><p>{{ v }}</p></div>
+    {% endfor %}
+    {% if r11_next_slug %}
+    <div class="r11-ld-next">
+      <span></span>
+      <a href="{{ r11_next_url }}">Next: {{ r11_next_label }} &rarr;</a>
+    </div>
+    {% endif %}
+    <p style="color:#999;font-size:.78rem;margin-top:14px"><code>{{ r11_schema }}</code></p>
+  </main>
+</div>
+{% endblock %}

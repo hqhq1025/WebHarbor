@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Jobs at Wolfram{% endblock %}
+{% block body_class %}page-r11 r11-jobs-index{% endblock %}
+{% block content %}
+<style>
+.r11-ji-wrap{max-width:1140px;margin:24px auto;padding:0 20px;display:grid;
+  grid-template-columns:220px 1fr;gap:24px}
+@media(max-width:760px){.r11-ji-wrap{grid-template-columns:1fr}}
+.r11-ji-side{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:14px;height:fit-content}
+.r11-ji-side h3{margin:0 0 8px;font-size:.86rem;color:#555;text-transform:uppercase;letter-spacing:.5px}
+.r11-ji-side a{display:block;padding:5px 10px;color:#1a1a1a;text-decoration:none;border-radius:3px;font-size:.92rem}
+.r11-ji-side a:hover{background:#fff;color:#cc4400}
+.r11-ji-side a.active{background:#cc4400;color:#fff}
+.r11-ji-side input{width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:3px;margin-bottom:12px}
+.r11-ji-main h1{margin:0 0 14px;font-size:1.7rem;color:#1a1a1a}
+.r11-ji-jobcard{background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:16px;margin-bottom:12px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.r11-ji-jobcard h3{margin:0 0 4px;font-size:1.1rem;color:#1a1a1a}
+.r11-ji-jobcard h3 a{color:inherit;text-decoration:none}
+.r11-ji-jobcard h3 a:hover{color:#cc4400}
+.r11-ji-jobcard .meta{color:#666;font-size:.86rem;display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.r11-ji-jobcard .meta span{display:inline-flex;align-items:center;gap:4px}
+.r11-ji-jobcard .meta .salary{color:#235c23;font-weight:600}
+.r11-ji-jobcard .apply{background:#cc4400;color:#fff;text-decoration:none;padding:8px 16px;border-radius:3px;font-size:.88rem;font-weight:600}
+</style>
+<div class="r11-ji-wrap">
+  <aside class="r11-ji-side">
+    <h3>Search</h3>
+    <input type="text" placeholder="keyword">
+    <h3>Department</h3>
+    <a href="/jobs" class="{% if r11_dept_filter=='all' %}active{% endif %}">All ({{ r11_total_open }})</a>
+    {% for d in r11_departments %}
+    <a href="/jobs?dept={{ d.slug }}" class="{% if r11_dept_filter==d.slug %}active{% endif %}">{{ d.name }} ({{ d.count }})</a>
+    {% endfor %}
+    <h3 style="margin-top:14px">Location</h3>
+    <a href="#">Champaign, IL</a><a href="#">Remote (US)</a><a href="#">Boston, MA</a>
+  </aside>
+  <main class="r11-ji-main">
+    <h1>Open positions ({{ r11_jobs|length }})</h1>
+    <p style="color:#666">{{ r11_intro }}</p>
+    {% for j in r11_jobs %}
+    <div class="r11-ji-jobcard">
+      <div>
+        <h3><a href="/jobs/{{ j.id }}">{{ j.title }}</a></h3>
+        <div class="meta">
+          <span>&#127970; {{ j.dept }}</span>
+          <span>&#128205; {{ j.location }}</span>
+          <span class="salary">{{ j.salary }}</span>
+        </div>
+      </div>
+      <a class="apply" href="/jobs/{{ j.id }}">View role &rarr;</a>
+    </div>
+    {% endfor %}
+    <p style="color:#888;font-size:.78rem;margin-top:14px"><code>{{ r11_schema }}</code></p>
+  </main>
+</div>
+{% endblock %}

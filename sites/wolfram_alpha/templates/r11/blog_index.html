@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Blog{% endblock %}
+{% block body_class %}page-r11 r11-blog-index{% endblock %}
+{% block content %}
+<style>
+.r11-bi-wrap{max-width:1080px;margin:24px auto;padding:0 20px}
+.r11-bi-head{border-bottom:3px solid #cc4400;padding-bottom:14px;margin-bottom:24px}
+.r11-bi-head h1{font-family:Georgia,serif;font-weight:500;font-size:2.2rem;margin:0;color:#1a1a1a}
+.r11-bi-head p{color:#777;margin:4px 0 0}
+.r11-bi-layout{display:grid;grid-template-columns:1fr 240px;gap:30px}
+@media(max-width:760px){.r11-bi-layout{grid-template-columns:1fr}}
+.r11-bi-feed article{padding:18px 0;border-bottom:1px solid #eee}
+.r11-bi-feed article:first-child{padding-top:0}
+.r11-bi-feed .cat-tag{display:inline-block;background:#cc4400;color:#fff;
+  font-size:.7rem;padding:2px 8px;text-transform:uppercase;letter-spacing:.6px;border-radius:2px}
+.r11-bi-feed h2{font-family:Georgia,serif;font-weight:500;margin:6px 0 4px;font-size:1.35rem;color:#1a1a1a}
+.r11-bi-feed h2 a{color:inherit;text-decoration:none}
+.r11-bi-feed h2 a:hover{color:#cc4400}
+.r11-bi-feed .meta{color:#888;font-size:.84rem;margin-bottom:8px}
+.r11-bi-feed p{color:#444;line-height:1.55;font-size:.96rem;margin:6px 0}
+.r11-bi-side h3{font-size:.86rem;text-transform:uppercase;letter-spacing:.8px;color:#666;border-bottom:1px solid #ddd;padding-bottom:6px;margin:0 0 10px}
+.r11-bi-side ul{padding:0;margin:0;list-style:none}
+.r11-bi-side li{padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:.9rem}
+.r11-bi-side a{color:#0066cc;text-decoration:none}
+.r11-bi-side a:hover{text-decoration:underline}
+</style>
+<div class="r11-bi-wrap">
+  <div class="r11-bi-head">
+    <h1>Wolfram Blog</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-bi-layout">
+    <div class="r11-bi-feed">
+      {% for p in r11_posts %}
+      <article>
+        <span class="cat-tag">{{ p.category_name }}</span>
+        <h2><a href="/blog/{{ p.slug }}">{{ p.title }}</a></h2>
+        <div class="meta">By <strong>{{ p.author }}</strong> &middot; {{ p.date }}</div>
+        <p>{{ p.abstract }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    <aside class="r11-bi-side">
+      <h3>Categories</h3>
+      <ul>
+        {% for c in r11_categories %}
+        <li><a href="/blog/category/{{ c.slug }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+      <h3 style="margin-top:18px">Latest</h3>
+      <ul>
+        {% for p in r11_posts[:5] %}
+        <li><a href="/blog/{{ p.slug }}">{{ p.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:24px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

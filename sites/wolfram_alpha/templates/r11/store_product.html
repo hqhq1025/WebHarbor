@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_product.name }} — Wolfram Store{% endblock %}
+{% block body_class %}page-r11 r11-store-product{% endblock %}
+{% block content %}
+<style>
+.r11-sp-wrap{max-width:1100px;margin:18px auto;padding:0 20px}
+.r11-sp-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:30px}
+@media(max-width:760px){.r11-sp-grid{grid-template-columns:1fr}}
+.r11-sp-imgwrap{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:380px}
+.r11-sp-img{width:100%;height:340px;background:linear-gradient(135deg,#fafafa,#eaeaea);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;color:#1a1a1a;font-family:Georgia,serif;font-size:1.5rem;text-align:center;padding:30px}
+.r11-sp-info h1{margin:0 0 6px;font-size:1.7rem;color:#1a1a1a}
+.r11-sp-cat{color:#888;font-size:.84rem;text-transform:uppercase;letter-spacing:.5px}
+.r11-sp-price{font-size:2.2rem;color:#cc4400;font-weight:700;margin:16px 0}
+.r11-sp-price small{font-size:.85rem;color:#666;font-weight:400;display:block;margin-top:-4px}
+.r11-sp-stock{background:#e8f5e8;color:#235c23;padding:6px 12px;border-radius:4px;display:inline-block;font-size:.86rem;font-weight:600;margin-bottom:14px}
+.r11-sp-buttons{display:flex;gap:10px;margin:16px 0}
+.r11-sp-buttons button{flex:1;padding:12px;border:none;border-radius:4px;font-size:.95rem;font-weight:600;cursor:pointer}
+.r11-sp-buttons .add{background:#cc4400;color:#fff}
+.r11-sp-buttons .buy{background:#1a1a1a;color:#fff}
+.r11-sp-details{margin-top:14px;background:#fafafa;border:1px solid #eee;border-radius:6px;padding:14px}
+.r11-sp-details h2{margin:0 0 8px;font-size:.94rem;color:#1a1a1a}
+.r11-sp-details ul{margin:0;padding-left:18px;color:#444;line-height:1.55;font-size:.92rem}
+.r11-sp-ship{margin-top:10px;color:#235c23;font-size:.86rem}
+</style>
+<div class="r11-sp-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-sp-grid">
+    <div class="r11-sp-imgwrap">
+      <div class="r11-sp-img">{{ r11_product.name }}</div>
+    </div>
+    <div class="r11-sp-info">
+      <div class="r11-sp-cat">{{ r11_product.category }}</div>
+      <h1>{{ r11_product.name }}</h1>
+      <p style="color:#555;line-height:1.6">{{ r11_intro }}</p>
+      <div class="r11-sp-stock">&#10004; In stock &middot; ships in {{ r11_product.ships_in_days }} day(s)</div>
+      <div class="r11-sp-price">${{ r11_product.price }}<small>USD &middot; one-time</small></div>
+      <div class="r11-sp-buttons">
+        <button type="button" class="add">Add to cart</button>
+        <button type="button" class="buy">Buy now</button>
+      </div>
+      <div class="r11-sp-details">
+        <h2>Details</h2>
+        <ul>
+          <li>Product ID: {{ r11_product.slug }}</li>
+          <li>Category: {{ r11_product.category }}</li>
+          <li>Delivery: digital download or shipped media</li>
+          <li>Returns: 30-day money-back guarantee</li>
+        </ul>
+      </div>
+      <div class="r11-sp-ship">&#128666; Free shipping on orders over $150 within the US</div>
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

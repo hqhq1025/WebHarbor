@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_topic.title }} — Wolfram Community{% endblock %}
+{% block body_class %}page-r11 r11-community-topic{% endblock %}
+{% block content %}
+<style>
+.r11-ct-wrap{max-width:900px;margin:18px auto;padding:0 20px}
+.r11-ct-head{background:#fff;border:1px solid #e5e5e5;border-top:4px solid #00a99d;
+  border-radius:0 0 6px 6px;padding:18px}
+.r11-ct-head h1{margin:0;font-size:1.45rem;color:#1a1a1a}
+.r11-ct-head .crumbs{font-size:.84rem;color:#777;margin-bottom:6px}
+.r11-ct-head .crumbs a{color:#00a99d;text-decoration:none}
+.r11-ct-stats{display:flex;gap:18px;margin-top:10px;font-size:.84rem;color:#666}
+.r11-ct-stats span strong{color:#1a1a1a}
+.r11-ct-post{background:#fff;border:1px solid #e5e5e5;border-radius:6px;
+  padding:14px;margin-top:12px;display:grid;grid-template-columns:88px 1fr;gap:14px}
+.r11-ct-avatar{background:#00a99d;color:#fff;border-radius:50%;width:60px;height:60px;
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:600}
+.r11-ct-meta{font-size:.82rem;color:#666;margin-top:6px;text-align:center}
+.r11-ct-body p{margin:0 0 8px;color:#222;line-height:1.55;font-size:.96rem}
+.r11-ct-op{border-left:3px solid #cc4400;padding-left:10px}
+.r11-ct-op .label{display:inline-block;background:#cc4400;color:#fff;
+  font-size:.7rem;padding:1px 6px;border-radius:2px;text-transform:uppercase;margin-right:6px}
+.r11-ct-author{font-weight:600;color:#1a1a1a}
+.r11-ct-reply-form{margin-top:18px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:14px}
+.r11-ct-reply-form textarea{width:100%;height:80px;border:1px solid #ccc;border-radius:3px;padding:8px;font-family:inherit;font-size:.92rem}
+.r11-ct-reply-form button{margin-top:8px;background:#00a99d;color:#fff;border:none;padding:8px 18px;border-radius:3px;cursor:pointer}
+</style>
+<div class="r11-ct-wrap">
+  <div class="r11-ct-head">
+    <div class="crumbs">
+      <a href="/community">Community</a> &raquo;
+      <a href="/community/group/{{ r11_topic.group_slug }}">{{ r11_topic.group_name }}</a> &raquo;
+      Thread #{{ r11_topic.tid }}
+    </div>
+    <h1>{{ r11_topic.title }}</h1>
+    <div class="r11-ct-stats">
+      <span><strong>{{ r11_topic.replies }}</strong> replies</span>
+      <span>started by <strong>{{ r11_topic.author }}</strong></span>
+      <span>in <strong>{{ r11_topic.group_name }}</strong></span>
+    </div>
+  </div>
+  <div class="r11-ct-post r11-ct-op">
+    <div>
+      <div class="r11-ct-avatar">{{ r11_topic.author[0] | upper }}</div>
+      <div class="r11-ct-meta">{{ r11_topic.author.split(' ')[-1] }}</div>
+    </div>
+    <div>
+      <div class="r11-ct-body">
+        <p><span class="label">OP</span><span class="r11-ct-author">{{ r11_topic.author }}</span> &middot; opened thread</p>
+        <p>{{ r11_intro }}</p>
+        <p>Discussion is open in <strong>{{ r11_topic.group_name }}</strong>. Reply below or pin a follow-up notebook from the Wolfram Cloud.</p>
+      </div>
+    </div>
+  </div>
+  {% for r in r11_replies %}
+  <div class="r11-ct-post">
+    <div>
+      <div class="r11-ct-avatar" style="background:#666">{{ r.who[0] | upper }}</div>
+      <div class="r11-ct-meta">{{ r.who }}</div>
+    </div>
+    <div class="r11-ct-body">
+      <p><span class="r11-ct-author">{{ r.who }}</span> replied:</p>
+      <p>{{ r.text }}</p>
+    </div>
+  </div>
+  {% endfor %}
+  <form class="r11-ct-reply-form" method="post" action="#">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea placeholder="Reply to this thread..."></textarea>
+    <button type="button">Post reply</button>
+  </form>
+  <p style="color:#888;font-size:.78rem;margin-top:14px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

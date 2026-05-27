@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}About Wolfram — History{% endblock %}
+{% block body_class %}page-r11 r11-about-history{% endblock %}
+{% block content %}
+<style>
+.r11-ah-wrap{max-width:880px;margin:24px auto;padding:0 20px}
+.r11-ah-head{text-align:center;margin-bottom:30px}
+.r11-ah-head h1{font-size:2rem;margin:0 0 8px;font-family:Georgia,serif;font-weight:500}
+.r11-ah-head p{color:#666;max-width:600px;margin:0 auto}
+.r11-ah-timeline{position:relative;padding:14px 0}
+.r11-ah-timeline::before{content:"";position:absolute;left:120px;top:0;bottom:0;width:3px;background:#cc4400}
+@media(max-width:560px){.r11-ah-timeline::before{left:60px}}
+.r11-ah-event{position:relative;padding-left:160px;margin-bottom:22px;min-height:60px}
+@media(max-width:560px){.r11-ah-event{padding-left:90px}}
+.r11-ah-year{position:absolute;left:0;top:0;width:96px;text-align:right;font-family:Georgia,serif;font-size:1.6rem;color:#cc4400;font-weight:600}
+@media(max-width:560px){.r11-ah-year{width:48px;font-size:1.1rem}}
+.r11-ah-dot{position:absolute;left:113px;top:14px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #cc4400;z-index:1}
+@media(max-width:560px){.r11-ah-dot{left:53px}}
+.r11-ah-event h3{margin:0 0 4px;font-size:1.1rem;color:#1a1a1a;font-family:Georgia,serif;font-weight:500}
+.r11-ah-event p{margin:0;color:#444;line-height:1.5;font-size:.96rem}
+.r11-ah-foot{margin-top:24px;text-align:center;color:#666;font-size:.92rem}
+</style>
+<div class="r11-ah-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-ah-head">
+    <h1>Wolfram Through the Years</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-ah-timeline">
+    {% for e in r11_timeline %}
+    <div class="r11-ah-event">
+      <div class="r11-ah-year">{{ e.year }}</div>
+      <div class="r11-ah-dot"></div>
+      <h3>{{ e.title }}</h3>
+      <p>{{ e.desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="r11-ah-foot">Founded {{ r11_timeline[0].year }} &middot; {{ r11_timeline|length }} milestones through {{ r11_timeline[-1].year }}</div>
+  <p style="color:#888;font-size:.78rem;text-align:center;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

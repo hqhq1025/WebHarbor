@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}About Wolfram — Team{% endblock %}
+{% block body_class %}page-r11 r11-about-team{% endblock %}
+{% block content %}
+<style>
+.r11-at-wrap{max-width:1080px;margin:24px auto;padding:0 20px}
+.r11-at-head{text-align:center;margin-bottom:30px}
+.r11-at-head h1{font-size:2rem;margin:0 0 8px;color:#1a1a1a;font-family:Georgia,serif;font-weight:500}
+.r11-at-head p{color:#666;max-width:580px;margin:0 auto}
+.r11-at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.r11-at-card{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:18px;text-align:center;transition:transform .12s}
+.r11-at-card:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.06)}
+.r11-at-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#cc4400,#8c2d00);
+  display:flex;align-items:center;justify-content:center;font-size:2.4rem;color:#fff;
+  margin:0 auto 14px;font-family:Georgia,serif}
+.r11-at-card h3{margin:0 0 4px;font-size:1.05rem;color:#1a1a1a}
+.r11-at-card .role{color:#cc4400;font-size:.85rem;margin-bottom:8px}
+.r11-at-card .email{color:#0066cc;font-size:.82rem;text-decoration:none;display:block}
+.r11-at-foot{margin-top:30px;padding:18px;background:#fafafa;border-radius:6px;text-align:center;color:#666;font-size:.92rem}
+</style>
+<div class="r11-at-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-at-head">
+    <h1>The Wolfram Team</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-at-grid">
+    {% for m in r11_team %}
+    <div class="r11-at-card">
+      <div class="r11-at-avatar">{{ m.initials }}</div>
+      <h3>{{ m.name }}</h3>
+      <div class="role">{{ m.role }}</div>
+      <a class="email" href="mailto:{{ m.email }}">{{ m.email }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="r11-at-foot">{{ r11_team|length }} core team members &middot; led by {{ r11_team[0].name }}</div>
+  <p style="color:#888;font-size:.78rem;text-align:center;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

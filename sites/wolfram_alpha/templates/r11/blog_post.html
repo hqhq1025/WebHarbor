@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_post.title }} — Wolfram Blog{% endblock %}
+{% block body_class %}page-r11 r11-blog-post{% endblock %}
+{% block content %}
+<style>
+.r11-bp-hero{background:linear-gradient(180deg,#fafafa 0%,#fff 100%);
+  padding:36px 20px 24px;border-bottom:1px solid #eee;text-align:center}
+.r11-bp-hero .cat-tag{display:inline-block;background:#cc4400;color:#fff;
+  font-size:.74rem;padding:3px 10px;text-transform:uppercase;letter-spacing:.6px;border-radius:2px}
+.r11-bp-hero h1{font-family:Georgia,serif;font-weight:500;font-size:2.3rem;
+  margin:12px auto 8px;max-width:840px;color:#1a1a1a;line-height:1.25}
+.r11-bp-hero .meta{color:#777;font-size:.92rem;margin-top:6px}
+.r11-bp-hero .meta strong{color:#1a1a1a}
+.r11-bp-body{max-width:740px;margin:30px auto;padding:0 20px;
+  font-family:Georgia,serif;font-size:1.08rem;line-height:1.72;color:#222}
+.r11-bp-body p{margin:0 0 16px}
+.r11-bp-body .lead{font-size:1.18rem;color:#444;border-left:4px solid #cc4400;
+  padding-left:18px;margin-bottom:24px;font-style:italic}
+.r11-bp-tags{max-width:740px;margin:24px auto;padding:14px 20px;
+  border-top:1px solid #eee;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.86rem}
+.r11-bp-tags strong{color:#888;text-transform:uppercase;font-size:.78rem;letter-spacing:.6px}
+.r11-bp-tags a{color:#0066cc;text-decoration:none;background:#f3f7ff;padding:3px 10px;border-radius:14px}
+.r11-bp-share{text-align:center;margin:18px auto;font-size:.85rem;color:#666}
+</style>
+<section class="r11-bp-hero">
+  <span class="cat-tag">{{ r11_post.category_name }}</span>
+  <h1>{{ r11_post.title }}</h1>
+  <div class="meta">By <strong>{{ r11_post.author }}</strong> &middot; {{ r11_post.date }} &middot; {{ r11_post.word_count }} words</div>
+</section>
+<div class="r11-bp-body">
+  <p class="lead">{{ r11_post.abstract }}</p>
+  <p>{{ r11_post.title }} &mdash; published on {{ r11_post.date }} by {{ r11_post.author }} for the Wolfram Blog. This post sits in the <strong>{{ r11_post.category_name }}</strong> category alongside other long-form essays and announcements from the Wolfram team.</p>
+  <p>{{ r11_intro }}</p>
+  <p>Continue reading: the full essay walks through the motivation, the underlying Wolfram Language code, and the implications for users of Wolfram|Alpha and Mathematica. Source notebooks are linked from the Wolfram Cloud at the end of the article.</p>
+</div>
+<div class="r11-bp-tags">
+  <strong>Tagged:</strong>
+  <a href="/blog/category/{{ r11_post.category_slug }}">{{ r11_post.category_name }}</a>
+  <a href="/blog">Blog index</a>
+  <a href="#">Author: {{ r11_post.author }}</a>
+</div>
+<div class="r11-bp-share">Subscribe to <a href="#">RSS</a> &middot; <a href="/blog">More posts</a></div>
+<p style="color:#888;font-size:.78rem;text-align:center;margin:18px 0"><code>{{ r11_schema }}</code></p>
+{% endblock %}

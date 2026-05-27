@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Share a Wolfram Cloud Notebook{% endblock %}
+{% block body_class %}page-r11 r11-cloud-share{% endblock %}
+{% block content %}
+<style>
+.r11-cs-wrap{max-width:680px;margin:34px auto;padding:0 20px}
+.r11-cs-wrap h1{font-size:1.55rem;margin:0 0 12px}
+.r11-cs-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:24px;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.r11-cs-link{background:#0066cc;color:#fff;padding:14px 18px;border-radius:6px;
+  font-family:'Courier New',monospace;font-size:.92rem;display:flex;justify-content:space-between;align-items:center}
+.r11-cs-link button{background:#fff;color:#0066cc;border:none;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:.82rem}
+.r11-cs-form{margin-top:16px}
+.r11-cs-form label{display:block;font-size:.85rem;color:#444;margin:8px 0 4px;font-weight:600}
+.r11-cs-form input,.r11-cs-form select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:3px}
+.r11-cs-form button{margin-top:14px;background:#cc4400;color:#fff;border:none;padding:9px 18px;border-radius:3px;cursor:pointer}
+.r11-cs-perms{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.r11-cs-perm{flex:1;min-width:120px;background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:10px;text-align:center;font-size:.86rem}
+.r11-cs-perm strong{display:block;color:#cc4400}
+</style>
+<div class="r11-cs-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <h1>Share notebook</h1>
+  <p style="color:#555">{{ r11_intro }}</p>
+  <div class="r11-cs-card">
+    <div class="r11-cs-link">
+      <span>https://wolframalpha.com{{ r11_share.share_url }}</span>
+      <button type="button">Copy</button>
+    </div>
+    <form class="r11-cs-form" method="post" action="/cloud/share">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Token</label>
+      <input type="text" name="token" value="{{ r11_share.token }}">
+      <label>Audience</label>
+      <select name="audience">
+        <option value="public" {% if r11_share.audience=='public' %}selected{% endif %}>Public (anyone w/ link)</option>
+        <option value="invited" {% if r11_share.audience=='invited' %}selected{% endif %}>Invited only</option>
+        <option value="org" {% if r11_share.audience=='org' %}selected{% endif %}>My organization</option>
+      </select>
+      <button type="submit">Update share link</button>
+    </form>
+    <div class="r11-cs-perms">
+      <div class="r11-cs-perm"><strong>View</strong>anyone w/ link</div>
+      <div class="r11-cs-perm"><strong>Copy</strong>signed-in users</div>
+      <div class="r11-cs-perm"><strong>Edit</strong>only you</div>
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

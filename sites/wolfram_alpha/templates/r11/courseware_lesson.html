@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Lesson {{ r11_lesson.n }} &mdash; {{ r11_lesson.course_name }}{% endblock %}
+{% block body_class %}page-r11 r11-courseware-lesson{% endblock %}
+{% block content %}
+<style>
+.r11-cl-wrap{max-width:1100px;margin:18px auto;padding:0 20px;display:grid;
+  grid-template-columns:1.6fr 1fr;gap:24px}
+@media(max-width:760px){.r11-cl-wrap{grid-template-columns:1fr}}
+.r11-cl-video{background:#000;border-radius:8px;aspect-ratio:16/9;display:flex;
+  align-items:center;justify-content:center;color:#fff;position:relative;overflow:hidden}
+.r11-cl-video::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(ellipse at center,rgba(255,255,255,.08),transparent 70%)}
+.r11-cl-video .play{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.9);
+  display:flex;align-items:center;justify-content:center;color:#cc4400;font-size:2rem;z-index:1}
+.r11-cl-body h1{font-size:1.55rem;margin:14px 0 4px}
+.r11-cl-body .meta{color:#777;font-size:.86rem;margin-bottom:14px}
+.r11-cl-exercise{background:#fafafa;border-left:4px solid #cc4400;padding:14px;border-radius:0 4px 4px 0;margin-top:18px}
+.r11-cl-exercise h3{margin:0 0 6px;color:#cc4400;font-size:1rem}
+.r11-cl-side{background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:16px;height:fit-content}
+.r11-cl-side h3{margin:0 0 8px;font-size:.86rem;text-transform:uppercase;letter-spacing:.5px;color:#555}
+.r11-cl-side ol{padding-left:18px;font-size:.9rem;color:#333}
+.r11-cl-side ol li{margin-bottom:3px}
+.r11-cl-side ol li.current{color:#cc4400;font-weight:600}
+.r11-cl-nav{display:flex;justify-content:space-between;margin-top:14px;border-top:1px solid #eee;padding-top:12px}
+.r11-cl-nav a{color:#0066cc;text-decoration:none;font-size:.9rem}
+</style>
+<div class="r11-cl-wrap">
+  <div>
+    {% include "r11/_partial_breadcrumb.html" %}
+    <div class="r11-cl-video">
+      <span class="play">&#9658;</span>
+    </div>
+    <div class="r11-cl-body">
+      <h1>Lesson {{ r11_lesson.n }} &mdash; {{ r11_lesson.course_name }}</h1>
+      <div class="meta">{{ r11_lesson.video_minutes }} min video &middot; written notes &middot; exercise</div>
+      <p style="color:#333;line-height:1.55">{{ r11_intro }}</p>
+      <div class="r11-cl-exercise">
+        <h3>Exercise {{ r11_lesson.n }}</h3>
+        <p style="margin:0;color:#444">Open the lesson notebook in the Wolfram Cloud and apply the technique shown to a related input. Submit your output before moving to the next lesson.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="r11-cl-side">
+    <h3>Lessons in this course</h3>
+    <ol>
+      {% for i in range(1, r11_lesson.total_lessons + 1) %}
+      <li class="{% if i == r11_lesson.n %}current{% endif %}">
+        {% if i == r11_lesson.n %}{{ i }}. Lesson {{ i }} (current){% else %}
+        <a href="/courseware/{{ r11_lesson.course_slug }}/lesson/{{ i }}" style="color:#333">Lesson {{ i }}</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    <div class="r11-cl-nav">
+      {% if r11_lesson.n > 1 %}<a href="/courseware/{{ r11_lesson.course_slug }}/lesson/{{ r11_lesson.n - 1 }}">&larr; Previous</a>{% else %}<span></span>{% endif %}
+      {% if r11_lesson.n < r11_lesson.total_lessons %}<a href="/courseware/{{ r11_lesson.course_slug }}/lesson/{{ r11_lesson.n + 1 }}">Next &rarr;</a>{% endif %}
+    </div>
+  </aside>
+</div>
+<p style="color:#888;font-size:.78rem;text-align:center;margin:24px 0"><code>{{ r11_schema }}</code></p>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_title }} — Wolfram Research{% endblock %}
+{% block body_class %}page-r11 r11-research-index{% endblock %}
+{% block content %}
+<style>
+.r11-ri-wrap{max-width:920px;margin:24px auto;padding:0 20px;font-family:Georgia,serif}
+.r11-ri-wrap h1{font-weight:500;font-size:2rem;margin:0 0 6px;color:#1a1a1a}
+.r11-ri-sub{color:#666;margin-bottom:24px}
+.r11-ri-paper{background:#fff;border:1px solid #e0e0e0;border-left:5px solid #003366;
+  border-radius:0 4px 4px 0;padding:16px 20px;margin-bottom:14px}
+.r11-ri-paper h3{margin:0 0 4px;font-weight:500;font-size:1.18rem}
+.r11-ri-paper h3 a{color:#003366;text-decoration:none}
+.r11-ri-paper h3 a:hover{text-decoration:underline}
+.r11-ri-paper .by{color:#666;font-style:italic;font-size:.92rem;margin-bottom:6px;font-family:'Helvetica Neue',sans-serif}
+.r11-ri-paper p{margin:6px 0 0;color:#333;font-size:.96rem;line-height:1.55}
+.r11-ri-paper .area{display:inline-block;background:#003366;color:#fff;
+  font-size:.72rem;padding:1px 8px;border-radius:2px;text-transform:uppercase;letter-spacing:.5px;font-family:'Helvetica Neue',sans-serif}
+.r11-ri-meta{font-family:'Helvetica Neue',sans-serif;color:#888;font-size:.82rem;margin-top:24px}
+</style>
+<div class="r11-ri-wrap">
+  <h1>{{ r11_title }}</h1>
+  <p class="r11-ri-sub">{{ r11_intro }} &middot; {{ r11_papers|length }} papers, {{ r11_years_span }}</p>
+  {% for p in r11_papers %}
+  <div class="r11-ri-paper">
+    <span class="area">{{ p.area }}</span>
+    <h3><a href="/research/{{ p.slug }}">{{ p.title }}</a></h3>
+    <div class="by">{{ p.author }} &middot; {{ p.year }}</div>
+    <p>{{ p.abstract }}</p>
+  </div>
+  {% endfor %}
+  <p class="r11-ri-meta"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

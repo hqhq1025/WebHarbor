@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Cloud — Dashboard{% endblock %}
+{% block body_class %}page-r11 r11-cloud-home{% endblock %}
+{% block content %}
+<style>
+.r11-cloud-wrap{max-width:1080px;margin:24px auto;padding:0 20px}
+.r11-cloud-top{background:#0066cc;color:#fff;border-radius:8px;padding:24px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:680px){.r11-cloud-top{grid-template-columns:1fr}}
+.r11-cloud-top h1{grid-column:1/-1;margin:0 0 8px;font-size:1.6rem}
+.r11-cloud-top .quota{background:rgba(255,255,255,.13);padding:12px;border-radius:6px}
+.r11-cloud-top .quota strong{font-size:1.7rem;display:block}
+.r11-cloud-top .quota span{font-size:.8rem;opacity:.85}
+.r11-cloud-layout{display:grid;grid-template-columns:220px 1fr;gap:20px}
+@media(max-width:760px){.r11-cloud-layout{grid-template-columns:1fr}}
+.r11-cloud-side{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:14px}
+.r11-cloud-side h3{margin:0 0 10px;font-size:.86rem;color:#555;text-transform:uppercase;letter-spacing:.5px}
+.r11-cloud-side a{display:block;padding:7px 10px;color:#1a1a1a;text-decoration:none;border-radius:3px;font-size:.92rem}
+.r11-cloud-side a:hover{background:#eef5ff;color:#0066cc}
+.r11-cloud-side a.active{background:#0066cc;color:#fff}
+.r11-cloud-files{background:#fff;border:1px solid #e5e5e5;border-radius:6px}
+.r11-cloud-files table{width:100%;border-collapse:collapse}
+.r11-cloud-files th,.r11-cloud-files td{padding:8px 12px;text-align:left;
+  border-bottom:1px solid #f0f0f0;font-size:.9rem}
+.r11-cloud-files th{background:#fafafa;color:#666;font-weight:500;text-transform:uppercase;font-size:.76rem;letter-spacing:.5px}
+.r11-cloud-files td.icon{width:30px;color:#cc4400}
+</style>
+<div class="r11-cloud-wrap">
+  <div class="r11-cloud-top">
+    <h1>&#9729; Wolfram Cloud</h1>
+    <div class="quota"><strong>{{ r11_cloud.storage_gb_free }} GB</strong><span>storage free</span></div>
+    <div class="quota"><strong>{{ r11_cloud.compute_minutes_free }} min</strong><span>compute / month</span></div>
+    <div class="quota"><strong>{{ r11_cloud.public_notebooks }}</strong><span>public notebooks</span></div>
+  </div>
+  <div class="r11-cloud-layout">
+    <aside class="r11-cloud-side">
+      <h3>Workspace</h3>
+      <a href="/cloud" class="active">All files</a>
+      <a href="/cloud/upload">Upload</a>
+      <a href="/cloud/share">Share</a>
+      <a href="/pub/notebook/introduction-to-machine-learning">Public notebooks</a>
+      <h3 style="margin-top:18px">Plan</h3>
+      <a href="/pro">Upgrade to Pro</a>
+    </aside>
+    <div class="r11-cloud-files">
+      <table>
+        <thead><tr><th></th><th>Name</th><th>Author</th><th>Cells</th></tr></thead>
+        <tbody>
+          {% for nb in r11_cloud_files %}
+          <tr>
+            <td class="icon">&#128209;</td>
+            <td><a href="/pub/notebook/{{ nb.slug }}">{{ nb.title }}</a></td>
+            <td>{{ nb.author }}</td>
+            <td>{{ nb.cells }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

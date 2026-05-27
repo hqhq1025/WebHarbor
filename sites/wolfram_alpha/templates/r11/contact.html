@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Contact Wolfram{% endblock %}
+{% block body_class %}page-r11 r11-contact{% endblock %}
+{% block content %}
+<style>
+.r11-co-wrap{max-width:1000px;margin:24px auto;padding:0 20px;display:grid;grid-template-columns:1.2fr 1fr;gap:24px}
+@media(max-width:760px){.r11-co-wrap{grid-template-columns:1fr}}
+.r11-co-info h1{margin:0 0 14px;font-size:1.8rem;color:#1a1a1a}
+.r11-co-info p{color:#555}
+.r11-co-card{background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:16px;margin-bottom:12px}
+.r11-co-card .label{font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;color:#888}
+.r11-co-card .value{font-size:1.05rem;color:#1a1a1a;margin-top:4px}
+.r11-co-card a{color:#0066cc;text-decoration:none}
+.r11-co-form{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:20px}
+.r11-co-form h2{margin:0 0 12px;font-size:1.2rem}
+.r11-co-form label{display:block;font-size:.84rem;font-weight:600;color:#444;margin:8px 0 4px}
+.r11-co-form input,.r11-co-form textarea,.r11-co-form select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:3px;font-family:inherit;font-size:.94rem}
+.r11-co-form textarea{height:100px;resize:vertical}
+.r11-co-form button{margin-top:14px;background:#cc4400;color:#fff;border:none;padding:10px 22px;border-radius:3px;cursor:pointer;font-size:.95rem}
+.r11-co-sla{margin-top:8px;font-size:.78rem;color:#666}
+</style>
+<div class="r11-co-wrap">
+  <div class="r11-co-info">
+    {% include "r11/_partial_breadcrumb.html" %}
+    <h1>Contact Wolfram Research</h1>
+    <p>{{ r11_intro }}</p>
+    <div class="r11-co-card">
+      <div class="label">Support</div>
+      <div class="value"><a href="mailto:{{ r11_contact.support_email }}">{{ r11_contact.support_email }}</a></div>
+    </div>
+    <div class="r11-co-card">
+      <div class="label">Sales</div>
+      <div class="value"><a href="mailto:{{ r11_contact.sales_email }}">{{ r11_contact.sales_email }}</a></div>
+    </div>
+    <div class="r11-co-card">
+      <div class="label">Phone (US)</div>
+      <div class="value">{{ r11_contact.phone_us }}</div>
+    </div>
+    <div class="r11-co-card">
+      <div class="label">Address</div>
+      <div class="value">{{ r11_contact.address }}</div>
+    </div>
+  </div>
+  <form class="r11-co-form" method="post" action="#">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Send us a message</h2>
+    <label>Your name</label><input type="text" name="name">
+    <label>Email</label><input type="email" name="email">
+    <label>Topic</label>
+    <select name="topic">
+      <option>General</option><option>Sales</option><option>Support</option><option>Press</option>
+    </select>
+    <label>Message</label><textarea name="message"></textarea>
+    <button type="button">Send message</button>
+    <div class="r11-co-sla">We aim to respond within {{ r11_contact.response_sla_hours }} hours.</div>
+  </form>
+</div>
+<p style="color:#888;font-size:.78rem;text-align:center;margin:18px 0"><code>{{ r11_schema }}</code></p>
+{% endblock %}

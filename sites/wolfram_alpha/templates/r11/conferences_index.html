@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Conferences{% endblock %}
+{% block body_class %}page-r11 r11-conferences-index{% endblock %}
+{% block content %}
+<style>
+.r11-ci-wrap{max-width:1040px;margin:24px auto;padding:0 20px}
+.r11-ci-hero{background:linear-gradient(120deg,#cc4400 0%,#3d2b9b 100%);color:#fff;
+  border-radius:10px;padding:30px;text-align:center;margin-bottom:24px}
+.r11-ci-hero h1{margin:0 0 6px;font-size:2rem;font-family:Georgia,serif;font-weight:500}
+.r11-ci-hero p{margin:0;opacity:.92}
+.r11-ci-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.r11-ci-card{background:#fff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .12s}
+.r11-ci-card:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.07)}
+.r11-ci-card .yr-bar{background:#3d2b9b;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline}
+.r11-ci-card .yr-bar .y{font-family:Georgia,serif;font-size:1.6rem;font-weight:600}
+.r11-ci-card .yr-bar .att{font-size:.84rem;opacity:.9}
+.r11-ci-card-body{padding:14px}
+.r11-ci-card h3{margin:0 0 6px;font-size:1.05rem;color:#1a1a1a}
+.r11-ci-card .loc{color:#666;font-size:.86rem;display:flex;align-items:center;gap:4px}
+.r11-ci-card.virtual .yr-bar{background:#0066cc}
+</style>
+<div class="r11-ci-wrap">
+  <div class="r11-ci-hero">
+    <h1>Wolfram Technology Conferences</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-ci-grid">
+    {% for c in r11_conferences %}
+    <a class="r11-ci-card {% if 'Virtual' in c.location %}virtual{% endif %}" href="/conferences/{{ c.slug }}">
+      <div class="yr-bar">
+        <span class="y">{{ c.year }}</span>
+        <span class="att">{{ c.attendees }} attendees</span>
+      </div>
+      <div class="r11-ci-card-body">
+        <h3>{{ c.name }}</h3>
+        <div class="loc">&#128205; {{ c.location }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_entry.name }} — MathWorld{% endblock %}
+{% block body_class %}page-r11 r11-mathworld-entry{% endblock %}
+{% block content %}
+<style>
+.r11-mw-wrap{max-width:880px;margin:24px auto;padding:0 20px;font-family:'Times New Roman',Georgia,serif}
+.r11-mw-bar{background:#1a1a1a;color:#fff;padding:8px 14px;border-radius:3px 3px 0 0;font-family:'Helvetica Neue',sans-serif;font-size:.84rem;display:flex;justify-content:space-between}
+.r11-mw-bar a{color:#fff;text-decoration:none}
+.r11-mw-body{background:#fff;border:1px solid #1a1a1a;border-top:none;border-radius:0 0 3px 3px;padding:24px}
+.r11-mw-body h1{font-size:2.1rem;margin:0 0 4px;color:#003366;font-weight:500;border-bottom:2px solid #003366;padding-bottom:4px}
+.r11-mw-topic{font-family:'Helvetica Neue',sans-serif;font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.r11-mw-formula{background:#fafafa;border:1px solid #e0e0e0;padding:14px;text-align:center;font-size:1.1rem;color:#1a1a1a;margin:16px 0;border-radius:2px}
+.r11-mw-section{margin-bottom:18px}
+.r11-mw-section h2{font-size:1.18rem;color:#003366;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:2px;font-weight:500}
+.r11-mw-section p{margin:6px 0;color:#222;line-height:1.65;font-size:1.02rem}
+.r11-mw-refs{font-family:'Helvetica Neue',sans-serif;font-size:.9rem;color:#444;border-top:2px solid #003366;padding-top:10px;margin-top:18px}
+.r11-mw-refs ol{padding-left:20px}
+.r11-mw-refs li{margin-bottom:4px}
+.r11-mw-cite{background:#fff8e8;border-left:4px solid #d4af37;padding:10px 14px;font-family:'Helvetica Neue',sans-serif;font-size:.84rem;color:#444;margin-top:16px}
+</style>
+<div class="r11-mw-wrap">
+  <div class="r11-mw-bar">
+    <span>&#x1F4D6; MathWorld &raquo; <a href="/mathworld?topic={{ r11_entry.topic }}">{{ r11_entry.topic }}</a></span>
+    <span>{{ r11_entry.word_count }} words</span>
+  </div>
+  <div class="r11-mw-body">
+    <h1>{{ r11_entry.name }}</h1>
+    <div class="r11-mw-topic">{{ r11_entry.topic }}</div>
+    <div class="r11-mw-formula"><em>{{ r11_entry.formula }}</em></div>
+    <div class="r11-mw-section">
+      <h2>Definition</h2>
+      <p>{{ r11_intro }}</p>
+    </div>
+    <div class="r11-mw-section">
+      <h2>Examples</h2>
+      <p>{{ r11_entry.examples }}</p>
+    </div>
+    <div class="r11-mw-section">
+      <h2>Related</h2>
+      <p>{{ r11_entry.related }}</p>
+    </div>
+    <div class="r11-mw-refs">
+      <h2 style="font-family:inherit;font-size:1.05rem;color:#003366;margin:0 0 6px">References</h2>
+      <ol>
+        <li>Weisstein, Eric W. "{{ r11_entry.name }}." From MathWorld &mdash; A Wolfram Web Resource.</li>
+        <li>Wolfram, S. <em>The Wolfram Language</em>. Wolfram Media, Inc.</li>
+        <li>Wolfram Research, Inc. <em>Wolfram|Alpha</em>. Champaign, IL.</li>
+      </ol>
+    </div>
+    <div class="r11-mw-cite">
+      <strong>Cite this entry:</strong> Weisstein, E. W. "{{ r11_entry.name }}." MathWorld, https://mathworld.wolfram.com/{{ r11_entry.slug }}.html
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;font-family:'Helvetica Neue',sans-serif;margin-top:14px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

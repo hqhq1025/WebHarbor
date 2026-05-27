@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_job.title }} — Wolfram{% endblock %}
+{% block body_class %}page-r11 r11-job-detail{% endblock %}
+{% block content %}
+<style>
+.r11-jd-wrap{max-width:900px;margin:24px auto;padding:0 20px}
+.r11-jd-head{background:#fff;border:1px solid #e5e5e5;border-top:5px solid #cc4400;
+  border-radius:0 0 8px 8px;padding:24px}
+.r11-jd-tag{display:inline-block;background:#fff1e6;color:#cc4400;
+  font-size:.76rem;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.6px}
+.r11-jd-head h1{margin:8px 0 6px;font-size:1.85rem;color:#1a1a1a}
+.r11-jd-meta{display:flex;gap:18px;color:#555;font-size:.9rem;flex-wrap:wrap;margin-top:6px}
+.r11-jd-meta strong{color:#1a1a1a}
+.r11-jd-cta{margin-top:14px;display:flex;gap:10px}
+.r11-jd-cta a{background:#cc4400;color:#fff;padding:10px 22px;border-radius:4px;text-decoration:none;font-weight:600}
+.r11-jd-cta .secondary{background:#fff;color:#cc4400;border:1px solid #cc4400}
+.r11-jd-body{display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-top:18px}
+@media(max-width:760px){.r11-jd-body{grid-template-columns:1fr}}
+.r11-jd-section{background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:18px;margin-bottom:14px}
+.r11-jd-section h2{margin:0 0 10px;font-size:1.05rem;color:#cc4400}
+.r11-jd-section ul{margin:0;padding-left:18px;color:#444;line-height:1.6}
+.r11-jd-side{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:16px;height:fit-content}
+.r11-jd-side h3{margin:0 0 8px;font-size:.86rem;text-transform:uppercase;letter-spacing:.5px;color:#666}
+.r11-jd-side .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:.9rem}
+.r11-jd-side .row:last-child{border-bottom:none}
+.r11-jd-side .row strong{color:#1a1a1a}
+</style>
+<div class="r11-jd-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-jd-head">
+    <span class="r11-jd-tag">{{ r11_job.dept }}</span>
+    <h1>{{ r11_job.title }}</h1>
+    <div class="r11-jd-meta">
+      <span>&#128205; <strong>{{ r11_job.location }}</strong></span>
+      <span>&#128176; <strong>{{ r11_job.salary }}</strong></span>
+      <span>&#127970; <strong>{{ r11_job.dept }}</strong></span>
+      <span>&#128206; <strong>{{ r11_job.id }}</strong></span>
+    </div>
+    <div class="r11-jd-cta">
+      <a href="{{ r11_job.apply_url }}">Apply now</a>
+      <a class="secondary" href="#">Save job</a>
+    </div>
+  </div>
+  <div class="r11-jd-body">
+    <div>
+      <div class="r11-jd-section">
+        <h2>Role overview</h2>
+        <p style="color:#333;line-height:1.6">{{ r11_intro }}</p>
+      </div>
+      <div class="r11-jd-section">
+        <h2>What you will do</h2>
+        <ul>
+          <li>Contribute to {{ r11_job.dept }} initiatives across Wolfram products.</li>
+          <li>Collaborate with cross-functional teams on long-running projects.</li>
+          <li>Write Wolfram Language code, tests, and documentation as needed.</li>
+        </ul>
+      </div>
+      <div class="r11-jd-section">
+        <h2>What you bring</h2>
+        <ul>
+          <li>Strong background relevant to the {{ r11_job.dept }} department.</li>
+          <li>Comfortable working in {{ r11_job.location }}.</li>
+          <li>Familiarity with Wolfram Language or the Wolfram tech stack is a plus.</li>
+        </ul>
+      </div>
+    </div>
+    <aside class="r11-jd-side">
+      <h3>Job details</h3>
+      <div class="row"><span>Job ID</span><strong>{{ r11_job.id }}</strong></div>
+      <div class="row"><span>Department</span><strong>{{ r11_job.dept }}</strong></div>
+      <div class="row"><span>Location</span><strong>{{ r11_job.location }}</strong></div>
+      <div class="row"><span>Salary</span><strong>{{ r11_job.salary }}</strong></div>
+      <div class="row"><span>Type</span><strong>Full-time</strong></div>
+      <h3 style="margin-top:14px">Benefits</h3>
+      <div class="row"><span>Health insurance</span><strong>Yes</strong></div>
+      <div class="row"><span>401(k) match</span><strong>4%</strong></div>
+      <div class="row"><span>Relocation</span><strong>Available</strong></div>
+    </aside>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

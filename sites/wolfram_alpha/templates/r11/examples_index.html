@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}WolframAlpha Examples — {{ r11_title }}{% endblock %}
+{% block body_class %}page-r11 r11-examples-index{% endblock %}
+{% block content %}
+<style>
+.r11-ex-hero{background:linear-gradient(135deg,#fff1e6 0%,#ffe5d6 100%);
+  border-bottom:3px solid #cc4400;padding:34px 24px 28px;text-align:center}
+.r11-ex-hero h1{font-size:2.1rem;margin:0 0 8px;color:#1a1a1a}
+.r11-ex-hero p{max-width:680px;margin:0 auto;color:#444;font-size:1.05rem}
+.r11-ex-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:18px;max-width:1080px;margin:28px auto;padding:0 24px}
+.r11-ex-tile{background:#fff;border:1px solid #e5e5e5;border-radius:8px;
+  padding:18px 18px 14px;transition:transform .12s,box-shadow .12s;display:block;text-decoration:none;color:inherit}
+.r11-ex-tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.07);border-color:#cc4400}
+.r11-ex-tile h3{margin:0 0 6px;color:#cc4400;font-size:1.05rem}
+.r11-ex-tile .r11-count{display:inline-block;background:#fff1e6;color:#cc4400;
+  font-size:.78rem;padding:2px 8px;border-radius:10px;margin-bottom:8px}
+.r11-ex-tile p{margin:6px 0 0;color:#555;font-size:.92rem;line-height:1.42}
+</style>
+<section class="r11-ex-hero">
+  <h1>{{ r11_title }}</h1>
+  <p>{{ r11_intro }}</p>
+</section>
+<div class="r11-ex-tiles">
+  {% for s in r11_sections %}
+  <a class="r11-ex-tile" href="/examples/{{ s.slug }}">
+    <span class="r11-count">{{ s.count }} subcategories</span>
+    <h3>{{ s.name }}</h3>
+    <p>{{ s.desc }}</p>
+  </a>
+  {% endfor %}
+</div>
+<p class="r11-meta" style="text-align:center;color:#888;font-size:.82rem">
+  <code>{{ r11_schema }}</code> &middot; snapshot {{ r11_snapshot }}
+</p>
+{% endblock %}

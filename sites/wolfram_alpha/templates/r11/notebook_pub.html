@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_nb.title }} — Wolfram Public Notebook{% endblock %}
+{% block body_class %}page-r11 r11-notebook-pub{% endblock %}
+{% block content %}
+<style>
+.r11-nb-wrap{max-width:920px;margin:24px auto;padding:0 20px;
+  font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+.r11-nb-bar{background:#f3f3f3;border:1px solid #ddd;padding:8px 14px;
+  border-radius:4px;display:flex;justify-content:space-between;align-items:center;
+  font-size:.86rem;margin-bottom:14px}
+.r11-nb-bar .l{color:#444}
+.r11-nb-bar .r{color:#888}
+.r11-nb-title{font-size:1.75rem;font-weight:300;color:#1a1a1a;margin:0 0 4px}
+.r11-nb-author{color:#777;font-size:.92rem;margin-bottom:18px}
+.r11-nb-cells{border:1px solid #e0e0e0;border-radius:4px;overflow:hidden}
+.r11-nb-cell{border-left:3px solid #e0e0e0;padding:10px 14px;background:#fff;border-bottom:1px solid #f0f0f0}
+.r11-nb-cell:last-child{border-bottom:none}
+.r11-nb-cell.in{border-left-color:#cc4400}
+.r11-nb-cell.out{border-left-color:#0066cc;background:#fcfcfc}
+.r11-nb-cell.text{border-left-color:transparent;font-family:Georgia,serif;color:#222;font-size:.96rem;line-height:1.5}
+.r11-nb-marker{font-family:'Courier New',monospace;color:#888;font-size:.78rem;
+  display:inline-block;min-width:60px;vertical-align:top}
+.r11-nb-content{font-family:'Courier New',monospace;font-size:.92rem;color:#1a1a1a;
+  display:inline-block;width:calc(100% - 70px)}
+.r11-nb-cell.out .r11-nb-content{color:#0066cc}
+.r11-nb-foot{margin-top:18px;padding:12px;background:#fafafa;border-radius:4px;
+  font-size:.84rem;color:#555;display:flex;gap:24px;flex-wrap:wrap}
+.r11-nb-foot strong{color:#1a1a1a}
+</style>
+<div class="r11-nb-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-nb-bar">
+    <span class="l">&#128190; Notebook (read-only)</span>
+    <span class="r">{{ r11_nb.cells }} cells &middot; License {{ r11_nb.license }}</span>
+  </div>
+  <h1 class="r11-nb-title">{{ r11_nb.title }}</h1>
+  <div class="r11-nb-author">by <strong>{{ r11_nb.author }}</strong></div>
+  <p style="color:#444;margin-bottom:18px">{{ r11_intro }}</p>
+  <div class="r11-nb-cells">
+    <div class="r11-nb-cell text">This notebook explores: {{ r11_intro }}</div>
+    {% for c in r11_nb_cells %}
+    <div class="r11-nb-cell {{ c.kind }}">
+      <span class="r11-nb-marker">{{ c.label }}</span><span class="r11-nb-content">{{ c.body }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="r11-nb-foot">
+    <span><strong>Language:</strong> {{ r11_nb.language }}</span>
+    <span><strong>Cells:</strong> {{ r11_nb.cells }}</span>
+    <span><strong>Schema:</strong> <code>{{ r11_schema }}</code></span>
+  </div>
+</div>
+{% endblock %}

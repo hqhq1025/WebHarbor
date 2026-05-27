@@ -1,0 +1,14 @@
+{# r11 breadcrumb partial; expects r11_crumbs = list of (label, url|None) #}
+{% if r11_crumbs %}
+<nav class="r11-breadcrumb" aria-label="breadcrumb">
+  <ol>
+    {% for label, url in r11_crumbs %}
+      {% if url and not loop.last %}
+        <li><a href="{{ url }}">{{ label }}</a><span class="r11-bc-sep">/</span></li>
+      {% else %}
+        <li aria-current="page">{{ label }}</li>
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

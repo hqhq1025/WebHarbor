@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_widget.name }} — Wolfram Widget{% endblock %}
+{% block body_class %}page-r11 r11-widget-detail{% endblock %}
+{% block content %}
+<style>
+.r11-wd-wrap{max-width:900px;margin:24px auto;padding:0 20px}
+.r11-wd-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:24px}
+@media(max-width:760px){.r11-wd-grid{grid-template-columns:1fr}}
+.r11-wd-preview{border:1px solid #ddd;border-radius:8px;background:#fafafa;
+  min-height:300px;display:flex;flex-direction:column}
+.r11-wd-iframe-head{background:#f3f3f3;border-bottom:1px solid #ddd;
+  padding:6px 12px;font-size:.78rem;color:#666;display:flex;gap:6px;align-items:center}
+.r11-wd-iframe-head .dot{width:9px;height:9px;border-radius:50%;background:#f96058}
+.r11-wd-iframe-head .dot.y{background:#f8bd46}
+.r11-wd-iframe-head .dot.g{background:#5fcb43}
+.r11-wd-iframe-body{flex:1;padding:24px;font-family:'Courier New',monospace;
+  color:#1a1a1a;background:#fff}
+.r11-wd-iframe-body .row{margin-bottom:10px}
+.r11-wd-iframe-body label{font-size:.75rem;color:#777;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.r11-wd-iframe-body input,.r11-wd-iframe-body button{font-family:inherit;
+  padding:6px 10px;border:1px solid #ccc;border-radius:3px;font-size:.94rem;width:100%}
+.r11-wd-iframe-body button{width:auto;background:#cc4400;color:#fff;border:none;cursor:pointer;margin-top:6px}
+.r11-wd-side h1{margin:0 0 6px;font-size:1.5rem}
+.r11-wd-side .r11-wd-topic{color:#cc4400;font-size:.85rem;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.r11-wd-stats{display:flex;gap:14px;margin:14px 0}
+.r11-wd-stat{flex:1;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;text-align:center}
+.r11-wd-stat strong{display:block;font-size:1.1rem;color:#1a1a1a}
+.r11-wd-stat span{font-size:.74rem;color:#888}
+.r11-wd-embed{background:#1e1e2e;color:#dcdcdc;padding:12px;border-radius:4px;
+  font-family:'Courier New',monospace;font-size:.78rem;line-height:1.45;
+  overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-top:10px}
+.r11-wd-embed-label{font-weight:600;font-size:.85rem;color:#444;margin-top:14px}
+.r11-wd-copy{background:#0066cc;color:#fff;border:none;padding:6px 12px;
+  border-radius:3px;font-size:.8rem;margin-top:6px;cursor:pointer}
+</style>
+<div class="r11-wd-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-wd-grid">
+    <div class="r11-wd-preview">
+      <div class="r11-wd-iframe-head">
+        <span class="dot"></span><span class="dot y"></span><span class="dot g"></span>
+        <span style="margin-left:8px">widget://{{ r11_widget.slug }}</span>
+      </div>
+      <div class="r11-wd-iframe-body">
+        <div class="row"><label>Input</label><input type="text" value="example input" disabled></div>
+        <div class="row"><label>Result</label><input type="text" value="{{ r11_widget.name }} -- live preview" disabled></div>
+        <button type="button">Compute</button>
+      </div>
+    </div>
+    <div class="r11-wd-side">
+      <div class="r11-wd-topic">{{ r11_widget.topic }}</div>
+      <h1>{{ r11_widget.name }}</h1>
+      <p style="color:#555">{{ r11_intro }}</p>
+      <div class="r11-wd-stats">
+        <div class="r11-wd-stat"><strong>{{ r11_widget.installs }}</strong><span>installs</span></div>
+        <div class="r11-wd-stat"><strong>&#9733;{{ r11_widget.rating }}</strong><span>rating</span></div>
+        <div class="r11-wd-stat"><strong>{{ r11_widget.embed_size }}</strong><span>embed</span></div>
+      </div>
+      <div class="r11-wd-embed-label">Embed code</div>
+      <pre class="r11-wd-embed">&lt;script src=&quot;https://wolframalpha.com/widgets/{{ r11_widget.slug }}.js&quot;&gt;&lt;/script&gt;
+&lt;div class=&quot;wa-widget&quot; data-slug=&quot;{{ r11_widget.slug }}&quot;&gt;&lt;/div&gt;</pre>
+      <button class="r11-wd-copy" type="button">Copy embed snippet</button>
+    </div>
+  </div>
+  <p style="color:#999;font-size:.78rem;margin-top:20px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

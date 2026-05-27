@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_conf.name }} — Wolfram Conferences{% endblock %}
+{% block body_class %}page-r11 r11-conference-detail{% endblock %}
+{% block content %}
+<style>
+.r11-cd-wrap{max-width:980px;margin:18px auto;padding:0 20px}
+.r11-cd-hero{background:linear-gradient(120deg,#3d2b9b,#0066cc);color:#fff;border-radius:10px;padding:30px;margin-bottom:18px}
+.r11-cd-hero .year{font-family:Georgia,serif;font-size:3rem;font-weight:600;line-height:1;display:block}
+.r11-cd-hero h1{font-family:Georgia,serif;font-weight:500;font-size:1.7rem;margin:6px 0 8px}
+.r11-cd-hero .info{display:flex;gap:18px;flex-wrap:wrap;font-size:.92rem;opacity:.94}
+.r11-cd-hero .info span{display:inline-flex;align-items:center;gap:4px}
+.r11-cd-grid{display:grid;grid-template-columns:2fr 1fr;gap:24px}
+@media(max-width:760px){.r11-cd-grid{grid-template-columns:1fr}}
+.r11-cd-section{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:18px;margin-bottom:14px}
+.r11-cd-section h2{margin:0 0 10px;font-size:1.15rem;color:#3d2b9b;font-family:Georgia,serif;font-weight:500}
+.r11-cd-tracks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.r11-cd-track{background:#f3f0ff;border:1px solid #d8d2ff;border-radius:5px;padding:10px;font-size:.92rem;color:#3d2b9b;font-weight:500}
+.r11-cd-side{background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:16px;height:fit-content}
+.r11-cd-side h3{margin:0 0 8px;font-size:.86rem;text-transform:uppercase;color:#666;letter-spacing:.5px}
+.r11-cd-side .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:.9rem}
+.r11-cd-side .row:last-child{border-bottom:none}
+.r11-cd-agenda li{margin-bottom:6px;color:#333;font-size:.94rem}
+.r11-cd-cta{display:inline-block;background:#cc4400;color:#fff;padding:9px 20px;border-radius:4px;text-decoration:none;margin-top:10px;font-weight:600}
+</style>
+<div class="r11-cd-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-cd-hero">
+    <span class="year">{{ r11_conf.year }}</span>
+    <h1>{{ r11_conf.name }}</h1>
+    <div class="info">
+      <span>&#128205; {{ r11_conf.location }}</span>
+      <span>&#128101; {{ r11_conf.attendees }} attendees</span>
+      <span>&#127914; 5 tracks</span>
+    </div>
+  </div>
+  <div class="r11-cd-grid">
+    <div>
+      <div class="r11-cd-section">
+        <h2>About this edition</h2>
+        <p style="color:#333;line-height:1.6">{{ r11_intro }}</p>
+        <a class="r11-cd-cta" href="#">Register</a>
+      </div>
+      <div class="r11-cd-section">
+        <h2>Tracks</h2>
+        <div class="r11-cd-tracks">
+          {% for t in r11_tracks %}
+          <div class="r11-cd-track">{{ t }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="r11-cd-section">
+        <h2>Agenda highlights</h2>
+        <ul class="r11-cd-agenda">
+          <li><strong>Day 1 keynote:</strong> Stephen Wolfram on the year's directions</li>
+          <li><strong>Day 2 workshops:</strong> Hands-on Wolfram Language sessions</li>
+          <li><strong>Day 3:</strong> Innovator Awards and One-Liner Competition</li>
+        </ul>
+      </div>
+    </div>
+    <aside class="r11-cd-side">
+      <h3>Details</h3>
+      <div class="row"><span>Year</span><strong>{{ r11_conf.year }}</strong></div>
+      <div class="row"><span>Location</span><strong>{{ r11_conf.location }}</strong></div>
+      <div class="row"><span>Attendees</span><strong>{{ r11_conf.attendees }}</strong></div>
+      <h3 style="margin-top:14px">Speakers</h3>
+      <div class="row"><span>Stephen Wolfram</span><strong>Keynote</strong></div>
+      <div class="row"><span>Conrad Wolfram</span><strong>Strategy</strong></div>
+      <div class="row"><span>Vitaliy Kaurov</span><strong>Research</strong></div>
+    </aside>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:14px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

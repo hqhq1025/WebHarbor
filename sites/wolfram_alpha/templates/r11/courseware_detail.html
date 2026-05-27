@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_course.name }} — Wolfram U{% endblock %}
+{% block body_class %}page-r11 r11-courseware-detail{% endblock %}
+{% block content %}
+<style>
+.r11-cd-wrap{max-width:1000px;margin:24px auto;padding:0 20px}
+.r11-cd-banner{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;
+  background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:24px;margin-bottom:20px}
+@media(max-width:680px){.r11-cd-banner{grid-template-columns:1fr}}
+.r11-cd-cat{color:#0066cc;font-weight:600;text-transform:uppercase;font-size:.78rem;letter-spacing:1px}
+.r11-cd-banner h1{font-size:1.85rem;margin:6px 0 10px;color:#1a1a1a}
+.r11-cd-progress{margin-top:14px;background:#f3f3f3;border-radius:4px;height:12px;overflow:hidden}
+.r11-cd-progress > div{background:#0066cc;height:100%;width:42%;transition:width .3s}
+.r11-cd-stats{background:#fafafa;border-radius:6px;padding:14px}
+.r11-cd-stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted #ddd;font-size:.92rem}
+.r11-cd-stat:last-child{border-bottom:none}
+.r11-cd-stat strong{color:#1a1a1a}
+.r11-cd-stat .v{color:#0066cc;font-weight:600}
+.r11-cd-cta{display:block;margin-top:14px;background:#cc4400;color:#fff;text-align:center;padding:10px;border-radius:4px;text-decoration:none;font-weight:600}
+.r11-cd-lessons{background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:18px}
+.r11-cd-lessons h2{margin:0 0 14px;font-size:1.2rem;color:#1a1a1a}
+.r11-cd-lesson{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.r11-cd-lesson:last-child{border-bottom:none}
+.r11-cd-lesson .num{width:36px;height:36px;background:#0066cc;color:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:600;margin-right:14px;flex-shrink:0}
+.r11-cd-lesson .l-body{flex:1}
+.r11-cd-lesson h4{margin:0;font-size:.96rem;color:#1a1a1a}
+.r11-cd-lesson p{margin:2px 0 0;color:#777;font-size:.82rem}
+.r11-cd-lesson a{color:#0066cc;text-decoration:none;font-size:.85rem}
+</style>
+<div class="r11-cd-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-cd-banner">
+    <div>
+      <div class="r11-cd-cat">{{ r11_course.category }} &middot; {{ r11_course.level }}</div>
+      <h1>{{ r11_course.name }}</h1>
+      <p style="color:#555">{{ r11_intro }}</p>
+      <div style="color:#666;font-size:.85rem;margin-top:4px">Course progress: 42% complete</div>
+      <div class="r11-cd-progress"><div></div></div>
+    </div>
+    <div class="r11-cd-stats">
+      <div class="r11-cd-stat"><strong>Lessons</strong><span class="v">{{ r11_course.lessons }}</span></div>
+      <div class="r11-cd-stat"><strong>Level</strong><span class="v">{{ r11_course.level }}</span></div>
+      <div class="r11-cd-stat"><strong>Certificate</strong><span class="v">Yes</span></div>
+      <div class="r11-cd-stat"><strong>Format</strong><span class="v">Video + Notebook</span></div>
+      <a class="r11-cd-cta" href="/courseware/{{ r11_course.slug }}/lesson/1">Start lesson 1 &rarr;</a>
+    </div>
+  </div>
+  <div class="r11-cd-lessons">
+    <h2>Lesson list ({{ r11_course.lessons }})</h2>
+    {% for n in range(1, r11_course.lessons + 1) %}
+    <div class="r11-cd-lesson">
+      <span class="num">{{ n }}</span>
+      <div class="l-body">
+        <h4>Lesson {{ n }} &mdash; {{ r11_course.name }}</h4>
+        <p>~{{ 9 + (n % 6) }} min video + exercise</p>
+      </div>
+      <a href="/courseware/{{ r11_course.slug }}/lesson/{{ n }}">Open &rarr;</a>
+    </div>
+    {% endfor %}
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:24px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

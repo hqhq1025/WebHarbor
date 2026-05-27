@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_demo.name }} — Wolfram Demonstration{% endblock %}
+{% block body_class %}page-r11 r11-demo-detail{% endblock %}
+{% block content %}
+<style>
+.r11-dd-wrap{max-width:920px;margin:24px auto;padding:0 20px}
+.r11-dd-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+@media(max-width:760px){.r11-dd-grid{grid-template-columns:1fr}}
+.r11-dd-canvas{background:#1e1e2e;border-radius:8px;aspect-ratio:4/3;
+  display:flex;align-items:center;justify-content:center;color:#9ee;
+  font-family:'Courier New',monospace;font-size:1.1rem;text-align:center;padding:20px;
+  position:relative;overflow:hidden}
+.r11-dd-canvas::before{content:"";position:absolute;inset:10px;border:1px dashed rgba(158,238,238,.3);border-radius:5px}
+.r11-dd-info h1{margin:0 0 6px;font-size:1.55rem;color:#1a1a1a}
+.r11-dd-info .topic{color:#cc4400;font-size:.82rem;text-transform:uppercase;letter-spacing:.6px}
+.r11-dd-info p{color:#333;line-height:1.6}
+.r11-dd-controls{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:14px;margin-top:14px}
+.r11-dd-controls h3{margin:0 0 8px;font-size:.94rem}
+.r11-dd-slider{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.88rem;color:#444}
+.r11-dd-slider input{flex:1}
+.r11-dd-stats{margin-top:14px;display:flex;gap:14px;font-size:.84rem}
+.r11-dd-stats div{flex:1;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;text-align:center}
+.r11-dd-stats strong{display:block;color:#1a1a1a;font-size:1.05rem}
+.r11-dd-stats span{color:#888}
+</style>
+<div class="r11-dd-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-dd-grid">
+    <div>
+      <div class="r11-dd-canvas">Interactive: {{ r11_demo.name }}</div>
+      <div class="r11-dd-controls">
+        <h3>Manipulate</h3>
+        <div class="r11-dd-slider"><label>parameter a</label><input type="range" min="0" max="100" value="42" disabled></div>
+        <div class="r11-dd-slider"><label>parameter b</label><input type="range" min="0" max="100" value="68" disabled></div>
+        <div class="r11-dd-slider"><label>resolution</label><input type="range" min="0" max="100" value="50" disabled></div>
+      </div>
+    </div>
+    <div class="r11-dd-info">
+      <div class="topic">{{ r11_demo.topic }}</div>
+      <h1>{{ r11_demo.name }}</h1>
+      <p>{{ r11_intro }}</p>
+      <div class="r11-dd-stats">
+        <div><strong>{{ r11_demo.cdf_size_kb }}KB</strong><span>CDF size</span></div>
+        <div><strong>{{ r11_demo.views }}</strong><span>views</span></div>
+        <div><strong>#{{ r11_demo.did }}</strong><span>id</span></div>
+      </div>
+      <p style="margin-top:14px"><a href="#" style="color:#cc4400">Download CDF</a> &middot; <a href="#" style="color:#0066cc">Source notebook</a></p>
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

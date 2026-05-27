@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Community{% endblock %}
+{% block body_class %}page-r11 r11-community-home{% endblock %}
+{% block content %}
+<style>
+.r11-ch-wrap{max-width:1100px;margin:24px auto;padding:0 20px}
+.r11-ch-hero{background:#fff;border:1px solid #e5e5e5;border-left:6px solid #00a99d;
+  border-radius:6px;padding:18px 24px;margin-bottom:20px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.r11-ch-hero h1{margin:0;color:#1a1a1a}
+.r11-ch-hero .totals{display:flex;gap:18px;font-size:.86rem}
+.r11-ch-hero .totals strong{display:block;font-size:1.3rem;color:#00a99d}
+.r11-ch-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:24px}
+@media(max-width:760px){.r11-ch-grid{grid-template-columns:1fr}}
+.r11-ch-groups{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:16px}
+.r11-ch-groups h2{margin:0 0 12px;font-size:1.05rem}
+.r11-ch-group{display:flex;justify-content:space-between;padding:10px;background:#fff;
+  border:1px solid #eee;border-radius:4px;margin-bottom:8px;text-decoration:none;color:inherit}
+.r11-ch-group:hover{border-color:#00a99d}
+.r11-ch-group h3{margin:0;color:#00a99d;font-size:.96rem}
+.r11-ch-group .m{color:#888;font-size:.82rem}
+.r11-ch-recent{background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:16px}
+.r11-ch-recent h2{margin:0 0 12px;font-size:1.05rem}
+.r11-ch-thread{padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:.92rem}
+.r11-ch-thread:last-child{border-bottom:none}
+.r11-ch-thread a{color:#0066cc;text-decoration:none;display:block;font-weight:500}
+.r11-ch-thread .by{color:#888;font-size:.78rem;margin-top:2px}
+.r11-ch-thread .badge{display:inline-block;background:#fff1e6;color:#cc4400;
+  padding:1px 6px;border-radius:8px;font-size:.7rem;margin-left:6px}
+</style>
+<div class="r11-ch-wrap">
+  <div class="r11-ch-hero">
+    <div>
+      <h1>Wolfram Community</h1>
+      <p style="margin:4px 0 0;color:#666">{{ r11_intro }}</p>
+    </div>
+    <div class="totals">
+      <div><strong>{{ r11_community.groups }}</strong>groups</div>
+      <div><strong>{{ r11_community.topics_indexed }}</strong>topics</div>
+      <div><strong>{{ r11_community.total_members }}</strong>members</div>
+    </div>
+  </div>
+  <div class="r11-ch-grid">
+    <div class="r11-ch-groups">
+      <h2>Browse by group</h2>
+      {% for g in r11_groups %}
+      <a class="r11-ch-group" href="/community/group/{{ g.slug }}">
+        <h3>&#128172; {{ g.name }}</h3>
+        <span class="m">{{ g.members }} members</span>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="r11-ch-recent">
+      <h2>Recent topics</h2>
+      {% for t in r11_recent_topics %}
+      <div class="r11-ch-thread">
+        <a href="/community/topic/{{ t.tid }}">{{ t.title }}<span class="badge">{{ t.replies }} replies</span></a>
+        <div class="by">in {{ t.group_name }} &middot; by {{ t.author }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Wolfram U — Courseware{% endblock %}
+{% block body_class %}page-r11 r11-courseware-index{% endblock %}
+{% block content %}
+<style>
+.r11-cw-wrap{max-width:1100px;margin:24px auto;padding:0 20px}
+.r11-cw-hero{background:linear-gradient(120deg,#0066cc 0%,#3d2b9b 100%);
+  color:#fff;border-radius:10px;padding:28px;margin-bottom:20px}
+.r11-cw-hero h1{margin:0 0 6px;font-size:1.9rem}
+.r11-cw-hero p{margin:0;opacity:.9}
+.r11-cw-filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.r11-cw-chip{background:#fff;border:1px solid #ddd;border-radius:18px;padding:5px 14px;font-size:.84rem;color:#555;cursor:pointer}
+.r11-cw-chip.active{background:#0066cc;color:#fff;border-color:#0066cc}
+.r11-cw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.r11-cw-card{background:#fff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .12s}
+.r11-cw-card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.07)}
+.r11-cw-thumb{height:120px;background:linear-gradient(135deg,#0066cc,#3d2b9b);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-family:Georgia,serif;font-size:1.6rem;text-align:center;padding:14px}
+.r11-cw-body{padding:14px}
+.r11-cw-cat{font-size:.74rem;color:#0066cc;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.r11-cw-card h3{margin:6px 0 8px;font-size:1.02rem;color:#1a1a1a}
+.r11-cw-meta{display:flex;justify-content:space-between;color:#666;font-size:.8rem;border-top:1px solid #eee;padding-top:8px;margin-top:8px}
+.r11-cw-level{padding:1px 6px;border-radius:3px;font-size:.72rem;font-weight:600;text-transform:uppercase}
+.r11-cw-level.beginner{background:#e8f5e8;color:#235c23}
+.r11-cw-level.intermediate{background:#fff4e0;color:#8c5300}
+.r11-cw-level.advanced{background:#ffe5e5;color:#a02020}
+</style>
+<div class="r11-cw-wrap">
+  <div class="r11-cw-hero">
+    <h1>Wolfram U Courseware</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-cw-filters">
+    <span class="r11-cw-chip active">All</span>
+    {% for c in r11_categories %}
+    <span class="r11-cw-chip">{{ c }}</span>
+    {% endfor %}
+  </div>
+  <div class="r11-cw-grid">
+    {% for c in r11_courses %}
+    <a class="r11-cw-card" href="/courseware/{{ c.slug }}">
+      <div class="r11-cw-thumb">{{ c.name }}</div>
+      <div class="r11-cw-body">
+        <div class="r11-cw-cat">{{ c.category }}</div>
+        <h3>{{ c.name }}</h3>
+        <div class="r11-cw-meta">
+          <span>{{ c.lessons }} lessons</span>
+          <span class="r11-cw-level {{ c.level }}">{{ c.level }}</span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:24px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

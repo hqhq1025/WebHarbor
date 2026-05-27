@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Wolfram U Certificate {{ r11_cert.id }}{% endblock %}
+{% block body_class %}page-r11 r11-courseware-cert{% endblock %}
+{% block content %}
+<style>
+.r11-cc-wrap{max-width:780px;margin:30px auto;padding:0 20px}
+.r11-cc-paper{background:#fffdf6;border:14px double #d4af37;border-radius:6px;padding:42px 36px;
+  text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.06);font-family:Georgia,serif}
+.r11-cc-paper .crest{font-size:3rem;color:#cc4400;margin-bottom:14px}
+.r11-cc-paper h1{font-size:1.4rem;letter-spacing:6px;color:#1a1a1a;margin:0 0 4px;text-transform:uppercase}
+.r11-cc-paper .sub{color:#888;font-style:italic;margin-bottom:18px}
+.r11-cc-paper h2{font-size:1.95rem;color:#cc4400;margin:14px 0 6px;font-weight:500}
+.r11-cc-paper .by{color:#444;margin:14px 0}
+.r11-cc-paper .by strong{font-size:1.3rem;color:#1a1a1a;display:block;letter-spacing:1px}
+.r11-cc-paper .course{margin-top:18px;color:#222;font-size:1.05rem}
+.r11-cc-paper .course em{font-style:italic;color:#0066cc}
+.r11-cc-row{display:flex;justify-content:space-between;margin-top:34px;font-size:.86rem;color:#555}
+.r11-cc-row > div{flex:1;text-align:center;border-top:1px solid #999;padding-top:6px;margin:0 8px}
+.r11-cc-row strong{display:block;color:#1a1a1a;margin-bottom:2px}
+.r11-cc-verify{margin-top:18px;background:#f7f7f7;padding:10px;border-radius:4px;font-size:.86rem;color:#555;text-align:center;font-family:'Courier New',monospace}
+</style>
+<div class="r11-cc-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <div class="r11-cc-paper">
+    <div class="crest">&#127942;</div>
+    <h1>Certificate of Completion</h1>
+    <div class="sub">Wolfram U</div>
+    <div class="by">This certifies that<br><strong>{{ r11_cert.awarded_to }}</strong></div>
+    <div class="course">has successfully completed <em>{{ r11_cert.course }}</em></div>
+    <div class="r11-cc-row">
+      <div><strong>{{ r11_cert.issued_date }}</strong>Date issued</div>
+      <div><strong>{{ r11_cert.id }}</strong>Certificate ID</div>
+    </div>
+  </div>
+  <div class="r11-cc-verify">Verify at: wolframalpha.com{{ r11_cert.verification_url }}</div>
+  <p style="color:#888;font-size:.78rem;text-align:center;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

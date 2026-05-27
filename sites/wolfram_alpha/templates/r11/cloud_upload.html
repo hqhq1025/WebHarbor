@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Upload to Wolfram Cloud{% endblock %}
+{% block body_class %}page-r11 r11-cloud-upload{% endblock %}
+{% block content %}
+<style>
+.r11-cu-wrap{max-width:780px;margin:30px auto;padding:0 20px}
+.r11-cu-wrap h1{font-size:1.6rem;margin:0 0 12px}
+.r11-cu-dropzone{border:3px dashed #0066cc;background:#f3f7ff;border-radius:10px;
+  padding:48px 24px;text-align:center;color:#0066cc;margin:20px 0}
+.r11-cu-dropzone .ic{font-size:3rem;display:block;margin-bottom:8px}
+.r11-cu-dropzone h2{font-size:1.1rem;margin:0 0 4px;color:#1a1a1a}
+.r11-cu-dropzone p{color:#666;font-size:.92rem;margin:0}
+.r11-cu-form{background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:20px}
+.r11-cu-form label{display:block;font-size:.84rem;color:#444;margin:8px 0 4px;font-weight:600}
+.r11-cu-form input,.r11-cu-form select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:3px;font-size:.94rem}
+.r11-cu-form button{margin-top:14px;background:#cc4400;color:#fff;border:none;
+  padding:10px 22px;border-radius:3px;cursor:pointer;font-size:.95rem}
+.r11-cu-result{background:#e8f5e8;border:1px solid #8bc88b;border-radius:6px;padding:14px;margin-top:18px;color:#235c23}
+.r11-cu-result code{background:#fff;padding:1px 5px;border-radius:3px}
+</style>
+<div class="r11-cu-wrap">
+  {% include "r11/_partial_breadcrumb.html" %}
+  <h1>Upload to Wolfram Cloud</h1>
+  <p style="color:#555">{{ r11_intro }}</p>
+  <div class="r11-cu-dropzone">
+    <span class="ic">&#x2191;</span>
+    <h2>Drop a notebook here</h2>
+    <p>or click to browse (.nb / .wl / .wlnb)</p>
+  </div>
+  <form class="r11-cu-form" method="post" action="/cloud/upload">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="cu-name">Notebook name</label>
+    <input id="cu-name" type="text" name="name" value="{{ r11_upload.name }}">
+    <label for="cu-vis">Visibility</label>
+    <select id="cu-vis" name="visibility">
+      <option value="private" {% if r11_upload.visibility=='private' %}selected{% endif %}>Private (only me)</option>
+      <option value="shared" {% if r11_upload.visibility=='shared' %}selected{% endif %}>Shared (link-only)</option>
+      <option value="public" {% if r11_upload.visibility=='public' %}selected{% endif %}>Public (indexed)</option>
+    </select>
+    <button type="submit">Upload notebook</button>
+  </form>
+  <div class="r11-cu-result">
+    Uploaded as <code>{{ r11_upload.name }}</code> ({{ r11_upload.visibility }}).
+    Cloud token: <code>{{ r11_upload.cloud_token }}</code>.
+    Public URL: <a href="{{ r11_upload.public_url }}">{{ r11_upload.public_url }}</a>
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

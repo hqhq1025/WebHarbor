@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Demonstrations Project{% endblock %}
+{% block body_class %}page-r11 r11-demos-index{% endblock %}
+{% block content %}
+<style>
+.r11-di-wrap{max-width:1140px;margin:24px auto;padding:0 20px}
+.r11-di-head{text-align:center;margin-bottom:20px}
+.r11-di-head h1{margin:0 0 6px;font-size:1.9rem;color:#1a1a1a}
+.r11-di-head p{color:#666}
+.r11-di-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.r11-di-tile{background:#fff;border:1px solid #e5e5e5;border-radius:6px;
+  overflow:hidden;text-decoration:none;color:inherit;transition:transform .12s}
+.r11-di-tile:hover{transform:scale(1.03);box-shadow:0 4px 14px rgba(0,0,0,.08);z-index:1;position:relative}
+.r11-di-tile .canvas{height:140px;background:#1e1e2e;display:flex;align-items:center;justify-content:center;color:#9ee;font-family:'Courier New',monospace;font-size:.94rem;text-align:center;padding:8px;position:relative}
+.r11-di-tile .canvas::after{content:"";position:absolute;inset:6px;border:1px dashed rgba(158,238,238,.25);border-radius:3px;pointer-events:none}
+.r11-di-tile-body{padding:10px}
+.r11-di-tile h3{margin:0 0 2px;font-size:.92rem;color:#1a1a1a;line-height:1.25}
+.r11-di-tile .topic{font-size:.72rem;color:#cc4400;text-transform:uppercase;letter-spacing:.5px}
+</style>
+<div class="r11-di-wrap">
+  <div class="r11-di-head">
+    <h1>Wolfram Demonstrations Project</h1>
+    <p>{{ r11_intro }}</p>
+  </div>
+  <div class="r11-di-grid">
+    {% for d in r11_demos %}
+    <a class="r11-di-tile" href="/demonstrations/{{ d.did }}">
+      <div class="canvas">{{ d.name }}</div>
+      <div class="r11-di-tile-body">
+        <span class="topic">{{ d.topic }}</span>
+        <h3>{{ d.name }}</h3>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:18px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

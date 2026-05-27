@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ r11_paper.title }} — Wolfram Research{% endblock %}
+{% block body_class %}page-r11 r11-research-paper{% endblock %}
+{% block content %}
+<style>
+.r11-rp-wrap{max-width:780px;margin:24px auto;padding:0 20px;
+  font-family:'Times New Roman',Georgia,serif}
+.r11-rp-head{text-align:center;border-bottom:1px solid #ddd;padding-bottom:18px;margin-bottom:24px}
+.r11-rp-area{color:#003366;font-size:.84rem;text-transform:uppercase;letter-spacing:1.5px;font-family:'Helvetica Neue',sans-serif;margin-bottom:8px}
+.r11-rp-head h1{font-size:1.9rem;margin:0 0 12px;color:#1a1a1a;line-height:1.3;font-weight:500}
+.r11-rp-authors{font-style:italic;color:#444;font-size:1.04rem}
+.r11-rp-aff{color:#666;font-size:.88rem;margin-top:4px;font-family:'Helvetica Neue',sans-serif}
+.r11-rp-abstract{background:#fafafa;border:1px solid #e0e0e0;border-radius:4px;padding:18px;margin-bottom:24px}
+.r11-rp-abstract h2{margin:0 0 8px;font-size:.84rem;text-transform:uppercase;letter-spacing:1px;color:#003366;font-family:'Helvetica Neue',sans-serif;font-weight:600}
+.r11-rp-abstract p{margin:0;color:#222;font-size:1rem;line-height:1.65}
+.r11-rp-section{margin-bottom:22px}
+.r11-rp-section h2{font-size:1.18rem;margin:14px 0 8px;color:#1a1a1a;font-weight:500;border-bottom:1px solid #eee;padding-bottom:3px}
+.r11-rp-section p{color:#222;font-size:1rem;line-height:1.7;margin:0 0 10px}
+.r11-rp-cite{background:#1e1e2e;color:#dcdcdc;font-family:'Courier New',monospace;
+  padding:12px 14px;border-radius:3px;font-size:.84rem;line-height:1.4;white-space:pre-wrap;overflow-x:auto}
+.r11-rp-download{margin:18px 0;display:flex;gap:10px}
+.r11-rp-download a{background:#003366;color:#fff;text-decoration:none;padding:8px 16px;border-radius:3px;font-family:'Helvetica Neue',sans-serif;font-size:.88rem}
+.r11-rp-download .alt{background:#fff;color:#003366;border:1px solid #003366}
+</style>
+<div class="r11-rp-wrap">
+  <div class="r11-rp-head">
+    <div class="r11-rp-area">{{ r11_paper.area }}</div>
+    <h1>{{ r11_paper.title }}</h1>
+    <div class="r11-rp-authors">{{ r11_paper.author }}</div>
+    <div class="r11-rp-aff">Wolfram Research &middot; {{ r11_paper.year }} &middot; {{ r11_paper.pages }} pages</div>
+  </div>
+  <div class="r11-rp-abstract">
+    <h2>Abstract</h2>
+    <p>{{ r11_paper.abstract }}</p>
+  </div>
+  <div class="r11-rp-download">
+    <a href="#">Download PDF</a>
+    <a class="alt" href="#">Get notebook</a>
+    <a class="alt" href="#">Cite (BibTeX)</a>
+  </div>
+  <div class="r11-rp-section">
+    <h2>1. Introduction</h2>
+    <p>{{ r11_intro }}</p>
+    <p>This paper, authored by {{ r11_paper.author }} ({{ r11_paper.year }}), contributes to the {{ r11_paper.area }} literature within the Wolfram Research catalog. The remainder of the paper is organized into background, formal results, computational experiments, and discussion.</p>
+  </div>
+  <div class="r11-rp-section">
+    <h2>BibTeX</h2>
+    <pre class="r11-rp-cite">@article{ {{- r11_paper.slug | replace('-','') -}}_{{ r11_paper.year }},
+  title = { {{- r11_paper.title -}} },
+  author = { {{- r11_paper.author -}} },
+  year = { {{ r11_paper.year }} },
+  publisher = {Wolfram Research}
+}</pre>
+  </div>
+  <p style="color:#888;font-size:.78rem;font-family:'Helvetica Neue',sans-serif"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Wolfram Store{% endblock %}
+{% block body_class %}page-r11 r11-store-index{% endblock %}
+{% block content %}
+<style>
+.r11-si-wrap{max-width:1180px;margin:18px auto;padding:0 20px}
+.r11-si-bar{background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:6px;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.r11-si-bar h1{margin:0;font-size:1.3rem}
+.r11-si-bar .cart{background:#cc4400;color:#fff;padding:6px 14px;border-radius:20px;font-size:.85rem}
+.r11-si-cats{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.r11-si-cats a{padding:6px 14px;background:#fff;border:1px solid #ddd;border-radius:18px;text-decoration:none;color:#555;font-size:.84rem}
+.r11-si-cats a.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.r11-si-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.r11-si-prod{background:#fff;border:1px solid #e5e5e5;border-radius:6px;
+  overflow:hidden;text-decoration:none;color:inherit;transition:transform .12s}
+.r11-si-prod:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.08)}
+.r11-si-prod-img{height:160px;background:linear-gradient(135deg,#f3f3f3 25%,#e8e8e8 25%,#e8e8e8 50%,#f3f3f3 50%,#f3f3f3 75%,#e8e8e8 75%);
+  background-size:24px 24px;display:flex;align-items:center;justify-content:center;color:#1a1a1a;font-family:Georgia,serif;font-size:1.05rem;text-align:center;padding:8px}
+.r11-si-prod-body{padding:12px}
+.r11-si-prod-cat{font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.r11-si-prod h3{margin:4px 0 6px;font-size:.94rem;color:#1a1a1a;min-height:32px}
+.r11-si-prod .price{font-size:1.15rem;color:#cc4400;font-weight:600}
+.r11-si-prod .stock{font-size:.72rem;color:#235c23;background:#e8f5e8;padding:2px 6px;border-radius:3px;display:inline-block}
+</style>
+<div class="r11-si-wrap">
+  <div class="r11-si-bar">
+    <h1>&#128722; Wolfram Store</h1>
+    <div>{{ r11_intro }}</div>
+    <span class="cart">Cart (0)</span>
+  </div>
+  <div class="r11-si-cats">
+    <a href="/store" class="{% if r11_cat_filter=='all' %}active{% endif %}">All</a>
+    {% for c in r11_categories %}
+    <a href="/store?cat={{ c|lower }}" class="{% if r11_cat_filter==c|lower %}active{% endif %}">{{ c }}</a>
+    {% endfor %}
+  </div>
+  <div class="r11-si-grid">
+    {% for p in r11_products %}
+    <a class="r11-si-prod" href="/store/product/{{ p.slug }}">
+      <div class="r11-si-prod-img">{{ p.name }}</div>
+      <div class="r11-si-prod-body">
+        <div class="r11-si-prod-cat">{{ p.category }}</div>
+        <h3>{{ p.name }}</h3>
+        <div class="price">${{ p.price }}</div>
+        <span class="stock">In stock</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  <p style="color:#888;font-size:.78rem;margin-top:24px"><code>{{ r11_schema }}</code></p>
+</div>
+{% endblock %}
