@@ -44,6 +44,38 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
+
+# >>> silent-fail-fix: unauthorized_handler
+@login_manager.unauthorized_handler
+def _unauthorized_silent_fail_fix():
+    """Return JSON 401 for AJAX/JSON requests so fetch().then(r=>r.json())
+    surfaces the auth requirement instead of choking on HTML 302→/login.
+    Falls back to the normal redirect for browser navigations.
+
+    Pairs with the fetch-wrapper in static/js/main.js which detects this and
+    redirects the user to /login. Root cause docs: gotcha #49."""
+    from flask import request, jsonify, redirect, url_for
+    accept = request.headers.get('Accept', '') or ''
+    wants_json = (
+        request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in accept
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
+    next_url = request.full_path if request.query_string else request.path
+    try:
+        login_url = url_for('login', next=next_url)
+    except Exception:
+        login_url = '/login?next=' + next_url
+    if wants_json:
+        return jsonify({
+            'error': 'login_required',
+            'message': 'Sign in to continue.',
+            'redirect': login_url,
+        }), 401
+    return redirect(login_url)
+# <<< silent-fail-fix
+
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
@@ -606,6 +638,24 @@ def product_detail(slug):
 # Routes - Cart
 # ---------------------------------------------------------------------------
 
+def _anon_cart_ensure_ids():
+    """Anon cart items historically lacked stable ids, which made update/remove
+    by id impossible (silent fail). Backfill ids in-place so the bag.html
+    +/- and remove forms (which use item.id) work for anon sessions too."""
+    cart = session.get('cart', [])
+    next_id = max([int(ci.get('id') or 0) for ci in cart] + [0]) + 1
+    dirty = False
+    for ci in cart:
+        if not ci.get('id'):
+            ci['id'] = next_id
+            next_id += 1
+            dirty = True
+    if dirty:
+        session['cart'] = cart
+        session.modified = True
+    return cart
+
+
 @app.route('/bag')
 @app.route('/shop/bag')
 def bag():
@@ -613,7 +663,7 @@ def bag():
         items = CartItem.query.filter_by(user_id=current_user.id).all()
     else:
         items = []
-        for ci in session.get('cart', []):
+        for ci in _anon_cart_ensure_ids():
             product = Product.query.get(ci['product_id'])
             if product:
                 items.append({
@@ -622,6 +672,8 @@ def bag():
                     'quantity': ci['quantity'],
                     'color': ci.get('color', ''),
                     'storage': ci.get('storage', ''),
+                    'memory': ci.get('memory', ''),
+                    'unit_price': ci.get('unit_price'),
                 })
     return render_template('bag.html', items=items)
 
@@ -653,7 +705,7 @@ def cart_add():
         db.session.commit()
         count = CartItem.query.filter_by(user_id=current_user.id).count()
     else:
-        cart = session.get('cart', [])
+        cart = _anon_cart_ensure_ids()
         found = False
         for ci in cart:
             if ci['product_id'] == product_id and ci.get('color') == color and ci.get('storage') == storage:
@@ -661,9 +713,11 @@ def cart_add():
                 found = True
                 break
         if not found:
-            cart.append({'product_id': product_id, 'quantity': quantity, 'color': color, 'storage': storage})
+            next_id = max([int(ci.get('id') or 0) for ci in cart] + [0]) + 1
+            cart.append({'id': next_id, 'product_id': product_id, 'quantity': quantity, 'color': color, 'storage': storage})
         session['cart'] = cart
-        count = len(cart)
+        session.modified = True
+        count = sum(ci.get('quantity', 0) for ci in cart)
 
     return jsonify({'success': True, 'cart_count': count, 'message': f'{product.name} added to bag'})
 
@@ -671,36 +725,65 @@ def cart_add():
 @app.route('/api/cart/update', methods=['POST'])
 @csrf.exempt
 def cart_update():
+    """Update item quantity. Now anon-friendly so the bag.html +/- buttons
+    actually move qty without an undocumented login wall mid-task — same
+    principle as /api/cart/add. Pre-fix this silently returned success=True
+    while doing nothing for anon."""
     data = request.get_json()
     item_id = data.get('item_id')
-    quantity = data.get('quantity', 1)
+    try:
+        item_id_i = int(item_id)
+    except (TypeError, ValueError):
+        item_id_i = None
+    quantity = int(data.get('quantity', 1))
 
     if current_user.is_authenticated:
-        item = CartItem.query.get(item_id)
+        item = CartItem.query.get(item_id_i) if item_id_i is not None else None
         if item and item.user_id == current_user.id:
             if quantity <= 0:
                 db.session.delete(item)
             else:
                 item.quantity = quantity
             db.session.commit()
+    else:
+        cart = _anon_cart_ensure_ids()
+        new_cart = []
+        for ci in cart:
+            if int(ci.get('id') or 0) == item_id_i:
+                if quantity > 0:
+                    ci['quantity'] = quantity
+                    new_cart.append(ci)
+                # qty<=0 -> drop entry
+            else:
+                new_cart.append(ci)
+        session['cart'] = new_cart
+        session.modified = True
     return jsonify({'success': True})
 
 
 @app.route('/api/cart/remove', methods=['POST'])
 @csrf.exempt
 def cart_remove():
+    """Remove item from cart. Anon-friendly: identifies items by their
+    assigned id (was previously enumerating by index, which broke once any
+    earlier item was removed)."""
     data = request.get_json()
     item_id = data.get('item_id')
+    try:
+        item_id_i = int(item_id)
+    except (TypeError, ValueError):
+        item_id_i = None
 
     if current_user.is_authenticated:
-        item = CartItem.query.get(item_id)
+        item = CartItem.query.get(item_id_i) if item_id_i is not None else None
         if item and item.user_id == current_user.id:
             db.session.delete(item)
             db.session.commit()
     else:
-        cart = session.get('cart', [])
-        cart = [ci for i, ci in enumerate(cart) if i != item_id]
+        cart = _anon_cart_ensure_ids()
+        cart = [ci for ci in cart if int(ci.get('id') or 0) != item_id_i]
         session['cart'] = cart
+        session.modified = True
 
     return jsonify({'success': True})
 
@@ -724,58 +807,101 @@ def compute_configured_price(product, storage, memory):
 
 
 @app.route('/cart/add/<int:product_id>', methods=['POST'])
-@login_required
 def cart_add_form(product_id):
-    """Non-AJAX form POST route for add-to-cart (browser agent friendly)."""
+    """Non-AJAX form POST route for add-to-cart (browser agent friendly).
+    Anon-friendly: matches /api/cart/add behavior so a user can fill a bag
+    without a login wall mid-task."""
     product = Product.query.get_or_404(product_id)
     color = request.form.get('color', '')
     storage = request.form.get('storage', '')
     memory = request.form.get('memory', '')
     qty = int(request.form.get('quantity', 1))
     unit_price = compute_configured_price(product, storage, memory)
-    existing = CartItem.query.filter_by(
-        user_id=current_user.id, product_id=product_id,
-        color=color, storage=storage, memory=memory
-    ).first()
-    if existing:
-        existing.quantity += qty
-        existing.unit_price = unit_price
+    if current_user.is_authenticated:
+        existing = CartItem.query.filter_by(
+            user_id=current_user.id, product_id=product_id,
+            color=color, storage=storage, memory=memory
+        ).first()
+        if existing:
+            existing.quantity += qty
+            existing.unit_price = unit_price
+        else:
+            item = CartItem(user_id=current_user.id, product_id=product_id,
+                            quantity=qty, color=color, storage=storage,
+                            memory=memory, unit_price=unit_price)
+            db.session.add(item)
+        db.session.commit()
     else:
-        item = CartItem(user_id=current_user.id, product_id=product_id,
-                        quantity=qty, color=color, storage=storage,
-                        memory=memory, unit_price=unit_price)
-        db.session.add(item)
-    db.session.commit()
+        cart = _anon_cart_ensure_ids()
+        found = False
+        for ci in cart:
+            if (ci['product_id'] == product_id and ci.get('color') == color
+                    and ci.get('storage') == storage and ci.get('memory') == memory):
+                ci['quantity'] += qty
+                ci['unit_price'] = unit_price
+                found = True
+                break
+        if not found:
+            next_id = max([int(ci.get('id') or 0) for ci in cart] + [0]) + 1
+            cart.append({
+                'id': next_id, 'product_id': product_id, 'quantity': qty,
+                'color': color, 'storage': storage, 'memory': memory,
+                'unit_price': unit_price,
+            })
+        session['cart'] = cart
+        session.modified = True
     flash(f'{product.name} added to bag.', 'success')
     return redirect(url_for('bag'))
 
 
 @app.route('/cart/remove/<int:item_id>', methods=['POST'])
-@login_required
 def cart_remove_form(item_id):
-    """Non-AJAX form POST route for remove-from-cart."""
-    item = CartItem.query.get_or_404(item_id)
-    if item.user_id != current_user.id:
-        abort(403)
-    db.session.delete(item)
-    db.session.commit()
+    """Non-AJAX form POST route for remove-from-cart. Anon-friendly."""
+    if current_user.is_authenticated:
+        item = CartItem.query.get_or_404(item_id)
+        if item.user_id != current_user.id:
+            abort(403)
+        db.session.delete(item)
+        db.session.commit()
+    else:
+        cart = _anon_cart_ensure_ids()
+        new_cart = [ci for ci in cart if int(ci.get('id') or 0) != item_id]
+        if len(new_cart) == len(cart):
+            # nothing matched — treat as a 404 for the user view
+            abort(404)
+        session['cart'] = new_cart
+        session.modified = True
     flash('Item removed from bag.', 'info')
     return redirect(url_for('bag'))
 
 
 @app.route('/cart/update/<int:item_id>', methods=['POST'])
-@login_required
 def cart_update_form(item_id):
-    """Non-AJAX form POST route for update-cart-quantity."""
-    item = CartItem.query.get_or_404(item_id)
-    if item.user_id != current_user.id:
-        abort(403)
+    """Non-AJAX form POST route for update-cart-quantity. Anon-friendly so the
+    bag.html +/- buttons (which submit FORM POSTs, not AJAX) actually move qty
+    for guests without bouncing them through /login."""
     qty = int(request.form.get('quantity', 1))
-    if qty <= 0:
-        db.session.delete(item)
+    if current_user.is_authenticated:
+        item = CartItem.query.get_or_404(item_id)
+        if item.user_id != current_user.id:
+            abort(403)
+        if qty <= 0:
+            db.session.delete(item)
+        else:
+            item.quantity = qty
+        db.session.commit()
     else:
-        item.quantity = qty
-    db.session.commit()
+        cart = _anon_cart_ensure_ids()
+        new_cart = []
+        for ci in cart:
+            if int(ci.get('id') or 0) == item_id:
+                if qty > 0:
+                    ci['quantity'] = qty
+                    new_cart.append(ci)
+            else:
+                new_cart.append(ci)
+        session['cart'] = new_cart
+        session.modified = True
     return redirect(url_for('bag'))
 
 
