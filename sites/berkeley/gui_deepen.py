@@ -53,6 +53,102 @@ def library_photo(slug):
 def sport_photo(slug):
     return f"sport_{_det_idx('sp_' + slug, 8):03d}.svg"
 
+
+# ── Real Wikipedia photos (harvested 2026-05-27) ───────────────────────────
+# Each map: slug → static/images/<file>.webp. Files were scraped from
+# Wikipedia REST summary API (see scrape-real-images skill); fallback to the
+# legacy *_photo() SVG only if the slug isn't covered. Replacing the broad
+# SVG-pool placeholders cuts top-image duplication from 20-27 % down to ≤5 %.
+SPORT_REAL_PHOTOS = {
+    "football": "sport-football.webp",
+    "basketball-men": "sport-basketball-men.webp",
+    "basketball-women": "sport-basketball-women.webp",
+    "baseball": "sport-baseball.webp",
+    "softball": "sport-softball.webp",
+    "volleyball": "sport-volleyball.webp",
+    "volleyball-men": "sport-volleyball-men.webp",
+    "soccer-men": "sport-soccer-men.webp",
+    "soccer-women": "sport-soccer-women.webp",
+    "swimming-men": "sport-swimming-men.webp",
+    "swimming-women": "sport-swimming-women.webp",
+    "water-polo-men": "sport-water-polo-men.webp",
+    "water-polo-women": "sport-water-polo-women.webp",
+    "tennis-men": "sport-tennis-men.webp",
+    "tennis-women": "sport-tennis-women.webp",
+    "golf-men": "sport-golf-men.webp",
+    "golf-women": "sport-golf-women.webp",
+    "track-field-men": "sport-track-field-men.webp",
+    "track-field-women": "sport-track-field-women.webp",
+    "cross-country-men": "sport-cross-country-men.webp",
+    "cross-country-women": "sport-cross-country-women.webp",
+    "field-hockey": "sport-field-hockey.webp",
+    "lacrosse": "sport-lacrosse.webp",
+    "rugby-men": "sport-rugby-men.webp",
+    "rugby-women": "sport-rugby-women.webp",
+    "rowing-men": "sport-rowing-men.webp",
+    "rowing-women": "sport-rowing-women.webp",
+    "gymnastics": "sport-gymnastics.webp",
+}
+
+ALUMNI_CHAPTER_REAL_PHOTOS = {
+    "sf-bay-area": "chapter-sf-bay-area.webp",
+    "los-angeles": "chapter-los-angeles.webp",
+    "new-york-city": "chapter-new-york-city.webp",
+    "boston": "chapter-boston.webp",
+    "washington-dc": "chapter-washington-dc.webp",
+    "chicago": "chapter-chicago.webp",
+    "seattle": "chapter-seattle.webp",
+    "portland": "chapter-portland.webp",
+    "san-diego": "chapter-san-diego.webp",
+    "sacramento": "chapter-sacramento.webp",
+    "houston": "chapter-houston.webp",
+    "dallas-fort-worth": "chapter-dallas-fort-worth.webp",
+    "atlanta": "chapter-atlanta.webp",
+    "miami": "chapter-miami.webp",
+    "denver": "chapter-denver.webp",
+    "phoenix": "chapter-phoenix.webp",
+    "tokyo": "chapter-tokyo.webp",
+    "london": "chapter-london.webp",
+    "hong-kong": "chapter-hong-kong.webp",
+    "singapore": "chapter-singapore.webp",
+    "beijing": "chapter-beijing.webp",
+    "mumbai": "chapter-mumbai.webp",
+    "mexico-city": "chapter-mexico-city.webp",
+    "sydney": "chapter-sydney.webp",
+    "paris": "chapter-paris.webp",
+}
+
+GIVING_FUND_REAL_PHOTOS = {
+    "annual-fund": "fund-annual-fund.webp",
+    "undergrad-scholarship": "fund-undergrad-scholarship.webp",
+    "graduate-fellowship": "fund-graduate-fellowship.webp",
+    "first-gen-initiative": "fund-first-gen-initiative.webp",
+    "library-endowment": "fund-library-endowment.webp",
+    "doe-library-restoration": "fund-doe-library-restoration.webp",
+    "climate-equity": "fund-climate-equity.webp",
+    "ai-research": "fund-ai-research.webp",
+    "cancer-research": "fund-cancer-research.webp",
+    "athletics-excellence": "fund-athletics-excellence.webp",
+    "memorial-stadium-endowment": "fund-memorial-stadium-endowment.webp",
+    "cal-performances": "fund-cal-performances.webp",
+    "botanical-garden": "fund-botanical-garden.webp",
+    "public-service-internships": "fund-public-service-internships.webp",
+    "disabled-students-program": "fund-disabled-students-program.webp",
+}
+
+
+def sport_real_photo(slug):
+    return SPORT_REAL_PHOTOS.get(slug) or sport_photo(slug)
+
+
+def chapter_real_photo(slug):
+    return ALUMNI_CHAPTER_REAL_PHOTOS.get(slug) or campus_photo(slug)
+
+
+def fund_real_photo(slug):
+    return GIVING_FUND_REAL_PHOTOS.get(slug) or fund_photo(slug)
+
+
 # Fixed snapshot reference date so seed-time expressions don't drift
 SNAPSHOT_DT = datetime(2026, 5, 1, 9, 0, 0)
 
@@ -597,7 +693,7 @@ def seed_extras():
         s = Sport(name=name, slug=slug, gender=gender, season=season, head_coach=coach,
                   home_venue=venue, roster_size=roster, national_titles=titles,
                   last_season_record=record, next_match=next_m,
-                  banner_photo=sport_photo(slug),
+                  banner_photo=sport_real_photo(slug),
                   description=f"Cal {name} competes in the Pac-12 Conference. Head Coach {coach} leads {roster} student-athletes at {venue}.")
         db.session.add(s)
 
@@ -606,7 +702,7 @@ def seed_extras():
         name, slug, region, country, members, pres, founded, next_e = row
         c = AlumniChapter(name=name, slug=slug, region=region, country=country,
                           members_count=members, president=pres, founded_year=founded,
-                          next_event=next_e, photo=campus_photo(slug),
+                          next_event=next_e, photo=chapter_real_photo(slug),
                           description=f"The {name} chapter brings together {members:,} Berkeley alumni in the region. President {pres} leads a volunteer board of 12 alumni.")
         db.session.add(c)
 
@@ -616,7 +712,7 @@ def seed_extras():
         f = GivingFund(name=name, slug=slug, category=cat, target_amount=target,
                        raised_amount=raised, donor_count=donors, priority=priority,
                        description=desc, impact_statement=impact,
-                       photo=fund_photo(slug))
+                       photo=fund_real_photo(slug))
         db.session.add(f)
 
     # Leadership
