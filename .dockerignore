@@ -26,6 +26,9 @@ build/
 *.log
 .git/
 
+# Agent worktrees / scratch dir — never part of the image.
+.claude/
+
 # Note: sites/*/instance_seed/, static/images/, static/external_cache/ ARE
 # shipped — those are the runtime assets. They live in .gitignore (managed
 # via HF), not here.
