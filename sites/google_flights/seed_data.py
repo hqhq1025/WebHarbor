@@ -771,6 +771,10 @@ def seed_all(db, Airport, Flight):
         from airport_extras import R8_EXTRA_AIRPORTS
     except ImportError:
         R8_EXTRA_AIRPORTS = []
+    try:
+        from airport_extras import R9_EXTRA_AIRPORTS
+    except ImportError:
+        R9_EXTRA_AIRPORTS = []
 
     # 1. Airports
     slug_to_airport_ids = {}
@@ -994,6 +998,41 @@ def seed_all(db, Airport, Flight):
         )
         db.session.add(airport)
         slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R9: append ~1700 OurAirports-sourced airports (medium + large commercial
+    # + heliports + seaplane bases + ~35% sample of small private-jet capable
+    # strips). Pushes catalog from 5550 -> ~7000+ so private-jet / charter /
+    # heliport-pad task families have real airport rows to reference.
+    # Source: ourairports-data/airports.csv (davidmegginson/ourairports-data).
+    # All non-popular so flight catalog stays untouched.
+    for entry in R9_EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
     db.session.commit()
 
     # Build iata -> Airport
@@ -1018,6 +1057,8 @@ def seed_all(db, Airport, Flight):
     for entry in R7_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     for entry in R8_EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
+    for entry in R9_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     today = date.today()
 

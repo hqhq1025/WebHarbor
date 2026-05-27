@@ -2339,6 +2339,263 @@ def course_linkedin_share(slug):
     course = Course.query.filter_by(slug=slug).first_or_404()
     return render_template('linkedin_share.html', course=course)
 
+
+# ─── R9 routes (iter 9/10): Hands-On Labs / Career Academy / Industry Cert / ──
+# AI Tutor / Study Groups / Analytics / Capstone Showcase. Read-only,
+# deterministic — no migrations, byte-id reset stays intact.
+
+def _r9_courses_by_track(track_tag, limit=120):
+    """Return courses tagged with the given R9 track. Deterministic order."""
+    rows = (Course.query.filter(Course.feature_tags.like(f'%"{track_tag}"%'))
+            .order_by(Course.rating.desc(), Course.id.asc()).limit(limit).all())
+    return rows
+
+
+R9_CAREER_ACADEMY_ROLES = [
+    ('software-engineer',  'Software Engineer',   'SWE Career Path',     'Computer Science',          'Software Engineer Academy'),
+    ('product-manager',    'Product Manager',     'PM Career Path',      'Business',                  'Product Manager Academy'),
+    ('ux-designer',        'UX Designer',         'UX Career Path',      'Arts and Humanities',       'UX Designer Academy'),
+    ('data-scientist',     'Data Scientist',      'Data Sci Career',     'Data Science',              'Data Scientist Academy'),
+    ('cloud-architect',    'Cloud Architect',     'Cloud Architect',     'Information Technology',    'Cloud Architect Academy'),
+    ('cybersecurity-analyst','Cybersecurity Analyst','Cyber Analyst Path','Information Technology',   'Cybersecurity Analyst Academy'),
+]
+
+R9_INDUSTRY_CERTS = [
+    ('ibm-2026',       'IBM Industry Certificate 2026',       'ibm'),
+    ('google-2026',    'Google Industry Certificate 2026',    'google'),
+    ('microsoft-2026', 'Microsoft Industry Certificate 2026', 'microsoft'),
+    ('aws-2026',       'AWS Industry Certificate 2026',       'aws'),
+    ('meta-2026',      'Meta Industry Certificate 2026',      'meta'),
+]
+
+
+@app.route('/labs')
+@app.route('/labs/')
+def labs_index():
+    """Coursera Hands-On Labs hub — sandbox-style 2026 lab courses."""
+    courses = _r9_courses_by_track('r9-hands-on-lab', limit=240)
+    return render_template('labs_index.html', courses=courses)
+
+
+@app.route('/labs/<slug>')
+def lab_detail(slug):
+    """Hands-On Lab detail — surfaces sandbox tools + course payload."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    sandbox_url = f'https://cdn.coursera-mirror.local/sandbox/{course.slug}'
+    tools = ['Browser IDE', 'Auto-graded checks', 'Sandbox reset', 'Captioned walkthrough']
+    return render_template('lab_detail.html', course=course,
+                           sandbox_url=sandbox_url, tools=tools)
+
+
+@app.route('/career-academy')
+@app.route('/career-academy/')
+def career_academy_index():
+    """Coursera Career Academy hub — six 2026 role tracks."""
+    role_cards = []
+    for slug, name, primary, category, domain in R9_CAREER_ACADEMY_ROLES:
+        # Count matching courses for the role badge.
+        n = (Course.query.filter(Course.feature_tags.like(
+            '%"r9-career-academy"%')).filter(Course.title.like(f'{domain}%')).count())
+        role_cards.append({'slug': slug, 'name': name, 'primary': primary,
+                           'category': category, 'count': n,
+                           'domain': domain})
+    return render_template('career_academy_index.html', roles=role_cards)
+
+
+@app.route('/career-academy/<role>')
+def career_academy_role(role):
+    match = next((r for r in R9_CAREER_ACADEMY_ROLES if r[0] == role), None)
+    if not match:
+        abort(404)
+    slug, name, primary, category, domain = match
+    rows = (Course.query.filter(Course.feature_tags.like('%"r9-career-academy"%'))
+            .filter(Course.title.like(f'{domain}%'))
+            .order_by(Course.rating.desc(), Course.id.asc()).limit(60).all())
+    return render_template('career_academy_role.html',
+                           role_slug=slug, role_name=name,
+                           primary=primary, category=category,
+                           courses=rows)
+
+
+@app.route('/certificate/verify/<code>')
+def certificate_verify_by_code(code):
+    """Verify a Coursera certificate by code: COUR-<courseid>-<md5slug>.
+    Falls back to lookup by raw integer id when the agent pastes the
+    numeric course-id directly."""
+    code = (code or '').strip().upper()
+    course = None
+    if code.startswith('COUR-'):
+        parts = code.split('-')
+        if len(parts) >= 3 and parts[1].isdigit():
+            cid = int(parts[1])
+            cand = Course.query.get(cid)
+            if cand and hashlib.md5(cand.slug.encode()).hexdigest()[:6].upper() == parts[2]:
+                course = cand
+    elif code.isdigit():
+        course = Course.query.get(int(code))
+    if not course:
+        abort(404)
+    return certificate_verify(course.id)
+
+
+@app.route('/coach/ai-tutor', methods=['GET', 'POST'])
+@csrf.exempt
+def coach_ai_tutor():
+    """Mock Coursera AI Coach (Tutor). GET = form; POST = deterministic
+    canned answer keyed on the question text — no LLM, no clock, byte-id safe."""
+    answer = None
+    question = ''
+    citations = []
+    if request.method == 'POST':
+        question = (request.form.get('question') or '').strip()
+        if question:
+            h = hashlib.sha1(question.lower().encode()).hexdigest()
+            buckets = [
+                "Great question. Start with the Foundations module — the lab sandbox lets you run the exact pipeline without local setup.",
+                "Here's a 3-step plan: (1) skim the syllabus, (2) finish the Hands-On Lab milestone, (3) submit the peer-reviewed capstone.",
+                "Coursera AI Coach suggests pairing this concept with the recommended textbook (see ISBN in the syllabus) for spaced practice.",
+                "Use the auto-graded sandbox to validate your approach, then post your write-up to the course discussion for peer feedback.",
+                "Consider the Industry-Aligned Project track — it maps the skill directly onto a 2026 hiring rubric.",
+            ]
+            answer = buckets[int(h[:2], 16) % len(buckets)]
+            # Cite up to 3 deterministic courses ranked by id stride.
+            stride = max(1, Course.query.count() // 1500)
+            seed = int(h[2:6], 16)
+            ids = [(seed + stride * k) % Course.query.count() + 1 for k in range(3)]
+            citations = [c for c in (Course.query.get(i) for i in ids) if c]
+    return render_template('coach_ai_tutor.html', question=question,
+                           answer=answer, citations=citations)
+
+
+@app.route('/study-group/create', methods=['GET', 'POST'])
+@csrf.exempt
+def study_group_create():
+    """Study group creation page. GET = form; POST = deterministic
+    confirmation. No DB writes (byte-id safe) — only renders confirmation
+    with a stable group code derived from the form payload."""
+    confirmation = None
+    if request.method == 'POST':
+        course_slug = (request.form.get('course_slug') or '').strip()
+        title       = (request.form.get('title') or '').strip()
+        capacity    = (request.form.get('capacity') or '6').strip()
+        meeting     = (request.form.get('meeting_time') or '').strip()
+        course = Course.query.filter_by(slug=course_slug).first()
+        if course and title:
+            payload = f'{course_slug}|{title}|{capacity}|{meeting}'.encode()
+            group_code = 'SG-' + hashlib.md5(payload).hexdigest()[:8].upper()
+            confirmation = dict(group_code=group_code, course=course,
+                                title=title, capacity=capacity,
+                                meeting=meeting)
+    # Surface recent courses to give the form a friendly course picker.
+    sample = (Course.query.filter(Course.feature_tags.like('%"r9-hands-on-lab"%'))
+              .order_by(Course.rating.desc(), Course.id.asc()).limit(12).all())
+    return render_template('study_group_create.html',
+                           confirmation=confirmation, sample=sample)
+
+
+@app.route('/analytics/dashboard')
+def analytics_dashboard():
+    """Per-learner analytics dashboard. Falls back to a deterministic
+    "preview" dataset when not logged in so an agent can land here and
+    still see populated charts."""
+    if current_user.is_authenticated:
+        rows = (Enrollment.query.filter_by(user_id=current_user.id)
+                .order_by(Enrollment.enrolled_at.desc()).all())
+        enrollments = []
+        for e in rows:
+            c = Course.query.get(e.course_id)
+            if c:
+                enrollments.append({'course': c, 'progress': e.progress,
+                                    'enrolled_at': e.enrolled_at})
+        total = len(enrollments)
+        completed = sum(1 for e in enrollments if (e['progress'] or 0) >= 95)
+        in_progress = total - completed
+        hours = round(sum((e['course'].duration_hours or 0) *
+                          ((e['progress'] or 0) / 100.0)
+                          for e in enrollments), 1)
+        preview = False
+    else:
+        enrollments = []
+        sample = (Course.query.filter(Course.is_featured.is_(True))
+                  .order_by(Course.id.asc()).limit(6).all())
+        for k, c in enumerate(sample):
+            enrollments.append({'course': c, 'progress': 25 + (k * 13) % 75,
+                                'enrolled_at': None})
+        total = len(enrollments)
+        completed = sum(1 for e in enrollments if e['progress'] >= 95)
+        in_progress = total - completed
+        hours = round(sum((e['course'].duration_hours or 0) *
+                          (e['progress'] / 100.0) for e in enrollments), 1)
+        preview = True
+    return render_template('analytics_dashboard.html',
+                           enrollments=enrollments, total=total,
+                           completed=completed, in_progress=in_progress,
+                           hours=hours, preview=preview)
+
+
+@app.route('/capstone/showcase')
+def capstone_showcase():
+    """Top capstone projects across the catalog. Deterministic order."""
+    rows = (Course.query.filter(Course.title.like('%Capstone%'))
+            .order_by(Course.rating.desc(), Course.review_count.desc(),
+                      Course.id.asc()).limit(48).all())
+    return render_template('capstone_showcase.html', courses=rows)
+
+
+@app.route('/peer-mentor/match', methods=['GET', 'POST'])
+@csrf.exempt
+def peer_mentor_match():
+    """Peer-mentor matcher. GET = form; POST = deterministic match
+    derived from skill + role. No DB writes."""
+    match = None
+    if request.method == 'POST':
+        skill = (request.form.get('skill') or '').strip()
+        role  = (request.form.get('role') or '').strip()
+        if skill or role:
+            h = hashlib.sha1(f'{skill}|{role}'.lower().encode()).hexdigest()
+            mentor_id = int(h[:4], 16) % 999 + 1
+            mentor_name = f'Mentor #{mentor_id:03d}'
+            # Pick a deterministic course as the mentor's signature class.
+            cnt = Course.query.count()
+            cid = (int(h[4:8], 16) % cnt) + 1
+            sig_course = Course.query.get(cid)
+            match = dict(mentor_id=mentor_id, mentor_name=mentor_name,
+                         skill=skill, role=role,
+                         match_score=80 + int(h[8:10], 16) % 20,
+                         sig_course=sig_course)
+    return render_template('peer_mentor_match.html', match=match)
+
+
+@app.route('/bundle/build', methods=['GET', 'POST'])
+@csrf.exempt
+def bundle_build_personalized():
+    """Personalized bundle builder. Takes a goal + level and returns a
+    deterministic 4-course bundle drawn from the live catalog."""
+    bundle = None
+    goal = ''
+    level = 'Beginner'
+    if request.method == 'POST':
+        goal  = (request.form.get('goal') or '').strip()
+        level = (request.form.get('level') or 'Beginner').strip()
+        if goal:
+            h = hashlib.sha1(f'{goal}|{level}'.lower().encode()).hexdigest()
+            candidates = (Course.query
+                          .filter(Course.level == level)
+                          .order_by(Course.rating.desc(), Course.id.asc())
+                          .limit(2000).all())
+            if candidates:
+                step = max(1, len(candidates) // 4)
+                seed = int(h[:4], 16) % step
+                picks = [candidates[(seed + i * step) % len(candidates)]
+                         for i in range(4)]
+                total_h = round(sum(c.duration_hours or 0 for c in picks), 1)
+                bundle = dict(picks=picks, total_hours=total_h,
+                              code='BNDL-' + h[:6].upper(),
+                              goal=goal, level=level)
+    return render_template('bundle_build.html', bundle=bundle,
+                           goal=goal, level=level)
+
+
 # ─── Seed data ────────────────────────────────────────────────────────────────
 
 CATEGORY_COLORS = {
@@ -4116,6 +4373,20 @@ with app.app_context():
     # courses on the FIRST build.
     from seed_extras import seed_v9 as _seed_v9
     _seed_v9(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R9 polish (iter 9/10): Coursera Hands-On Labs + Career Academies +
+    # Industry Certificates — adds ~3570 deterministic 2026 courses across
+    # 17 lab/academy/cert domains and +10 publisher partners (Coursera Labs,
+    # Coursera Career Academy, AWS Skill Builder, GCP Skills Boost, MS Learn
+    # Sandbox, Red Hat OpenShift Academy, HashiCorp Learn, CompTIA, PMI,
+    # Scrum Alliance). Must run BEFORE seed_testimonials_and_extras so the
+    # testimonials backfill covers v10 courses on the FIRST build.
+    from seed_extras import seed_v10 as _seed_v10
+    _seed_v10(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

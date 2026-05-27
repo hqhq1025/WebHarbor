@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} words ({{ total }}) — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container specialty-index" data-specialty="{{ spec }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('search', q='') }}">Dictionary</a> &raquo;
+    <span>Specialty: {{ label }}</span>
+  </nav>
+  <h1 class="specialty-title">{{ label }} sub-catalog
+    <span class="specialty-count">({{ total }})</span></h1>
+  <p class="specialty-blurb">{{ blurb }}</p>
+  <div class="specialty-meta">
+    <span class="release-tag">R9 catalog</span>
+    <a class="cta" href="/help/cefr-glossary">CEFR levels glossary</a>
+    <a class="cta" href="/vocab-builder">Vocab builder</a>
+    <a class="cta" href="/game/pronunciation-streak">Pronunciation game</a>
+  </div>
+  <ul class="specialty-list">
+    {% for w in words %}
+      <li class="specialty-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}">{{ w.headword }}</a>
+        <span class="pos">{{ w.pos }}</span>
+        {% if w.level %}<span class="cefr cefr-{{ w.level|lower }}" title="CEFR level">{{ w.level }}</span>{% endif %}
+        {% if w.r9_subdomain %}
+          <span class="subdomain">subdomain: {{ w.r9_subdomain }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <div class="pager">
+    {% if page > 1 %}<a href="?page={{ page - 1 }}">&laquo; Previous</a>{% endif %}
+    <span class="page-info">Page {{ page }} of {{ (total // per_page) + 1 }}</span>
+    {% if (page * per_page) < total %}<a href="?page={{ page + 1 }}">Next &raquo;</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

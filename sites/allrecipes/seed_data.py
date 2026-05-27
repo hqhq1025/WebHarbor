@@ -1665,6 +1665,20 @@ def seed_extended_catalog():
         print(f"[seed_extended] R8 polish FAILED: {exc!r}")
         raise
 
+    # ----- R9: 4 ethnic-cuisine regional variant passes (Indian /
+    # MiddleEastern / Caribbean / African) + 4 chef collections (Vikram Singh
+    # / Ayesha Khoury / Marcus Boateng / Lourdes Castillo). Adds ~4700
+    # recipes so the catalog crosses 28000 with broad world-cuisine
+    # coverage. Also seeds 4 new top-level cuisine categories.
+    try:
+        from r9_seed import run_r9_polish
+        r9_counts = run_r9_polish(cat_by_slug)
+        if not r9_counts.get('skipped'):
+            print(f"[seed_extended] R9 polish: {r9_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R9 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

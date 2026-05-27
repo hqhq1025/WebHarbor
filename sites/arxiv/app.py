@@ -3989,6 +3989,324 @@ def help_keyboard():
     return render_template("help_keyboard.html", shortcuts=shortcuts)
 
 
+# -----------------------------------------------------------------------
+# R9 — multi-step submission wizard, endorsement flow, withdraw/replace
+# stubs, ORCID-link API, conference-link API.  All routes are stateless
+# (no DB writes) and derive every nonce/code/identifier deterministically
+# from the input so rebuilds stay byte-identical and replayed tasks always
+# observe the same answer.
+# -----------------------------------------------------------------------
+
+SUBMIT_WIZARD_STEPS = [
+    ("license", "Pick a distribution licence",
+     "Select how others may reuse the paper."),
+    ("metadata", "Title, authors, abstract",
+     "Mandatory fields — the title, author list (in submission order), the abstract, and the primary subject class."),
+    ("files", "Upload the source archive",
+     "LaTeX source plus figures or a single PDF.  Maximum upload size 50 MB."),
+    ("supplementary", "Supplementary material (optional)",
+     "Anc-files such as videos, code, data; max 200 MB total across all anc-files."),
+    ("preview", "Preview & confirm",
+     "Verify the rendered abstract and the parsed metadata before announcement."),
+    ("complete", "Announcement scheduled",
+     "Your paper is queued for the next announcement window (20:00 EST, Mon-Fri)."),
+]
+
+
+@app.route("/submit", methods=["GET"])
+@app.route("/submit/", methods=["GET"])
+def submit_wizard_index():
+    return redirect(url_for("submit_wizard_step", step="license"), code=302)
+
+
+@app.route("/submit/<step>", methods=["GET", "POST"])
+@csrf.exempt
+def submit_wizard_step(step):
+    """Multi-step submission wizard.  Each step renders the current
+    form, links to the next/prev step, and (on POST) returns the next
+    step's URL in the response so an agent can chain through GET-POST-GET
+    without ever mutating server state."""
+    step = (step or "license").strip().lower()
+    known = {s[0] for s in SUBMIT_WIZARD_STEPS}
+    if step not in known:
+        abort(404)
+    order = [s[0] for s in SUBMIT_WIZARD_STEPS]
+    idx = order.index(step)
+    prev_step = order[idx - 1] if idx > 0 else None
+    next_step = order[idx + 1] if idx + 1 < len(order) else None
+    title = dict((s[0], s[1]) for s in SUBMIT_WIZARD_STEPS)[step]
+    blurb = dict((s[0], s[2]) for s in SUBMIT_WIZARD_STEPS)[step]
+    # Deterministic per-step ticket id — useful as a stable answer for
+    # tasks like "submit step 3, report the upload ticket".
+    ticket = "subm-" + hashlib.sha256(
+        ("arxiv-submit-wizard|" + step).encode()
+    ).hexdigest()[:12]
+    submitted = request.method == "POST"
+    return render_template(
+        "submit_wizard.html",
+        step=step, step_index=idx + 1, step_total=len(order),
+        steps=SUBMIT_WIZARD_STEPS, title=title, blurb=blurb,
+        prev_step=prev_step, next_step=next_step,
+        ticket=ticket, submitted=submitted,
+    )
+
+
+def _endorsement_code_for(email, subject_class):
+    seed = "arxiv-endorse|" + (email or "anon").strip().lower() + "|" + (
+        subject_class or "cs").strip().lower()
+    return "END-" + hashlib.sha256(seed.encode()).hexdigest()[:10].upper()
+
+
+@app.route("/endorsements")
+def endorsements_index():
+    """Documentation for the endorsement system."""
+    rules = [
+        ("Submitting to a new subject class for the first time",
+         "Most users need an endorser who has already published 3 papers "
+         "in that class within the last 5 years."),
+        ("Endorser eligibility",
+         "Author of 3+ accepted papers (any subject) and at least one in "
+         "the target class within the trailing five-year window."),
+        ("Validity",
+         "Endorsements stay valid for 5 years from the issue date."),
+        ("Single-paper endorsement",
+         "Some classes (e.g. cs.AI) auto-endorse if a co-author already "
+         "has an active endorsement for that class."),
+    ]
+    classes = ["cs.AI", "cs.CL", "cs.CV", "cs.LG", "cs.RO", "stat.ML",
+               "math.AG", "math.NT", "physics.optics", "quant-ph",
+               "hep-th", "astro-ph.CO"]
+    return render_template("endorsements.html", rules=rules,
+                           classes=classes,
+                           contact="endorsement-help@arxiv.local")
+
+
+@app.route("/endorse-request", methods=["GET", "POST"])
+@csrf.exempt
+def endorse_request():
+    """Form that issues a stable per-(email, class) endorsement code.
+    No DB writes — the code is a function of the inputs."""
+    email = (request.values.get("email") or "").strip().lower()
+    subject = (request.values.get("subject_class") or "").strip()
+    note = (request.values.get("note") or "").strip()[:200]
+    code = _endorsement_code_for(email, subject) if (email and subject) else ""
+    return render_template(
+        "endorse_request.html",
+        email=email, subject_class=subject, note=note, code=code,
+        classes=["cs.AI", "cs.CL", "cs.CV", "cs.LG", "cs.RO", "stat.ML",
+                 "math.AG", "math.NT", "physics.optics", "quant-ph",
+                 "hep-th", "astro-ph.CO"],
+        valid_from=SERVICE_BUILD_TS.strftime("%Y-%m-%d"),
+        valid_until=(SERVICE_BUILD_TS + timedelta(days=365 * 5)
+                     ).strftime("%Y-%m-%d"),
+    )
+
+
+def _withdraw_ticket_for(arxiv_id):
+    return "WDR-" + hashlib.sha256(
+        ("arxiv-withdraw|" + (arxiv_id or "")).encode()
+    ).hexdigest()[:10].upper()
+
+
+@app.route("/withdraw/<arxiv_id>", methods=["GET", "POST"])
+@csrf.exempt
+def withdraw_paper(arxiv_id):
+    """Stub for the paper-withdrawal flow.  GET renders the
+    confirmation form, POST renders the 'request received' page with a
+    stable ticket id."""
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first()
+    if not paper:
+        abort(404)
+    reason = (request.values.get("reason") or "").strip()[:500]
+    submitted = request.method == "POST"
+    ticket = _withdraw_ticket_for(arxiv_id) if submitted else ""
+    review_lag_days = 1  # arxiv business-day SLA
+    return render_template(
+        "withdraw_paper.html",
+        paper=paper, reason=reason, submitted=submitted, ticket=ticket,
+        review_lag_days=review_lag_days,
+        announce_at=(SERVICE_BUILD_TS + timedelta(days=review_lag_days)
+                     ).strftime("%Y-%m-%d"),
+    )
+
+
+def _replace_ticket_for(arxiv_id):
+    return "REPL-" + hashlib.sha256(
+        ("arxiv-replace|" + (arxiv_id or "")).encode()
+    ).hexdigest()[:10].upper()
+
+
+@app.route("/replace/<arxiv_id>", methods=["GET", "POST"])
+@csrf.exempt
+def replace_paper(arxiv_id):
+    """Stub for the paper-version-replacement flow.  GET renders the
+    upload form (filename, summary of changes), POST shows the queued
+    ticket and the next-version id (vN+1)."""
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first()
+    if not paper:
+        abort(404)
+    summary = (request.values.get("summary") or "").strip()[:500]
+    submitted = request.method == "POST"
+    ticket = _replace_ticket_for(arxiv_id) if submitted else ""
+    try:
+        versions = paper.versions if hasattr(paper, "versions") else []
+        if isinstance(versions, list) and versions:
+            cur = versions[-1].get("version", "v1")
+        else:
+            cur = "v1"
+    except Exception:
+        cur = "v1"
+    m = re.match(r"v(\d+)", cur or "v1")
+    next_version = f"v{int(m.group(1)) + 1}" if m else "v2"
+    return render_template(
+        "replace_paper.html",
+        paper=paper, summary=summary, submitted=submitted, ticket=ticket,
+        current_version=cur, next_version=next_version,
+        announce_at=(SERVICE_BUILD_TS + timedelta(days=1)
+                     ).strftime("%Y-%m-%d"),
+    )
+
+
+@app.route("/api/orcid/link", methods=["GET", "POST"])
+@csrf.exempt
+def api_orcid_link():
+    """Deterministic ORCID-resolution stub.
+
+    Returns JSON describing the link state for a given (email, orcid)
+    pair.  The 'verified' flag is a function of the inputs so the same
+    request always returns the same answer."""
+    email = (request.values.get("email") or "").strip().lower()
+    orcid_id = (request.values.get("orcid") or "").strip()
+    if not orcid_id:
+        seed = hashlib.sha256(("orcid|" + (email or "anon")).encode()).hexdigest()
+        digits = re.sub(r"\D", "", seed)[:16].ljust(16, "0")
+        orcid_id = f"{digits[:4]}-{digits[4:8]}-{digits[8:12]}-{digits[12:16]}"
+    verified = bool(re.match(r"^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$", orcid_id))
+    link_token = "orcid_link_" + hashlib.sha256(
+        ("arxiv-orcid|" + email + "|" + orcid_id).encode()
+    ).hexdigest()[:24]
+    return jsonify({
+        "email": email,
+        "orcid": orcid_id,
+        "verified": verified,
+        "link_token": link_token,
+        "linked_at": SERVICE_BUILD_TS.strftime("%Y-%m-%dT00:00:00Z"),
+        "profile_url": "https://orcid.org/" + orcid_id,
+    })
+
+
+# Static directory of major venues — keeps /api/conference/<conf> stable
+# and lets agents discover venue keys from /conferences.
+CONFERENCE_DIRECTORY = {
+    "neurips":   {"name": "NeurIPS", "field": "Machine Learning",
+                  "primary_subject": "cs.LG",
+                  "url": "https://neurips.cc/",
+                  "deadline_month": "May", "notification_month": "September"},
+    "icml":      {"name": "ICML", "field": "Machine Learning",
+                  "primary_subject": "cs.LG",
+                  "url": "https://icml.cc/",
+                  "deadline_month": "January", "notification_month": "May"},
+    "iclr":      {"name": "ICLR", "field": "Representation Learning",
+                  "primary_subject": "cs.LG",
+                  "url": "https://iclr.cc/",
+                  "deadline_month": "September", "notification_month": "January"},
+    "cvpr":      {"name": "CVPR", "field": "Computer Vision",
+                  "primary_subject": "cs.CV",
+                  "url": "https://cvpr.thecvf.com/",
+                  "deadline_month": "November", "notification_month": "March"},
+    "iccv":      {"name": "ICCV", "field": "Computer Vision",
+                  "primary_subject": "cs.CV",
+                  "url": "https://iccv.thecvf.com/",
+                  "deadline_month": "March", "notification_month": "July"},
+    "eccv":      {"name": "ECCV", "field": "Computer Vision",
+                  "primary_subject": "cs.CV",
+                  "url": "https://eccv.ecva.net/",
+                  "deadline_month": "March", "notification_month": "July"},
+    "acl":       {"name": "ACL", "field": "Computational Linguistics",
+                  "primary_subject": "cs.CL",
+                  "url": "https://www.aclweb.org/",
+                  "deadline_month": "February", "notification_month": "May"},
+    "emnlp":     {"name": "EMNLP", "field": "Empirical NLP",
+                  "primary_subject": "cs.CL",
+                  "url": "https://www.emnlp.org/",
+                  "deadline_month": "June", "notification_month": "October"},
+    "naacl":     {"name": "NAACL", "field": "NLP — North-American chapter",
+                  "primary_subject": "cs.CL",
+                  "url": "https://www.naacl.org/",
+                  "deadline_month": "December", "notification_month": "March"},
+    "aaai":      {"name": "AAAI", "field": "Artificial Intelligence",
+                  "primary_subject": "cs.AI",
+                  "url": "https://aaai.org/",
+                  "deadline_month": "August", "notification_month": "December"},
+    "ijcai":     {"name": "IJCAI", "field": "Artificial Intelligence",
+                  "primary_subject": "cs.AI",
+                  "url": "https://www.ijcai.org/",
+                  "deadline_month": "January", "notification_month": "April"},
+    "kdd":       {"name": "KDD", "field": "Data Mining",
+                  "primary_subject": "cs.LG",
+                  "url": "https://www.kdd.org/",
+                  "deadline_month": "February", "notification_month": "May"},
+    "www":       {"name": "TheWebConf (WWW)", "field": "Web & Information Retrieval",
+                  "primary_subject": "cs.IR",
+                  "url": "https://www2024.thewebconf.org/",
+                  "deadline_month": "October", "notification_month": "January"},
+    "sigir":     {"name": "SIGIR", "field": "Information Retrieval",
+                  "primary_subject": "cs.IR",
+                  "url": "https://sigir.org/",
+                  "deadline_month": "January", "notification_month": "April"},
+    "uist":      {"name": "UIST", "field": "Human-Computer Interaction",
+                  "primary_subject": "cs.HC",
+                  "url": "https://uist.acm.org/",
+                  "deadline_month": "April", "notification_month": "July"},
+    "chi":       {"name": "CHI", "field": "Human-Computer Interaction",
+                  "primary_subject": "cs.HC",
+                  "url": "https://chi.acm.org/",
+                  "deadline_month": "September", "notification_month": "December"},
+}
+
+
+@app.route("/api/conference/<conf>")
+def api_conference(conf):
+    """Lookup metadata for a known venue + sample related papers from
+    the corpus (matched by primary_subject_code)."""
+    key = (conf or "").strip().lower()
+    info = CONFERENCE_DIRECTORY.get(key)
+    if not info:
+        return jsonify({
+            "conference": key, "found": False,
+            "known_conferences": sorted(CONFERENCE_DIRECTORY),
+        }), 404
+    subj = info["primary_subject"]
+    sample_q = (
+        Paper.query
+        .filter(Paper.primary_subject_code == subj)
+        .order_by(Paper.arxiv_id.asc())
+        .limit(5)
+    )
+    samples = [{"arxiv_id": p.arxiv_id, "title": p.title} for p in sample_q]
+    return jsonify({
+        "conference": key, "found": True,
+        "name": info["name"], "field": info["field"],
+        "primary_subject": subj,
+        "deadline_month": info["deadline_month"],
+        "notification_month": info["notification_month"],
+        "homepage": info["url"],
+        "sample_papers": samples,
+        "build_date": SERVICE_BUILD_TS.strftime("%Y-%m-%d"),
+    })
+
+
+@app.route("/conferences")
+def conferences_index():
+    """HTML directory of every conference /api/conference/<conf> knows."""
+    rows = sorted(
+        [(k, v["name"], v["field"], v["primary_subject"])
+         for k, v in CONFERENCE_DIRECTORY.items()],
+        key=lambda r: r[0],
+    )
+    return render_template("conferences.html", rows=rows)
+
+
 # =======================================================================
 # =======================================================================
 # BENCHMARK SEED DATA

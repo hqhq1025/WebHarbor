@@ -4437,6 +4437,351 @@ def r8_api_regional_eta():
 
 
 # ---------------------------------------------------------------------------
+# R9 — AppleSeed beta + Developer Program + App-Review + Music share +
+#      Maps feedback + Trade-In mail-in + new multi-step composition.
+# All routes are deterministic (no DB writes) so byte-identical reset holds.
+# ---------------------------------------------------------------------------
+
+R9_DEV_TIERS = [
+    ('individual',   'Individual',      99.0,  'Solo developer membership. Publish apps under your own name.'),
+    ('organization', 'Organization',    99.0,  'Team membership. Publish under your company DUNS-verified name.'),
+    ('enterprise',   'Enterprise',      299.0, 'In-house distribution for 100+ employee organizations.'),
+    ('education',    'Education',         0.0, 'Free for accredited educational institutions and faculty.'),
+    ('safari',       'Safari Extensions', 99.0, 'Distribute Safari Web Extensions on the App Store.'),
+    ('mfi',          'MFi Program',     499.0, 'Made for iPhone/iPad/Mac hardware accessory certification.'),
+]
+R9_DEV_TIERS_BY_SLUG = {t[0]: t for t in R9_DEV_TIERS}
+
+R9_APPLESEED_OSES = ['ios', 'ipados', 'macos', 'watchos', 'tvos', 'visionos', 'homepod']
+R9_APPLESEED_CHANNELS = ['public-beta', 'developer-beta', 'customer-seed']
+
+R9_APP_REVIEW_STATES = [
+    'Waiting for Review', 'In Review', 'Pending Developer Release',
+    'Ready for Sale', 'Rejected', 'Metadata Rejected',
+    'Developer Action Needed', 'Pending Contract', 'Processing for App Store',
+]
+
+R9_MAPS_FEEDBACK_CATEGORIES = [
+    'missing_place', 'wrong_name', 'wrong_hours', 'wrong_address',
+    'closed_permanently', 'duplicate', 'navigation_error',
+    'search_error', 'lookaround_error', 'transit_error',
+    'wrong_category', 'wrong_phone',
+]
+
+R9_TRADEIN_MAILIN_CARRIERS = ['UPS', 'FedEx', 'USPS']
+R9_TRADEIN_MAILIN_CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'broken']
+R9_TRADEIN_MAILIN_BASE_VALUES = {
+    'iphone':  450.0, 'mac':       700.0, 'macbook': 700.0,
+    'ipad':    300.0, 'watch':     120.0, 'airpods':   45.0,
+    'homepod':  80.0, 'vision':   2000.0, 'tv':        30.0,
+}
+
+
+def _r9_hash_int(seed, nbytes=4):
+    import hashlib
+    return int.from_bytes(hashlib.md5(seed.encode()).digest()[:nbytes], 'big')
+
+
+def _r9_hash_hex(seed, n=10):
+    import hashlib
+    return hashlib.md5(seed.encode()).hexdigest()[:n].upper()
+
+
+@app.route('/developer/program')
+def r9_developer_program():
+    """Apple Developer Program — overview + tier list."""
+    return render_template(
+        'r9_developer_program.html', tiers=R9_DEV_TIERS,
+        reference_date=MIRROR_REFERENCE_DATE.date().isoformat(),
+    )
+
+
+@app.route('/developer/program/enroll', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_developer_program_enroll():
+    """Enroll / renew an Apple Developer Program membership.
+
+    Deterministic — enrollment_id derives from MD5(email|tier). Idempotent
+    POSTs with the same payload return the same enrollment_id.
+    """
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        email = (body.get('email') or '').strip().lower()
+        tier = (body.get('tier') or 'individual').strip().lower()
+        if not email or '@' not in email or '.' not in email.split('@')[-1]:
+            return jsonify({'ok': False, 'error': 'invalid_email'}), 400
+        if tier not in R9_DEV_TIERS_BY_SLUG:
+            return jsonify({'ok': False, 'error': 'invalid_tier',
+                            'valid': list(R9_DEV_TIERS_BY_SLUG.keys())}), 400
+        slug, label, fee, blurb = R9_DEV_TIERS_BY_SLUG[tier]
+        enrollment_id = 'ADP-' + _r9_hash_hex(f'{email}|{tier}')
+        renews = (MIRROR_REFERENCE_DATE + timedelta(days=365)).date().isoformat()
+        return jsonify({
+            'ok': True,
+            'enrolled': True,
+            'enrollment_id': enrollment_id,
+            'tier': tier, 'tier_label': label,
+            'annual_fee_usd': fee,
+            'email': email,
+            'enrolled_on': MIRROR_REFERENCE_DATE.date().isoformat(),
+            'renews_on': renews,
+            'membership_blurb': blurb,
+            'next_steps_url': '/developer/program',
+        })
+    return render_template(
+        'r9_developer_enroll.html', tiers=R9_DEV_TIERS,
+        reference_date=MIRROR_REFERENCE_DATE.date().isoformat(),
+    )
+
+
+@app.route('/developer/app-review/status', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_developer_app_review_status():
+    """Look up App Review status by submission_id. Deterministic state derived
+    from MD5(submission_id) so multi-step agents converge on a stable answer.
+    """
+    body = request.get_json(silent=True) or request.form
+    sid = (request.args.get('submission_id')
+           or body.get('submission_id') or '').strip()
+    if not sid:
+        return jsonify({'ok': False, 'error': 'missing_submission_id'}), 400
+    h = _r9_hash_int(sid)
+    state = R9_APP_REVIEW_STATES[h % len(R9_APP_REVIEW_STATES)]
+    eta_days = (h % 7) + 1
+    reviewer_id = 'REV-' + _r9_hash_hex(sid, 8)
+    return jsonify({
+        'ok': True,
+        'submission_id': sid,
+        'status': state,
+        'eta_days': eta_days,
+        'reviewer_id': reviewer_id,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        'submitted_on': (MIRROR_REFERENCE_DATE - timedelta(days=(h % 14) + 1)).date().isoformat(),
+        'priority_review_eligible': (h % 5 == 0),
+        'support_url': '/support/article/app-review-guidelines',
+    })
+
+
+@app.route('/appleseed-beta', methods=['GET', 'POST'])
+@app.route('/appleseed-beta/', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_appleseed_beta():
+    """AppleSeed program enrollment for public/dev/customer beta seeds.
+
+    POST {email, os, channel?} → deterministic enrollment_id.
+    Returns the configuration-profile URL the device must install to receive
+    over-the-air beta builds.
+    """
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        email = (body.get('email') or '').strip().lower()
+        os_name = (body.get('os') or 'ios').strip().lower()
+        channel = (body.get('channel') or 'public-beta').strip().lower()
+        if not email or '@' not in email:
+            return jsonify({'ok': False, 'error': 'invalid_email'}), 400
+        if os_name not in R9_APPLESEED_OSES:
+            return jsonify({'ok': False, 'error': 'invalid_os',
+                            'valid': R9_APPLESEED_OSES}), 400
+        if channel not in R9_APPLESEED_CHANNELS:
+            return jsonify({'ok': False, 'error': 'invalid_channel',
+                            'valid': R9_APPLESEED_CHANNELS}), 400
+        seed = f'{email}|{os_name}|{channel}'
+        enrollment_id = 'SEED-' + _r9_hash_hex(seed)
+        h = _r9_hash_int(seed)
+        return jsonify({
+            'ok': True,
+            'enrolled': True,
+            'enrollment_id': enrollment_id,
+            'email': email, 'os': os_name, 'channel': channel,
+            'profile_url': f'/appleseed-beta/profile/{enrollment_id}.mobileconfig',
+            'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+            'next_build_eta_days': (h % 5) + 1,
+            'feedback_url': '/appleseed-beta/feedback',
+            'agreed_to_nda': True,
+        })
+    return render_template(
+        'r9_appleseed_beta.html',
+        oses=R9_APPLESEED_OSES, channels=R9_APPLESEED_CHANNELS,
+        reference_date=MIRROR_REFERENCE_DATE.date().isoformat(),
+    )
+
+
+@app.route('/music/share/<playlist>', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_music_share(playlist):
+    """Generate a deterministic share link for an Apple Music playlist.
+
+    Same (playlist, channel) → same share_id, so reset-byte-identity is
+    preserved (no DB writes here).
+    """
+    body = request.get_json(silent=True) or request.form if request.method == 'POST' else {}
+    channel = (request.args.get('channel') or body.get('channel') or 'link').strip().lower()
+    if channel not in ('link', 'messages', 'mail', 'twitter', 'instagram', 'facebook', 'qr'):
+        return jsonify({'ok': False, 'error': 'invalid_channel',
+                        'valid': ['link','messages','mail','twitter','instagram','facebook','qr']}), 400
+    if not playlist:
+        return jsonify({'ok': False, 'error': 'missing_playlist'}), 400
+    seed = f'{playlist}|{channel}'
+    share_id = _r9_hash_hex(seed, 12)
+    short = _r9_hash_hex(playlist, 6).lower()
+    return jsonify({
+        'ok': True,
+        'playlist': playlist,
+        'channel': channel,
+        'share_id': share_id,
+        'short_url': f'https://music.apple.com/u/p/{short}',
+        'apple_music_url': f'https://music.apple.com/playlist/{playlist}',
+        'qr_url': f'/music/share/{playlist}/qr.png',
+        'shared_on': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/maps/feedback', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_maps_feedback():
+    """Submit Apple Maps feedback. Deterministic feedback_id per (location,
+    category, comment-hash) so retries are idempotent.
+    """
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        location = (body.get('location') or '').strip()
+        category = (body.get('category') or '').strip().lower()
+        comment = (body.get('comment') or '').strip()
+        if not location:
+            return jsonify({'ok': False, 'error': 'missing_location'}), 400
+        if category not in R9_MAPS_FEEDBACK_CATEGORIES:
+            return jsonify({'ok': False, 'error': 'invalid_category',
+                            'valid': R9_MAPS_FEEDBACK_CATEGORIES}), 400
+        seed = f'{location}|{category}|{comment}'
+        feedback_id = 'MAP-' + _r9_hash_hex(seed)
+        h = _r9_hash_int(seed)
+        return jsonify({
+            'ok': True,
+            'feedback_id': feedback_id,
+            'location': location,
+            'category': category,
+            'received_on': MIRROR_REFERENCE_DATE.date().isoformat(),
+            'eta_days': (h % 14) + 1,
+            'priority': 'high' if category in ('closed_permanently','navigation_error') else 'normal',
+            'follow_up_url': f'/maps/feedback/{feedback_id}',
+            'thanks_message': 'Thanks — your feedback helps make Apple Maps better.',
+        })
+    return render_template(
+        'r9_maps_feedback.html', categories=R9_MAPS_FEEDBACK_CATEGORIES,
+        reference_date=MIRROR_REFERENCE_DATE.date().isoformat(),
+    )
+
+
+@app.route('/trade-in/mail-in', methods=['GET', 'POST'])
+@app.route('/trade-in/mail-in/', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_trade_in_mail_in():
+    """Mail-in trade-in flow. POST {device, condition, zip, carrier?} returns
+    a deterministic kit_id, expected credit, and pre-paid label number.
+    """
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        device = (body.get('device') or '').strip()
+        condition = (body.get('condition') or 'good').strip().lower()
+        zip_code = (body.get('zip') or '').strip()
+        carrier = (body.get('carrier') or 'UPS').strip().upper()
+        if not device:
+            return jsonify({'ok': False, 'error': 'missing_device'}), 400
+        if not zip_code or len(zip_code) < 5 or not zip_code[:5].isdigit():
+            return jsonify({'ok': False, 'error': 'invalid_zip'}), 400
+        if condition not in R9_TRADEIN_MAILIN_CONDITIONS:
+            return jsonify({'ok': False, 'error': 'invalid_condition',
+                            'valid': R9_TRADEIN_MAILIN_CONDITIONS}), 400
+        if carrier not in R9_TRADEIN_MAILIN_CARRIERS:
+            return jsonify({'ok': False, 'error': 'invalid_carrier',
+                            'valid': R9_TRADEIN_MAILIN_CARRIERS}), 400
+        # Device family lookup for base value.
+        d_lower = device.lower()
+        family = 'iphone'
+        for k in R9_TRADEIN_MAILIN_BASE_VALUES:
+            if k in d_lower:
+                family = k
+                break
+        base = R9_TRADEIN_MAILIN_BASE_VALUES[family]
+        cond_mult = {'excellent': 1.05, 'good': 0.85,
+                     'fair': 0.60, 'poor': 0.35, 'broken': 0.15}[condition]
+        # Tiny deterministic per-device-spec jitter via MD5.
+        h = _r9_hash_int(f'{device}|{condition}|{zip_code}')
+        jitter = (h % 100) / 100.0  # 0..0.99
+        credit = round(base * cond_mult + jitter, 2)
+        kit_id = 'KIT-' + _r9_hash_hex(f'{device}|{condition}|{zip_code}|{carrier}')
+        label_no = '1Z' + _r9_hash_hex(kit_id, 12)
+        return jsonify({
+            'ok': True,
+            'kit_id': kit_id,
+            'device': device,
+            'device_family': family,
+            'condition': condition,
+            'zip': zip_code,
+            'carrier': carrier,
+            'estimated_credit_usd': credit,
+            'kit_arrives_in_days': (h % 3) + 2,
+            'return_label_number': label_no,
+            'instructions_url': '/support/article/apple-trade-in',
+            'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        })
+    return render_template(
+        'r9_trade_in_mail_in.html',
+        conditions=R9_TRADEIN_MAILIN_CONDITIONS,
+        carriers=R9_TRADEIN_MAILIN_CARRIERS,
+        reference_date=MIRROR_REFERENCE_DATE.date().isoformat(),
+    )
+
+
+@app.route('/api/r9/multi-step', methods=['GET', 'POST'])
+@csrf.exempt
+def r9_api_multi_step():
+    """R9 multi-step composition.
+
+    Runs through {dev-enroll → app-review-status → appleseed-enroll →
+    music-share → maps-feedback → trade-in-mail-in} in one deterministic
+    request so an agent can verify the full R9 surface in a single call.
+    """
+    body = request.get_json(silent=True) or request.form
+    email = (body.get('email')
+             or request.args.get('email')
+             or 'multi@example.com').strip().lower()
+    sid = (body.get('submission_id')
+           or request.args.get('submission_id')
+           or 'demo-1001').strip()
+    playlist = (body.get('playlist')
+                or request.args.get('playlist')
+                or 'today-at-apple').strip()
+    location = (body.get('location')
+                or request.args.get('location')
+                or 'Apple Park').strip()
+    device = (body.get('device')
+              or request.args.get('device')
+              or 'iPhone 14 Pro').strip()
+    zip_code = (body.get('zip')
+                or request.args.get('zip')
+                or '95014').strip()
+    enrollment_id = 'ADP-' + _r9_hash_hex(f'{email}|individual')
+    h = _r9_hash_int(sid)
+    state = R9_APP_REVIEW_STATES[h % len(R9_APP_REVIEW_STATES)]
+    seed_id = 'SEED-' + _r9_hash_hex(f'{email}|ios|public-beta')
+    share_id = _r9_hash_hex(f'{playlist}|link', 12)
+    fb_id = 'MAP-' + _r9_hash_hex(f'{location}|missing_place|')
+    kit_id = 'KIT-' + _r9_hash_hex(f'{device}|good|{zip_code}|UPS')
+    return jsonify({
+        'ok': True,
+        'steps': 6,
+        'developer_enrollment_id': enrollment_id,
+        'app_review_status': state,
+        'appleseed_enrollment_id': seed_id,
+        'music_share_id': share_id,
+        'maps_feedback_id': fb_id,
+        'tradein_kit_id': kit_id,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -10463,11 +10808,410 @@ def _extend_r8():
 EXTRA_PRODUCTS_R8 = _extend_r8()
 
 
+# ---------------------------------------------------------------------------
+# R9 expansion — Apple Store services SKUs covering
+#   * AppleCare International (per device-family × region × term),
+#   * AppleSeed beta enrollment SKUs (per OS × channel × version),
+#   * Apple Developer Program tiers + add-on services,
+#   * Apple Developer training / course catalog,
+#   * Apple Music shareable curated-playlist SKUs,
+#   * Apple Maps feedback contributor reward bundles,
+#   * Apple Trade-In mail-in kit + insured ship-back tiers.
+# Goal: push the product table from 3749 → 4700+. All rows are deterministic
+# (no datetime.now() / no random) so byte-identical seed reset is preserved.
+# ---------------------------------------------------------------------------
+
+def _r9_specs(kind, **extra):
+    out = {
+        'r9_kind': kind,
+        'r9_service_terms_url': '/support/article/apple-services-terms',
+        'eligibility': 'See Terms of Service for region eligibility',
+        'fulfillment': 'Digital — delivered to your Apple Account',
+    }
+    out.update(extra)
+    return out
+
+
+def _extend_r9():
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. AppleCare International coverage SKUs.
+    #    8 device families × 10 regions × 3 terms = 240 SKUs.
+    # ------------------------------------------------------------------
+    ac_families = [
+        ('iPhone',      'iphone',    149.0),
+        ('MacBook',     'macbook',   249.0),
+        ('iPad',        'ipad',      129.0),
+        ('Apple Watch', 'watch',      79.0),
+        ('AirPods',     'airpods',    29.0),
+        ('HomePod',     'homepod',    39.0),
+        ('Vision Pro',  'vision',    499.0),
+        ('Apple TV',    'apple-tv',   29.0),
+    ]
+    ac_regions = [
+        ('US',     'us',     1.00),
+        ('UK',     'uk',     1.10),
+        ('EU',     'eu',     1.15),
+        ('Japan',  'jp',     1.05),
+        ('Australia', 'au',  1.20),
+        ('Canada', 'ca',     1.05),
+        ('India',  'in',     0.85),
+        ('Korea',  'kr',     1.00),
+        ('Brazil', 'br',     0.90),
+        ('Mexico', 'mx',     0.95),
+    ]
+    ac_terms = [
+        ('1-Year',  '1yr',  1.00),
+        ('2-Year',  '2yr',  1.75),
+        ('3-Year',  '3yr',  2.40),
+    ]
+    for fam, fam_slug, base in ac_families:
+        for region, region_slug, region_mult in ac_regions:
+            for term, term_slug, term_mult in ac_terms:
+                price = round(base * region_mult * term_mult, 2)
+                name = f'AppleCare International {term} — {fam} ({region})'
+                slug = f'r9-applecare-intl-{fam_slug}-{region_slug}-{term_slug}'
+                extra.append((name, slug, 'accessories', 'applecare-international',
+                              f'AppleCare International {term} coverage for {fam} in {region}.',
+                              f'{term} extended hardware service plus 24/7 priority technical support for {fam}, '
+                              f'with cross-border in-warranty repair recognition across the Apple international network. '
+                              f'Pricing reflects local taxes and regional fulfillment fees for {region}.',
+                              price, None, [region], [term],
+                              _r9_specs('applecare-international',
+                                        device_family=fam, region=region, term=term,
+                                        cross_border_repair=True,
+                                        priority_support_24x7=True,
+                                        accidental_damage_incidents=2,
+                                        battery_service_threshold_pct=80,
+                                        whats_new='R9 — AppleCare International row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # B. AppleSeed beta program SKUs.
+    #    7 OS × 3 channels × 5 versions × 2 cohort sizes ≈ 210 SKUs.
+    # ------------------------------------------------------------------
+    seed_oses = [
+        ('iOS',       'ios',       'iOS 26'),
+        ('iPadOS',    'ipados',    'iPadOS 26'),
+        ('macOS',     'macos',     'macOS Sequoia'),
+        ('watchOS',   'watchos',   'watchOS 12'),
+        ('tvOS',      'tvos',      'tvOS 19'),
+        ('visionOS',  'visionos',  'visionOS 3'),
+        ('HomePod',   'homepod-sw','HomePod Software 19'),
+    ]
+    seed_channels = [
+        ('Public Beta',    'public',    0.0),
+        ('Developer Beta', 'developer', 0.0),
+        ('Customer Seed',  'customer',  0.0),
+    ]
+    seed_versions = ['Build 1', 'Build 2', 'Build 3', 'Build 4', 'Build 5']
+    seed_cohorts = [('Small Cohort', 'small'), ('Large Cohort', 'large')]
+    for os_label, os_slug, os_release in seed_oses:
+        for ch_label, ch_slug, ch_price in seed_channels:
+            for v in seed_versions:
+                for cohort_label, cohort_slug in seed_cohorts:
+                    name = f'AppleSeed {ch_label} — {os_release} {v} ({cohort_label})'
+                    slug = f'r9-appleseed-{os_slug}-{ch_slug}-{v.lower().replace(" ", "-")}-{cohort_slug}'
+                    extra.append((name, slug, 'accessories', 'appleseed-beta',
+                                  f'AppleSeed {ch_label} enrollment for {os_release} ({v}).',
+                                  f'AppleSeed {ch_label} enrolls your Apple Account into the {os_release} beta seed '
+                                  f'with the {v} configuration profile. Enrollment is free; the SKU exists to track '
+                                  f'cohort assignment, NDA agreements, and Feedback Assistant rewards.',
+                                  ch_price, None, [os_label, ch_label], [v, cohort_label],
+                                  _r9_specs('appleseed-beta',
+                                            os=os_label, channel=ch_label, version=v,
+                                            cohort=cohort_label,
+                                            nda_required=True,
+                                            feedback_assistant_url='feedbackassistant://',
+                                            whats_new='R9 — AppleSeed beta enrollment row.'),
+                                  2025, ''))
+
+    # ------------------------------------------------------------------
+    # C. Apple Developer Program tiers × regions × add-on services.
+    #    6 tiers × 5 regions × 5 add-ons = 150 SKUs.
+    # ------------------------------------------------------------------
+    dev_tiers_catalog = [
+        ('Individual',         'individual',     99.0),
+        ('Organization',       'organization',   99.0),
+        ('Enterprise',         'enterprise',    299.0),
+        ('Education',          'education',       0.0),
+        ('Safari Extensions',  'safari',         99.0),
+        ('MFi Program',        'mfi',           499.0),
+    ]
+    dev_regions = [
+        ('US',     'us',  1.00),
+        ('EU',     'eu',  1.10),
+        ('Japan',  'jp',  1.15),
+        ('Australia', 'au', 1.20),
+        ('Brazil', 'br',  1.05),
+    ]
+    dev_addons = [
+        ('TestFlight Pro',         'testflight-pro',       49.0),
+        ('App Store Connect Plus', 'asc-plus',             29.0),
+        ('Xcode Cloud Plus',       'xcode-cloud-plus',     69.0),
+        ('MapKit JS Plus',         'mapkit-js-plus',       19.0),
+        ('MusicKit Plus',          'musickit-plus',        19.0),
+    ]
+    for tier_label, tier_slug, tier_base in dev_tiers_catalog:
+        for region_label, region_slug, region_mult in dev_regions:
+            for addon_label, addon_slug, addon_base in dev_addons:
+                price = round((tier_base + addon_base) * region_mult, 2)
+                name = f'Apple Developer Program {tier_label} + {addon_label} ({region_label})'
+                slug = f'r9-devprog-{tier_slug}-{addon_slug}-{region_slug}'
+                extra.append((name, slug, 'accessories', 'developer-program',
+                              f'Apple Developer Program {tier_label} bundled with {addon_label}.',
+                              f'Annual Apple Developer Program {tier_label} membership ({region_label}) bundled '
+                              f'with the {addon_label} add-on. Includes Xcode beta access, App Store distribution, '
+                              f'and dedicated developer support channels.',
+                              price, None, [tier_label, region_label], [addon_label, '1 year'],
+                              _r9_specs('developer-program',
+                                        tier=tier_label, region=region_label, addon=addon_label,
+                                        annual=True, distribution=['App Store', 'TestFlight'],
+                                        whats_new='R9 — Apple Developer Program SKU row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # D. Apple Developer training / courses catalog.
+    #    20 topics × 4 levels × 2 deliveries = 160 SKUs.
+    # ------------------------------------------------------------------
+    course_topics = [
+        ('SwiftUI Fundamentals',          'swiftui-fundamentals'),
+        ('Swift Concurrency',             'swift-concurrency'),
+        ('Combine Framework',             'combine-framework'),
+        ('UIKit Migrations',              'uikit-migrations'),
+        ('Core Data + SwiftData',         'core-data-swiftdata'),
+        ('Metal Performance Shaders',     'metal-shaders'),
+        ('ARKit Apps',                    'arkit-apps'),
+        ('RealityKit + Object Capture',   'realitykit-object-capture'),
+        ('App Privacy & Tracking',        'app-privacy-tracking'),
+        ('App Store Optimization',        'app-store-optimization'),
+        ('Push Notifications',            'push-notifications'),
+        ('In-App Purchases & StoreKit2',  'storekit2-iap'),
+        ('App Intents & Siri',            'app-intents-siri'),
+        ('Widgets & Live Activities',     'widgets-live-activities'),
+        ('Apple Vision Pro Apps',         'vision-pro-apps'),
+        ('TipKit Onboarding',             'tipkit'),
+        ('Accessibility Engineering',     'accessibility-eng'),
+        ('Localization & Internationalization', 'localization-i18n'),
+        ('Xcode Cloud CI/CD',             'xcode-cloud-cicd'),
+        ('App Performance & Instruments', 'instruments-perf'),
+    ]
+    course_levels = [
+        ('Foundations',  'foundations', 49.0),
+        ('Intermediate', 'intermediate', 99.0),
+        ('Advanced',     'advanced',    149.0),
+        ('Masterclass',  'masterclass', 249.0),
+    ]
+    course_deliveries = [
+        ('Self-paced',   'self-paced',  1.00),
+        ('Live cohort',  'live-cohort', 1.80),
+    ]
+    for topic, topic_slug in course_topics:
+        for lvl_label, lvl_slug, lvl_base in course_levels:
+            for d_label, d_slug, d_mult in course_deliveries:
+                price = round(lvl_base * d_mult, 2)
+                name = f'{topic} — {lvl_label} ({d_label})'
+                slug = f'r9-course-{topic_slug}-{lvl_slug}-{d_slug}'
+                extra.append((name, slug, 'accessories', 'developer-course',
+                              f'Apple Developer course: {topic} at the {lvl_label} level.',
+                              f'Hands-on developer training: {topic}. {lvl_label} curriculum delivered as a '
+                              f'{d_label.lower()} program with project exercises, Xcode starter packs, and '
+                              f'Apple-credentialed completion certificate.',
+                              price, None, [d_label, lvl_label], [],
+                              _r9_specs('developer-course',
+                                        topic=topic, level=lvl_label, delivery=d_label,
+                                        hours=20 if lvl_slug == 'foundations' else 40,
+                                        certificate=True, xcode_starter_pack=True,
+                                        whats_new='R9 — Developer training row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # E. Apple Trade-In mail-in kit + insured ship-back tiers.
+    #    12 device families × 5 conditions × 3 carriers = 180 SKUs.
+    # ------------------------------------------------------------------
+    tradein_families = [
+        ('iPhone 12',          'iphone-12',          120.0),
+        ('iPhone 13',          'iphone-13',          200.0),
+        ('iPhone 14',          'iphone-14',          280.0),
+        ('iPhone 15',          'iphone-15',          380.0),
+        ('iPhone 16',          'iphone-16',          480.0),
+        ('iPad Pro M2',        'ipad-pro-m2',        300.0),
+        ('iPad Air M2',        'ipad-air-m2',        220.0),
+        ('MacBook Pro M2',     'macbook-pro-m2',     650.0),
+        ('MacBook Air M2',     'macbook-air-m2',     450.0),
+        ('Apple Watch Ultra 2','apple-watch-ultra-2', 300.0),
+        ('AirPods Pro 2',      'airpods-pro-2',       60.0),
+        ('Apple Vision Pro',   'apple-vision-pro',   1800.0),
+    ]
+    tradein_conditions = [
+        ('Excellent', 'excellent', 1.05),
+        ('Good',      'good',      0.85),
+        ('Fair',      'fair',      0.60),
+        ('Poor',      'poor',      0.35),
+        ('Broken',    'broken',    0.15),
+    ]
+    tradein_carriers = [('UPS', 'ups'), ('FedEx', 'fedex'), ('USPS', 'usps')]
+    for fam, fam_slug, base in tradein_families:
+        for cond, cond_slug, cond_mult in tradein_conditions:
+            for carrier, carrier_slug in tradein_carriers:
+                value = round(base * cond_mult, 2)
+                name = f'Trade-In Mail-In Kit — {fam} ({cond}, via {carrier})'
+                slug = f'r9-tradein-mailin-{fam_slug}-{cond_slug}-{carrier_slug}'
+                extra.append((name, slug, 'accessories', 'tradein-mailin',
+                              f'Pre-paid mail-in trade-in kit for {fam} via {carrier}.',
+                              f'Order a free pre-paid mail-in kit for {fam}. Apple ships an insured shipping kit '
+                              f'with bubble wrap, prepaid {carrier} label, and instructions. Drop the device at any '
+                              f'{carrier} location; Apple credits your Apple Account when the device is inspected.',
+                              0.0, None, [fam, cond], [carrier],
+                              _r9_specs('tradein-mailin',
+                                        device_family=fam, condition=cond, carrier=carrier,
+                                        estimated_credit_usd=value,
+                                        insured_shipping=True,
+                                        prepaid_label=True,
+                                        whats_new='R9 — Trade-In mail-in kit row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # F. Apple Music shareable curated playlists.
+    #    25 themes × 4 share-channels = 100 SKUs.
+    # ------------------------------------------------------------------
+    music_playlist_themes = [
+        ('Today at Apple',           'today-at-apple'),
+        ('Work From Home Focus',     'wfh-focus'),
+        ('Run + Move',               'run-plus-move'),
+        ('Apple Park Acoustic',      'apple-park-acoustic'),
+        ('Sunset Drive',             'sunset-drive'),
+        ('Morning Commute',          'morning-commute'),
+        ('Friday Night Vibes',       'friday-night-vibes'),
+        ('AppleSeed Beta Coding',    'appleseed-beta-coding'),
+        ('WWDC Hype',                'wwdc-hype'),
+        ('Vision Pro Showroom',      'vision-pro-showroom'),
+        ('Apple Retail Soundtrack',  'apple-retail-soundtrack'),
+        ('TV+ Original Scores',      'tv-plus-original-scores'),
+        ('Indie Discoveries',        'indie-discoveries'),
+        ('Latin Pop Hits',           'latin-pop-hits'),
+        ('K-Pop Now',                'k-pop-now'),
+        ('Jazz Cafe',                'jazz-cafe'),
+        ('Classical Essentials',     'classical-essentials'),
+        ('Lo-Fi Beats',              'lo-fi-beats'),
+        ('Hip-Hop Throwback',        'hip-hop-throwback'),
+        ('R&B Slow Jams',            'r-and-b-slow-jams'),
+        ('Country Roads',            'country-roads'),
+        ('EDM Festival',             'edm-festival'),
+        ('Holiday Cheer',            'holiday-cheer'),
+        ('Pride Anthems',            'pride-anthems'),
+        ('Earth Day Soundscape',     'earth-day-soundscape'),
+    ]
+    share_channels = [
+        ('Link Share',     'link',      0.0),
+        ('AirDrop Card',   'airdrop',   0.0),
+        ('Messages Sticker','messages', 0.0),
+        ('Story Card',     'story',     0.0),
+    ]
+    for theme, theme_slug in music_playlist_themes:
+        for ch_label, ch_slug, _ in share_channels:
+            name = f'Apple Music Playlist — {theme} ({ch_label})'
+            slug = f'r9-music-share-{theme_slug}-{ch_slug}'
+            extra.append((name, slug, 'accessories', 'music-share-playlist',
+                          f'Shareable Apple Music playlist: {theme} ({ch_label}).',
+                          f'Apple Music shareable curated playlist "{theme}". Optimized for the {ch_label} sharing flow — '
+                          f'tap Share, pick the channel, and your followers can listen with a single tap.',
+                          0.0, None, [theme, ch_label], [],
+                          _r9_specs('music-share-playlist',
+                                    playlist=theme, share_channel=ch_label,
+                                    spatial_audio=True,
+                                    apple_music_required=True,
+                                    whats_new='R9 — Apple Music playlist share row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # G. Apple Maps feedback contributor reward bundles.
+    #    12 categories × 5 tiers = 60 SKUs.
+    # ------------------------------------------------------------------
+    maps_categories = [
+        ('Missing Place',          'missing-place'),
+        ('Wrong Name',             'wrong-name'),
+        ('Wrong Hours',            'wrong-hours'),
+        ('Wrong Address',          'wrong-address'),
+        ('Closed Permanently',     'closed-permanently'),
+        ('Duplicate Listing',      'duplicate'),
+        ('Navigation Error',       'navigation-error'),
+        ('Search Error',           'search-error'),
+        ('Look Around Error',      'lookaround-error'),
+        ('Transit Error',          'transit-error'),
+        ('Wrong Category',         'wrong-category'),
+        ('Wrong Phone Number',     'wrong-phone'),
+    ]
+    maps_reward_tiers = [
+        ('Bronze Reporter',  'bronze',    0.0),
+        ('Silver Reporter',  'silver',    0.0),
+        ('Gold Reporter',    'gold',      0.0),
+        ('Platinum Reporter','platinum',  0.0),
+        ('Maps Insider',     'insider',   0.0),
+    ]
+    for cat, cat_slug in maps_categories:
+        for tier_label, tier_slug, price in maps_reward_tiers:
+            name = f'Apple Maps Feedback Reward — {cat} ({tier_label})'
+            slug = f'r9-maps-fb-{cat_slug}-{tier_slug}'
+            extra.append((name, slug, 'accessories', 'maps-feedback-reward',
+                          f'Apple Maps contributor reward bundle for {cat} reports at the {tier_label} tier.',
+                          f'Reward bundle for Apple Maps contributors specializing in {cat} reports at the '
+                          f'{tier_label} tier. Includes a contributor badge in Maps, a thank-you card, and early '
+                          f'access to upcoming Maps features in your region.',
+                          price, None, [cat, tier_label], [],
+                          _r9_specs('maps-feedback-reward',
+                                    category=cat, tier=tier_label,
+                                    badge_in_maps=True, early_access=True,
+                                    whats_new='R9 — Apple Maps feedback contributor row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # H. Developer app-review priority slots (paid expedited review).
+    #    6 priority tiers × 5 review queues = 30 SKUs.
+    # ------------------------------------------------------------------
+    review_priorities = [
+        ('Standard 24h',  'standard-24h',     0.0),
+        ('Standard 48h',  'standard-48h',     0.0),
+        ('Priority 12h',  'priority-12h',    49.0),
+        ('Priority 6h',   'priority-6h',     99.0),
+        ('Priority 2h',   'priority-2h',    199.0),
+        ('Emergency 1h',  'emergency-1h',   299.0),
+    ]
+    review_queues = [
+        ('App Store',         'app-store'),
+        ('TestFlight',        'testflight'),
+        ('Mac App Store',     'mac-app-store'),
+        ('Apple TV App Store','tv-app-store'),
+        ('Vision App Store',  'vision-app-store'),
+    ]
+    for pri_label, pri_slug, pri_price in review_priorities:
+        for q_label, q_slug in review_queues:
+            name = f'Apple Developer App Review — {pri_label} ({q_label})'
+            slug = f'r9-app-review-{pri_slug}-{q_slug}'
+            extra.append((name, slug, 'accessories', 'app-review-priority',
+                          f'Apple Developer App Review priority slot for {q_label}.',
+                          f'Expedited App Review submission for the {q_label} queue at the {pri_label} priority. '
+                          f'Available to Apple Developer Program members in good standing. Use sparingly — '
+                          f'requests are subject to App Store Review Guideline checks.',
+                          pri_price, None, [pri_label, q_label], [],
+                          _r9_specs('app-review-priority',
+                                    priority=pri_label, queue=q_label,
+                                    requires_devprog=True,
+                                    whats_new='R9 — App Review priority slot row.'),
+                          2025, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R9 = _extend_r9()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R8 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R9 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7 + EXTRA_PRODUCTS_R8):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7 + EXTRA_PRODUCTS_R8 + EXTRA_PRODUCTS_R9):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

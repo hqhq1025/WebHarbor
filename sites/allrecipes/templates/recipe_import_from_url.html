@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Import a recipe from any URL — Allrecipes parses the page and returns a Mealie-compatible JSON recipe.{% endblock %}
+
+{% block content %}
+<section class="container recipe-import-url" style="max-width:880px;margin:32px auto;padding:0 16px;">
+  <h1>Import recipe from URL</h1>
+  <p class="lede" style="color:#555;font-size:1.05rem;">
+    Paste any recipe URL and our importer parses it into a Mealie-compatible
+    JSON document. You can also <code>POST</code> a JSON body with a
+    <code>url</code> field directly to
+    <a href="/recipe/import-url"><code>/recipe/import-url</code></a>.
+  </p>
+
+  <h2 style="margin-top:24px;">Import pipeline</h2>
+  <ol>
+    <li>Fetch the recipe page over HTTPS with a browser-style <em>User-Agent</em>.</li>
+    <li>Look for JSON-LD <code>Recipe</code> schema first; fall back to HTML scraping if absent.</li>
+    <li>Normalize ingredients into a flat array and instructions into ordered <code>HowToStep</code> objects.</li>
+    <li>Return the structured recipe as JSON with a confidence score.</li>
+  </ol>
+
+  <h2 style="margin-top:24px;">Example POST body</h2>
+  <pre style="background:#fafaf6;border:1px solid #eee;padding:12px;border-radius:6px;font-family:monospace;font-size:0.92rem;">{
+  "url": "https://www.seriouseats.com/perfect-pan-pizza-recipe"
+}</pre>
+
+  <h2 style="margin-top:24px;">Example response</h2>
+  <pre style="background:#fafaf6;border:1px solid #eee;padding:12px;border-radius:6px;font-family:monospace;font-size:0.92rem;">{
+  "format": "mealie",
+  "schema_version": "1.5",
+  "source_url": "https://www.seriouseats.com/perfect-pan-pizza-recipe",
+  "slug": "perfect-pan-pizza-recipe",
+  "title": "Perfect Pan Pizza Recipe",
+  "recipeYield": "4",
+  "recipeIngredient": ["..."],
+  "recipeInstructions": [{"@type": "HowToStep", "text": "..."}],
+  "prepTime": "PT15M",
+  "cookTime": "PT20M",
+  "totalTime": "PT35M",
+  "confidence": 0.72
+}</pre>
+
+  <h2 style="margin-top:24px;">Try it in your browser</h2>
+  <form method="post" action="/recipe/import-url" enctype="application/json"
+        style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+    <label for="import-url-input" class="visually-hidden">Recipe URL</label>
+    <input id="import-url-input" type="url" name="url" placeholder="https://example.com/some-recipe"
+           style="flex:1;min-width:280px;padding:8px;border:1px solid #ccc;border-radius:6px;">
+    <button type="submit" class="nav-btn"
+            style="padding:8px 18px;background:#a3262f;color:#fff;border-radius:6px;border:0;">
+      Import
+    </button>
+  </form>
+  <p style="margin-top:8px;font-size:0.85rem;color:#666;">
+    (For programmatic use, send <code>Content-Type: application/json</code>
+    and a JSON body. The HTML form posts as form-encoded; the parser will
+    fall back to a stub response in that case.)
+  </p>
+
+  <p style="margin-top:24px;">
+    See also: <a href="/recipe/butter-chicken-murgh-makhani/import">OCR import for an existing recipe</a> ·
+    <a href="/recipe/butter-chicken-murgh-makhani/export.json">Mealie JSON export example</a>.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} Deep Dive — WolframAlpha Sports{% endblock %}
+{% block body_class %}page-sport-deepdive{% endblock %}
+{% block content %}
+<section class="wa-sport-deepdive">
+  <h1>{{ name }} &mdash; {{ season }} Deep Dive</h1>
+  <p class="wa-intro">{{ league }} season roll-up generated deterministically from the WolframAlpha sport corpus.</p>
+  <table class="wa-stats">
+    <tr><th>Sport</th><td>{{ sport }}</td></tr>
+    <tr><th>Slug</th><td><code>{{ slug }}</code></td></tr>
+    <tr><th>League</th><td>{{ league }}</td></tr>
+    <tr><th>Season</th><td>{{ season }}</td></tr>
+    <tr><th>Record</th><td>{{ record }}</td></tr>
+    <tr><th>Point differential</th><td>{{ point_diff }}</td></tr>
+    <tr><th>Top scorer</th><td>{{ top_scorer }}</td></tr>
+  </table>
+  <h2>Splits</h2>
+  <ul>
+    <li>Home record: {{ home_record }}</li>
+    <li>Road record: {{ road_record }}</li>
+    <li>Vs division: {{ vs_div }}</li>
+  </ul>
+  <p class="wa-meta">Schema: <code>wa-sport-deepdive-v1</code>.</p>
+  <p class="wa-related">
+    See <a href="/topic/sport-team-stat-deepdive">sport-team-stat-deepdive</a>,
+    <a href="/aviation/flight/AA100">aviation tracker</a>.
+  </p>
+</section>
+{% endblock %}

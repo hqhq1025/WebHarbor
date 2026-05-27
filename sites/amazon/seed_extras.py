@@ -965,6 +965,19 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_r8(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_r8 failed: {e}") from e
+    # R9: push catalog past 48500 by adding Amazon Pharmacy (Rx + OTC) +
+    # Amazon Auto (tires / batteries / fluids / parts) + Amazon Renewed
+    # (refurbished electronics) + Amazon Outlet (open-box / overstock) +
+    # Amazon Kids FreeTime (kid-safe tablets / content) + Amazon Live
+    # (livestream-deal carousel) + Amazon Household templates, plus
+    # replaying prior pools with R9_SUFFIXES.  Adds prescription /
+    # vehicle-fitment / renewed-grade / freetime-band / household-share /
+    # live-shopping-featured quality fields.
+    try:
+        from seed_r9 import seed_r9
+        seed_r9(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r9 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

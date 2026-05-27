@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Deep nutrition detail for {{ recipe.title }} — full macros, % daily values, vitamins and minerals.{% endblock %}
+
+{% block content %}
+<section class="container recipe-nutrition-detail" style="max-width:920px;margin:32px auto;padding:0 16px;">
+  <h1>Nutrition detail — {{ recipe.title }}</h1>
+  <p class="lede" style="color:#555;">
+    Per-serving macros, micronutrients and % daily values. Daily values
+    based on a standard 2,000 calorie diet.
+  </p>
+
+  <h2 style="margin-top:24px;">Per Serving</h2>
+  <table data-test-id="nutrition-table"
+         style="width:100%;border-collapse:collapse;font-size:0.95rem;">
+    <thead>
+      <tr style="background:#fafaf6;text-align:left;">
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Nutrient</th>
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Amount</th>
+        <th style="padding:8px;border-bottom:1px solid #ccc;">% Daily Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:6px 8px;">Calories</td><td>{{ derived.calories }} kcal</td><td>—</td></tr>
+      <tr><td style="padding:6px 8px;">Protein</td><td>{{ derived.protein_g }} g</td><td>—</td></tr>
+      <tr><td style="padding:6px 8px;">Total Fat</td><td>{{ derived.fat_g }} g</td><td>{{ pct_dv.fat_g | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">&nbsp;&nbsp;Saturated Fat</td><td>{{ derived.saturated_fat_g }} g</td><td>{{ pct_dv.saturated_fat_g | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">&nbsp;&nbsp;Trans Fat</td><td>{{ derived.trans_fat_g }} g</td><td>—</td></tr>
+      <tr><td style="padding:6px 8px;">Total Carbs</td><td>{{ derived.carbs_g }} g</td><td>{{ pct_dv.carbs_g | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">&nbsp;&nbsp;Sugar</td><td>{{ derived.sugar_g }} g</td><td>{{ pct_dv.sugar_g | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">&nbsp;&nbsp;Fiber</td><td>{{ derived.fiber_g }} g</td><td>{{ pct_dv.fiber_g | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Sodium</td><td>{{ derived.sodium_mg }} mg</td><td>{{ pct_dv.sodium_mg | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Cholesterol</td><td>{{ derived.cholesterol_mg }} mg</td><td>{{ pct_dv.cholesterol_mg | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Potassium</td><td>{{ derived.potassium_mg }} mg</td><td>{{ pct_dv.potassium_mg | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Calcium</td><td>{{ derived.calcium_mg }} mg</td><td>{{ pct_dv.calcium_mg | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Iron</td><td>{{ derived.iron_mg }} mg</td><td>{{ pct_dv.iron_mg | default('—') }}%</td></tr>
+      <tr><td style="padding:6px 8px;">Vitamin A</td><td>{{ derived.vitamin_a_iu }} IU</td><td>—</td></tr>
+      <tr><td style="padding:6px 8px;">Vitamin C</td><td>{{ derived.vitamin_c_mg }} mg</td><td>{{ pct_dv.vitamin_c_mg | default('—') }}%</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:18px;font-size:0.9rem;color:#666;">
+    Serving size: {{ derived.serving_size }}. Values are estimates from the
+    Allrecipes nutrition database and may vary based on ingredient brand.
+  </p>
+
+  <p style="margin-top:18px;">
+    See also: <a href="/recipe/{{ recipe.slug }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/allergens">allergen cross-reference</a> ·
+    <a href="/recipe/{{ recipe.slug }}/export.json">Mealie JSON export</a>.
+  </p>
+</section>
+{% endblock %}

@@ -7563,6 +7563,1371 @@ def bake_r8(con: sqlite3.Connection) -> dict[str, int]:
     return stats
 
 
+# =======================================================================
+# R9 — kids (CBeebies/CBBC), BBC Three/Four, iPlayer playable episodes,
+#      Sounds playlists, news quizzes. Idempotent + byte-id reset.
+# =======================================================================
+
+R9_SENTINEL_BODY = "<<R9-baked>>"
+R9_REFERENCE_DATE = MIRROR_REFERENCE_DATE  # alias — same anchor as R7/R8
+
+
+# ----- categories ------------------------------------------------------
+
+R9_NEW_CATEGORIES: list[tuple[str, str, str, str, int, str]] = [
+    # slug, name, color, parent, order, description
+    ("cbeebies",   "CBeebies",   "#ff8b00", "",        400,
+     "BBC CBeebies: shows, games and stories for under-sixes"),
+    ("cbbc",       "CBBC",       "#22c1c8", "",        410,
+     "BBC CBBC: drama, factual and entertainment for six-to-twelves"),
+    ("bbc_three",  "BBC Three",  "#ff1f5a", "iplayer", 421,
+     "BBC Three: comedy, documentary and youth drama for 16-34s"),
+    ("bbc_four",   "BBC Four",   "#1f3aff", "iplayer", 422,
+     "BBC Four: arts, culture and ideas - the BBC's intelligent channel"),
+    ("sounds_playlists", "Sounds Playlists", "#000000", "sounds", 313,
+     "Curated playlists across BBC Sounds: mood, decade and genre"),
+    ("news_quizzes", "News Quizzes", "#bb1919", "quizzes", 220,
+     "Weekly news quizzes - test what you remember from the headlines"),
+]
+
+
+def ensure_r9_categories(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM categories")}
+    added = 0
+    for slug, name, color, parent, order, desc in R9_NEW_CATEGORIES:
+        if slug in existing:
+            continue
+        cur.execute(
+            "INSERT INTO categories (slug, name, color, icon, parent_slug, "
+            "sort_order, description, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, color, "", parent, order, desc, desc[:250]),
+        )
+        added += 1
+    return added
+
+
+def _r9_cat_id(con, slug: str) -> int | None:
+    row = con.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()
+    return row[0] if row else None
+
+
+# ----- show / episode catalogues --------------------------------------
+
+# CBeebies: 35 long-running pre-school shows.
+R9_CBEEBIES_SHOWS: list[tuple[str, str]] = [
+    ("bluey",                "Bluey"),
+    ("hey-duggee",           "Hey Duggee"),
+    ("bing",                 "Bing"),
+    ("octonauts",            "Octonauts"),
+    ("peppa-pig",            "Peppa Pig"),
+    ("postman-pat",          "Postman Pat"),
+    ("balamory",             "Balamory"),
+    ("teletubbies",          "Teletubbies"),
+    ("in-the-night-garden",  "In the Night Garden"),
+    ("mr-tumble",            "Something Special with Mr Tumble"),
+    ("numberblocks",         "Numberblocks"),
+    ("alphablocks",          "Alphablocks"),
+    ("colourblocks",         "Colourblocks"),
+    ("yakka-dee",            "Yakka Dee!"),
+    ("go-jetters",           "Go Jetters"),
+    ("clangers",             "Clangers"),
+    ("sarah-and-duck",       "Sarah & Duck"),
+    ("topsy-and-tim",        "Topsy and Tim"),
+    ("twirlywoos",           "Twirlywoos"),
+    ("waffle-the-dog",       "Waffle the Wonder Dog"),
+    ("apple-tree-house",     "Apple Tree House"),
+    ("biggleton",            "Biggleton"),
+    ("magic-hands",          "Magic Hands"),
+    ("our-family",           "Our Family"),
+    ("school-of-roars",      "School of Roars"),
+    ("ranger-hamza",         "Ranger Hamza's Eco Quest"),
+    ("dog-loves-books",      "Dog Loves Books"),
+    ("love-monster",         "Love Monster"),
+    ("supertato",            "Supertato"),
+    ("jojo-and-gran-gran",   "JoJo & Gran Gran"),
+    ("yolanda-band",         "Yolanda's Band Jam"),
+    ("pablo",                "Pablo"),
+    ("kiri-and-lou",         "Kiri and Lou"),
+    ("messy-goes-to-okido",  "Messy Goes to Okido"),
+    ("treasure-champs",      "Treasure Champs"),
+]
+
+# CBeebies episode angles — gentle preschool framing.
+R9_CBEEBIES_ANGLES: list[tuple[str, str]] = [
+    ("{show}: A big day at the playground",
+     "{show} learns about taking turns at the slide."),
+    ("{show}: Counting the rainbow",
+     "{show} helps friends count colours after a sunshower."),
+    ("{show}: The lost teddy",
+     "{show} retraces yesterday's walk to find a missing teddy."),
+    ("{show}: First trip to the library",
+     "{show} explores the picture-book shelves for the very first time."),
+    ("{show}: Tidying the toy box",
+     "{show} sorts blocks, soft toys and books into matching baskets."),
+    ("{show}: Splash time at the duck pond",
+     "{show} feeds the ducks while learning to listen to grown-ups."),
+    ("{show}: Building a den in the garden",
+     "{show} uses old sheets and chairs to build a perfect hideaway."),
+    ("{show}: Helping at the bakery",
+     "{show} stirs the dough and counts the buns coming out of the oven."),
+    ("{show}: The bedtime stars",
+     "{show} learns the names of three friendly constellations."),
+    ("{show}: Welcoming a new baby",
+     "{show} makes a card for a new brother or sister."),
+    ("{show}: Riding the bus into town",
+     "{show} sits by the window and waves at every dog they pass."),
+    ("{show}: Planting a sunflower",
+     "{show} digs, plants and waters their very first seed."),
+    ("{show}: Rainy day rhymes",
+     "{show} discovers new nursery rhymes while sheltering from the rain."),
+    ("{show}: Hide and seek champions",
+     "{show} tries (and fails) to hide behind a single small cushion."),
+    ("{show}: The puddle jump",
+     "{show} learns the difference between deep puddles and shallow ones."),
+    ("{show}: Visiting the city farm",
+     "{show} meets sheep, ducks and a very curious goat."),
+    ("{show}: Painting day at nursery",
+     "{show} discovers that mixing red and yellow makes orange."),
+    ("{show}: Saying goodbye to nursery",
+     "{show} writes thank-you notes for the teachers."),
+    ("{show}: A picnic in the park",
+     "{show} packs sandwiches and shares them with friends."),
+    ("{show}: The story of two friends",
+     "{show} learns how to say sorry after a small disagreement."),
+    ("{show}: Helping in the kitchen",
+     "{show} measures flour and cracks an egg without a spill."),
+    ("{show}: The brave little bedtime",
+     "{show} faces the dark with a night-light and a friendly bear."),
+    ("{show}: Tractor on the farm",
+     "{show} watches a tractor turn the soil for next year's crop."),
+    ("{show}: A snowy adventure",
+     "{show} makes a snow person with three different hats."),
+    ("{show}: The lost mitten",
+     "{show} retraces their steps to find a stripy lost mitten."),
+    ("{show}: Festival of lights",
+     "{show} celebrates with lanterns and biscuits in the garden."),
+    ("{show}: The recycling truck",
+     "{show} sorts cardboard, plastic and glass into the right bins."),
+    ("{show}: Visiting grandparents",
+     "{show} bakes biscuits with Granny and tells stories with Grandpa."),
+    ("{show}: A new friend at the park",
+     "{show} learns to say hello in three different languages."),
+    ("{show}: The poorly pet",
+     "{show} takes a small teddy bear to the vet for a check-up."),
+]
+
+
+# CBeebies game stubs — episodes flagged as kids-CBeebies-game-stub.
+R9_CBEEBIES_GAMES: list[tuple[str, str]] = [
+    ("Sorting Sleepy Owls",  "Match the owls by feather pattern and number."),
+    ("Numberblocks Maze",    "Walk the maze counting steps with Numberblocks."),
+    ("Alphablocks Letter Hunt", "Spot every letter in the picture book scene."),
+    ("Octonauts Reef Rescue", "Match each sea creature to its safe coral home."),
+    ("Hey Duggee Badge Quiz", "Earn a sticker by answering five gentle questions."),
+    ("Bing Bunny Sticker Day", "Drag stickers onto the right page of Bing's book."),
+    ("Bluey's Backyard Game", "Help Bluey hide and seek with a happy bouncy plan."),
+    ("Peppa Pig Puddle Path", "Pick the path with the biggest, splashiest puddles."),
+    ("Postman Pat Letter Sort","Sort the letters into red, blue and green sacks."),
+    ("Go Jetters Geo-Quest",  "Visit five world landmarks and match them to flags."),
+]
+
+
+# CBBC: shows for 6-12 year olds.
+R9_CBBC_SHOWS: list[tuple[str, str]] = [
+    ("blue-peter",           "Blue Peter"),
+    ("horrible-histories",   "Horrible Histories"),
+    ("the-dumping-ground",   "The Dumping Ground"),
+    ("operation-ouch",       "Operation Ouch!"),
+    ("class-dismissed",      "Class Dismissed"),
+    ("danger-mouse",         "Danger Mouse"),
+    ("the-next-step",        "The Next Step"),
+    ("4-o-clock-club",       "4 O'Clock Club"),
+    ("jamie-johnson",        "Jamie Johnson"),
+    ("hetty-feather",        "Hetty Feather"),
+    ("art-ninja",            "Art Ninja"),
+    ("blast-off",            "Blast Off!"),
+    ("blue-peter-bake-off",  "Blue Peter Bake Off"),
+    ("doctors-in-training",  "Doctors in Training"),
+    ("deadly-60",            "Deadly 60"),
+    ("bp-bake-it-yourself",  "Bake It Yourself"),
+    ("art-attack-redux",     "Art Attack Redux"),
+    ("officially-amazing",   "Officially Amazing"),
+    ("our-school",           "Our School"),
+    ("almost-never",         "Almost Never"),
+    ("monster-makers",       "Monster Makers"),
+    ("malory-towers",        "Malory Towers"),
+    ("absolute-genius",      "Absolute Genius"),
+    ("trapped",              "Trapped!"),
+    ("saturday-mash-up",     "Saturday Mash-Up!"),
+    ("blue-peter-explorers", "Blue Peter Explorers"),
+    ("the-dengineers",       "The Dengineers"),
+    ("creeped-out",          "Creeped Out"),
+    ("class-quiz",           "Class Quiz Live"),
+    ("newsround-zoo",        "Newsround at the Zoo"),
+]
+
+R9_CBBC_ANGLES: list[tuple[str, str]] = [
+    ("{show}: The classroom challenge",
+     "{show} pits two schools against each other in a science buzzer round."),
+    ("{show}: The skate park crew",
+     "{show} follows three friends learning their first kickflip."),
+    ("{show}: A history mystery",
+     "{show} cracks open a 200-year-old letter found in the school attic."),
+    ("{show}: The big match",
+     "{show} reports from a five-a-side tournament under floodlights."),
+    ("{show}: Tech makers club",
+     "{show} builds a working torch from a single AA battery."),
+    ("{show}: The dance audition",
+     "{show} follows a tense audition for the regional youth ballet."),
+    ("{show}: Animal hospital day",
+     "{show} spends a morning with a vet treating rescue rabbits."),
+    ("{show}: Cookery showdown",
+     "{show} pits four young chefs against a thirty-minute pasta challenge."),
+    ("{show}: The science buzzer",
+     "{show} runs a fast quiz on cells, kingdoms and the periodic table."),
+    ("{show}: The school play backstage",
+     "{show} talks to costume, lighting and the nervous lead role."),
+    ("{show}: Wildlife camera diary",
+     "{show} shows what an overnight camera caught in the school playing field."),
+    ("{show}: Map-and-compass day",
+     "{show} learns orienteering with a Yorkshire Dales ranger."),
+    ("{show}: Make-it Monday",
+     "{show} builds a kite from supermarket bags and bamboo skewers."),
+    ("{show}: The drone fly-off",
+     "{show} pits four teams of model drones around a school obstacle course."),
+    ("{show}: Coding club special",
+     "{show} writes a five-line game with a friendly volunteer mentor."),
+    ("{show}: Reading week heroes",
+     "{show} hears from twelve children who finished their first novel."),
+    ("{show}: Friendship feature",
+     "{show} interviews three friends who have stuck together for five years."),
+    ("{show}: After-school athletics",
+     "{show} times sprints, long jump and the school's slowest egg-and-spoon."),
+    ("{show}: Wild swimming safety",
+     "{show} learns the rules of open-water swimming with a lifeguard."),
+    ("{show}: Robot wars revival",
+     "{show} hosts a junior arena clash of three battle-bots."),
+    ("{show}: The young inventor",
+     "{show} profiles a twelve-year-old patent applicant from Leeds."),
+    ("{show}: Pet rescue special",
+     "{show} follows a rescue cat's first week with a new family."),
+    ("{show}: Outdoor classroom",
+     "{show} runs a maths lesson on the school field and back."),
+    ("{show}: Make-a-music-video",
+     "{show} helps a band of nine-year-olds film a one-take pop video."),
+    ("{show}: The brave letter",
+     "{show} hears a child read out a letter to their future self."),
+    ("{show}: Lost city legends",
+     "{show} dramatises the legend of a long-lost city in three minutes."),
+    ("{show}: Forest school day",
+     "{show} follows a class who spend every Friday in the local woods."),
+    ("{show}: The school newspaper",
+     "{show} sits in on the front-page editorial meeting."),
+    ("{show}: Charity bake sale",
+     "{show} counts up the takings of a one-day school bake sale."),
+    ("{show}: Sportsperson of the week",
+     "{show} talks to a young Paralympic hopeful in training."),
+]
+
+
+# BBC Three — youth comedy / documentary, ~25 programmes.
+R9_BBC_THREE_SHOWS: list[tuple[str, str]] = [
+    ("normal-people",        "Normal People"),
+    ("fleabag",              "Fleabag"),
+    ("starstruck",           "Starstruck"),
+    ("this-country",         "This Country"),
+    ("eating-with-my-ex",    "Eating with My Ex"),
+    ("rupauls-drag-race-uk", "RuPaul's Drag Race UK"),
+    ("bad-education-revival","Bad Education"),
+    ("hot-property",         "Hot Property"),
+    ("dont-hate-the-playaz", "Don't Hate the Playaz"),
+    ("ladhood",              "Ladhood"),
+    ("things-you-should-know","Things You Should Know"),
+    ("the-rap-game-uk",      "The Rap Game UK"),
+    ("hot-mess-summer",      "Hot Mess Summer"),
+    ("glow-up",              "Glow Up"),
+    ("young-mum",            "Young Mum, My Story"),
+    ("super-bowl-skin",      "Super Bowl Skin"),
+    ("getting-rich-fast",    "Getting Rich Fast"),
+    ("the-traitors-extra",   "The Traitors: Uncloaked"),
+    ("freeze-the-fear-extra","Freeze the Fear: After-Show"),
+    ("man-like-mobeen",      "Man Like Mobeen"),
+    ("flatshare",            "The Flatshare"),
+    ("the-young-offenders",  "The Young Offenders"),
+    ("the-island-club",      "The Island Club"),
+    ("hot-takes",            "Hot Takes with Yinka Bokinni"),
+    ("two-doors-down",       "Two Doors Down"),
+]
+
+R9_BBC_THREE_ANGLES: list[tuple[str, str]] = [
+    ("{show}: episode {n} - opening shot",
+     "Episode {n} of {show} on BBC Three. A bold cold-open sets the tone."),
+    ("{show}: episode {n} - the breakup",
+     "Episode {n} of {show} takes a long pause before the breakup scene."),
+    ("{show}: episode {n} - back in the flat",
+     "Episode {n} of {show} returns to the central flatshare for a tense reunion."),
+    ("{show}: episode {n} - finale fallout",
+     "Episode {n} of {show} unpacks the finale fallout in extended cuts."),
+    ("{show}: episode {n} - on tour",
+     "Episode {n} of {show} hits the road for a comic three-city tour."),
+    ("{show}: episode {n} - the wedding",
+     "Episode {n} of {show} stages a chaotic, lovely-and-disastrous wedding."),
+    ("{show}: episode {n} - rivals reunite",
+     "Episode {n} of {show} brings back the original cast for a one-off special."),
+    ("{show}: episode {n} - the audition",
+     "Episode {n} of {show} follows three nervous auditionees backstage."),
+    ("{show}: episode {n} - new year reset",
+     "Episode {n} of {show} swerves a New Year's resolution montage."),
+    ("{show}: episode {n} - voicenote shoutouts",
+     "Episode {n} of {show} reads out viewer voicenotes between sketches."),
+    ("{show}: episode {n} - the road trip",
+     "Episode {n} of {show} runs a UK road-trip set to a synth-pop soundtrack."),
+    ("{show}: episode {n} - the karaoke night",
+     "Episode {n} of {show} ends in a chaotic karaoke session at three in the morning."),
+    ("{show}: episode {n} - back at uni",
+     "Episode {n} of {show} returns to university halls for fresher's week."),
+    ("{show}: episode {n} - studio takedown",
+     "Episode {n} of {show} films an entire episode from a stripped-out studio."),
+    ("{show}: episode {n} - the mum visit",
+     "Episode {n} of {show} sees the lead's mum arrive uninvited."),
+    ("{show}: episode {n} - the corner shop",
+     "Episode {n} of {show} sets a quiet scene at the late-night corner shop."),
+    ("{show}: episode {n} - the festival",
+     "Episode {n} of {show} films across a muddy three-day weekend festival."),
+    ("{show}: episode {n} - the office",
+     "Episode {n} of {show} pivots to a single-take office argument."),
+    ("{show}: episode {n} - the comeback",
+     "Episode {n} of {show} sets up a long-rumoured comeback arc."),
+    ("{show}: episode {n} - the breakup, again",
+     "Episode {n} of {show} repeats the breakup beat but inverts the perspective."),
+    ("{show}: episode {n} - the new flatmate",
+     "Episode {n} of {show} introduces a new flatmate who upends the dynamic."),
+    ("{show}: episode {n} - studio audience night",
+     "Episode {n} of {show} ditches the cameras and films in front of an audience."),
+    ("{show}: episode {n} - the late-night call",
+     "Episode {n} of {show} runs a three-minute single-take late-night phone call."),
+    ("{show}: episode {n} - the houseboat",
+     "Episode {n} of {show} films an entire episode on a Bristol houseboat."),
+    ("{show}: episode {n} - the school reunion",
+     "Episode {n} of {show} drags everyone back to their old school for a reunion."),
+    ("{show}: episode {n} - the wedding speech",
+     "Episode {n} of {show} delivers an excruciatingly long best-man speech."),
+    ("{show}: episode {n} - the family dinner",
+     "Episode {n} of {show} runs a single forty-minute family dinner unedited."),
+    ("{show}: episode {n} - the dating app",
+     "Episode {n} of {show} follows two hesitant first-daters through one evening."),
+    ("{show}: episode {n} - the studio swap",
+     "Episode {n} of {show} swaps presenters with another BBC Three show for one week."),
+    ("{show}: episode {n} - the long goodbye",
+     "Episode {n} of {show} runs the season's quietest, most affecting goodbye."),
+    ("{show}: episode {n} - the open mic",
+     "Episode {n} of {show} films at a Manchester open-mic night."),
+    ("{show}: episode {n} - the holiday",
+     "Episode {n} of {show} sets the whole cast loose on a Greek island."),
+    ("{show}: episode {n} - the courtroom",
+     "Episode {n} of {show} stages a one-room courtroom drama."),
+    ("{show}: episode {n} - the family wedding",
+     "Episode {n} of {show} returns to a now-iconic family wedding setting."),
+    ("{show}: episode {n} - the lock-in",
+     "Episode {n} of {show} traps the cast in a pub overnight for a single take."),
+]
+
+
+# BBC Four — arts/culture/documentary.
+R9_BBC_FOUR_SHOWS: list[tuple[str, str]] = [
+    ("storyville",            "Storyville"),
+    ("only-connect",          "Only Connect"),
+    ("university-challenge",  "University Challenge"),
+    ("timeshift",             "Timeshift"),
+    ("british-folk",          "Folk Britannia"),
+    ("inside-museums",        "Inside Our Museums"),
+    ("the-secret-life-of",    "The Secret Life of Books"),
+    ("art-of-japanese",       "The Art of Japanese Life"),
+    ("art-of-russia",         "The Art of Russia"),
+    ("art-of-china",          "The Art of China"),
+    ("classical-pursuits",    "Classical Pursuits"),
+    ("the-cathedral",         "The Cathedral"),
+    ("ancient-rome-relived",  "Ancient Rome: Relived"),
+    ("medieval-castle",       "Medieval Castle"),
+    ("victorian-house",       "Inside the Victorian House"),
+    ("how-we-built-britain",  "How We Built Britain"),
+    ("life-of-monet",         "The Life of Monet"),
+    ("life-of-turner",        "The Life of Turner"),
+    ("life-of-da-vinci",      "The Life of Leonardo da Vinci"),
+    ("forensic-history",      "Forensic History"),
+    ("british-craft",         "British Craft"),
+    ("cathedrals-of-culture", "Cathedrals of Culture"),
+    ("the-folk-archive",      "The Folk Archive"),
+    ("the-modernists",        "The Modernists"),
+    ("the-impressionists",    "The Impressionists"),
+]
+
+R9_BBC_FOUR_ANGLES: list[tuple[str, str]] = [
+    ("{show}: episode {n} - the archive opens",
+     "Episode {n} of {show}. The series opens the BBC archive on a single subject."),
+    ("{show}: episode {n} - on location at the British Museum",
+     "Episode {n} of {show} films inside the British Museum after closing."),
+    ("{show}: episode {n} - rare manuscripts",
+     "Episode {n} of {show} examines manuscripts not seen in public for a century."),
+    ("{show}: episode {n} - the lost composition",
+     "Episode {n} of {show} pieces together a lost classical composition."),
+    ("{show}: episode {n} - in the artist's studio",
+     "Episode {n} of {show} films inside a working artist's studio in Suffolk."),
+    ("{show}: episode {n} - the Nordic galleries",
+     "Episode {n} of {show} tours Nordic galleries closed since the pandemic."),
+    ("{show}: episode {n} - tracing the trade routes",
+     "Episode {n} of {show} traces a single object along a Silk Road trade route."),
+    ("{show}: episode {n} - the unfinished symphony",
+     "Episode {n} of {show} reconstructs the gaps in an unfinished symphony."),
+    ("{show}: episode {n} - the conservator at work",
+     "Episode {n} of {show} watches a single 16th-century portrait be restored."),
+    ("{show}: episode {n} - inside the cathedral",
+     "Episode {n} of {show} films at three British cathedrals out of hours."),
+    ("{show}: episode {n} - the Renaissance workshop",
+     "Episode {n} of {show} recreates a Florentine workshop in a Bristol studio."),
+    ("{show}: episode {n} - voices from the village",
+     "Episode {n} of {show} records oral histories from a Northumberland village."),
+    ("{show}: episode {n} - the missing chapter",
+     "Episode {n} of {show} uncovers a long-missing chapter of a Victorian novel."),
+    ("{show}: episode {n} - the Bauhaus year",
+     "Episode {n} of {show} explores a single year inside the Bauhaus school."),
+    ("{show}: episode {n} - the engraved plate",
+     "Episode {n} of {show} traces an 18th-century engraved plate across two continents."),
+    ("{show}: episode {n} - the choir at evensong",
+     "Episode {n} of {show} films a cathedral choir's evensong rehearsal."),
+    ("{show}: episode {n} - the harpsichord revival",
+     "Episode {n} of {show} follows a quiet harpsichord revival in Yorkshire."),
+    ("{show}: episode {n} - the painted ceiling",
+     "Episode {n} of {show} maps a single Baroque painted ceiling in detail."),
+    ("{show}: episode {n} - the country house letters",
+     "Episode {n} of {show} reads aloud letters from a Lake District country house."),
+    ("{show}: episode {n} - the curator's pick",
+     "Episode {n} of {show} asks ten national curators for one object each."),
+    ("{show}: episode {n} - the silk-thread map",
+     "Episode {n} of {show} examines a silk-thread world map from 1605."),
+    ("{show}: episode {n} - the harbour town",
+     "Episode {n} of {show} films a small Cornish harbour town across one summer."),
+    ("{show}: episode {n} - rural lights",
+     "Episode {n} of {show} maps the disappearing dark skies of rural Britain."),
+    ("{show}: episode {n} - the bronze figure",
+     "Episode {n} of {show} traces a single bronze figure from Ife to London."),
+    ("{show}: episode {n} - the great library",
+     "Episode {n} of {show} films inside the British Library reading rooms."),
+    ("{show}: episode {n} - the lost garden",
+     "Episode {n} of {show} restores a Capability Brown garden plan from a single sketch."),
+    ("{show}: episode {n} - the calligrapher's hand",
+     "Episode {n} of {show} watches an Edinburgh calligrapher copy a folio at scale."),
+    ("{show}: episode {n} - the printing block",
+     "Episode {n} of {show} prints a Caxton replica on a hand press."),
+    ("{show}: episode {n} - the unfinished portrait",
+     "Episode {n} of {show} reads the X-rays of an unfinished royal portrait."),
+    ("{show}: episode {n} - the river journey",
+     "Episode {n} of {show} follows a river from source to sea over a year."),
+    ("{show}: episode {n} - the chamber concert",
+     "Episode {n} of {show} films an intimate chamber concert in a private library."),
+    ("{show}: episode {n} - the Roman frontier",
+     "Episode {n} of {show} walks the Roman frontier from Wallsend to Bowness."),
+    ("{show}: episode {n} - the medieval map",
+     "Episode {n} of {show} unrolls a 14th-century world map for the camera."),
+    ("{show}: episode {n} - the listening room",
+     "Episode {n} of {show} sits inside a sound studio for a single composition."),
+    ("{show}: episode {n} - the chalk hills",
+     "Episode {n} of {show} follows the chalk uplands of southern England."),
+]
+
+
+# iPlayer "playable" episodes — distinct slugs that the new
+# /iplayer/episode/<id> route will resolve through. Show pool overlaps
+# with BBC Three / BBC Four but with distinct slug prefix.
+R9_IPLAYER_SHOWS: list[tuple[str, str, str]] = [
+    # (show_slug, show_name, parent_category_slug)
+    ("happy-valley",       "Happy Valley",       "drama"),
+    ("line-of-duty",       "Line of Duty",       "drama"),
+    ("call-the-midwife",   "Call the Midwife",   "drama"),
+    ("doctor-who",         "Doctor Who",         "drama"),
+    ("the-traitors",       "The Traitors",       "entertainment"),
+    ("strictly-come-dancing","Strictly Come Dancing","entertainment"),
+    ("masterchef",         "MasterChef",         "food"),
+    ("great-british-bake-off","The Great British Bake Off","food"),
+    ("the-apprentice",     "The Apprentice",     "business"),
+    ("countryfile",        "Countryfile",        "earth"),
+    ("springwatch",        "Springwatch",        "earth"),
+    ("planet-earth",       "Planet Earth III",   "earth"),
+    ("blue-planet",        "Blue Planet III",    "earth"),
+    ("frozen-planet",      "Frozen Planet II",   "earth"),
+    ("david-attenborough", "Attenborough's Britain","earth"),
+    ("question-time",      "Question Time",      "politics"),
+    ("newsnight",          "Newsnight",          "politics"),
+    ("panorama",           "Panorama",           "uk"),
+    ("real-marigold-hotel","Real Marigold Hotel","culture"),
+    ("antiques-roadshow",  "Antiques Roadshow",  "culture"),
+    ("would-i-lie-to-you", "Would I Lie to You?","entertainment"),
+    ("mock-the-week",      "Mock the Week",      "entertainment"),
+    ("have-i-got-news-for-you","Have I Got News for You","entertainment"),
+    ("qi",                 "QI",                 "entertainment"),
+    ("only-fools-and-horses","Only Fools and Horses","drama"),
+    ("the-office-uk",      "The Office (UK)",    "entertainment"),
+    ("peaky-blinders",     "Peaky Blinders",     "drama"),
+    ("the-fall",           "The Fall",           "drama"),
+    ("luther",             "Luther",             "drama"),
+    ("sherlock",           "Sherlock",           "drama"),
+    ("the-night-manager",  "The Night Manager",  "drama"),
+    ("bodyguard",          "Bodyguard",          "drama"),
+    ("his-dark-materials", "His Dark Materials", "drama"),
+    ("the-responder",      "The Responder",      "drama"),
+    ("blue-lights",        "Blue Lights",        "drama"),
+    ("vigil",              "Vigil",              "drama"),
+    ("the-crown",          "The Crown",          "drama"),
+    ("dragons-den",        "Dragons' Den",       "business"),
+    ("repair-shop",        "The Repair Shop",    "culture"),
+    ("bargain-hunt",       "Bargain Hunt",       "culture"),
+    ("flog-it",            "Flog It!",           "culture"),
+    ("escape-to-the-country","Escape to the Country","culture"),
+    ("a-place-in-the-sun", "A Place in the Sun", "culture"),
+    ("countdown",          "Countdown",          "entertainment"),
+    ("pointless",          "Pointless",          "entertainment"),
+    ("eggheads",           "Eggheads",           "entertainment"),
+    ("the-chase",          "The Chase",          "entertainment"),
+    ("mastermind",         "Mastermind",         "entertainment"),
+    ("the-weakest-link",   "The Weakest Link",   "entertainment"),
+    ("interior-design-masters","Interior Design Masters","culture"),
+]
+
+
+# Sounds playlists — curated cross-genre playlists used to generate
+# /sounds/playlist/<id> route articles.
+R9_SOUNDS_PLAYLISTS: list[tuple[str, str, str]] = [
+    # (playlist_slug, playlist_name, mood)
+    ("slow-sunday-morning",    "Slow Sunday Morning",    "calm"),
+    ("monday-motivation-mix",  "Monday Motivation Mix",  "uplifting"),
+    ("late-night-acoustic",    "Late Night Acoustic",    "calm"),
+    ("commute-essentials",     "Commute Essentials",     "energetic"),
+    ("focus-and-flow",         "Focus and Flow",         "focused"),
+    ("study-soundtrack",       "Study Soundtrack",       "focused"),
+    ("the-classic-british-rock","The Classic British Rock","energetic"),
+    ("indie-anthems-2010s",    "Indie Anthems of the 2010s","energetic"),
+    ("eighties-throwback",     "Eighties Throwback Hour","nostalgic"),
+    ("nineties-deep-cuts",     "Nineties Deep Cuts",     "nostalgic"),
+    ("dance-floor-classics",   "Dance Floor Classics",   "energetic"),
+    ("hip-hop-essentials",     "Hip-Hop Essentials",     "energetic"),
+    ("ambient-deep-focus",     "Ambient Deep Focus",     "focused"),
+    ("jazz-after-dark",        "Jazz After Dark",        "calm"),
+    ("classical-mornings",     "Classical Mornings",     "calm"),
+    ("baroque-for-breakfast",  "Baroque for Breakfast",  "calm"),
+    ("opera-introductions",    "Opera Introductions",    "focused"),
+    ("film-score-favourites",  "Film Score Favourites",  "focused"),
+    ("musicals-essentials",    "Musicals Essentials",    "uplifting"),
+    ("folk-britannia",         "Folk Britannia",         "calm"),
+    ("celtic-evenings",        "Celtic Evenings",        "calm"),
+    ("world-music-mix",        "World Music Mix",        "energetic"),
+    ("afrobeat-essentials",    "Afrobeat Essentials",    "energetic"),
+    ("latin-essentials",       "Latin Essentials",       "energetic"),
+    ("k-pop-rising",           "K-Pop Rising",           "energetic"),
+    ("j-pop-rising",           "J-Pop Rising",           "energetic"),
+    ("synthwave-night-drive",  "Synthwave Night Drive",  "energetic"),
+    ("country-roads",          "Country Roads",          "nostalgic"),
+    ("rnb-slow-burn",          "R&B Slow Burn",          "calm"),
+    ("soul-saturday-night",    "Soul Saturday Night",    "uplifting"),
+    ("punk-and-post-punk",     "Punk and Post-Punk",     "energetic"),
+    ("electronic-deep-cuts",   "Electronic Deep Cuts",   "focused"),
+    ("acoustic-coffeehouse",   "Acoustic Coffeehouse",   "calm"),
+    ("morning-news-music",     "Morning News Music",     "uplifting"),
+    ("evening-news-music",     "Evening News Music",     "calm"),
+    ("school-run-soundtrack",  "School Run Soundtrack",  "uplifting"),
+    ("workout-warmup",         "Workout Warmup",         "energetic"),
+    ("workout-cooldown",       "Workout Cooldown",       "calm"),
+    ("driving-up-the-coast",   "Driving up the Coast",   "calm"),
+    ("driving-into-london",    "Driving into London",    "energetic"),
+    ("sunday-roast-soundtrack","Sunday Roast Soundtrack","calm"),
+    ("date-night-jazz",        "Date Night Jazz",        "calm"),
+    ("dinner-party-playlist",  "Dinner Party Playlist",  "uplifting"),
+    ("breakfast-club",         "Breakfast Club",         "uplifting"),
+    ("rainy-day-piano",        "Rainy Day Piano",        "calm"),
+    ("autumn-walks",           "Autumn Walks",           "calm"),
+    ("summer-festival-mix",    "Summer Festival Mix",    "uplifting"),
+    ("winter-fireside",        "Winter Fireside",        "calm"),
+    ("spring-cleaning-pop",    "Spring Cleaning Pop",    "uplifting"),
+    ("desert-island-discs-companion","Desert Island Discs Companion","focused"),
+    ("radio-1-essentials",     "Radio 1 Essentials",     "energetic"),
+    ("radio-2-essentials",     "Radio 2 Essentials",     "uplifting"),
+    ("radio-3-essentials",     "Radio 3 Essentials",     "focused"),
+    ("radio-4-essentials",     "Radio 4 Essentials",     "focused"),
+    ("6-music-essentials",     "6 Music Essentials",     "energetic"),
+    ("asian-network-essentials","Asian Network Essentials","energetic"),
+    ("xtra-essentials",        "1Xtra Essentials",       "energetic"),
+    ("podcast-of-the-week",    "Podcast of the Week",    "focused"),
+    ("comedy-clipreel",        "Comedy Clipreel",        "uplifting"),
+    ("drama-snippets",         "Drama Snippets",         "focused"),
+    ("audiobook-extracts",     "Audiobook Extracts",     "focused"),
+    ("interview-essentials",   "Interview Essentials",   "focused"),
+    ("dj-mixes-monthly",       "DJ Mixes Monthly",       "energetic"),
+    ("late-night-mixes",       "Late Night Mixes",       "energetic"),
+    ("classical-late",         "Classical Late",         "calm"),
+    ("morning-classical",      "Morning Classical",      "calm"),
+    ("orchestral-suites",      "Orchestral Suites",      "focused"),
+    ("string-quartet-essentials","String Quartet Essentials","focused"),
+    ("piano-essentials",       "Piano Essentials",       "calm"),
+    ("guitar-essentials",      "Guitar Essentials",      "calm"),
+    ("drum-and-bass-essentials","Drum and Bass Essentials","energetic"),
+    ("garage-essentials",      "Garage Essentials",      "energetic"),
+    ("grime-essentials",       "Grime Essentials",       "energetic"),
+    ("dubstep-essentials",     "Dubstep Essentials",     "energetic"),
+    ("house-essentials",       "House Essentials",       "energetic"),
+    ("techno-essentials",      "Techno Essentials",      "energetic"),
+    ("trance-essentials",      "Trance Essentials",      "energetic"),
+    ("disco-essentials",       "Disco Essentials",       "uplifting"),
+    ("funk-essentials",        "Funk Essentials",        "uplifting"),
+    ("blues-essentials",       "Blues Essentials",       "calm"),
+    ("reggae-essentials",      "Reggae Essentials",      "uplifting"),
+    ("ska-essentials",         "Ska Essentials",         "uplifting"),
+    ("punk-essentials",        "Punk Essentials",        "energetic"),
+    ("metal-essentials",       "Metal Essentials",       "energetic"),
+    ("acoustic-essentials",    "Acoustic Essentials",    "calm"),
+    ("a-capella-essentials",   "A Capella Essentials",   "focused"),
+    ("choral-essentials",      "Choral Essentials",      "focused"),
+    ("musical-theatre-classics","Musical Theatre Classics","uplifting"),
+    ("hymns-and-anthems",      "Hymns and Anthems",      "calm"),
+    ("traditional-irish",      "Traditional Irish",      "calm"),
+    ("traditional-scottish",   "Traditional Scottish",   "calm"),
+    ("traditional-welsh",      "Traditional Welsh",      "calm"),
+    ("traditional-english",    "Traditional English",    "calm"),
+    ("the-best-of-2026",       "The Best of 2026",       "uplifting"),
+    ("the-best-of-2025",       "The Best of 2025",       "uplifting"),
+    ("the-best-of-2024",       "The Best of 2024",       "nostalgic"),
+    ("the-best-of-2023",       "The Best of 2023",       "nostalgic"),
+    ("the-best-of-2022",       "The Best of 2022",       "nostalgic"),
+    ("late-night-talk",        "Late Night Talk",        "calm"),
+    ("political-podcasts",     "Political Podcasts",     "focused"),
+    ("history-podcasts",       "History Podcasts",       "focused"),
+    ("science-podcasts",       "Science Podcasts",       "focused"),
+    ("nature-podcasts",        "Nature Podcasts",        "focused"),
+    ("art-podcasts",           "Art Podcasts",           "focused"),
+]
+
+
+# News quiz titles — 250 weekly-style quizzes.
+R9_QUIZ_THEMES: list[str] = [
+    "Westminster", "Holyrood", "Senedd", "Stormont", "Brussels",
+    "City", "Markets", "Energy", "Climate", "Tech",
+    "Health", "Schools", "Sport", "Football", "Cricket",
+    "Tennis", "Rugby", "Cycling", "Athletics", "Olympics",
+    "World", "Africa", "Asia", "Middle East", "Latin America",
+    "Europe", "US politics", "China", "India", "Russia",
+    "Royals", "Culture", "Arts", "Film", "Music",
+    "Literature", "Theatre", "Television", "Streaming", "Gaming",
+    "Science", "Space", "Biotech", "AI", "Robotics",
+    "Business", "Startups", "Property", "Transport", "Travel",
+]
+
+
+# ----- body / row builders --------------------------------------------
+
+def _r9_kids_body(show: str, ep_idx: int, lead: str, audience: str) -> str:
+    paras = [
+        lead,
+        f"This {audience} edition of {show} runs for around twelve minutes "
+        "and is suitable for the youngest viewers when watched with an adult.",
+        "Behind the scenes, the production team uses a small studio set, "
+        "two camera operators, and a music composer who scores each episode "
+        "around the central theme.",
+        f"Episode {ep_idx} of {show} is also released on BBC iPlayer alongside "
+        "a colouring sheet and printable activity for parents and carers.",
+        "Signed and audio-described versions are available from the episode "
+        "page; the audio-described track is mixed with a calm narrator and "
+        "an unhurried pace for first-time viewers.",
+        "BBC Sounds also publishes the original songs from the episode as a "
+        "short playlist for nursery, school-run and bedtime listening.",
+    ]
+    return "\n\n".join(paras)
+
+
+def _r9_episode_body(show: str, ep_idx: int, lead: str, channel: str) -> str:
+    paras = [
+        lead,
+        f"Episode {ep_idx} of {show} runs for around forty minutes on "
+        f"{channel} and on BBC iPlayer. The episode is also available with "
+        "subtitles, audio description, and a British Sign Language version.",
+        "The production team confirms the writer's room finalised the script "
+        "across three sessions, two of which took place on location, and one "
+        "in the BBC's Salford writing rooms.",
+        "On iPlayer, the episode sits alongside a making-of short, a soundtrack "
+        "playlist, and a critical-response thread curated by the BBC Culture team.",
+        "Press preview screenings ran the week before transmission, with "
+        "embargoed reviews lifted at 06:00 on the day of broadcast.",
+        "The next episode is scheduled for the same slot the following week, "
+        "with a midweek catch-up posted on BBC iPlayer at 09:00.",
+    ]
+    return "\n\n".join(paras)
+
+
+def _r9_quiz_body(theme: str, week_n: int) -> str:
+    paras = [
+        f"Welcome to week {week_n}'s BBC News quiz on {theme}. There are ten "
+        "questions; each is worth one point, and there are no half marks. "
+        "POST your final score to /quiz/<slug>/attempt as `score` (0..10).",
+        f"Question 1. Which of these {theme.lower()} stories led the BBC News "
+        f"front page on the Monday of this quiz week? (A) the headline event, "
+        "(B) the policy announcement, (C) the regulator's response, (D) a "
+        "long-running update.",
+        f"Question 2. Name the BBC correspondent who filed the most-read "
+        f"explainer in {theme} this week.",
+        f"Question 3. Which figure is widely quoted in the {theme.lower()} "
+        "leading paragraph? Give the rounded value.",
+        f"Question 4. Which two countries feature in this week's {theme.lower()} "
+        "international round-up?",
+        f"Question 5. Name the BBC Sounds podcast that ran a {theme.lower()} "
+        "special this week.",
+        f"Question 6. Which BBC Local region had its own {theme.lower()} angle "
+        "in the spotlight this week?",
+        f"Question 7. Which expert was the BBC Verify team's main fact-checking "
+        f"source on the {theme.lower()} story?",
+        f"Question 8. Name the BBC Four documentary that ran adjacent to this "
+        f"week's {theme.lower()} headlines.",
+        f"Question 9. Which BBC Three short took the {theme.lower()} angle "
+        "for under-25s this week?",
+        f"Question 10. Bonus: which Radio 4 programme will run a follow-up "
+        f"on {theme.lower()} in the coming week? POST your answers and your "
+        "guess at the bonus to /quiz/<slug>/attempt.",
+    ]
+    return "\n\n".join(paras)
+
+
+def _r9_playlist_body(name: str, mood: str) -> str:
+    paras = [
+        f"{name} is a BBC Sounds playlist curated for a {mood} mood. The "
+        "tracklist below is illustrative; the playable version on BBC "
+        "Sounds rotates weekly with editor's notes.",
+        "Track 1 - opening selection: a calm, recognisable theme to set the "
+        "playlist's emotional baseline.",
+        "Track 2 - lift: a slightly faster tempo that lifts the listener "
+        "without changing the mood.",
+        "Track 3 - centrepiece: the long-form anchor of the playlist, "
+        "typically five to seven minutes in length.",
+        "Track 4 - contrast: a deliberate change of texture so the listener's "
+        "ear is reset before the second half.",
+        "Track 5 - peak: the playlist's emotional high point, scored against "
+        "the editor's notes.",
+        "Track 6 - cooldown: a gentle return towards the playlist's opening "
+        "feeling, with a final acoustic tail-out.",
+        "Save the playlist to your reading-list folder 'Playlists' with the "
+        "/reading-list/folder/<name> route, or POST `/api/podcast/subscribe` "
+        "with the playlist slug to follow new additions.",
+    ]
+    return "\n\n".join(paras)
+
+
+# ----- synth functions -------------------------------------------------
+
+def synth_r9_cbeebies(con, hero_pool: list[str]) -> list[dict]:
+    """35 CBeebies shows × 34 episodes = 1190 articles."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "cbeebies") or _r9_cat_id(con, "iplayer") or 1
+    games_cid = cid
+    for si, (show_slug, show_name) in enumerate(R9_CBEEBIES_SHOWS):
+        for ei in range(34):
+            # Every 6th episode is flagged as a kids-CBeebies-game-stub.
+            is_game = (ei % 6 == 5)
+            if is_game:
+                gi = (si + ei) % len(R9_CBEEBIES_GAMES)
+                game_title, game_lead = R9_CBEEBIES_GAMES[gi]
+                headline = f"{show_name}: {game_title}"
+                lead = f"{game_lead} A playable browser game tied to {show_name}."
+            else:
+                angle_hl, angle_lead = R9_CBEEBIES_ANGLES[ei % len(R9_CBEEBIES_ANGLES)]
+                headline = angle_hl.format(show=show_name)
+                lead = angle_lead.format(show=show_name)
+            slug = _det_slug("r9-cbeebies", f"{show_slug}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 7 + ei * 5) % len(hero_pool)] if hero_pool else ""
+            body = _r9_kids_body(show_name, ei + 1, lead, "CBeebies")
+            ts = base - timedelta(
+                days=(si * 3 + ei * 2) % 180 + 1,
+                hours=(_det_int(slug) // 13) % 24,
+                minutes=(_det_int(slug) // 7) % 60,
+            )
+            tags = ["r9-cbeebies", "cbeebies", "kids",
+                    "cbeebies-show-" + show_slug,
+                    "iplayer-episode"]
+            if is_game:
+                tags.append("cbeebies-game-stub")
+            ct = "video" if not is_game else "interactive"
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=games_cid if is_game else cid,
+                section_slug="cbeebies", subsection=show_name,
+                region_label="UK", ts=ts,
+                view_count=400 + (_det_int(slug) % 12000),
+                country="UK", hero=hero, author="CBeebies",
+                topics=[show_name, "CBeebies", "Children", "BBC iPlayer"],
+                feature_tags=tags,
+                content_type=ct,
+                is_featured=1 if (si + ei) % 23 == 0 else 0,
+            ))
+    return out
+
+
+def synth_r9_cbbc(con, hero_pool: list[str]) -> list[dict]:
+    """30 CBBC shows × 33 episodes = 990 articles."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "cbbc") or _r9_cat_id(con, "iplayer") or 1
+    for si, (show_slug, show_name) in enumerate(R9_CBBC_SHOWS):
+        for ei in range(33):
+            angle_hl, angle_lead = R9_CBBC_ANGLES[ei % len(R9_CBBC_ANGLES)]
+            headline = angle_hl.format(show=show_name)
+            lead = angle_lead.format(show=show_name)
+            slug = _det_slug("r9-cbbc", f"{show_slug}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 11 + ei * 3) % len(hero_pool)] if hero_pool else ""
+            body = _r9_kids_body(show_name, ei + 1, lead, "CBBC")
+            ts = base - timedelta(
+                days=(si * 4 + ei * 3) % 200 + 1,
+                hours=(_det_int(slug) // 11) % 24,
+                minutes=(_det_int(slug) // 5) % 60,
+            )
+            tags = ["r9-cbbc", "cbbc", "kids",
+                    "cbbc-show-" + show_slug,
+                    "iplayer-episode"]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="cbbc",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=550 + (_det_int(slug) % 11000),
+                country="UK", hero=hero, author="CBBC",
+                topics=[show_name, "CBBC", "Children", "BBC iPlayer"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ei) % 19 == 0 else 0,
+            ))
+    return out
+
+
+def synth_r9_bbc_three(con, hero_pool: list[str]) -> list[dict]:
+    """25 BBC Three shows × 35 episodes = 875 articles."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "bbc_three") or _r9_cat_id(con, "iplayer") or 1
+    for si, (show_slug, show_name) in enumerate(R9_BBC_THREE_SHOWS):
+        for ei in range(35):
+            angle_hl, angle_lead = R9_BBC_THREE_ANGLES[ei % len(R9_BBC_THREE_ANGLES)]
+            n = ei + 1
+            headline = angle_hl.format(show=show_name, n=n)
+            lead = angle_lead.format(show=show_name, n=n)
+            slug = _det_slug("r9-bbcthree", f"{show_slug}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 13 + ei * 7) % len(hero_pool)] if hero_pool else ""
+            body = _r9_episode_body(show_name, n, lead, "BBC Three")
+            ts = base - timedelta(
+                days=(si * 5 + ei * 4) % 260 + 1,
+                hours=(_det_int(slug) // 17) % 24,
+                minutes=(_det_int(slug) // 3) % 60,
+            )
+            tags = ["r9-bbc-three", "bbc-three",
+                    "bbc-three-show-" + show_slug,
+                    "iplayer-episode"]
+            # Sprinkle accessibility flags through ~30% of episodes.
+            if (si * 3 + ei) % 4 == 0:
+                tags.append("signed-content")
+            if (si * 5 + ei) % 4 == 1:
+                tags.append("audio-described")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_three",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=900 + (_det_int(slug) % 16000),
+                country="UK", hero=hero, author="BBC Three",
+                topics=[show_name, "BBC Three", "Drama" if "drama" in show_slug else "Comedy",
+                        "BBC iPlayer"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ei) % 31 == 0 else 0,
+            ))
+    return out
+
+
+def synth_r9_bbc_four(con, hero_pool: list[str]) -> list[dict]:
+    """25 BBC Four shows × 35 episodes = 875 articles."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "bbc_four") or _r9_cat_id(con, "iplayer") or 1
+    for si, (show_slug, show_name) in enumerate(R9_BBC_FOUR_SHOWS):
+        for ei in range(35):
+            angle_hl, angle_lead = R9_BBC_FOUR_ANGLES[ei % len(R9_BBC_FOUR_ANGLES)]
+            n = ei + 1
+            headline = angle_hl.format(show=show_name, n=n)
+            lead = angle_lead.format(show=show_name, n=n)
+            slug = _det_slug("r9-bbcfour", f"{show_slug}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 19 + ei * 11) % len(hero_pool)] if hero_pool else ""
+            body = _r9_episode_body(show_name, n, lead, "BBC Four")
+            ts = base - timedelta(
+                days=(si * 6 + ei * 5) % 300 + 1,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 11) % 60,
+            )
+            tags = ["r9-bbc-four", "bbc-four",
+                    "bbc-four-show-" + show_slug,
+                    "iplayer-episode"]
+            if (si * 3 + ei) % 5 == 0:
+                tags.append("signed-content")
+            if (si * 7 + ei) % 5 == 2:
+                tags.append("audio-described")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_four",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=600 + (_det_int(slug) % 11000),
+                country="UK", hero=hero, author="BBC Four",
+                topics=[show_name, "BBC Four", "Culture", "Arts", "BBC iPlayer"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ei) % 41 == 0 else 0,
+            ))
+    return out
+
+
+def synth_r9_iplayer_episodes(con, hero_pool: list[str]) -> list[dict]:
+    """50 popular shows × 15 episodes = 750 playable-episode articles.
+
+    These ride on the existing /iplayer/episode/<id> route and add the
+    iplayer-play-episode capability marker."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    ipl_cid = _r9_cat_id(con, "iplayer") or 1
+    for si, (show_slug, show_name, parent_cat) in enumerate(R9_IPLAYER_SHOWS):
+        cid = _r9_cat_id(con, parent_cat) or ipl_cid
+        for ei in range(15):
+            n = ei + 1
+            angle = R9_BBC_THREE_ANGLES[(si + ei) % len(R9_BBC_THREE_ANGLES)]
+            angle_hl, angle_lead = angle
+            headline = angle_hl.format(show=show_name, n=n)
+            lead = angle_lead.format(show=show_name, n=n)
+            slug = _det_slug("r9-iplayer", f"{show_slug}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 23 + ei * 9) % len(hero_pool)] if hero_pool else ""
+            body = _r9_episode_body(show_name, n, lead, "BBC iPlayer")
+            ts = base - timedelta(
+                days=(si * 7 + ei * 4) % 320 + 1,
+                hours=(_det_int(slug) // 5) % 24,
+                minutes=(_det_int(slug) // 13) % 60,
+            )
+            tags = ["r9-iplayer-play", "iplayer", "iplayer-episode",
+                    "iplayer-play-episode",
+                    "iplayer-show-" + show_slug]
+            # Half of all iPlayer-play episodes carry accessibility flags.
+            if (si * 3 + ei) % 3 == 0:
+                tags.append("signed-content")
+            if (si * 5 + ei) % 3 == 1:
+                tags.append("audio-described")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="iplayer",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=2500 + (_det_int(slug) % 30000),
+                country="UK", hero=hero, author=show_name,
+                topics=[show_name, "BBC iPlayer", "Drama", "Catch-up"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ei) % 21 == 0 else 0,
+            ))
+    return out
+
+
+def synth_r9_sounds_playlists(con, hero_pool: list[str]) -> list[dict]:
+    """100 curated BBC Sounds playlists used by /sounds/playlist/<id>."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "sounds_playlists") or _r9_cat_id(con, "sounds") or 1
+    for pi, (pl_slug, pl_name, mood) in enumerate(R9_SOUNDS_PLAYLISTS):
+        headline = f"BBC Sounds Playlist: {pl_name}"
+        lead = (f"BBC Sounds presents {pl_name}: a {mood} playlist for any "
+                "time of day, hand-picked by the Sounds editorial team and "
+                "refreshed weekly.")
+        slug = _det_slug("r9-pl", f"{pl_slug}")
+        hero = hero_pool[(_det_int(slug) + pi * 31) % len(hero_pool)] if hero_pool else ""
+        body = _r9_playlist_body(pl_name, mood)
+        ts = base - timedelta(
+            days=(pi * 3) % 220 + 1,
+            hours=(_det_int(slug) // 7) % 24,
+            minutes=(_det_int(slug) // 11) % 60,
+        )
+        tags = ["r9-sounds-playlist", "sounds-playlist", "sounds",
+                "playlist-" + pl_slug, "mood-" + mood]
+        out.append(_r6_make_row(
+            slug=slug, headline=headline, lead=lead, body=body,
+            category_id=cid, section_slug="sounds_playlists",
+            subsection=pl_name, region_label="UK", ts=ts,
+            view_count=300 + (_det_int(slug) % 9000),
+            country="UK", hero=hero, author="BBC Sounds",
+            topics=[pl_name, "BBC Sounds", "Playlist", "Music", mood.title()],
+            feature_tags=tags,
+            content_type="playlist",
+            is_featured=1 if pi % 13 == 0 else 0,
+        ))
+    return out
+
+
+def synth_r9_news_quizzes(con, hero_pool: list[str]) -> list[dict]:
+    """50 themes × 5 weeks = 250 quiz articles."""
+    base = R9_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "news_quizzes") or _r9_cat_id(con, "quizzes") or 1
+    for ti, theme in enumerate(R9_QUIZ_THEMES):
+        for wk in range(5):
+            week_n = wk + 1
+            headline = f"BBC News quiz: {theme} - week {week_n}"
+            lead = (f"Ten questions on the {theme.lower()} stories of week "
+                    f"{week_n}. POST your final score to /quiz/<slug>/attempt "
+                    "to record it against your account.")
+            slug = _det_slug("r9-quiz", f"{theme}|{wk}")
+            hero = hero_pool[(_det_int(slug) + ti * 41 + wk * 13) % len(hero_pool)] if hero_pool else ""
+            body = _r9_quiz_body(theme, week_n)
+            ts = base - timedelta(
+                days=(ti + wk * 30) % 250 + 1,
+                hours=(_det_int(slug) // 11) % 24,
+                minutes=(_det_int(slug) // 3) % 60,
+            )
+            tags = ["r9-news-quiz", "news-quiz", "quiz", "interactive",
+                    "quiz-theme-" + theme.lower().replace(" ", "-")]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="news_quizzes",
+                subsection=theme, region_label="UK", ts=ts,
+                view_count=200 + (_det_int(slug) % 8000),
+                country="UK", hero=hero, author="BBC News quiz desk",
+                topics=[theme, "News quiz", "Interactive"],
+                feature_tags=tags,
+                content_type="quiz",
+                is_featured=1 if (ti + wk) % 17 == 0 else 0,
+            ))
+    return out
+
+
+# ----- inserts ---------------------------------------------------------
+
+def insert_r9_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+# R9 comment seeds — kid-show / playlist / quiz themed.
+R9_COMMENT_TOP: list[str] = [
+    "The /cbeebies/<show> page resolves instantly on slow mobile, well done.",
+    "Audio-described episodes flagged on /accessibility/audio-described are very welcome.",
+    "Signed BSL episodes listed on /accessibility/signed - exactly what was missing in R8.",
+    "/sounds/playlist/<id> playing nicely with the existing /api/podcast/subscribe.",
+    "/news/quiz/<id> finally gives quizzes a stable per-quiz URL.",
+    "Reading-list folder route /reading-list/folder/<name> is the smallest, sharpest fix this round.",
+    "Found a CBBC show via /cbbc/<show> and it threaded right back to /iplayer with no 404.",
+    "Used the multi-step API from R8 to chain through to /news/quiz/<id>; clean handoff.",
+]
+
+R9_COMMENT_REPLIES: list[str] = [
+    "Agreed - signed and AD flagging belongs at the section level.",
+    "Subscribed to a Sounds playlist via /api/podcast/subscribe and the toast popped instantly.",
+    "Saved a quiz attempt and it appears under Reading list / Quizzes folder.",
+    "/reading-list/folder/Playlists now collects the BBC Sounds saves nicely.",
+    "/cbeebies/<show> rendered before my pi finished its background refresh.",
+]
+
+
+def insert_r9_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+
+    pool: list[tuple[int, str]] = []
+    for tag in ("r9-cbeebies", "r9-cbbc", "r9-bbc-three", "r9-bbc-four",
+                "r9-iplayer-play", "r9-sounds-playlist", "r9-news-quiz"):
+        rows = cur.execute(
+            "SELECT id, headline FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 35",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))]
+
+    base_ts = R9_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, _hl) in enumerate(pool):
+        n_top = 1 + (idx % 2)
+        for j in range(n_top):
+            uid = user_ids[(idx * 17 + j * 11) % len(user_ids)]
+            body = R9_COMMENT_TOP[(idx * 5 + j * 3) % len(R9_COMMENT_TOP)]
+            offset_h = (idx * 13 + j * 29) % (24 * 26)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(idx * j * 7) % 60)
+            top_rows.append((
+                uid, art_id, None, body, 0, 0,
+                ts.strftime("%Y-%m-%d %H:%M:%S"),
+            ))
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    n_top = len(top_rows)
+
+    last_id_row = cur.execute(
+        "SELECT MAX(id) FROM comments WHERE body LIKE 'The /cbeebies%' "
+        "OR body LIKE 'Audio-described%' OR body LIKE 'Signed BSL%' "
+        "OR body LIKE '/sounds/playlist%' OR body LIKE '/news/quiz%' "
+        "OR body LIKE 'Reading-list%' OR body LIKE 'Found a CBBC%' "
+        "OR body LIKE 'Used the multi-step%'"
+    ).fetchone()
+    last_top_id = last_id_row[0] or 0
+    first_top_id = last_top_id - n_top + 1
+
+    reply_rows: list[tuple] = []
+    for i, (art_id, _hl) in enumerate(pool[: n_top // 2]):
+        parent_id = first_top_id + i
+        uid = user_ids[(i * 7) % len(user_ids)]
+        body = R9_COMMENT_REPLIES[i % len(R9_COMMENT_REPLIES)]
+        ts = base_ts - timedelta(hours=(i * 9) % 200, minutes=(i * 5) % 60)
+        reply_rows.append((
+            uid, art_id, parent_id, body, 0, 0,
+            ts.strftime("%Y-%m-%d %H:%M:%S"),
+        ))
+    if reply_rows:
+        cur.executemany(
+            "INSERT INTO comments (user_id, article_id, parent_id, body, "
+            "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            reply_rows,
+        )
+    return n_top + len(reply_rows)
+
+
+def insert_r9_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    rows = cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%r9-%' "
+        "ORDER BY view_count DESC LIMIT 600"
+    ).fetchall()
+    if not rows:
+        return 0
+    base_ts = R9_REFERENCE_DATE
+    out: list[tuple] = []
+    for idx, (art_id,) in enumerate(rows):
+        uid = user_ids[(idx * 11) % len(user_ids)]
+        offset_h = (idx * 19) % (24 * 30)
+        ts = base_ts - timedelta(hours=offset_h)
+        out.append((
+            uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S"),
+        ))
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)",
+        out,
+    )
+    return len(out)
+
+
+def insert_r9_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    rows = cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%r9-iplayer-play%' "
+        "OR feature_tags LIKE '%r9-sounds-playlist%' "
+        "OR feature_tags LIKE '%r9-news-quiz%' "
+        "ORDER BY view_count DESC LIMIT 240"
+    ).fetchall()
+    base_ts = R9_REFERENCE_DATE
+    out: list[tuple] = []
+    inserted = 0
+    existing = {(r[0], r[1]) for r in cur.execute(
+        "SELECT user_id, article_id FROM bookmarks"
+    )}
+    for idx, (art_id,) in enumerate(rows):
+        uid = user_ids[(idx * 7 + 3) % len(user_ids)]
+        if (uid, art_id) in existing:
+            continue
+        ts = base_ts - timedelta(hours=(idx * 13) % (24 * 25))
+        out.append((
+            uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S"),
+        ))
+        inserted += 1
+    if out:
+        cur.executemany(
+            "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+            "VALUES (?, ?, ?)",
+            out,
+        )
+    return inserted
+
+
+def insert_r9_reading_list(con: sqlite3.Connection) -> int:
+    """Populate folder-based reading-list items so the new
+    /reading-list/folder/<name> route has data to show."""
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    folder_specs: list[tuple[str, str]] = [
+        ("Playlists",  "r9-sounds-playlist"),
+        ("Quizzes",    "r9-news-quiz"),
+        ("Kids",       "r9-cbeebies"),
+        ("Kids CBBC",  "r9-cbbc"),
+        ("Watchlist",  "r9-iplayer-play"),
+        ("Signed",     "signed-content"),
+        ("Audio described","audio-described"),
+    ]
+    base_ts = R9_REFERENCE_DATE
+    existing = {(r[0], r[1]) for r in cur.execute(
+        "SELECT user_id, article_id FROM reading_list_items"
+    )}
+    inserted = 0
+    out: list[tuple] = []
+    for fi, (folder, tag) in enumerate(folder_specs):
+        rows = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY view_count DESC LIMIT 25",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        for idx, (art_id,) in enumerate(rows):
+            uid = user_ids[(fi * 3 + idx) % len(user_ids)]
+            if (uid, art_id) in existing:
+                continue
+            ts = base_ts - timedelta(hours=(fi * 11 + idx * 3) % (24 * 28))
+            out.append((
+                uid, art_id, folder,
+                f"Saved from R9 polish ({folder})",
+                "normal",
+                ts.strftime("%Y-%m-%d %H:%M:%S"),
+                0,
+            ))
+            existing.add((uid, art_id))
+            inserted += 1
+    if out:
+        cur.executemany(
+            "INSERT INTO reading_list_items (user_id, article_id, folder, "
+            "note, priority, added_at, read) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            out,
+        )
+    return inserted
+
+
+def insert_r9_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    topics: list[str] = []
+    for show_slug, _ in R9_CBEEBIES_SHOWS[:12]:
+        topics.append("cbeebies-show-" + show_slug)
+    for show_slug, _ in R9_CBBC_SHOWS[:12]:
+        topics.append("cbbc-show-" + show_slug)
+    for pl_slug, _, _ in R9_SOUNDS_PLAYLISTS[:20]:
+        topics.append("playlist-" + pl_slug)
+    base_ts = R9_REFERENCE_DATE
+    existing = {(r[0], r[1]) for r in cur.execute(
+        "SELECT user_id, topic FROM topic_subscriptions"
+    )}
+    out: list[tuple] = []
+    for idx, topic in enumerate(topics):
+        uid = user_ids[idx % len(user_ids)]
+        if (uid, topic) in existing:
+            continue
+        ts = base_ts - timedelta(days=(idx * 2) % 90 + 1)
+        out.append((
+            uid, "", topic, "weekly", 1,
+            ts.strftime("%Y-%m-%d %H:%M:%S"),
+        ))
+        existing.add((uid, topic))
+    if out:
+        cur.executemany(
+            "INSERT INTO topic_subscriptions (user_id, category_slug, topic, "
+            "frequency, active, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            out,
+        )
+    return len(out)
+
+
+def plant_r9_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles ORDER BY id LIMIT 1").fetchone()
+    if not uid_row or not art_row:
+        return
+    ts = R9_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid_row[0], art_row[0], None, R9_SENTINEL_BODY, 0, 0, ts),
+    )
+
+
+def bake_r9(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R9 additions. Idempotent (sentinel-gated)."""
+    stats: dict[str, int] = {}
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R9_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    stats["new_categories"] = ensure_r9_categories(con)
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_r9_cbeebies(con, hero_pool),
+        synth_r9_cbbc(con, hero_pool),
+        synth_r9_bbc_three(con, hero_pool),
+        synth_r9_bbc_four(con, hero_pool),
+        synth_r9_iplayer_episodes(con, hero_pool),
+        synth_r9_sounds_playlists(con, hero_pool),
+        synth_r9_news_quizzes(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r9_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r9_comments(con)
+    stats["new_reading_history"] = insert_r9_reading_history(con)
+    stats["new_bookmarks"] = insert_r9_bookmarks(con)
+    stats["new_reading_list"] = insert_r9_reading_list(con)
+    stats["new_subscriptions"] = insert_r9_subscriptions(con)
+
+    plant_r9_sentinel(con)
+    return stats
+
+
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -7592,6 +8957,7 @@ def main() -> None:
         r6_stats = bake_r6(con)
         r7_stats = bake_r7(con)
         r8_stats = bake_r8(con)
+        r9_stats = bake_r9(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -7626,8 +8992,12 @@ def main() -> None:
         v for k, v in r8_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r9_total_inserts = sum(
+        v for k, v in r9_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts + r8_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts + r8_total_inserts + r9_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -7647,6 +9017,7 @@ def main() -> None:
     print(f"[bake] R6 stats: {r6_stats}")
     print(f"[bake] R7 stats: {r7_stats}")
     print(f"[bake] R8 stats: {r8_stats}")
+    print(f"[bake] R9 stats: {r9_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

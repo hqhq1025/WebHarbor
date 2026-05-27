@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} &middot; Hands-On Lab | Coursera{% endblock %}
+{% block content %}
+<div class="lab-detail" id="main-content" style="max-width:1100px;margin:32px auto;padding:0 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:16px;">
+    <a href="{{ url_for('labs_index') }}" style="color:#0056D2;">Hands-On Labs</a> &rsaquo; <span>{{ course.title }}</span>
+  </nav>
+  <header style="background:linear-gradient(135deg,#0056D2 0%,#0048B0 100%);color:#fff;padding:36px;border-radius:14px;">
+    <div style="font-size:12px;letter-spacing:.6px;font-weight:800;opacity:.9;">HANDS-ON LAB &middot; {{ course.course_type|upper }}</div>
+    <h1 style="font-size:32px;margin:8px 0 12px;letter-spacing:-.5px;">{{ course.title }}</h1>
+    <div style="font-size:14px;opacity:.95;">{{ course.duration_text }} &middot; {{ '%.1f'|format(course.rating or 0) }}&#9733; ({{ course.review_count }} reviews) &middot; {{ course.enrolled_display() }} enrolled</div>
+  </header>
+
+  <section style="margin-top:24px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <h2 style="font-size:20px;margin:0 0 10px;">Sandbox environment</h2>
+    <p style="color:#374151;font-size:14px;margin:0 0 12px;">Launch the sandbox to run the lab in your browser. Auto-graded checkpoints validate every step &mdash; no local install required.</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <code style="background:#F2F5FA;padding:6px 10px;border-radius:6px;font-size:13px;">{{ sandbox_url }}</code>
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" style="background:#0056D2;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Open course &rarr;</a>
+    </div>
+    <ul style="margin:14px 0 0;padding-left:20px;color:#374151;font-size:14px;line-height:1.7;">
+      {% for t in tools %}<li>{{ t }}</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

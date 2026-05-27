@@ -2699,6 +2699,561 @@ def r8_widget_builder_advanced():
                            telems=['on', 'off', 'sampled'])
 
 
+# ===========================================================================
+# R9 surface: nutrition / drugs / sports / aviation / weather radar /
+# earthquakes / tide. Each route reuses the R8 telemetry ring buffer.
+# ===========================================================================
+R9_VERSION = 'r9'
+R9_BUILD_DATE = '2026-05-27'
+
+# ---- R9 nutrition reference tables (kept in code, deterministic) ---------
+_R9_DIETS = ('omnivore', 'vegetarian', 'vegan', 'keto', 'paleo')
+_R9_PROTEIN_RATIO = {'omnivore': 0.30, 'vegetarian': 0.25, 'vegan': 0.22,
+                     'keto': 0.30, 'paleo': 0.35}
+_R9_CARB_RATIO    = {'omnivore': 0.45, 'vegetarian': 0.50, 'vegan': 0.55,
+                     'keto': 0.10, 'paleo': 0.30}
+_R9_MEAL_LABELS = ['breakfast', 'lunch', 'dinner', 'snack', 'snack 2',
+                   'snack 3', 'late', 'pre-bed']
+_R9_DIET_NOTES = {
+    'omnivore':    'balanced animal + plant proteins',
+    'vegetarian':  'eggs/dairy ok, no meat',
+    'vegan':       'plant-only proteins, B12 supplement',
+    'keto':        'low-carb (<10%), high-fat, moderate-protein',
+    'paleo':       'whole foods, no grains/legumes/refined sugar',
+}
+
+
+@app.route('/nutrition/meal-plan')
+def r9_nutrition_meal_plan():
+    """Build a deterministic daily meal plan from cal / meals / diet params."""
+    try:
+        cal = int(request.args.get('cal', '2000'))
+    except ValueError:
+        cal = 2000
+    cal = max(800, min(4000, cal))
+    try:
+        meals = int(request.args.get('meals', '3'))
+    except ValueError:
+        meals = 3
+    meals = max(1, min(8, meals))
+    diet = request.args.get('diet', 'omnivore')
+    if diet not in _R9_DIETS:
+        diet = 'omnivore'
+    per_meal = cal // meals
+    p_g = int(cal * _R9_PROTEIN_RATIO[diet] / 4)
+    c_g = int(cal * _R9_CARB_RATIO[diet] / 4)
+    f_g = int(cal * (1 - _R9_PROTEIN_RATIO[diet] - _R9_CARB_RATIO[diet]) / 9)
+    plan = []
+    for i in range(meals):
+        label = _R9_MEAL_LABELS[i % len(_R9_MEAL_LABELS)]
+        kcal = per_meal + (cal - per_meal * meals if i == meals - 1 else 0)
+        plan.append({"label": label, "kcal": kcal,
+                     "notes": _R9_DIET_NOTES[diet]})
+    payload = {"cal": cal, "meals": meals, "diet": diet,
+               "per_meal_kcal": per_meal,
+               "macros_g": {"protein": p_g, "carbs": c_g, "fat": f_g},
+               "plan": plan, "schema": "wa-nutrition-v1",
+               "version": R9_VERSION}
+    _r8_emit('nutrition.plan.built', 'nutrition-meal-plan-builder',
+             cal=cal, meals=meals, diet=diet)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('nutrition_meal_plan.html',
+                           cal=cal, meals=meals, diet=diet,
+                           diets=list(_R9_DIETS),
+                           per_meal=per_meal, p_g=p_g, c_g=c_g, f_g=f_g,
+                           plan=plan)
+
+
+# ---- R9 drug reference table --------------------------------------------
+_R9_DRUGS = {
+    'warfarin':                 ('anticoagulant',           'VKA, inhibits VKORC1'),
+    'apixaban':                 ('anticoagulant',           'DOAC, Factor Xa inhibitor'),
+    'rivaroxaban':              ('anticoagulant',           'DOAC, Factor Xa inhibitor'),
+    'aspirin':                  ('antiplatelet',            'irreversible COX-1 inhibitor'),
+    'clopidogrel':              ('antiplatelet',            'P2Y12 inhibitor'),
+    'ibuprofen':                ('NSAID',                   'COX-1/2 inhibitor'),
+    'naproxen':                 ('NSAID',                   'COX-1/2 inhibitor'),
+    'atorvastatin':             ('statin',                  'HMG-CoA reductase inhibitor'),
+    'simvastatin':              ('statin',                  'HMG-CoA reductase inhibitor'),
+    'metformin':                ('biguanide',               'AMPK activator'),
+    'insulin':                  ('hormone',                 'binds insulin receptor'),
+    'lisinopril':               ('ACE inhibitor',           'inhibits ACE'),
+    'losartan':                 ('ARB',                     'AT1 receptor blocker'),
+    'amlodipine':               ('CCB',                     'L-type calcium channel blocker'),
+    'hydrochlorothiazide':      ('thiazide diuretic',       'inhibits Na-Cl cotransporter'),
+    'furosemide':               ('loop diuretic',           'inhibits Na-K-2Cl loop'),
+    'digoxin':                  ('cardiac glycoside',       'inhibits Na-K ATPase'),
+    'amiodarone':               ('class III antiarrhythmic','multichannel blocker'),
+    'sertraline':               ('SSRI',                    'serotonin reuptake inhibitor'),
+    'fluoxetine':               ('SSRI',                    'serotonin reuptake inhibitor'),
+    'venlafaxine':              ('SNRI',                    'serotonin + NE reuptake inhibitor'),
+    'tramadol':                 ('opioid',                  'mu agonist + SNRI'),
+    'sildenafil':               ('PDE5 inhibitor',          'phosphodiesterase-5 inhibitor'),
+    'isosorbide-mononitrate':   ('nitrate',                 'NO donor, vasodilator'),
+    'omeprazole':               ('PPI',                     'H+/K+ ATPase inhibitor'),
+}
+_R9_DRUG_INTERACTIONS = [
+    ('warfarin', 'ibuprofen', 'major',
+     'NSAID displaces warfarin from albumin and inhibits platelets; bleeding risk.'),
+    ('warfarin', 'aspirin', 'major',
+     'Additive bleeding risk via antiplatelet + anticoagulant.'),
+    ('warfarin', 'amiodarone', 'major',
+     'CYP2C9 inhibition raises warfarin levels; reduce dose 30-50%.'),
+    ('sildenafil', 'isosorbide-mononitrate', 'contraindicated',
+     'PDE5 inhibitor + nitrate produces severe hypotension.'),
+    ('clopidogrel', 'omeprazole', 'moderate',
+     'PPI reduces CYP2C19 activation of clopidogrel.'),
+    ('metformin', 'furosemide', 'moderate',
+     'Diuretic-induced volume depletion raises lactic acidosis risk.'),
+    ('atorvastatin', 'amiodarone', 'moderate',
+     'CYP3A4 inhibition raises statin level; myopathy risk.'),
+    ('simvastatin', 'amlodipine', 'moderate',
+     'CYP3A4 inhibition by amlodipine; cap simvastatin at 20 mg.'),
+    ('sertraline', 'tramadol', 'major',
+     'Both serotonergic -> serotonin syndrome risk.'),
+    ('fluoxetine', 'venlafaxine', 'major',
+     'Combined SSRI+SNRI raises serotonin syndrome risk.'),
+    ('lisinopril', 'amlodipine', 'minor',
+     'Common antihypertensive combo, monitor BP.'),
+    ('losartan', 'hydrochlorothiazide', 'minor',
+     'Standard ARB+thiazide combo therapy.'),
+    ('digoxin', 'amiodarone', 'major',
+     'Amiodarone doubles digoxin level via P-gp; reduce digoxin 50%.'),
+    ('digoxin', 'furosemide', 'moderate',
+     'Hypokalemia from diuresis potentiates digoxin toxicity.'),
+    ('aspirin', 'ibuprofen', 'moderate',
+     'Ibuprofen blocks aspirin antiplatelet effect.'),
+    ('insulin', 'metformin', 'minor',
+     'Standard combo therapy in T2DM.'),
+    ('apixaban', 'aspirin', 'major',
+     'Additive bleeding risk.'),
+    ('apixaban', 'amiodarone', 'moderate',
+     'P-gp / weak CYP3A4 inhibition raises apixaban level.'),
+    ('rivaroxaban', 'naproxen', 'major',
+     'NSAID + DOAC -> bleeding risk.'),
+    ('clopidogrel', 'aspirin', 'moderate',
+     'Dual antiplatelet therapy, intentional indications only.'),
+]
+
+
+def _r9_lookup_interaction(a: str, b: str):
+    a = (a or '').strip().lower()
+    b = (b or '').strip().lower()
+    for da, db_, sev, mech in _R9_DRUG_INTERACTIONS:
+        if {a, b} == {da, db_}:
+            return sev, mech
+    # Deterministic fallback severity
+    pair_key = '+'.join(sorted([a, b]))
+    bands = ['minor', 'moderate', 'major', 'contraindicated']
+    sev = bands[int(hashlib.md5(pair_key.encode()).hexdigest(), 16) % 4]
+    mech = (f"No documented direct interaction in the WA-mirror dataset; "
+            f"severity inferred as {sev} from pair-hash heuristic.")
+    return sev, mech
+
+
+@app.route('/drugs/interaction-checker')
+def r9_drug_interaction_checker():
+    """Cross-check two drugs for interaction severity + mechanism."""
+    a = (request.args.get('a', 'warfarin') or 'warfarin').strip().lower()
+    b = (request.args.get('b', 'ibuprofen') or 'ibuprofen').strip().lower()
+    class_a, mech_a = _R9_DRUGS.get(a, ('unknown', 'not in WA-mirror reference'))
+    class_b, mech_b = _R9_DRUGS.get(b, ('unknown', 'not in WA-mirror reference'))
+    severity, mechanism = _r9_lookup_interaction(a, b)
+    payload = {"drug_a": a, "drug_b": b,
+               "class_a": class_a, "class_b": class_b,
+               "mech_a": mech_a, "mech_b": mech_b,
+               "severity": severity, "mechanism": mechanism,
+               "schema": "wa-drug-interact-v1", "version": R9_VERSION}
+    _r8_emit('drugs.interaction.checked', 'drug-interaction-checker',
+             a=a, b=b, severity=severity)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('drug_interaction.html',
+                           drug_a=a, drug_b=b,
+                           class_a=class_a, class_b=class_b,
+                           mech_a=mech_a, mech_b=mech_b,
+                           severity=severity, mechanism=mechanism)
+
+
+# ---- R9 sports reference table ------------------------------------------
+_R9_SPORTS_TEAMS = {
+    'lakers':       ('nba', 'Los Angeles Lakers', 'NBA West', 0),
+    'celtics':      ('nba', 'Boston Celtics', 'NBA East', 1),
+    'warriors':     ('nba', 'Golden State Warriors', 'NBA West', 2),
+    'bucks':        ('nba', 'Milwaukee Bucks', 'NBA East', 3),
+    'nuggets':      ('nba', 'Denver Nuggets', 'NBA West', 4),
+    'heat':         ('nba', 'Miami Heat', 'NBA East', 5),
+    'suns':         ('nba', 'Phoenix Suns', 'NBA West', 6),
+    'sixers':       ('nba', 'Philadelphia 76ers', 'NBA East', 7),
+    'yankees':      ('mlb', 'New York Yankees', 'AL East', 8),
+    'dodgers':      ('mlb', 'Los Angeles Dodgers', 'NL West', 9),
+    'redsox':       ('mlb', 'Boston Red Sox', 'AL East', 10),
+    'cubs':         ('mlb', 'Chicago Cubs', 'NL Central', 11),
+    'astros':       ('mlb', 'Houston Astros', 'AL West', 12),
+    'giants':       ('mlb', 'San Francisco Giants', 'NL West', 13),
+    'patriots':     ('nfl', 'New England Patriots', 'AFC East', 14),
+    'cowboys':      ('nfl', 'Dallas Cowboys', 'NFC East', 15),
+    'chiefs':       ('nfl', 'Kansas City Chiefs', 'AFC West', 16),
+    'eagles':       ('nfl', 'Philadelphia Eagles', 'NFC East', 17),
+    '49ers':        ('nfl', 'San Francisco 49ers', 'NFC West', 18),
+    'real-madrid':  ('soccer', 'Real Madrid', 'La Liga', 19),
+    'barcelona':    ('soccer', 'FC Barcelona', 'La Liga', 20),
+    'man-city':     ('soccer', 'Manchester City', 'Premier League', 21),
+    'arsenal':      ('soccer', 'Arsenal FC', 'Premier League', 22),
+    'bayern':       ('soccer', 'Bayern Munich', 'Bundesliga', 23),
+}
+
+
+@app.route('/sports/team/<slug>/deepdive')
+def r9_sport_deepdive(slug):
+    """Deterministic season roll-up for a single franchise."""
+    season = request.args.get('season', '2024-25')
+    season_idx = {'2023-24': 0, '2024-25': 1, '2025-26': 2}.get(season, 1)
+    if slug not in _R9_SPORTS_TEAMS:
+        abort(404)
+    sport, name, league, i = _R9_SPORTS_TEAMS[slug]
+    wins = 30 + ((i * 7 + season_idx * 11) % 25)
+    if sport == 'nba':
+        losses = max(0, 82 - wins)
+    elif sport == 'nfl':
+        wins = wins % 17
+        losses = max(0, 17 - wins)
+    elif sport == 'mlb':
+        wins = 60 + ((i * 7 + season_idx * 11) % 40)
+        losses = max(0, 162 - wins)
+    else:
+        wins = wins % 38
+        losses = max(0, 38 - wins)
+    pt_diff = ((i * 5 + season_idx * 3) % 20) - 8
+    top_scorer = f"player-{slug}-{season_idx+1}"
+    home_w = wins // 2 + ((i + season_idx) % 3)
+    home_l = max(0, losses // 2 - (i % 2))
+    road_w = wins - home_w
+    road_l = losses - home_l
+    vs_div_w = wins // 4
+    vs_div_l = losses // 4
+    payload = {"sport": sport, "team": slug, "name": name,
+               "league": league, "season": season,
+               "record": f"{wins}-{losses}",
+               "home_record": f"{home_w}-{home_l}",
+               "road_record": f"{road_w}-{road_l}",
+               "vs_div": f"{vs_div_w}-{vs_div_l}",
+               "point_diff": pt_diff, "top_scorer": top_scorer,
+               "schema": "wa-sport-deepdive-v1", "version": R9_VERSION}
+    _r8_emit('sport.deepdive.viewed', 'sport-team-stat-deepdive',
+             team=slug, season=season)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('sport_deepdive.html',
+                           sport=sport, slug=slug, name=name,
+                           league=league, season=season,
+                           record=f"{wins}-{losses}",
+                           home_record=f"{home_w}-{home_l}",
+                           road_record=f"{road_w}-{road_l}",
+                           vs_div=f"{vs_div_w}-{vs_div_l}",
+                           point_diff=pt_diff, top_scorer=top_scorer)
+
+
+# ---- R9 aviation reference table ----------------------------------------
+_R9_FLIGHTS = {
+    'AA100':  ('JFK', 'LHR', 'B772', 'on time',  0,  'B22',  'Boston'),
+    'AA101':  ('LHR', 'JFK', 'B772', 'delayed',  45, 'A7',   'New-York'),
+    'UA1':    ('EWR', 'SIN', 'B789', 'on time',  0,  'C120', 'Singapore'),
+    'UA888':  ('SFO', 'PEK', 'B789', 'delayed',  35, 'G1',   'Shanghai'),
+    'DL47':   ('ATL', 'LAX', 'B739', 'boarding', 0,  'T8',   'San-Diego'),
+    'DL200':  ('JFK', 'CDG', 'A333', 'on time',  0,  '32',   'London'),
+    'BA117':  ('LHR', 'JFK', 'A388', 'on time',  0,  '14',   'New-York'),
+    'BA286':  ('LHR', 'SFO', 'B789', 'delayed',  20, '24',   'San-Francisco'),
+    'LH400':  ('FRA', 'JFK', 'A388', 'on time',  0,  'B23',  'New-York'),
+    'LH716':  ('FRA', 'HND', 'B748', 'departed', 0,  'A18',  'Tokyo'),
+    'AF6':    ('CDG', 'JFK', 'B772', 'on time',  0,  'L41',  'New-York'),
+    'AF274':  ('CDG', 'PEK', 'B772', 'delayed',  90, 'M28',  'Shanghai'),
+    'JL5':    ('HND', 'JFK', 'B789', 'on time',  0,  '147',  'New-York'),
+    'JL61':   ('NRT', 'LAX', 'B789', 'delayed',  10, '143',  'San-Diego'),
+    'NH7':    ('NRT', 'ORD', 'B772', 'on time',  0,  '110',  'Boston'),
+    'CX880':  ('HKG', 'LAX', 'A359', 'on time',  0,  '23',   'San-Diego'),
+    'SQ12':   ('NRT', 'LAX', 'B772', 'delayed',  15, '83',   'San-Diego'),
+    'SQ22':   ('SIN', 'EWR', 'A359', 'on time',  0,  'A6',   'New-York'),
+    'EK205':  ('DXB', 'JFK', 'A388', 'on time',  0,  'B14',  'New-York'),
+    'EK413':  ('DXB', 'SYD', 'A388', 'departed', 0,  'A21',  'Sydney'),
+    'QF1':    ('SYD', 'LHR', 'A388', 'on time',  0,  '8',    'London'),
+    'QF12':   ('SYD', 'LAX', 'A388', 'delayed',  25, '5',    'San-Diego'),
+    'KE17':   ('ICN', 'LAX', 'B789', 'on time',  0,  '24',   'San-Diego'),
+    'OZ102':  ('ICN', 'JFK', 'A359', 'on time',  0,  '15',   'New-York'),
+    'CA981':  ('PEK', 'JFK', 'B748', 'delayed',  40, 'E12',  'New-York'),
+    'CA989':  ('PEK', 'LAX', 'B789', 'on time',  0,  'E15',  'San-Diego'),
+    'MU587':  ('PVG', 'JFK', 'B772', 'delayed',  30, 'D12',  'New-York'),
+    'TK1':    ('IST', 'JFK', 'A359', 'on time',  0,  'F1',   'New-York'),
+    'VS3':    ('LHR', 'JFK', 'A339', 'on time',  0,  '6',    'New-York'),
+    'NZ1':    ('LHR', 'AKL', 'B789', 'departed', 0,  '12',   'Auckland'),
+}
+
+
+@app.route('/aviation/flight/<flight>')
+def r9_aviation_flight(flight):
+    """Flight tracker. Accepts IATA designator."""
+    f_up = (flight or '').upper()
+    if f_up not in _R9_FLIGHTS:
+        abort(404)
+    org, dst, eq, status, delay, gate, tide_port = _R9_FLIGHTS[f_up]
+    # Deterministic scheduled time from flight code hash.
+    h = int(hashlib.md5(f_up.encode()).hexdigest(), 16)
+    sh = h % 24
+    sm = (h // 24) % 60
+    scheduled = f"{sh:02d}:{sm:02d}"
+    est_h = (sh + delay // 60) % 24
+    est_m = (sm + delay % 60) % 60
+    estimated = f"{est_h:02d}:{est_m:02d}"
+    payload = {"flight": f_up, "origin": org, "destination": dst,
+               "equipment": eq, "status": status, "delay_min": delay,
+               "gate": gate, "scheduled": scheduled, "estimated": estimated,
+               "tide_port": tide_port,
+               "schema": "wa-aviation-v1", "version": R9_VERSION}
+    _r8_emit('aviation.flight.viewed', 'aviation-flight-tracker',
+             flight=f_up, status=status)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('aviation_flight.html',
+                           flight=f_up, origin=org, destination=dst,
+                           equipment=eq, status=status,
+                           status_slug=status.replace(' ', '-'),
+                           delay_min=delay, gate=gate,
+                           scheduled=scheduled, estimated=estimated,
+                           tide_port=tide_port)
+
+
+# ---- R9 radar reference table -------------------------------------------
+_R9_RADAR_REGIONS = {
+    'northeast-us':     'US Northeast',
+    'southeast-us':     'US Southeast',
+    'midwest-us':       'US Midwest',
+    'gulf-coast':       'US Gulf Coast',
+    'southwest-us':     'US Southwest',
+    'pacific-northwest':'US Pacific Northwest',
+    'california':       'California',
+    'rockies':          'US Rockies',
+    'appalachian':      'US Appalachian',
+    'great-plains':     'US Great Plains',
+    'alaska':           'Alaska',
+    'hawaii':           'Hawaii',
+    'british-isles':    'British Isles',
+    'iberian':          'Iberian Peninsula',
+    'central-europe':   'Central Europe',
+    'scandinavia':      'Scandinavia',
+    'mediterranean':    'Mediterranean',
+    'balkans':          'Balkans',
+    'tokyo-bay':        'Tokyo Bay',
+    'osaka-kansai':     'Osaka Kansai',
+    'seoul':            'Seoul-Incheon',
+    'shanghai-yangtze': 'Shanghai Yangtze Delta',
+    'pearl-river':      'Pearl River Delta',
+    'southeast-asia':   'Southeast Asia',
+    'australia-east':   'Australia East',
+}
+_R9_RADAR_ALIASES = {
+    'nyc': 'northeast-us', 'boston': 'northeast-us',
+    'la': 'california', 'sf': 'california',
+    'tokyo': 'tokyo-bay', 'osaka': 'osaka-kansai',
+    'shanghai': 'shanghai-yangtze', 'hk': 'pearl-river',
+    'sydney': 'australia-east', 'london': 'british-isles',
+    'madrid': 'iberian', 'rome': 'mediterranean',
+    'berlin': 'central-europe', 'stockholm': 'scandinavia',
+    'athens': 'balkans', 'seattle': 'pacific-northwest',
+    'denver': 'rockies', 'miami': 'gulf-coast',
+    'houston': 'gulf-coast', 'singapore': 'southeast-asia',
+}
+_R9_INTENSITY_BANDS = ('light', 'moderate', 'heavy', 'severe', 'extreme')
+_R9_BAND_COLORS = {
+    'light':    '#9ddc7e',
+    'moderate': '#3aa14a',
+    'heavy':    '#f1b53d',
+    'severe':   '#e36b1c',
+    'extreme':  '#c8232c',
+}
+
+
+@app.route('/weather/radar/<region>')
+def r9_weather_radar(region):
+    """Tile-style radar image. Returns SVG when ?format=svg."""
+    canonical = _R9_RADAR_ALIASES.get(region.lower(), region.lower())
+    if canonical not in _R9_RADAR_REGIONS:
+        abort(404)
+    name = _R9_RADAR_REGIONS[canonical]
+    band_param = request.args.get('band', '').lower()
+    if band_param in _R9_INTENSITY_BANDS:
+        band = band_param
+    else:
+        h = int(hashlib.md5(canonical.encode()).hexdigest(), 16)
+        band = _R9_INTENSITY_BANDS[h % 5]
+    h = int(hashlib.md5((canonical + band).encode()).hexdigest(), 16)
+    age_min = h % 30
+    # Tile SVG: 4x4 cells, each band-coloured per cell hash.
+    cells = []
+    for y in range(4):
+        for x in range(4):
+            ch = int(hashlib.md5(f"{canonical}:{band}:{x}:{y}".encode()).hexdigest(), 16)
+            color = _R9_BAND_COLORS[_R9_INTENSITY_BANDS[ch % 5]]
+            cells.append(
+                f'<rect x="{x*40}" y="{y*40}" width="40" height="40" '
+                f'fill="{color}" stroke="#222"/>'
+            )
+    tile_svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="160" '
+                'height="160" viewBox="0 0 160 160">'
+                + ''.join(cells) + '</svg>')
+    _r8_emit('radar.viewed', 'weather-radar-image',
+             region=canonical, band=band)
+    if request.args.get('format') == 'svg':
+        return Response(tile_svg, mimetype='image/svg+xml')
+    if request.args.get('format') == 'json':
+        return jsonify({"region": canonical, "name": name, "band": band,
+                        "age_min": age_min, "tile_svg": tile_svg,
+                        "schema": "wa-radar-v1", "version": R9_VERSION})
+    return render_template('weather_radar.html',
+                           region=canonical, name=name, band=band,
+                           age_min=age_min, tile_svg=tile_svg)
+
+
+# ---- R9 earthquake list -------------------------------------------------
+_R9_QUAKE_REGIONS = [
+    'Pacific Ring of Fire', 'Mid-Atlantic Ridge', 'Sumatra',
+    'Aleutian Islands', 'Japan Trench', 'Kermadec Trench',
+    'Chile Trench', 'Hellenic Arc', 'Anatolian Fault',
+    'San Andreas Fault', 'Cascadia Subduction', 'New Madrid',
+    'Iceland Rift', 'East African Rift', 'Himalayan Arc',
+    'Indonesia Banda Arc', 'Mariana Trench', 'Tonga Trench',
+    'Kuril Trench', 'Iran Plateau', 'Mexico Subduction',
+]
+_R9_QUAKE_BUCKETS = [
+    (3.0, 3.9, 'minor'),
+    (4.0, 4.9, 'light'),
+    (5.0, 5.9, 'moderate'),
+    (6.0, 6.9, 'strong'),
+    (7.0, 7.9, 'major'),
+    (8.0, 9.5, 'great'),
+]
+
+
+@app.route('/earthquakes')
+def r9_earthquakes():
+    """Magnitude-filtered list of recent quakes."""
+    try:
+        mag_min = float(request.args.get('mag_min', '4.0'))
+    except ValueError:
+        mag_min = 4.0
+    mag_min = max(1.0, min(9.5, mag_min))
+    region_q = (request.args.get('region', '') or '').strip()
+    quakes = []
+    for i, region in enumerate(_R9_QUAKE_REGIONS):
+        if region_q and region_q.lower() not in region.lower():
+            continue
+        for b_idx, (lo, hi, descriptor) in enumerate(_R9_QUAKE_BUCKETS):
+            mag = round(lo + (i % 9) * (hi - lo) / 9, 1)
+            if mag < mag_min:
+                continue
+            depth_km = 5 + ((i * 7 + b_idx * 3) % 60)
+            lat = round(-60 + (i * 17) % 120, 2)
+            lng = round(-180 + (i * 23) % 360, 2)
+            quakes.append({"magnitude": mag, "descriptor": descriptor,
+                           "region": region, "depth_km": depth_km,
+                           "lat": lat, "lng": lng,
+                           "event_id": f"wa{i:02d}{b_idx}"})
+    quakes.sort(key=lambda q: q['magnitude'], reverse=True)
+    payload = {"count": len(quakes), "mag_min": mag_min,
+               "region": region_q, "quakes": quakes,
+               "schema": "wa-quake-v1", "version": R9_VERSION}
+    _r8_emit('earthquakes.listed', 'earthquake-recent-list',
+             count=len(quakes), mag_min=mag_min)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('earthquakes.html',
+                           quakes=quakes, mag_min=mag_min, region=region_q)
+
+
+# ---- R9 tide table ------------------------------------------------------
+_R9_TIDE_LOCATIONS = {
+    'Boston':         ('semidiurnal', 2, 2, 'northeast-us'),
+    'New-York':       ('semidiurnal', 2, 2, 'northeast-us'),
+    'Norfolk':        ('semidiurnal', 2, 2, 'southeast-us'),
+    'Charleston':     ('semidiurnal', 2, 2, 'southeast-us'),
+    'Miami':          ('semidiurnal', 2, 2, 'gulf-coast'),
+    'New-Orleans':    ('diurnal', 1, 1, 'gulf-coast'),
+    'Galveston':      ('diurnal', 1, 1, 'gulf-coast'),
+    'San-Diego':      ('mixed-semidiurnal', 2, 2, 'california'),
+    'San-Francisco':  ('mixed-semidiurnal', 2, 2, 'california'),
+    'Seattle':        ('mixed-semidiurnal', 2, 2, 'pacific-northwest'),
+    'Anchorage':      ('mixed-semidiurnal', 2, 2, 'alaska'),
+    'Honolulu':       ('mixed-semidiurnal', 2, 2, 'hawaii'),
+    'Vancouver':      ('mixed-semidiurnal', 2, 2, 'pacific-northwest'),
+    'Halifax':        ('semidiurnal', 2, 2, 'northeast-us'),
+    'St-Johns':       ('semidiurnal', 2, 2, 'northeast-us'),
+    'London':         ('semidiurnal', 2, 2, 'british-isles'),
+    'Liverpool':      ('semidiurnal', 2, 2, 'british-isles'),
+    'Hamburg':        ('semidiurnal', 2, 2, 'central-europe'),
+    'Rotterdam':      ('semidiurnal', 2, 2, 'central-europe'),
+    'Lisbon':         ('semidiurnal', 2, 2, 'iberian'),
+    'Barcelona':      ('semidiurnal', 2, 2, 'iberian'),
+    'Marseille':      ('semidiurnal', 2, 2, 'mediterranean'),
+    'Naples':         ('semidiurnal', 2, 2, 'mediterranean'),
+    'Athens':         ('semidiurnal', 2, 2, 'balkans'),
+    'Tokyo':          ('semidiurnal', 2, 2, 'tokyo-bay'),
+    'Yokohama':       ('semidiurnal', 2, 2, 'tokyo-bay'),
+    'Osaka':          ('semidiurnal', 2, 2, 'osaka-kansai'),
+    'Busan':          ('semidiurnal', 2, 2, 'seoul'),
+    'Shanghai':       ('semidiurnal', 2, 2, 'shanghai-yangtze'),
+    'Hong-Kong':      ('mixed-semidiurnal', 2, 2, 'pearl-river'),
+    'Singapore':      ('mixed-semidiurnal', 2, 2, 'southeast-asia'),
+    'Mumbai':         ('semidiurnal', 2, 2, 'southeast-asia'),
+    'Sydney':         ('semidiurnal', 2, 2, 'australia-east'),
+    'Auckland':       ('semidiurnal', 2, 2, 'australia-east'),
+    'Cape-Town':      ('semidiurnal', 2, 2, 'iberian'),
+    'Buenos-Aires':   ('semidiurnal', 2, 2, 'mediterranean'),
+    'Rio-de-Janeiro': ('semidiurnal', 2, 2, 'mediterranean'),
+}
+
+
+@app.route('/tide/<location>')
+def r9_tide_tomorrow(location):
+    """Tomorrow tide schedule for any registered coastal location."""
+    if location not in _R9_TIDE_LOCATIONS:
+        # Try a case-insensitive alias.
+        match = next((k for k in _R9_TIDE_LOCATIONS
+                      if k.lower() == location.lower()), None)
+        if not match:
+            abort(404)
+        location = match
+    pattern, n_hi, n_lo, radar_region = _R9_TIDE_LOCATIONS[location]
+    h = int(hashlib.md5(location.encode()).hexdigest(), 16)
+    coef = 30 + (h % 70)
+    base_h = h % 12
+    base_m = (h // 12) % 60
+    height_hi = round(1.0 + ((h // 60) % 35) * 0.1, 2)
+    height_lo = round(0.1 + ((h // 100) % 9) * 0.08, 2)
+    # Build events spread across the 24h.
+    events = []
+    interval = 24 // (n_hi + n_lo)
+    for i in range(n_hi + n_lo):
+        kind = 'high' if i % 2 == 0 else 'low'
+        height = height_hi if kind == 'high' else height_lo
+        hh_ = (base_h + i * interval) % 24
+        mm_ = (base_m + i * 7) % 60
+        events.append({"kind": kind, "time": f"{hh_:02d}:{mm_:02d}",
+                       "height": height})
+    payload = {"location": location, "day": "tomorrow",
+               "pattern": pattern, "highs": n_hi, "lows": n_lo,
+               "coefficient": coef, "events": events,
+               "radar_region": radar_region,
+               "schema": "wa-tide-v1", "version": R9_VERSION}
+    _r8_emit('tide.viewed', 'tide-tomorrow',
+             location=location, coefficient=coef)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('tide_tomorrow.html',
+                           location=location, pattern=pattern,
+                           highs=n_hi, lows=n_lo, coefficient=coef,
+                           events=events, radar_region=radar_region)
+
+
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------

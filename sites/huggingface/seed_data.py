@@ -687,7 +687,112 @@ def _load_scraped():
         if len(base[k]) > cap:
             base[k] = base[k][:cap]
 
+    # R9: synthesize community fine-tune + GGUF quant + safetensors variants
+    # off the top scraped models so total repos clear 350k. Derived purely
+    # from existing seed bytes, so no scraped-json dependency and the
+    # variant set is byte-stable across rebuilds.
+    r9_variants = _synth_r9_variants(base["models"])
+    have = {m["slug"] for m in base["models"]}
+    for v in r9_variants:
+        if v["slug"] not in have:
+            have.add(v["slug"])
+            base["models"].append(v)
+    # Final alpha-sort so the build order is independent of variant insertion
+    base["models"].sort(key=lambda m: m.get("slug", ""))
+
     return base
+
+
+def _synth_r9_variants(base_models):
+    """R9 deterministic synthesis: GGUF quants + safetensors mirrors +
+    community fine-tunes derived from top-N scraped base models.
+
+    Output is a sorted, deduped list of API-shaped dicts compatible with
+    `_adapt()`. Same input -> same output across Python processes (uses
+    md5 of slug for any randomized fields, no `random.Random`).
+    """
+    import hashlib as _h
+
+    QUANT_AUTHORS = ["TheBloke", "bartowski", "QuantFactory", "mradermacher", "MaziyarPanahi"]
+    QUANT_LEVELS = ["Q2_K", "Q3_K_M", "Q4_K_M", "Q4_0", "Q5_K_M", "Q6_K", "Q8_0"]
+    FT_AUTHORS = [
+        "NeverSleep", "TeeZee", "Sao10K", "cognitivecomputations", "abacusai",
+        "Open-Orca", "argilla-community", "GAIR", "vicgalle", "jondurbin",
+        "Locutusque", "openchat-community", "intel-extension", "WizardLMTeam",
+    ]
+    FT_SUFFIXES = [
+        "-lora", "-qlora", "-dpo", "-orpo", "-sft", "-instruct-v2",
+        "-roleplay", "-code", "-math", "-chat", "-distilled", "-merged",
+    ]
+    SAFE_AUTHORS = ["safetensors-mirror", "second-state-mirror", "PrunaAI", "neuralmagic-mirror"]
+
+    # Sort + cap so the set of base seeds is deterministic
+    base_sorted = sorted(base_models, key=lambda m: (m.get("slug") or ""))
+    # Restrict to model-like slugs (skip obvious dataset/space leaks)
+    base_sorted = [b for b in base_sorted if "/" in (b.get("slug") or "")][:8500]
+
+    out = []
+    for base in base_sorted:
+        slug = base["slug"]
+        if "/" not in slug:
+            continue
+        _, name = slug.split("/", 1)
+        nl = name.lower()
+        # Skip slugs that already look like a quant/fine-tune so we don't
+        # build "X-GGUF-GGUF" pyramids.
+        if any(t in nl for t in ("-gguf", "-awq", "-gptq", "-exl2", "-safetensors")):
+            continue
+        h = int(_h.md5(slug.encode("utf-8")).hexdigest(), 16)
+        ptag = base.get("pipeline_tag") or "text-generation"
+        dl_base = int(base.get("downloads") or 1000)
+        lk_base = int(base.get("likes") or 10)
+        # 7 GGUF quants (different quant levels, rotating author)
+        for qi, ql in enumerate(QUANT_LEVELS):
+            qa = QUANT_AUTHORS[(h + qi) % len(QUANT_AUTHORS)]
+            new_slug = f"{qa}/{name}-{ql}-GGUF" if qi else f"{qa}/{name}-GGUF"
+            out.append({
+                "slug": new_slug,
+                "pipeline_tag": ptag,
+                "library_name": "gguf",
+                "tags": ["gguf", "quantized", ql, "llama.cpp"],
+                "downloads": max(50, dl_base // (qi + 5)),
+                "likes": max(1, lk_base // (qi + 3)),
+            })
+        # 2 safetensors mirrors
+        for si in range(2):
+            sa = SAFE_AUTHORS[(h + si) % len(SAFE_AUTHORS)]
+            new_slug = f"{sa}/{name}-safetensors-v{si+1}"
+            out.append({
+                "slug": new_slug,
+                "pipeline_tag": ptag,
+                "library_name": "safetensors",
+                "tags": ["safetensors", "secure-format", "no-pickle"],
+                "downloads": max(30, dl_base // 20),
+                "likes": max(1, lk_base // 10),
+            })
+        # 3 community fine-tunes
+        for fi in range(3):
+            fa = FT_AUTHORS[(h + fi * 3) % len(FT_AUTHORS)]
+            sfx = FT_SUFFIXES[(h + fi * 7) % len(FT_SUFFIXES)]
+            new_slug = f"{fa}/{name}{sfx}"
+            out.append({
+                "slug": new_slug,
+                "pipeline_tag": ptag,
+                "library_name": base.get("library_name") or "transformers",
+                "tags": ["fine-tuned", "community", sfx.lstrip("-")],
+                "downloads": max(20, dl_base // 30),
+                "likes": max(1, lk_base // 15),
+            })
+
+    # Dedupe + sort
+    seen = set()
+    dedup = []
+    for o in sorted(out, key=lambda m: m["slug"]):
+        if o["slug"] in seen:
+            continue
+        seen.add(o["slug"])
+        dedup.append(o)
+    return dedup
 
 
 def _list_files(folder: Path, exts={".jpg", ".jpeg", ".png", ".webp", ".svg"}):

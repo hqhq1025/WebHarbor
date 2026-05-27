@@ -5587,6 +5587,671 @@ def seed_r8_user_repos():
     return added
 
 
+# ─────────────────────────── R9 catalog growth ───────────────────────────
+# Push the catalog from R8's 40k → 50k+. Same hash-deterministic mint as
+# R5/R6/R7/R8 so two rebuilds stay byte-identical. New suffixes cover the
+# R9 surface vocabulary (chat, classroom, deeplink, etc.) so the generated
+# repo names show up in keyword searches.
+
+_R9_REPO_TARGET = 50000
+_R9_REPO_SUFFIXES = [
+    'chat-suggest', 'classroom-kit', 'deeplink', 'scanner', 'rotator',
+    'revoker', 'codeql-rules', 'gist-mirror', 'sponsor-band', 'assignment-cli',
+    'sandbox9', 'preview9', 'snapshot9', 'lab9', 'forge9',
+    'orchard9', 'beacon9', 'lens9', 'pivot9', 'relay9',
+    'switch9', 'router9', 'broker9', 'cache9', 'shard9',
+    'splitter9', 'merger9', 'compressor9', 'tagger9', 'pruner9',
+]
+
+
+def seed_r9_user_repos():
+    """Mint up to ~10000 R9 repos under existing owners. Each owner caps at
+    ~140 total repos so the catalog stays balanced. Deterministic via SHA-1
+    of (owner.username, slot)."""
+    have = Repository.query.count()
+    if have >= _R9_REPO_TARGET:
+        return 0
+
+    owners = (User.query
+              .join(Repository, Repository.owner_id == User.id)
+              .order_by(User.username.asc())
+              .distinct()
+              .all())
+    if not owners:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    topics_pool = [
+        'copilot', 'copilot-chat', 'classroom', 'codespaces', 'gist',
+        'code-scanning', 'codeql', 'secret-scanning', 'security',
+        'sponsors', 'deeplink', 'developer-experience', 'platform-engineering',
+        'observability', 'webhooks', 'graphql', 'oauth', 'cli', 'sdk',
+        'rust', 'go', 'python', 'typescript',
+    ]
+
+    added = 0
+    for slot in range(len(_R9_REPO_SUFFIXES)):
+        if have + added >= _R9_REPO_TARGET:
+            break
+        for owner in owners:
+            if have + added >= _R9_REPO_TARGET:
+                break
+            existing_for_owner = sum(1 for fn in existing_full
+                                     if fn.startswith(owner.username + '/'))
+            if existing_for_owner >= 140:
+                continue
+            suffix = _R9_REPO_SUFFIXES[
+                (slot + _r6_hash(owner.username)) % len(_R9_REPO_SUFFIXES)]
+            base_name = f"r9-{suffix}-{slot}"
+            full = f"{owner.username}/{base_name}"
+            if full in existing_full:
+                base_name = (
+                    f"r9-{suffix}-{slot}-{_r6_hash(owner.username, slot) % 9999}")
+                full = f"{owner.username}/{base_name}"
+                if full in existing_full:
+                    continue
+            h = _r6_hash('r9', full)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = ['copilot-chat', 'classroom', 'codespaces', 'gist',
+                    'code-scanning', 'secret-scanning', 'sponsors',
+                    'deeplink', 'codeql', 'token-revoke',
+                    'assignment', 'suggest'][(h >> 3) % 12]
+            desc = (
+                f"R9 polish on the {area} subsystem — deterministic stubs, "
+                f"used in production by {owner.username}."
+            )[:255]
+            feature1 = _R6_FEATURE_BANK[(h >> 7) % len(_R6_FEATURE_BANK)]
+            feature2 = _R6_FEATURE_BANK[(h >> 11) % len(_R6_FEATURE_BANK)]
+            install_tmpl = _R6_INSTALL_BANK.get(lang, 'cargo install {name}')
+            cmd = install_tmpl.format(name=base_name, full=full,
+                                      org=owner.username.lower())
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            readme = (
+                f"# {full}\n\n> {desc}\n\n## Why\n\n"
+                f"- {feature1}\n- {feature2}\n"
+                f"- Ships a deterministic CLI surface plus glossary cross-links.\n\n"
+                f"## Install\n\n```bash\n{cmd}\n```\n\n"
+                f"## Related\n\n- `/help/glossary` — terminology used here.\n"
+                f"- `/classroom` — adjacent learning surface.\n"
+            )
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            stars = 3 + (h % 2200)
+            forks = max(0, stars // (3 + (h % 5)))
+            watchers = max(1, stars // 4)
+            open_issues = (h >> 4) % 10
+            is_archived = ((h >> 9) % 26 == 0)
+
+            topic_slugs = []
+            for k in range(3 + (h % 3)):
+                ts = topics_pool[(h * 7 + k * 23) % len(topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=110 + (h % 1200),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 130),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(f"r9|{full}".encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=owner.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 12) % 42 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 7 == 0),
+                has_issues=True,
+                owner_type='organization' if (h >> 14) % 3 == 0 else 'user',
+                default_branch=default_branch,
+                size_kb=130 + (h % 21000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=(
+                    f"v{1 + (h % 5)}.{(h >> 2) % 18}.{(h >> 4) % 16}"),
+                latest_release_date=pushed - timedelta(days=3 + (h % 55)),
+                latest_release_notes=(
+                    f"R9 polish on the {area} subsystem: chat suggestions, "
+                    "classroom assignments, deeplink wiring."
+                ),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"feat({area}): R9 polish — chat / classroom / scanning"),
+                latest_commit_date=pushed,
+                latest_commit_additions=16 + (h % 300),
+                latest_commit_deletions=3 + ((h >> 1) % 150),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 1000 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
+# ─────────────────────────── R9: chat/classroom/scanning surface ───────────────────────────
+# Read-only routes added in R9. Every payload is hash-deterministic so two
+# rebuilds produce the same DOM and the WebVoyager tasks have stable answers.
+
+_R9_BUILD_TAG = 'r9.0.0'
+_R9_BUILD_SHA = hashlib.sha1(b'webharbor-github-r9').hexdigest()[:12]
+
+# Curated Copilot Chat suggestion bank. Used both by /copilot/chat (HTML) and
+# /copilot/chat/api (JSON). Indexed by integer so tasks can ask "suggestion #3".
+_R9_COPILOT_SUGGESTIONS = [
+    ('Explain code', 'Explain what this function does in plain English.'),
+    ('Find a bug', 'Look through this snippet and point out the bug.'),
+    ('Write a test', 'Generate a unit test for the function I just pasted.'),
+    ('Refactor', 'Refactor this code so the cyclomatic complexity drops.'),
+    ('Translate language', 'Convert this Python script to TypeScript.'),
+    ('Write a regex', 'Give me a regex that matches IPv4 addresses with optional port.'),
+    ('Explain error', 'Explain this stack trace and suggest a likely cause.'),
+    ('Optimize SQL', 'Optimize this SQL query for a 10-million-row table.'),
+    ('Generate docstring', 'Write a NumPy-style docstring for this function.'),
+    ('Summarize PR', 'Summarize the diff into a 3-bullet pull-request description.'),
+    ('Suggest commit message', 'Suggest a conventional-commits message for this diff.'),
+    ('Pair-program', 'Pair-program with me on this Advent of Code problem.'),
+]
+
+
+@app.route('/copilot/chat')
+def copilot_chat_page():
+    """Standalone Copilot Chat page. Distinct from the /copilot landing — this
+    is the in-product chat surface with a suggestion sidebar."""
+    page = {
+        'title': 'Copilot Chat',
+        'eyebrow': 'Copilot',
+        'subtitle': ('Interactive chat surface backed by the deterministic '
+                     'suggestion bank. Read-only on this mirror.'),
+        'meta_description': (
+            'GitHub Copilot Chat surface. Renders a frozen suggestion list '
+            'plus the JSON endpoint /copilot/chat/api for programmatic '
+            'retrieval.'),
+        'sections': ([{
+            'h': f'#{i+1} · {label}',
+            'p': f'<code>{prompt}</code>',
+        } for i, (label, prompt) in enumerate(_R9_COPILOT_SUGGESTIONS)]),
+        'bullets': [f'{len(_R9_COPILOT_SUGGESTIONS)} curated suggestions',
+                    'Same payload served by /copilot/chat/api',
+                    f'Build {_R9_BUILD_TAG}'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+@app.route('/copilot/chat/api', methods=['GET', 'POST'])
+@csrf.exempt
+def copilot_chat_api():
+    """JSON endpoint for the chat suggestion bank. GET returns the full list,
+    POST with `{"q": "..."}` returns the matching subset (case-insensitive
+    substring match on label or prompt). Read-only: no completion happens."""
+    if request.method == 'POST':
+        try:
+            body = request.get_json(silent=True) or {}
+        except Exception:
+            body = {}
+        q = (body.get('q') or '').strip().lower()
+    else:
+        q = (request.args.get('q') or '').strip().lower()
+    items = []
+    for i, (label, prompt) in enumerate(_R9_COPILOT_SUGGESTIONS):
+        if q and q not in label.lower() and q not in prompt.lower():
+            continue
+        items.append({'id': i + 1, 'label': label, 'prompt': prompt})
+    return jsonify({
+        'service': 'copilot-chat',
+        'build': _R9_BUILD_TAG,
+        'query': q,
+        'count': len(items),
+        'suggestions': items,
+    })
+
+
+@app.route('/codespaces/<codespace_id>/connect')
+def codespace_connect(codespace_id):
+    """Deeplink target for codespace connect. Renders a deterministic page
+    keyed off the codespace id. Real github.com would 302 to a VSCode URL;
+    on this mirror we render a stable HTML page so the link is testable."""
+    h = int(hashlib.sha1(
+        ('cs|' + codespace_id).encode()).hexdigest()[:10], 16)
+    machine = ['2-core · 4 GB · 32 GB', '4-core · 8 GB · 32 GB',
+               '8-core · 16 GB · 64 GB'][h % 3]
+    region = ['us-east', 'us-west', 'eu-west', 'asia-east'][(h >> 4) % 4]
+    state = ['Available', 'Starting', 'Stopped'][(h >> 7) % 3]
+    deeplink = f'vscode://github.codespaces/connect/{codespace_id}'
+    page = {
+        'title': f'Connect to codespace {codespace_id}',
+        'eyebrow': 'Codespaces',
+        'subtitle': (f'Deterministic deeplink for codespace '
+                     f'<code>{codespace_id}</code>.'),
+        'meta_description': (
+            f'Codespace connect surface for {codespace_id}. Returns a '
+            'deeplink URL plus machine/region/state.'),
+        'sections': [{
+            'h': 'Codespace',
+            'list': [
+                f'<strong>ID</strong>: <code>{codespace_id}</code>',
+                f'<strong>Machine</strong>: {machine}',
+                f'<strong>Region</strong>: <code>{region}</code>',
+                f'<strong>State</strong>: <code>{state}</code>',
+            ],
+        }, {
+            'h': 'Deeplink',
+            'pre': deeplink,
+        }, {
+            'h': 'Notes',
+            'list': [
+                'Read-only on this mirror — clicking the deeplink does nothing.',
+                f'Build {_R9_BUILD_TAG}',
+            ],
+        }],
+        'bullets': ['Deterministic machine/region/state',
+                    'Deeplink format mirrors real github.com',
+                    f'Sha {_R9_BUILD_SHA}'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# Code-scanning alert bank — 5 deterministic CodeQL findings per repo.
+_R9_CODEQL_RULES = [
+    ('py/sql-injection', 'high',
+     'User input flows into a raw SQL query without parameterization.'),
+    ('js/xss', 'high',
+     'Untrusted data reaches a DOM sink without escaping.'),
+    ('py/path-injection', 'medium',
+     'Untrusted path component used in file open without validation.'),
+    ('go/hardcoded-credentials', 'critical',
+     'Hardcoded API token found in repository source.'),
+    ('java/insecure-randomness', 'low',
+     'java.util.Random used in a security-sensitive context.'),
+]
+
+
+def _r9_codeql_alerts(repo):
+    out = []
+    for i, (rule_id, severity, msg) in enumerate(_R9_CODEQL_RULES):
+        h = int(hashlib.sha1(
+            f'codeql|{repo.full_name}|{i}'.encode()).hexdigest()[:10], 16)
+        file_path = [
+            'src/db/query.py', 'web/render.js', 'lib/io/path.py',
+            'cmd/server/main.go', 'src/main/java/Auth.java',
+        ][i]
+        out.append({
+            'number': i + 1,
+            'rule_id': rule_id,
+            'severity': severity,
+            'message': msg,
+            'file_path': file_path,
+            'line': 12 + (h % 480),
+            'state': 'open' if (h % 5) != 0 else 'dismissed',
+        })
+    return out
+
+
+@app.route('/security/code-scanning/<username>/<reponame>/results')
+def code_scanning_results(username, reponame):
+    """CodeQL alert listing for a repo. Five deterministic findings; state
+    flips to dismissed for ~20% of (repo, rule) pairs based on SHA-1."""
+    repo = _require_repo(username, reponame)
+    alerts = _r9_codeql_alerts(repo)
+    page = {
+        'title': f'Code scanning results · {repo.full_name}',
+        'eyebrow': 'Security · Code scanning',
+        'subtitle': (f'CodeQL findings for <code>{repo.full_name}</code>. '
+                     'Read-only — alerts cannot be acknowledged here.'),
+        'meta_description': (
+            f'Code scanning (CodeQL) results for {repo.full_name}.'),
+        'sections': [{
+            'h': 'Alerts',
+            'table': {
+                'cols': ['#', 'Rule', 'Severity', 'File', 'Line', 'State'],
+                'rows': [
+                    [a['number'], a['rule_id'], a['severity'],
+                     a['file_path'], a['line'], a['state']]
+                    for a in alerts
+                ],
+            },
+        }, {
+            'h': 'Summary',
+            'list': [
+                f"<strong>Open</strong>: "
+                f"{sum(1 for a in alerts if a['state'] == 'open')}",
+                f"<strong>Dismissed</strong>: "
+                f"{sum(1 for a in alerts if a['state'] == 'dismissed')}",
+                f"<strong>Highest severity</strong>: "
+                f"{max((a['severity'] for a in alerts), key=lambda s: ['low','medium','high','critical'].index(s))}",
+            ],
+        }],
+        'bullets': [f'{len(alerts)} CodeQL alerts',
+                    f'Repo {repo.full_name}',
+                    'Stable across rebuilds'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# Secret-scanning token bank — 4 deterministic findings per repo.
+_R9_SECRET_KINDS = [
+    ('github_pat', 'GitHub personal access token'),
+    ('aws_access_key', 'AWS access key ID'),
+    ('slack_webhook', 'Slack webhook URL'),
+    ('stripe_secret', 'Stripe live secret key'),
+]
+
+
+def _r9_secret_alerts(repo):
+    out = []
+    for i, (kind, label) in enumerate(_R9_SECRET_KINDS):
+        h = int(hashlib.sha1(
+            f'secret|{repo.full_name}|{i}'.encode()).hexdigest()[:10], 16)
+        token_id = hashlib.sha1(
+            f'tok|{repo.full_name}|{i}'.encode()).hexdigest()[:16]
+        out.append({
+            'number': i + 1,
+            'kind': kind,
+            'label': label,
+            'token_id': token_id,
+            'file_path': ['config/secrets.env', '.github/deploy.yml',
+                          'scripts/notify.sh', 'src/billing/client.py'][i],
+            'line': 5 + (h % 120),
+            'revoked': False,
+        })
+    return out
+
+
+@app.route('/security/secret-scanning/<username>/<reponame>/revoke',
+           methods=['GET', 'POST'])
+@csrf.exempt
+def secret_scanning_revoke(username, reponame):
+    """Secret-scanning revoke flow. GET lists detected tokens; POST with
+    `token_id=<id>` returns a deterministic confirmation. State is NOT
+    persisted to the DB (would break byte-identity); the POST just echoes
+    a confirmation payload."""
+    repo = _require_repo(username, reponame)
+    alerts = _r9_secret_alerts(repo)
+    if request.method == 'POST':
+        token_id = (request.form.get('token_id', '')
+                    or (request.get_json(silent=True) or {}).get('token_id', ''))
+        token_id = (token_id or '').strip()
+        found = next((a for a in alerts if a['token_id'] == token_id), None)
+        if not found:
+            return jsonify({
+                'revoked': False,
+                'reason': 'token_id not found in this repo',
+                'token_id': token_id,
+            }), 404
+        return jsonify({
+            'revoked': True,
+            'token_id': token_id,
+            'kind': found['kind'],
+            'repo': repo.full_name,
+            'note': ('Revocation is simulated; state is not persisted to '
+                     'preserve seed byte-identity.'),
+            'build': _R9_BUILD_TAG,
+        }), 202
+    page = {
+        'title': f'Revoke leaked secrets · {repo.full_name}',
+        'eyebrow': 'Security · Secret scanning',
+        'subtitle': (f'Detected secrets in <code>{repo.full_name}</code>. '
+                     'POST <code>token_id</code> here to simulate revocation.'),
+        'meta_description': (
+            f'Secret-scanning revoke surface for {repo.full_name}.'),
+        'sections': [{
+            'h': 'Detected secrets',
+            'table': {
+                'cols': ['#', 'Kind', 'Token id', 'File', 'Line'],
+                'rows': [
+                    [a['number'], a['kind'], a['token_id'],
+                     a['file_path'], a['line']]
+                    for a in alerts
+                ],
+            },
+        }, {
+            'h': 'Revoke (simulated)',
+            'p': ('POST to this URL with <code>token_id=&lt;id&gt;</code> '
+                  'to receive a confirmation envelope. No DB writes happen.'),
+        }],
+        'bullets': [f'{len(alerts)} detected secrets',
+                    'POST returns 202 on success, 404 on unknown id',
+                    f'Build {_R9_BUILD_TAG}'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# GitHub Classroom assignment bank — fixed across rebuilds.
+_R9_CLASSROOM_ASSIGNMENTS = [
+    ('intro-python', 'Intro to Python',
+     'Build a CLI calculator with unit tests.', 'Python', 42, 28),
+    ('react-hooks', 'React Hooks Lab',
+     'Convert a class component to hooks and add a custom hook.', 'JavaScript', 36, 19),
+    ('rust-ownership', 'Rust Ownership',
+     'Implement a borrow-checker-friendly linked list.', 'Rust', 24, 11),
+    ('sql-joins', 'SQL Joins Practice',
+     'Solve 12 ranked joins on a sample schema.', 'SQL', 51, 33),
+    ('algo-graphs', 'Graph Algorithms',
+     'Implement BFS, DFS and Dijkstra; pass the provided tests.', 'Go', 29, 14),
+    ('web-security', 'Web Security Basics',
+     'Patch the OWASP-Top-10 demo app one rule at a time.', 'TypeScript', 33, 17),
+]
+
+
+@app.route('/classroom')
+def classroom_index():
+    """GitHub Classroom landing page — lists the assignment bank."""
+    page = {
+        'title': 'GitHub Classroom',
+        'eyebrow': 'Classroom',
+        'subtitle': ('Assignments distributed to student rosters. Read-only '
+                     'on this mirror.'),
+        'meta_description': (
+            'GitHub Classroom landing page. Lists the fixed assignment bank '
+            'and links to each assignment detail page.'),
+        'sections': [{
+            'h': 'Assignments',
+            'table': {
+                'cols': ['#', 'Slug', 'Title', 'Language',
+                         'Roster', 'Submitted'],
+                'rows': [
+                    [i + 1,
+                     f'<a href="/classroom/assignment/{slug}"><code>{slug}</code></a>',
+                     title, lang, roster, submitted]
+                    for i, (slug, title, _desc, lang, roster, submitted)
+                    in enumerate(_R9_CLASSROOM_ASSIGNMENTS)
+                ],
+            },
+        }],
+        'bullets': [f'{len(_R9_CLASSROOM_ASSIGNMENTS)} assignments',
+                    'Roster sizes are frozen',
+                    f'Build {_R9_BUILD_TAG}'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+@app.route('/classroom/assignment/<slug>')
+def classroom_assignment_detail(slug):
+    """Detail page for a single classroom assignment."""
+    found = None
+    idx = -1
+    for i, row in enumerate(_R9_CLASSROOM_ASSIGNMENTS):
+        if row[0] == slug:
+            found = row
+            idx = i
+            break
+    if not found:
+        abort(404)
+    s_slug, title, desc, lang, roster, submitted = found
+    pct = round(100.0 * submitted / max(1, roster), 1)
+    page = {
+        'title': title,
+        'eyebrow': f'Classroom · {s_slug}',
+        'subtitle': desc,
+        'meta_description': (
+            f'GitHub Classroom assignment detail page for {s_slug}.'),
+        'sections': [{
+            'h': 'Identity',
+            'list': [
+                f'<strong>Slug</strong>: <code>{s_slug}</code>',
+                f'<strong>Title</strong>: {title}',
+                f'<strong>Language</strong>: <code>{lang}</code>',
+                f'<strong>Roster size</strong>: {roster}',
+                f'<strong>Submissions</strong>: {submitted} ({pct}%)',
+            ],
+        }, {
+            'h': 'Brief',
+            'p': desc,
+        }, {
+            'h': 'Submit',
+            'p': ('Push your starter repo and the Classroom autograder will '
+                  'pick up the run. Read-only on this mirror.'),
+        }],
+        'bullets': [f'Assignment #{idx + 1}',
+                    f'Build {_R9_BUILD_TAG}',
+                    'Stable across rebuilds'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# Gist bank — six frozen public gists referenced by /gist/<id>.
+_R9_GISTS = [
+    ('g9a1', 'parse_iso.py',
+     'Parse ISO-8601 timestamps with fractional seconds.',
+     'def parse_iso(s):\n    return datetime.fromisoformat(s.replace("Z","+00:00"))'),
+    ('g9b2', 'rate_limit.go',
+     'Token-bucket rate limiter in 40 lines of Go.',
+     'package rl\n// Take returns true if a token was available.\nfunc (b *Bucket) Take() bool { /* … */ }'),
+    ('g9c3', 'cleanup.sh',
+     'Idempotent shell cleanup for stale Docker layers.',
+     '#!/usr/bin/env bash\nset -euo pipefail\ndocker system prune -af --volumes'),
+    ('g9d4', 'flatten.ts',
+     'Tail-recursive array flatten in TypeScript.',
+     'export const flatten = <T>(xs: T[][]): T[] => xs.reduce((a, b) => a.concat(b), []);'),
+    ('g9e5', 'csv2json.py',
+     'Stream a CSV file into newline-delimited JSON.',
+     'import csv, json, sys\nfor row in csv.DictReader(sys.stdin):\n    print(json.dumps(row))'),
+    ('g9f6', 'retry.rs',
+     'Retry helper with exponential backoff in Rust.',
+     'pub fn retry<F, T, E>(mut f: F, attempts: usize) -> Result<T, E> where F: FnMut() -> Result<T, E> { /* … */ }'),
+]
+
+
+@app.route('/gist/new', methods=['GET', 'POST'])
+@csrf.exempt
+def gist_new():
+    """Create-private-gist surface. POST is a no-op (returns a deterministic
+    gist_id derived from the payload + build sha); GET renders the form
+    description. State is NOT persisted to preserve byte-identity."""
+    if request.method == 'POST':
+        try:
+            body = (request.get_json(silent=True)
+                    or {k: request.form.get(k, '') for k in (
+                        'filename', 'description', 'content', 'public')})
+        except Exception:
+            body = {}
+        filename = (body.get('filename') or '').strip() or 'untitled.txt'
+        description = (body.get('description') or '').strip()
+        content = body.get('content') or ''
+        is_public_raw = body.get('public')
+        is_public = str(is_public_raw).lower() in ('1', 'true', 'yes', 'on')
+        gist_id = hashlib.sha1(
+            ('|'.join([filename, description, content, str(is_public),
+                       _R9_BUILD_SHA])).encode()).hexdigest()[:12]
+        return jsonify({
+            'created': True,
+            'gist_id': gist_id,
+            'filename': filename,
+            'is_public': is_public,
+            'visibility': 'public' if is_public else 'private',
+            'note': ('Gist is NOT persisted; the id is derived from the '
+                     'payload + build sha so reposts return the same value.'),
+            'build': _R9_BUILD_TAG,
+        }), 201
+    page = {
+        'title': 'New gist',
+        'eyebrow': 'Gist',
+        'subtitle': ('Paste a snippet and create a private or public gist. '
+                     'Read-only on this mirror — submits return a deterministic id.'),
+        'meta_description': (
+            'New gist form. POST returns a stable gist id derived from the '
+            'payload, with no DB writes.'),
+        'sections': [{
+            'h': 'Form fields',
+            'list': [
+                '<code>filename</code> — defaults to <code>untitled.txt</code>',
+                '<code>description</code> — free text',
+                '<code>content</code> — gist body',
+                '<code>public</code> — <code>true</code> / <code>false</code> '
+                '(defaults to false → private)',
+            ],
+        }, {
+            'h': 'POST',
+            'p': ('Submitting returns <code>{created, gist_id, '
+                  'filename, is_public, visibility}</code>. State is not '
+                  'written to the DB.'),
+        }, {
+            'h': 'Bank',
+            'p': ('Six pre-seeded public gists are reachable at '
+                  '<code>/gist/&lt;id&gt;</code>. See '
+                  '<a href="/gist/g9a1">/gist/g9a1</a> for an example.'),
+        }],
+        'bullets': [f'{len(_R9_GISTS)} frozen public gists',
+                    'POST returns a deterministic id',
+                    f'Build {_R9_BUILD_TAG}'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+@app.route('/gist/<gist_id>')
+def gist_detail(gist_id):
+    """Detail page for a single gist."""
+    found = next((g for g in _R9_GISTS if g[0] == gist_id), None)
+    if not found:
+        abort(404)
+    g_id, filename, description, body = found
+    page = {
+        'title': filename,
+        'eyebrow': f'Gist · {g_id}',
+        'subtitle': description,
+        'meta_description': f'Gist detail page for {g_id}.',
+        'sections': [{
+            'h': 'Metadata',
+            'list': [
+                f'<strong>ID</strong>: <code>{g_id}</code>',
+                f'<strong>Filename</strong>: <code>{filename}</code>',
+                f'<strong>Visibility</strong>: <code>public</code>',
+                f'<strong>Description</strong>: {description}',
+            ],
+        }, {
+            'h': filename,
+            'pre': body,
+        }],
+        'bullets': ['Frozen across rebuilds',
+                    f'Build {_R9_BUILD_TAG}',
+                    'Linked from /gist/new'],
+    }
+    return render_template('info_page.html', page=page)
+
+
 # ─────────────────────────── Main ───────────────────────────
 
 def seed_benchmark_users():
@@ -8627,10 +9292,13 @@ def create_app():
         # R8: extend catalog to 40k+; commits topped via seed_extra_commits.
         c16 = seed_r8_user_repos() or 0
         c1e = seed_extra_commits() or 0
+        # R9: extend catalog to 50k+; commits topped via seed_extra_commits.
+        c17 = seed_r9_user_repos() or 0
+        c1f = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + ct) > 0)
     return app
 
 
@@ -8671,10 +9339,13 @@ with app.app_context():
         # R8
         c16 = seed_r8_user_repos() or 0
         c1e = seed_extra_commits() or 0
+        # R9
+        c17 = seed_r9_user_repos() or 0
+        c1f = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + ct) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

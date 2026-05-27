@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Drug Interaction Checker — WolframAlpha{% endblock %}
+{% block body_class %}page-drug-interaction{% endblock %}
+{% block content %}
+<section class="wa-drug-interact">
+  <h1>Drug Interaction Checker</h1>
+  <p class="wa-intro">
+    Cross-check two drugs (or two drug classes) for interaction severity
+    and mechanism notes.
+  </p>
+  <form method="get" action="/drugs/interaction-checker" class="wa-form">
+    <label>Drug A <input name="a" value="{{ drug_a }}" type="text"></label>
+    <label>Drug B <input name="b" value="{{ drug_b }}" type="text"></label>
+    <button type="submit">Check</button>
+  </form>
+  <h2>Result</h2>
+  <p class="wa-severity-{{ severity }}">
+    <strong>{{ drug_a }}</strong> ({{ class_a }}) + <strong>{{ drug_b }}</strong> ({{ class_b }}):
+    severity = <strong>{{ severity }}</strong>.
+  </p>
+  <p class="wa-mech">{{ mechanism }}</p>
+  <h2>Class Comparator</h2>
+  <table class="wa-compare">
+    <tr><th></th><th>Drug A</th><th>Drug B</th></tr>
+    <tr><th>Drug</th><td>{{ drug_a }}</td><td>{{ drug_b }}</td></tr>
+    <tr><th>Class</th><td>{{ class_a }}</td><td>{{ class_b }}</td></tr>
+    <tr><th>Mechanism</th><td>{{ mech_a }}</td><td>{{ mech_b }}</td></tr>
+  </table>
+  <p class="wa-meta">Schema: <code>wa-drug-interact-v1</code>.</p>
+  <p class="wa-related">
+    See <a href="/topic/drug-interaction-checker">drug-interaction-checker</a>,
+    <a href="/topic/drug-class-comparator">drug-class-comparator</a>.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Revision history for {{ recipe.title }} — see every edit our test kitchen has made and why.{% endblock %}
+
+{% block content %}
+<section class="container recipe-versions" style="max-width:920px;margin:32px auto;padding:0 16px;">
+  <h1>Version history — {{ recipe.title }}</h1>
+  <p class="lede" style="color:#555;">
+    Every edit our test kitchen has made to this recipe, with the reason for
+    the change and the editor who landed it.
+  </p>
+
+  <ol class="version-list" data-test-id="version-list" style="list-style:none;padding:0;">
+    {% for v in versions %}
+    <li style="border:1px solid #e6e1d2;border-radius:6px;padding:12px 14px;margin:12px 0;background:#fafaf6;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <strong data-test-id="version-id">{{ v.version_id }}</strong>
+        <span style="color:#666;font-size:0.9rem;" data-test-id="version-edited-at">
+          {{ v.edited_at.strftime('%Y-%m-%d') }}
+        </span>
+      </div>
+      <div style="margin-top:4px;color:#444;font-size:0.9rem;">
+        <span data-test-id="version-kind"
+              style="display:inline-block;padding:2px 8px;background:#e6efe2;border-radius:3px;font-size:0.85rem;">
+          {{ v.kind }}
+        </span>
+        <span style="margin-left:8px;">by {{ v.editor }}</span>
+      </div>
+      <p style="margin:8px 0 0 0;" data-test-id="version-note">{{ v.note }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <p style="margin-top:18px;font-size:0.9rem;color:#666;">
+    Showing the {{ versions | length }} most recent revisions. Older
+    revisions are archived in the editorial system.
+  </p>
+
+  <p style="margin-top:18px;">
+    See also: <a href="/recipe/{{ recipe.slug }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/print">print view</a>.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Endorsements — arXiv{% endblock %}
+{% block content %}
+
+<h1>Endorsements</h1>
+<p class="muted">
+    Submitting to a new subject class on arXiv requires endorsement from
+    an existing arXiv author in that class.  Endorsements are issued
+    once per (user, subject_class) pair and stay valid for five years.
+</p>
+
+<div class="dash-card">
+    <h2>Rules</h2>
+    <table class="data" id="endorsement-rules">
+        <tr><th>Topic</th><th>Rule</th></tr>
+        {% for topic, desc in rules %}
+        <tr>
+            <td><strong>{{ topic }}</strong></td>
+            <td>{{ desc }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="dash-card">
+    <h2>Subject classes</h2>
+    <p>
+    {% for c in classes %}
+        <a href="{{ url_for('endorse_request') }}?subject_class={{ c }}"><code>{{ c }}</code></a>
+        {%- if not loop.last %} &middot; {% endif %}
+    {% endfor %}
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Request an endorsement</h2>
+    <p>
+        Use the
+        <a href="{{ url_for('endorse_request') }}">/endorse-request</a>
+        form below to ask a colleague (or to auto-issue a code if you
+        are already eligible).
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Contact</h2>
+    <p>Endorsement support: <code>{{ contact }}</code></p>
+</div>
+
+{% endblock %}

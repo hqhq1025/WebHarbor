@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Learning Analytics Dashboard | Coursera{% endblock %}
+{% block content %}
+<div class="analytics" id="main-content" style="max-width:1100px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:22px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">LEARNING ANALYTICS</div>
+    <h1 style="font-size:30px;letter-spacing:-.5px;margin:12px 0 4px;">Your learning dashboard</h1>
+    {% if preview %}<p style="color:#5B6780;font-size:13px;margin:0;">Preview data &mdash; <a href="{{ url_for('login') }}" style="color:#0056D2;">sign in</a> to see your real metrics.</p>
+    {% else %}<p style="color:#5B6780;font-size:13px;margin:0;">Up-to-the-minute view of your active enrolments.</p>{% endif %}
+  </header>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;">
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-align:center;">
+      <div style="font-size:11px;color:#5B6780;letter-spacing:.6px;font-weight:700;text-transform:uppercase;">Total courses</div>
+      <div style="font-size:32px;font-weight:800;color:#0056D2;margin:6px 0 0;">{{ total }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-align:center;">
+      <div style="font-size:11px;color:#5B6780;letter-spacing:.6px;font-weight:700;text-transform:uppercase;">Completed</div>
+      <div style="font-size:32px;font-weight:800;color:#1B7D3B;margin:6px 0 0;">{{ completed }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-align:center;">
+      <div style="font-size:11px;color:#5B6780;letter-spacing:.6px;font-weight:700;text-transform:uppercase;">In progress</div>
+      <div style="font-size:32px;font-weight:800;color:#C25A00;margin:6px 0 0;">{{ in_progress }}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-align:center;">
+      <div style="font-size:11px;color:#5B6780;letter-spacing:.6px;font-weight:700;text-transform:uppercase;">Hours invested</div>
+      <div style="font-size:32px;font-weight:800;color:#444;margin:6px 0 0;">{{ '%.1f'|format(hours) }}</div>
+    </div>
+  </div>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <thead><tr style="background:#F2F5FA;text-align:left;">
+        <th style="padding:10px;">Course</th><th style="padding:10px;">Progress</th><th style="padding:10px;">Duration</th>
+      </tr></thead>
+      <tbody>
+      {% for e in enrollments %}
+      <tr style="border-top:1px solid #DAE1ED;">
+        <td style="padding:10px;"><a href="{{ url_for('course_detail', slug=e.course.slug) }}" style="color:#0056D2;">{{ e.course.title }}</a></td>
+        <td style="padding:10px;">
+          <div style="background:#F2F5FA;border-radius:999px;height:8px;overflow:hidden;">
+            <div style="background:#0056D2;height:100%;width:{{ e.progress }}%;"></div>
+          </div>
+          <div style="font-size:12px;color:#5B6780;margin-top:4px;">{{ e.progress }}%</div>
+        </td>
+        <td style="padding:10px;">{{ e.course.duration_text }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

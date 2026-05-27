@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Capstone Project Showcase | Coursera{% endblock %}
+{% block content %}
+<div class="showcase" id="main-content" style="max-width:1200px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:24px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">CAPSTONE SHOWCASE</div>
+    <h1 style="font-size:32px;letter-spacing:-.5px;margin:12px 0 6px;">Capstone Project Showcase</h1>
+    <p style="color:#5B6780;font-size:15px;margin:0;">Top capstone projects from across the Coursera catalogue &mdash; the proof learners ship to recruiters.</p>
+  </header>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;">
+    {% for c in courses %}
+    <a href="{{ url_for('course_detail', slug=c.slug) }}" style="display:block;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;">
+      <div style="font-size:11px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;">{{ c.category }} &middot; {{ c.level }}</div>
+      <div style="font-size:17px;font-weight:700;margin:6px 0 8px;line-height:1.3;">{{ c.title }}</div>
+      <div style="color:#5B6780;font-size:13px;">{{ c.duration_text }} &middot; {{ '%.1f'|format(c.rating or 0) }}&#9733; ({{ c.review_count }} reviews)</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

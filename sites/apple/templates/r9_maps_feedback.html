@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Apple Maps Feedback{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:40px auto;padding:0 20px;">
+  <h1 style="font-size:40px;font-weight:700;color:#1d1d1f;">Apple Maps Feedback</h1>
+  <p style="color:#6e6e73;font-size:19px;margin:12px 0 32px;">
+    Spotted something off in Maps? Send Apple feedback so we can keep places, hours, and directions accurate.
+  </p>
+
+  <form id="r9-maps-feedback-form" method="POST" action="/maps/feedback" style="display:grid;gap:16px;max-width:520px;">
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Location (place name or address)</span>
+      <input type="text" name="location" required placeholder="e.g. Apple Park, Cupertino" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+    </label>
+
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Category</span>
+      <select name="category" required style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+        {% for c in categories %}<option value="{{ c }}">{{ c.replace('_', ' ') }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Comment (optional)</span>
+      <textarea name="comment" rows="4" placeholder="Tell us what we got wrong…" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:15px;"></textarea>
+    </label>
+
+    <button type="submit" style="padding:12px 24px;background:#0071e3;color:#fff;border:none;border-radius:980px;font-size:16px;font-weight:500;cursor:pointer;">Send feedback</button>
+  </form>
+
+  <p style="margin-top:48px;color:#6e6e73;font-size:13px;">Reference date: {{ reference_date }}. Apple does not associate Maps feedback with your Apple ID.</p>
+</div>
+{% endblock %}

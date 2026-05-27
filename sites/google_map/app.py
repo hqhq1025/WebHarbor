@@ -37,6 +37,7 @@ from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
 from sqlalchemy import or_, and_, func, text
 from werkzeug.middleware.proxy_fix import ProxyFix
+from jinja2 import TemplateNotFound
 
 # --------------------------------------------------------------------------
 #  Deterministic-seed constants
@@ -4182,6 +4183,430 @@ def api_command_palette():
 
 
 # --------------------------------------------------------------------------
+#  R9 — outdoor verticals: trail / beach / lighthouse / scenic-byway /
+#  geocache / national-park permit-request.  Each route accepts the
+#  Place.slug from the R9 expansion (slug prefix r9-<kind>-).  Slug-numeric
+#  fallback also accepts the integer place id.  Output is HTML for browser
+#  surfaces and JSON when Accept: application/json is requested or the
+#  route handler is suffixed with .json.
+# --------------------------------------------------------------------------
+R9_KINDS = ("trail", "beach", "lighthouse", "byway", "geocache", "park")
+R9_TRAIL_DIFFICULTIES = ("easy", "moderate", "hard")
+R9_WATER_QUALITY = ("excellent", "good", "fair", "advisory")
+
+
+def _r9_lookup(kind, ident):
+    """Resolve a Place from a slug or integer id; enforce kind prefix.
+
+    Returns the Place or None.  Kind is one of R9_KINDS (or "" for any).
+    """
+    if ident is None:
+        return None
+    p = None
+    if isinstance(ident, int) or (isinstance(ident, str) and ident.isdigit()):
+        p = Place.query.get(int(ident))
+    if p is None:
+        p = Place.query.filter_by(slug=str(ident)).first()
+    if p is None:
+        return None
+    if kind:
+        slug_prefix = f"r9-{kind}-"
+        # Allow real Wikipedia trails/beaches too (e.g. freedom-trail,
+        # venice-beach) by also accepting a slug containing the kind
+        # substring.  Strict R9 routes prefer the prefix match.
+        if not (p.slug.startswith(slug_prefix) or kind in p.slug):
+            return None
+    return p
+
+
+def _r9_pick(slug, options, salt):
+    """Deterministic pick from `options` using slug+salt."""
+    h = hashlib.md5(f"{salt}:{slug}".encode()).digest()
+    n = int.from_bytes(h[:4], "big")
+    return options[n % len(options)]
+
+
+def _r9_int(slug, salt, lo, hi):
+    h = hashlib.md5(f"{salt}:{slug}".encode()).digest()
+    n = int.from_bytes(h[:4], "big")
+    return lo + (n % max(1, hi - lo + 1))
+
+
+def _r9_json_or_html(payload, template, **ctx):
+    """Render JSON if ?format=json or Accept: application/json, else HTML
+    (falling back to a small inline template when the .html doesn't exist)."""
+    want_json = (request.args.get("format") == "json"
+                 or "application/json" in (request.headers.get("Accept", "")))
+    if want_json:
+        return jsonify(payload)
+    try:
+        return render_template(template, payload=payload, **ctx)
+    except TemplateNotFound:
+        # Inline fallback — keep this lightweight so no new templates are
+        # required just for the R9 endpoints.
+        body = render_template_string(
+            "<!doctype html><meta charset='utf-8'>"
+            "<title>{{ payload.title }} | Maps</title>"
+            "<style>body{font-family:Roboto,Arial,sans-serif;max-width:760px;"
+            "margin:32px auto;padding:0 16px;color:#202124}"
+            "h1{font-size:22px}dt{font-weight:600;margin-top:8px}"
+            "dd{margin:2px 0 8px 16px}pre{background:#f1f3f4;padding:8px;"
+            "border-radius:6px;overflow:auto}</style>"
+            "<h1>{{ payload.title }}</h1>"
+            "<p>{{ payload.subtitle }}</p>"
+            "<dl>"
+            "{% for k, v in payload.fields.items() %}"
+            "<dt>{{ k }}</dt><dd>{{ v }}</dd>"
+            "{% endfor %}"
+            "</dl>"
+            "{% if payload.back %}<p><a href='{{ payload.back }}'>"
+            "&larr; back to place</a></p>{% endif %}",
+            payload=payload,
+        )
+        return body
+
+
+@app.route("/trail/<ident>")
+def r9_trail_detail(ident):
+    p = _r9_lookup("trail", ident)
+    if not p:
+        abort(404)
+    difficulty = _r9_pick(p.slug, R9_TRAIL_DIFFICULTIES, "r9diff")
+    length_mi = round(0.4 + _r9_int(p.slug, "r9len", 0, 180) / 10.0, 1)
+    elev_gain_ft = _r9_int(p.slug, "r9elev", 50, 3800)
+    payload = {
+        "kind": "trail",
+        "title": p.name,
+        "subtitle": f"{difficulty.capitalize()} · {length_mi} mi · {elev_gain_ft} ft gain",
+        "slug": p.slug,
+        "place_id": p.id,
+        "difficulty": difficulty,
+        "length_mi": length_mi,
+        "elevation_gain_ft": elev_gain_ft,
+        "trailhead": p.address,
+        "city": p.city.display_name if p.city else "",
+        "lat": p.lat, "lng": p.lng,
+        "back": url_for("place_detail", slug=p.slug),
+        "links": {
+            "place": url_for("place_detail", slug=p.slug),
+            "difficulty": url_for("r9_trail_difficulty", ident=p.slug),
+        },
+        "fields": {
+            "Difficulty": difficulty,
+            "Length": f"{length_mi} mi",
+            "Elevation gain": f"{elev_gain_ft} ft",
+            "Trailhead": p.address,
+            "Rating": p.rating,
+        },
+    }
+    return _r9_json_or_html(payload, "r9_trail.html")
+
+
+@app.route("/trail/<ident>/difficulty")
+def r9_trail_difficulty(ident):
+    p = _r9_lookup("trail", ident)
+    if not p:
+        abort(404)
+    # Stable difficulty buckets + 3-section difficulty breakdown.
+    difficulty = _r9_pick(p.slug, R9_TRAIL_DIFFICULTIES, "r9diff")
+    sections = []
+    for i, label in enumerate(("Approach", "Ascent", "Summit")):
+        sec_diff = R9_TRAIL_DIFFICULTIES[_r9_int(p.slug, f"r9sd{i}", 0, 2)]
+        sections.append({
+            "label": label,
+            "difficulty": sec_diff,
+            "length_mi": round(0.2 + _r9_int(p.slug, f"r9sl{i}", 0, 60) / 10.0, 1),
+            "grade_pct": _r9_int(p.slug, f"r9sg{i}", 1, 22),
+        })
+    payload = {
+        "kind": "trail-difficulty",
+        "title": p.name + " — Difficulty",
+        "subtitle": f"Overall: {difficulty}",
+        "slug": p.slug,
+        "place_id": p.id,
+        "overall_difficulty": difficulty,
+        "sections": sections,
+        "back": url_for("r9_trail_detail", ident=p.slug),
+        "fields": {
+            "Overall": difficulty,
+            **{f"{s['label']} section": f"{s['difficulty']} ({s['length_mi']} mi, {s['grade_pct']}% grade)"
+               for s in sections},
+        },
+    }
+    return _r9_json_or_html(payload, "r9_trail_difficulty.html")
+
+
+@app.route("/beach/<ident>/water-quality")
+@app.route("/beach/<ident>/water_quality")
+def r9_beach_water_quality(ident):
+    p = _r9_lookup("beach", ident)
+    if not p:
+        abort(404)
+    rating = _r9_pick(p.slug, R9_WATER_QUALITY, "r9wq")
+    enterococci = _r9_int(p.slug, "r9wqe", 1, 124)  # MPN/100 mL
+    advisory = (rating == "advisory")
+    sampled_at = (MIRROR_REFERENCE_DATETIME).strftime("%Y-%m-%d")
+    payload = {
+        "kind": "beach-water-quality",
+        "title": p.name + " — Water Quality",
+        "subtitle": f"Latest reading: {rating}",
+        "slug": p.slug,
+        "place_id": p.id,
+        "rating": rating,
+        "enterococci_mpn_100ml": enterococci,
+        "advisory": advisory,
+        "sampled_at": sampled_at,
+        "agency": (p.city.display_name + " Health Dept.") if p.city else "Local Health Dept.",
+        "back": url_for("place_detail", slug=p.slug),
+        "fields": {
+            "Rating": rating,
+            "Enterococci": f"{enterococci} MPN/100 mL",
+            "Sampled": sampled_at,
+            "Advisory": "Yes" if advisory else "No",
+        },
+    }
+    return _r9_json_or_html(payload, "r9_beach_water_quality.html")
+
+
+@app.route("/lighthouse/<ident>")
+def r9_lighthouse_detail(ident):
+    p = _r9_lookup("lighthouse", ident)
+    if not p:
+        abort(404)
+    height_ft = _r9_int(p.slug, "r9lhh", 38, 184)
+    built_year = 1820 + _r9_int(p.slug, "r9lhy", 0, 160)
+    tour_durations = ("30 min", "45 min", "60 min", "90 min")
+    payload = {
+        "kind": "lighthouse",
+        "title": p.name,
+        "subtitle": f"Built {built_year} · {height_ft} ft tower",
+        "slug": p.slug,
+        "place_id": p.id,
+        "height_ft": height_ft,
+        "built_year": built_year,
+        "tour_duration": _r9_pick(p.slug, tour_durations, "r9lhd"),
+        "tour_open": True,
+        "city": p.city.display_name if p.city else "",
+        "lat": p.lat, "lng": p.lng,
+        "back": url_for("place_detail", slug=p.slug),
+        "fields": {
+            "Built": built_year,
+            "Tower height": f"{height_ft} ft",
+            "Tour duration": _r9_pick(p.slug, tour_durations, "r9lhd"),
+            "City": p.city.display_name if p.city else "—",
+        },
+    }
+    return _r9_json_or_html(payload, "r9_lighthouse.html")
+
+
+@app.route("/scenic-byway/<route>")
+@app.route("/scenic_byway/<route>")
+def r9_scenic_byway(route):
+    """Scenic byway page.
+
+    `route` accepts either a Place slug (typically prefixed r9-byway-) or
+    the byway's themed handle.  The detail view summarizes the route loop.
+    """
+    p = _r9_lookup("byway", route)
+    if not p:
+        abort(404)
+    # Pull byway theme from tags_json (we wrote tag like "theme-coastal").
+    try:
+        tags = json.loads(p.tags_json or "[]")
+    except Exception:
+        tags = []
+    theme = ""
+    for t in tags:
+        if isinstance(t, str) and t.startswith("theme-"):
+            theme = t[len("theme-"):]
+            break
+    if not theme:
+        theme = _r9_pick(p.slug, ("coastal", "mountain", "river", "heritage"), "r9bw")
+
+    loop_miles = round(8 + _r9_int(p.slug, "r9bwm", 0, 230) / 1.0, 1)
+    pullouts = _r9_int(p.slug, "r9bwp", 4, 26)
+    payload = {
+        "kind": "scenic-byway",
+        "title": p.name,
+        "subtitle": f"{theme.capitalize()} themed · {loop_miles} mi loop · {pullouts} pullouts",
+        "slug": p.slug,
+        "place_id": p.id,
+        "theme": theme,
+        "loop_miles": loop_miles,
+        "pullouts": pullouts,
+        "back": url_for("place_detail", slug=p.slug),
+        "fields": {
+            "Theme": theme,
+            "Loop length": f"{loop_miles} mi",
+            "Designated pullouts": pullouts,
+            "Audio tour": "Yes",
+        },
+    }
+    return _r9_json_or_html(payload, "r9_scenic_byway.html")
+
+
+@app.route("/park/<ident>/permit-request", methods=["GET", "POST"])
+@app.route("/park/<ident>/permit_request", methods=["GET", "POST"])
+def r9_park_permit_request(ident):
+    # park kind OR any Place with category=parks works
+    p = _r9_lookup("park", ident)
+    if not p:
+        # Fall back to direct slug lookup, but only allow Places in parks
+        # category (so /park/<any-slug>/permit-request is gated).
+        cand = Place.query.filter_by(slug=str(ident)).first()
+        if cand and cand.category and cand.category.slug == "parks":
+            p = cand
+    if not p:
+        abort(404)
+
+    if request.method == "POST":
+        purpose = (request.form.get("purpose") or "").strip()[:120]
+        party = max(1, min(500, int(request.form.get("party_size", "1") or "1")))
+        date = (request.form.get("date") or "").strip()[:32]
+        # Deterministic ack id — same fields → same id (works for replay).
+        ack_seed = f"{p.slug}|{purpose}|{party}|{date}"
+        ack_id = "permit-" + hashlib.sha1(ack_seed.encode()).hexdigest()[:12]
+        payload = {
+            "kind": "park-permit-request",
+            "title": p.name + " — Permit Request",
+            "subtitle": "Request received",
+            "ack_id": ack_id,
+            "park_slug": p.slug,
+            "purpose": purpose,
+            "party_size": party,
+            "requested_date": date,
+            "status": "queued",
+            "back": url_for("place_detail", slug=p.slug),
+            "fields": {
+                "Ack ID": ack_id,
+                "Park": p.name,
+                "Purpose": purpose or "(unspecified)",
+                "Party size": party,
+                "Requested date": date or "(unspecified)",
+                "Status": "queued",
+            },
+        }
+        return _r9_json_or_html(payload, "r9_park_permit_ack.html")
+
+    # GET — form scaffold (rendered inline so we don't need a new template).
+    payload = {
+        "kind": "park-permit-form",
+        "title": p.name + " — Permit Request",
+        "subtitle": "Submit a permit reservation request",
+        "park_slug": p.slug,
+        "back": url_for("place_detail", slug=p.slug),
+        "fields": {
+            "Park": p.name,
+            "Submit URL": url_for("r9_park_permit_request", ident=p.slug),
+            "Method": "POST",
+            "Required fields": "purpose, party_size, date",
+        },
+    }
+    return _r9_json_or_html(payload, "r9_park_permit_form.html")
+
+
+r9_park_permit_request = csrf.exempt(r9_park_permit_request)
+
+
+@app.route("/geocache")
+def r9_geocache_index():
+    """Index of geocaches; supports ?city=<city-slug>&size=<size>&limit=N."""
+    city_slug = (request.args.get("city") or "").strip()
+    size = (request.args.get("size") or "").strip()
+    limit = max(1, min(100, int(request.args.get("limit", "20") or "20")))
+    q = Place.query.filter(Place.slug.like("r9-geocache-%"))
+    if city_slug:
+        city = City.query.filter_by(slug=city_slug).first()
+        if city:
+            q = q.filter(Place.city_id == city.id)
+    if size:
+        q = q.filter(Place.tags_json.like(f'%"size-{size}"%'))
+    items = q.order_by(Place.id).limit(limit).all()
+    out = []
+    for p in items:
+        try:
+            tags = json.loads(p.tags_json or "[]")
+        except Exception:
+            tags = []
+        ctype = ""
+        size_v = ""
+        for t in tags:
+            if isinstance(t, str):
+                if t.startswith("cache_type-"):
+                    ctype = t[len("cache_type-"):]
+                elif t.startswith("size-"):
+                    size_v = t[len("size-"):]
+        out.append({
+            "slug": p.slug,
+            "name": p.name,
+            "city": p.city.display_name if p.city else "",
+            "cache_type": ctype,
+            "size": size_v,
+            "rating": p.rating,
+            "href": url_for("r9_geocache_detail", ident=p.slug),
+        })
+    payload = {
+        "kind": "geocache-index",
+        "title": "Geocaches",
+        "subtitle": f"{len(out)} results"
+                    + (f" in {city_slug}" if city_slug else "")
+                    + (f" of size {size}" if size else ""),
+        "items": out,
+        "count": len(out),
+        "filters": {"city": city_slug, "size": size, "limit": limit},
+        "fields": {
+            "Count": len(out),
+            "Filters": f"city={city_slug or '*'}, size={size or '*'}, limit={limit}",
+        },
+    }
+    return _r9_json_or_html(payload, "r9_geocache_index.html")
+
+
+@app.route("/geocache/<ident>")
+def r9_geocache_detail(ident):
+    p = _r9_lookup("geocache", ident)
+    if not p:
+        abort(404)
+    try:
+        tags = json.loads(p.tags_json or "[]")
+    except Exception:
+        tags = []
+    ctype = ""
+    size_v = ""
+    for t in tags:
+        if isinstance(t, str):
+            if t.startswith("cache_type-"):
+                ctype = t[len("cache_type-"):]
+            elif t.startswith("size-"):
+                size_v = t[len("size-"):]
+    difficulty = round(1.0 + _r9_int(p.slug, "r9gcd", 0, 40) / 10.0, 1)
+    terrain = round(1.0 + _r9_int(p.slug, "r9gct", 0, 40) / 10.0, 1)
+    found_count = _r9_int(p.slug, "r9gcf", 4, 480)
+    payload = {
+        "kind": "geocache",
+        "title": p.name,
+        "subtitle": f"{ctype.capitalize() or 'Geocache'} · size {size_v or 'small'}",
+        "slug": p.slug,
+        "place_id": p.id,
+        "cache_type": ctype,
+        "size": size_v,
+        "difficulty": difficulty,
+        "terrain": terrain,
+        "found_count": found_count,
+        "lat": p.lat, "lng": p.lng,
+        "back": url_for("place_detail", slug=p.slug),
+        "fields": {
+            "Cache type": ctype or "—",
+            "Size": size_v or "—",
+            "Difficulty": f"{difficulty} / 5",
+            "Terrain": f"{terrain} / 5",
+            "Found by": found_count,
+        },
+    }
+    return _r9_json_or_html(payload, "r9_geocache.html")
+
+
+# --------------------------------------------------------------------------
 #  Error handlers
 # --------------------------------------------------------------------------
 @app.errorhandler(404)
@@ -4207,7 +4632,8 @@ def seed_database():
                            expand_places_r6, backfill_place_edges_r6,
                            backfill_transit_no_service_r6,
                            expand_places_r7,
-                           expand_places_r8)
+                           expand_places_r8,
+                           expand_places_r9)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -4244,6 +4670,10 @@ def seed_database():
     # smart parking, podcast studios, …).  Adds ~150k more venues so the
     # place table tops 550k; idempotent (no-op once Place.count >= 540000).
     expand_places_r8(db, Place, Category, City)
+    # --- R9: outdoor verticals (trail / beach / lighthouse / scenic-byway /
+    # geocache / large parks) + fresh chain rows.  Adds ~195k more venues so
+    # the place table tops 750k; idempotent (no-op once Place.count >= 740000).
+    expand_places_r9(db, Place, Category, City)
 
 
 # --------------------------------------------------------------------------

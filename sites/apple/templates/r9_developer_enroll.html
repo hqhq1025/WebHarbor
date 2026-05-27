@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Enroll - Apple Developer Program{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:40px auto;padding:0 20px;">
+  <h1 style="font-size:40px;font-weight:700;color:#1d1d1f;">Enroll in the Apple Developer Program</h1>
+  <p style="color:#6e6e73;font-size:19px;margin:12px 0 32px;">
+    Complete the form below to enroll. Membership activates immediately after payment is processed.
+  </p>
+
+  <form id="r9-dev-enroll-form" method="POST" action="/developer/program/enroll" style="display:grid;gap:16px;max-width:520px;">
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Email</span>
+      <input type="email" name="email" required placeholder="developer@example.com" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+    </label>
+
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Membership tier</span>
+      <select name="tier" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+        {% for slug, label, fee, blurb in tiers %}
+        <option value="{{ slug }}">{{ label }} — ${{ "%.2f"|format(fee) }}/year</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit" style="padding:12px 24px;background:#0071e3;color:#fff;border:none;border-radius:980px;font-size:16px;font-weight:500;cursor:pointer;">Enroll now</button>
+  </form>
+
+  <p style="margin-top:48px;color:#6e6e73;font-size:13px;">
+    Reference date: {{ reference_date }}. The enrollment_id returned is deterministic for the (email, tier) pair, so retrying is idempotent.
+  </p>
+</div>
+{% endblock %}

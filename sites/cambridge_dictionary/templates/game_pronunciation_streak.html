@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Pronunciation streak — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container pron-streak" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <span>Pronunciation streak</span>
+  </nav>
+  <h1>Pronunciation streak <span class="release-tag">R9 game</span></h1>
+  <p class="game-blurb">Beat your previous best by playing today's seven-word
+    deck. Streaks are tracked across sessions; the leaderboard refreshes
+    on snapshot date <strong>{{ snapshot }}</strong>.</p>
+  <section class="todays-deck">
+    <h2>Today's deck ({{ deck|length }} words)</h2>
+    <ol class="deck-list">
+      {% for w in deck %}
+        <li class="deck-card">
+          <a href="{{ url_for('word_detail', slug=w.slug) }}">{{ w.headword }}</a>
+          <span class="pos">{{ w.pos }}</span>
+          {% if w.level %}<span class="cefr">{{ w.level }}</span>{% endif %}
+          <span class="ipa">{{ w.phonetic_uk or w.pronunciation_ipa }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section class="leaderboard">
+    <h2>Leaderboard (top {{ leaderboard|length }})</h2>
+    <table class="lb-table">
+      <thead><tr><th>Rank</th><th>Player</th><th>Score</th><th>Streak</th></tr></thead>
+      <tbody>
+        {% for r in leaderboard %}
+          <tr><td>{{ r.rank }}</td><td>{{ r.name }}</td><td>{{ r.score }}</td><td>{{ r.streak }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

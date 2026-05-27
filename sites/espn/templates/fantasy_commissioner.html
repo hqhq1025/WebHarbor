@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Fantasy Commissioner — {{ league_name }}{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="fantasy-commissioner">
+  <header class="page-header">
+    <h1>{{ league_name }} — Commissioner Tools</h1>
+    <p class="page-header__sub">Read-only landing for the commissioner of league <code>{{ league_id }}</code>. Each tool below is documented at <code>/fantasy/league/{{ league_id }}/commissioner</code> and unlocks once the commissioner role is verified.</p>
+  </header>
+
+  <section class="commissioner-stats" id="r9-commish-stats">
+    <dl>
+      <dt>League members</dt><dd>{{ stats.members }}</dd>
+      <dt>Open trades</dt><dd>{{ stats.open_trades }}</dd>
+      <dt>Pending vetoes</dt><dd>{{ stats.pending_vetoes }}</dd>
+      <dt>Commissioner</dt><dd>{{ stats.commissioner_email }}</dd>
+    </dl>
+  </section>
+
+  <h2>Tools</h2>
+  <ul class="commissioner-tools" id="r9-commish-tools">
+    {% for t in tools %}
+    <li data-r9-commish-tool="{{ t.key }}">
+      <strong>{{ t.label }}</strong>
+      <p>{{ t.description }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Personalized Course Bundle | Coursera{% endblock %}
+{% block content %}
+<div class="bundle-build" id="main-content" style="max-width:980px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:18px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">PERSONALIZED BUNDLE</div>
+    <h1 style="font-size:30px;letter-spacing:-.5px;margin:12px 0 6px;">Build my personalized bundle</h1>
+    <p style="color:#5B6780;font-size:15px;margin:0;">Tell us your learning goal &mdash; we'll assemble a deterministic 4-course bundle from the live catalogue.</p>
+  </header>
+
+  <form method="POST" action="{{ url_for('bundle_build_personalized') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="goal">Learning goal</label>
+    <input id="goal" name="goal" type="text" required placeholder="e.g. Become a Cloud Architect by Q3" value="{{ goal }}" style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;margin-bottom:14px;">
+
+    <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="level">Starting level</label>
+    <select id="level" name="level" style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;margin-bottom:14px;background:#fff;">
+      {% for lv in ['Beginner','Intermediate','Advanced','Mixed'] %}
+      <option value="{{ lv }}" {% if lv == level %}selected{% endif %}>{{ lv }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" style="background:#0056D2;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">Build my bundle</button>
+  </form>
+
+  {% if bundle %}
+  <section style="margin-top:22px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <div style="font-size:12px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;margin-bottom:6px;">Your bundle</div>
+    <h2 style="font-size:22px;margin:0 0 6px;">Goal: {{ bundle.goal }}</h2>
+    <div style="color:#374151;font-size:14px;margin-bottom:6px;">Level: {{ bundle.level }} &middot; Total {{ bundle.total_hours }} hours</div>
+    <div style="font-size:13px;color:#374151;margin-bottom:14px;">Bundle code: <code style="background:#fff;padding:4px 8px;border-radius:6px;border:1px solid #DAE1ED;">{{ bundle.code }}</code></div>
+    <ol style="margin:0;padding-left:18px;">
+      {% for c in bundle.picks %}
+      <li style="margin-bottom:6px;"><a href="{{ url_for('course_detail', slug=c.slug) }}" style="color:#0056D2;">{{ c.title }}</a>
+        <span style="color:#5B6780;font-size:13px;"> &middot; {{ c.duration_text }}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

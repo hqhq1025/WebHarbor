@@ -2960,7 +2960,7 @@ def voice_alexa_shopping():
 # Deterministic build identifier for /healthz + /metrics responses. Reset to
 # bump on every R-round (R8 = 8.0.0). Pinned so /metrics output stays stable
 # across rebuilds.
-APP_BUILD = {'release': 'R8', 'version': '8.0.0', 'build_date': '2026-05-12'}
+APP_BUILD = {'release': 'R9', 'version': '9.0.0', 'build_date': '2026-05-27'}
 
 
 @app.route('/healthz')
@@ -3501,6 +3501,326 @@ def api_abandoned_cart_email():
         'queued_for': (MIRROR_REFERENCE_DATE +
                        timedelta(hours=cfg['offset_hours'])).isoformat(),
     })
+
+
+# ----- R9 — new business lines: Pharmacy / Auto / Renewed / Outlet /
+# Kids FreeTime / Live Shopping / Household. JSON-only landing surfaces so
+# tasks asserting structure get stable, hash-anchored payloads.
+
+def _r9_storefront_summary(category_slug, *, eligible_tag, label):
+    """Shared counter helper for R9 storefront landing pages."""
+    try:
+        total = Product.query.filter_by(category_slug=category_slug).count()
+    except Exception:
+        total = 0
+    try:
+        eligible_count = Product.query.filter(
+            Product.feature_tags.like(f'%{eligible_tag}%')).count()
+    except Exception:
+        eligible_count = 0
+    return {
+        'service': label,
+        'release': APP_BUILD['release'],
+        'category_slug': category_slug,
+        'eligible_tag': eligible_tag,
+        'matching_skus': eligible_count,
+        'total_in_category': total,
+    }
+
+
+@app.route('/pharmacy', methods=['GET'])
+def pharmacy_home():
+    """Amazon Pharmacy landing — Rx + OTC counts + help links."""
+    rx = Product.query.filter(
+        Product.feature_tags.like('%prescription-required%')).count()
+    otc = Product.query.filter_by(category_slug='pharmacy', subcategory='OTC').count()
+    return jsonify({
+        'service': 'Amazon Pharmacy',
+        'release': APP_BUILD['release'],
+        'rx_skus': rx,
+        'otc_skus': otc,
+        'workflow': ['add-rx', 'verify-insurance', 'choose-pickup-or-mail',
+                     'confirm'],
+        'help': 'Use /pharmacy/refill-rx to request a refill against a '
+                'pinned fixture Rx; /search?k=prescription-required filters '
+                'the catalog to prescription items only.',
+    })
+
+
+@csrf.exempt
+@app.route('/pharmacy/refill-rx', methods=['GET', 'POST'])
+def pharmacy_refill_rx():
+    """Refill an existing Rx — multi-step (GET shows fixture, POST submits).
+
+    Fixture Rx data is pinned so tasks can assert deterministic NDCs and
+    refill counts.
+    """
+    fixture = {
+        'rx_number': 'RX-2026-AMZ-0001',
+        'patient': 'Alice Johnson',
+        'medication': 'Atorvastatin 20mg',
+        'ndc': '00093-7616-30',
+        'remaining_refills': 3,
+        'last_filled': '2026-04-12',
+    }
+    if request.method == 'POST':
+        rx_number = (request.form.get('rx_number') or
+                     (request.get_json(silent=True) or {}).get('rx_number') or
+                     '')
+        pickup = (request.form.get('pickup') or
+                  (request.get_json(silent=True) or {}).get('pickup') or
+                  'mail').strip().lower()
+        if rx_number.strip().upper() != fixture['rx_number']:
+            return jsonify({'ok': False, 'reason': 'rx_not_found'}), 404
+        if pickup not in ('mail', 'pickup'):
+            return jsonify({'ok': False, 'reason': 'invalid_pickup'}), 400
+        return jsonify({
+            'ok': True,
+            'rx_number': fixture['rx_number'],
+            'medication': fixture['medication'],
+            'ndc': fixture['ndc'],
+            'pickup': pickup,
+            'refills_remaining_after': fixture['remaining_refills'] - 1,
+            'eta': '2 business days' if pickup == 'mail' else 'same day',
+            'confirmation': 'RX-CONF-' + fixture['rx_number'].split('-')[-1],
+        })
+    return jsonify({'fixture': fixture,
+                    'service': 'Amazon Pharmacy — Refill Rx',
+                    'release': APP_BUILD['release']})
+
+
+@app.route('/amazon-auto', methods=['GET'])
+def amazon_auto_home():
+    """Amazon Auto landing — tires + parts + fitment guide."""
+    return jsonify({
+        **_r9_storefront_summary('auto', eligible_tag='auto',
+                                 label='Amazon Auto'),
+        'fitment_help': '/auto/vin/<vin> looks up part-fit against a 17-char '
+                        'VIN. Use feature_tag=fits-suv / fits-sedan etc. to '
+                        'filter the catalog by vehicle type.',
+        'departments': ['Auto Tires', 'Auto Parts', 'Auto Accessories'],
+    })
+
+
+@app.route('/auto/vin/<vin>', methods=['GET'])
+def auto_vin_lookup(vin):
+    """Decode a 17-char VIN and return fitment + matching SKU counts.
+
+    Decoding is rule-based / deterministic — the first character indicates
+    region, the 10th character encodes model year (1980-2030 cycle), and a
+    hash of the VIN selects body-style + drivetrain. Real VINs work; the
+    response is stable so tasks can assert exact counts.
+    """
+    vin = (vin or '').strip().upper()
+    if len(vin) != 17 or not vin.isalnum():
+        return jsonify({'ok': False, 'reason': 'invalid_vin',
+                        'detail': 'VIN must be 17 alphanumeric characters'}), 400
+    # Region from 1st char.
+    region_map = {
+        '1': 'United States', '4': 'United States', '5': 'United States',
+        '2': 'Canada', '3': 'Mexico',
+        'J': 'Japan', 'K': 'South Korea',
+        'S': 'United Kingdom', 'T': 'Czechia', 'V': 'France',
+        'W': 'Germany', 'Y': 'Sweden', 'Z': 'Italy',
+    }
+    region = region_map.get(vin[0], 'Other')
+    # Model year encoding (NHTSA position 10).
+    year_chars = 'ABCDEFGHJKLMNPRSTVWXY123456789'
+    yr_idx = year_chars.find(vin[9])
+    model_year = 2010 + yr_idx if yr_idx >= 0 else 2020
+    # Body style derived from VIN hash so it's deterministic.
+    body_styles = ['sedan', 'suv', 'truck', 'coupe', 'minivan', 'ev']
+    h = sum(ord(c) for c in vin)
+    body = body_styles[h % len(body_styles)]
+    fit_tag = 'fits-' + body
+    drivetrains = ['fwd', 'rwd', 'awd', '4wd']
+    drivetrain = drivetrains[(h // 7) % len(drivetrains)]
+    # Count matching SKUs by fitment tag.
+    try:
+        matching = Product.query.filter(
+            Product.feature_tags.like(f'%{fit_tag}%')).count()
+    except Exception:
+        matching = 0
+    return jsonify({
+        'ok': True,
+        'vin': vin,
+        'region': region,
+        'model_year': model_year,
+        'body_style': body,
+        'drivetrain': drivetrain,
+        'fitment_tag': fit_tag,
+        'matching_skus': matching,
+        'search_url': f'/search?k={fit_tag}',
+    })
+
+
+@app.route('/amazon-renewed', methods=['GET'])
+def amazon_renewed_home():
+    """Amazon Renewed landing — grade tiers + counts."""
+    grades = ['renewed-premium', 'renewed-excellent', 'renewed-good',
+              'renewed-acceptable']
+    counts = {}
+    for g in grades:
+        try:
+            counts[g] = Product.query.filter(
+                Product.feature_tags.like(f'%{g}%')).count()
+        except Exception:
+            counts[g] = 0
+    return jsonify({
+        'service': 'Amazon Renewed',
+        'release': APP_BUILD['release'],
+        'grades': grades,
+        'counts': counts,
+        'guarantee': '90-day Amazon Renewed Guarantee on every grade',
+        'help': '/search?k=renewed-premium narrows to top-tier; use grade '
+                'tag in feature_tag to filter.',
+    })
+
+
+@csrf.exempt
+@app.route('/amazon-renewed/grade-verify', methods=['GET', 'POST'])
+def amazon_renewed_grade_verify():
+    """Verify a Renewed product's grade against the canonical rubric.
+
+    GET → return the grade rubric. POST {slug} → look the product up,
+    return its renewed_grade tag and rubric explanation.
+    """
+    rubric = {
+        'renewed-premium':    {'min_battery': 95, 'cosmetic': 'no visible wear',
+                               'warranty_days': 180},
+        'renewed-excellent':  {'min_battery': 90, 'cosmetic': 'minor wear under 1mm',
+                               'warranty_days': 120},
+        'renewed-good':       {'min_battery': 80, 'cosmetic': 'minor wear under 3mm',
+                               'warranty_days': 90},
+        'renewed-acceptable': {'min_battery': 70, 'cosmetic': 'visible wear, fully functional',
+                               'warranty_days': 90},
+    }
+    if request.method == 'GET':
+        return jsonify({'rubric': rubric, 'release': APP_BUILD['release']})
+    payload = request.get_json(silent=True) or request.form or {}
+    slug = (payload.get('slug') or '').strip()
+    if not slug:
+        return jsonify({'ok': False, 'reason': 'missing_slug'}), 400
+    p = Product.query.filter_by(slug=slug).first()
+    if not p:
+        return jsonify({'ok': False, 'reason': 'product_not_found'}), 404
+    tags = p.get_feature_tags()
+    grade = next((t for t in tags if t.startswith('renewed-')), None)
+    if not grade:
+        return jsonify({'ok': False, 'reason': 'not_a_renewed_sku',
+                        'slug': slug}), 400
+    return jsonify({
+        'ok': True,
+        'slug': slug,
+        'grade': grade,
+        'rubric': rubric.get(grade, {}),
+        'price': p.price,
+    })
+
+
+@app.route('/outlet', methods=['GET'])
+def outlet_home():
+    """Amazon Outlet — open-box / overstock landing."""
+    try:
+        open_box = Product.query.filter(
+            Product.feature_tags.like('%open-box%')).count()
+    except Exception:
+        open_box = 0
+    return jsonify({
+        'service': 'Amazon Outlet',
+        'release': APP_BUILD['release'],
+        'open_box_skus': open_box,
+        'overstock_tag': 'overstock',
+        'open_box_tag': 'open-box',
+        'help': '/search?k=open-box surfaces the open-box catalog; '
+                'is_deal flag is always true on outlet SKUs.',
+    })
+
+
+@app.route('/live-shopping', methods=['GET'])
+def live_shopping_home():
+    """Amazon Live — livestream-featured deal carousel."""
+    try:
+        featured = Product.query.filter(
+            Product.feature_tags.like('%live-shopping-featured%')).all()
+    except Exception:
+        featured = []
+    carousel = [{'slug': p.slug, 'name': p.name, 'price': p.price,
+                 'list_price': p.list_price}
+                for p in featured[:20]]
+    return jsonify({
+        'service': 'Amazon Live',
+        'release': APP_BUILD['release'],
+        'featured_total': len(featured),
+        'carousel': carousel,
+        'curators': ['Verified Influencer', 'Verified Stylist',
+                     'Verified Tech Creator'],
+    })
+
+
+@app.route('/kids/freetime', methods=['GET'])
+def kids_freetime_home():
+    """Amazon Kids+ (FreeTime) — age-band counts + curated content."""
+    bands = ['freetime-3to5', 'freetime-6to8', 'freetime-9to12']
+    counts = {}
+    for b in bands:
+        try:
+            counts[b] = Product.query.filter(
+                Product.feature_tags.like(f'%{b}%')).count()
+        except Exception:
+            counts[b] = 0
+    return jsonify({
+        'service': 'Amazon Kids+ (FreeTime)',
+        'release': APP_BUILD['release'],
+        'age_bands': bands,
+        'counts': counts,
+        'subscription_price_per_year': 79.00,
+        'help': '/search?k=freetime-6to8 narrows to that age band.',
+    })
+
+
+@csrf.exempt
+@app.route('/household', methods=['GET', 'POST'])
+def household_home():
+    """Amazon Household — shared profile management.
+
+    GET → fixture household roster (pinned for byte-id-stable tests).
+    POST → simulate adding a new member; rejects when adults > 2,
+    teens > 4, kids > 4.
+    """
+    fixture = {
+        'adults': ['alice@test.com', 'bob@test.com'],
+        'teens': ['teen1@test.com'],
+        'kids': ['kid1@test.com', 'kid2@test.com'],
+    }
+    if request.method == 'GET':
+        return jsonify({
+            'service': 'Amazon Household',
+            'release': APP_BUILD['release'],
+            'household': fixture,
+            'limits': {'adults_max': 2, 'teens_max': 4, 'kids_max': 4},
+            'shared_benefits': ['Prime', 'Subscribe & Save', 'Photos',
+                                'Audible-Family-Share'],
+        })
+    payload = request.get_json(silent=True) or request.form or {}
+    role = (payload.get('role') or '').strip().lower()
+    email = (payload.get('email') or '').strip().lower()
+    if role not in ('adult', 'teen', 'kid'):
+        return jsonify({'ok': False, 'reason': 'invalid_role'}), 400
+    if not email or '@' not in email:
+        return jsonify({'ok': False, 'reason': 'invalid_email'}), 400
+    bucket = {'adult': 'adults', 'teen': 'teens', 'kid': 'kids'}[role]
+    limit = {'adult': 2, 'teen': 4, 'kid': 4}[role]
+    current = list(fixture[bucket])
+    if email in current:
+        return jsonify({'ok': False, 'reason': 'already_a_member',
+                        'role': role}), 409
+    if len(current) >= limit:
+        return jsonify({'ok': False, 'reason': 'limit_exceeded',
+                        'role': role, 'limit': limit}), 409
+    current.append(email)
+    return jsonify({'ok': True, 'role': role, 'email': email,
+                    bucket: current, 'limit': limit})
 
 
 # ----- Error handlers -----

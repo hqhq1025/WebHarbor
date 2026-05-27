@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Flight {{ flight }} — WolframAlpha Aviation{% endblock %}
+{% block body_class %}page-aviation-flight{% endblock %}
+{% block content %}
+<section class="wa-aviation-flight">
+  <h1>Flight {{ flight }}</h1>
+  <p class="wa-intro">{{ origin }} &rarr; {{ destination }} on {{ equipment }}.</p>
+  <table class="wa-flight-table">
+    <tr><th>Status</th><td class="wa-status-{{ status_slug }}">{{ status }}</td></tr>
+    <tr><th>Delay</th><td>{{ delay_min }} min</td></tr>
+    <tr><th>Gate</th><td>{{ gate }}</td></tr>
+    <tr><th>Equipment</th><td>{{ equipment }}</td></tr>
+    <tr><th>Scheduled</th><td>{{ scheduled }}</td></tr>
+    <tr><th>Estimated</th><td>{{ estimated }}</td></tr>
+  </table>
+  <p class="wa-meta">Schema: <code>wa-aviation-v1</code>.</p>
+  <p class="wa-related">
+    See <a href="/topic/aviation-flight-tracker">aviation-flight-tracker</a>,
+    arrival-port <a href="/tide/{{ tide_port }}">tide</a>.
+  </p>
+</section>
+{% endblock %}

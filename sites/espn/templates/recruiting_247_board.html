@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}247 Composite Board{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="recruiting-247-board">
+  <header class="page-header">
+    <h1>247 Composite Board</h1>
+    <p class="page-header__sub">Cross-sport recruiting board with weekly flip-risk annotations. Filter by sport with the <code>?sport=&lt;slug&gt;</code> query string (e.g. <a href="/recruiting/247-board?sport=ncaaf">/recruiting/247-board?sport=ncaaf</a>).</p>
+  </header>
+
+  <table class="data-table" id="r9-247-board">
+    <thead>
+      <tr>
+        <th scope="col">Rank</th>
+        <th scope="col">Name</th>
+        <th scope="col">Position</th>
+        <th scope="col">Committed to</th>
+        <th scope="col">Sport</th>
+        <th scope="col">Stars</th>
+        <th scope="col">Flip risk</th>
+        <th scope="col">OOS visits</th>
+        <th scope="col">Last update</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in board %}
+      <tr data-r9-recruit-rank="{{ row.recruit.rank }}" data-r9-flip-risk="{{ row.flip_risk }}">
+        <td>{{ row.recruit.rank }}</td>
+        <td>{{ row.recruit.name }}</td>
+        <td>{{ row.recruit.position }}</td>
+        <td>{{ row.recruit.committed_to }}</td>
+        <td>{{ row.recruit.sport_slug }}</td>
+        <td>{{ '★' * row.recruit.stars }}</td>
+        <td>
+          {% if row.flip_risk == 'high' %}<span class="badge badge--danger">HIGH</span>
+          {% elif row.flip_risk == 'medium' %}<span class="badge badge--warn">MED</span>
+          {% else %}<span class="badge badge--ok">LOW</span>{% endif %}
+        </td>
+        <td>{{ row.oos_visits }}</td>
+        <td>{{ row.last_update_days_ago }}d ago</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

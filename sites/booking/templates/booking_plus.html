@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Booking Plus — premium tier{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Booking Plus</h1>
+    <p class="page-subtitle">A monthly subscription that adds concierge support, deeper cancellation flexibility and airport-taxi credit to your Booking account.</p>
+
+    <div class="pd-section">
+        <h2>Subscription</h2>
+        <p>Price: <strong style="font-size:24px;color:#003580;">{{ tier.monthly_price }} {{ tier.currency }}</strong> / month</p>
+        <p>Free trial: <strong>{{ tier.trial_days }} days</strong></p>
+        <p>Plus catalogue: <strong>{{ tier.plus_catalogue_count }}</strong> hand-picked stays.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>What's included</h2>
+        <ul>
+            <li><strong>{{ tier.concierge_requests_per_month }}</strong> concierge requests / month</li>
+            <li>Last-minute cancellation window: <strong>{{ tier.cancellation_window_hours }} hours</strong></li>
+            <li>Airport-taxi credit: <strong>{{ tier.taxi_credit_per_month }} {{ tier.currency }}</strong> / month</li>
+            {% for p in tier.extra_perks %}<li>{{ p }}</li>{% endfor %}
+        </ul>
+    </div>
+
+    <div class="pd-section">
+        <h2>How it compares to Genius {{ genius_l3.level }}</h2>
+        <p><a href="/genius">Compare with Genius</a></p>
+        <p>Genius level {{ genius_l3.level }} caps at <strong>{{ genius_l3.discount_pct }}%</strong> off select stays. Booking Plus adds the perks above on top of (not in place of) your current Genius level.</p>
+    </div>
+
+    {% if step == 'checkout' %}
+    <div class="pd-section">
+        <h2>Confirm your subscription</h2>
+        <p>Trial: <strong>{{ tier.trial_days }} days free</strong>, then <strong>{{ tier.monthly_price }} {{ tier.currency }}</strong> / month.</p>
+        <p><button class="btn btn-primary" type="button">Start free trial</button></p>
+    </div>
+    {% else %}
+    <p><a class="btn btn-primary" href="/booking-plus/checkout">Start free trial</a></p>
+    {% endif %}
+</div>
+{% endblock %}

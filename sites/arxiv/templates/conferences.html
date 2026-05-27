@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Conferences — arXiv{% endblock %}
+{% block content %}
+
+<h1>Conference directory</h1>
+<p class="muted">
+    Major venues whose primary arXiv subject class is tracked by the
+    mirror.  Use <code>/api/conference/&lt;key&gt;</code> to retrieve
+    structured JSON for any row below.
+</p>
+
+<div class="dash-card">
+    <table class="data" id="conference-directory">
+        <thead>
+            <tr><th>Key</th><th>Name</th><th>Field</th><th>Primary subject</th><th>API</th></tr>
+        </thead>
+        <tbody>
+        {% for key, name, field, subj in rows %}
+            <tr>
+                <td><code>{{ key }}</code></td>
+                <td>{{ name }}</td>
+                <td>{{ field }}</td>
+                <td><a href="{{ url_for('category_detail', code=subj) }}"><code>{{ subj }}</code></a></td>
+                <td><a href="{{ url_for('api_conference', conf=key) }}">/api/conference/{{ key }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

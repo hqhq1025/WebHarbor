@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Weekend getaway recommendations — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Weekend getaway recommendations</h1>
+    <p class="page-subtitle">Pick a base city, set a drive-time radius, and we'll surface {{ result_count }} curated weekend stays.</p>
+
+    <form method="GET" action="{{ url_for('weekend_getaway') }}" class="pd-section">
+        <div class="form-row">
+            <label>Origin city
+                <input type="text" name="origin" value="{{ origin }}" placeholder="e.g. paris">
+            </label>
+            <label>Theme
+                <select name="theme">
+                    <option value="" {% if not theme %}selected{% endif %}>Any</option>
+                    <option value="beach" {% if theme == 'beach' %}selected{% endif %}>Beach</option>
+                    <option value="ski" {% if theme == 'ski' %}selected{% endif %}>Ski</option>
+                    <option value="city" {% if theme == 'city' %}selected{% endif %}>City break</option>
+                </select>
+            </label>
+            <label>Max drive (hours)
+                <input type="number" name="max_drive_hours" min="1" step="0.5" value="{{ max_drive_hours }}">
+            </label>
+            <label>Budget per traveller ({{ default_currency }})
+                <input type="number" name="budget" min="0" step="10" value="{{ default_budget }}">
+            </label>
+            <button class="btn btn-primary" type="submit">Show getaways</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Recommended for the weekend ({{ weekend_days|join(' / ') }})</h2>
+        <div class="card-grid cards-4">
+            {% for c in recommendations %}
+            <div class="pd-section">
+                <h3><a href="{{ url_for('city_page', slug=c.slug) }}">{{ c.display }}</a></h3>
+                <p style="color:#666;">{{ c.country }}</p>
+                <p>Avg rating: <strong>{{ '%.1f'|format(c.average_rating or 8.0) }}</strong></p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

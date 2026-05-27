@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Tide Tomorrow — {{ location }}{% endblock %}
+{% block body_class %}page-tide{% endblock %}
+{% block content %}
+<section class="wa-tide">
+  <h1>Tide Schedule &mdash; {{ location }} (tomorrow)</h1>
+  <p class="wa-intro">Pattern: <strong>{{ pattern }}</strong> &middot; coefficient {{ coefficient }}.</p>
+  <table class="wa-tide-table">
+    <thead><tr><th>Event</th><th>Time</th><th>Height (m)</th></tr></thead>
+    <tbody>
+      {% for ev in events %}
+      <tr><td>{{ ev.kind }}</td><td>{{ ev.time }}</td><td>{{ ev.height }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="wa-meta">
+    Highs: {{ highs }} &middot; Lows: {{ lows }} &middot;
+    schema <code>wa-tide-v1</code>.
+  </p>
+  <p class="wa-related">
+    See <a href="/topic/tide-tomorrow">tide-tomorrow</a>,
+    <a href="/weather/radar/{{ radar_region }}">{{ radar_region }} radar</a>.
+  </p>
+</section>
+{% endblock %}

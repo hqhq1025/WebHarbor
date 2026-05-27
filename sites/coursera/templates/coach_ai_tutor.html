@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Coursera AI Coach | Ask the Tutor{% endblock %}
+{% block content %}
+<div class="ai-tutor" id="main-content" style="max-width:920px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:20px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">AI COACH &middot; TUTOR</div>
+    <h1 style="font-size:30px;letter-spacing:-.5px;margin:12px 0 6px;">Ask the Coursera AI Tutor</h1>
+    <p style="color:#5B6780;font-size:15px;margin:0;">Get a focused, citation-backed answer to your learning question. Powered by Coursera Coach.</p>
+  </header>
+
+  <form method="POST" action="{{ url_for('coach_ai_tutor') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="question" style="display:block;font-weight:700;font-size:14px;margin-bottom:8px;">Your question</label>
+    <textarea id="question" name="question" rows="4" style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;" placeholder="e.g. How do I get from Foundations to the Capstone project?" required>{{ question }}</textarea>
+    <div style="margin-top:14px;display:flex;gap:10px;">
+      <button type="submit" style="background:#0056D2;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">Ask the AI Coach</button>
+    </div>
+  </form>
+
+  {% if answer %}
+  <section style="margin-top:22px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <div style="font-size:12px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;margin-bottom:6px;">Coach answer</div>
+    <p style="font-size:16px;color:#1F2A44;line-height:1.55;margin:0 0 18px;">{{ answer }}</p>
+    {% if citations %}
+    <div style="font-size:13px;color:#5B6780;font-weight:700;margin-bottom:6px;">Cited courses</div>
+    <ul style="margin:0;padding-left:18px;">
+      {% for c in citations %}
+      <li style="margin-bottom:4px;"><a href="{{ url_for('course_detail', slug=c.slug) }}" style="color:#0056D2;">{{ c.title }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

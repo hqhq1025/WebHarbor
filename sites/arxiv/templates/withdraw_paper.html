@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Withdraw paper {{ paper.arxiv_id }} — arXiv{% endblock %}
+{% block content %}
+
+<h1>Withdraw paper</h1>
+
+<div class="dash-card">
+    <h2>{{ paper.title }}</h2>
+    <p class="muted">
+        arXiv:<code>{{ paper.arxiv_id }}</code> &middot;
+        primary subject <code>{{ paper.primary_subject_code }}</code>
+    </p>
+    <p>
+        <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">Back to the abstract page</a>
+    </p>
+</div>
+
+{% if not submitted %}
+<form method="POST" action="{{ url_for('withdraw_paper', arxiv_id=paper.arxiv_id) }}" class="dash-card">
+    <h2>Withdrawal reason</h2>
+    <p class="muted">
+        Provide a short reason (visible only to moderators).  Submitting
+        replaces the paper with a 1-page withdrawal notice; the original
+        version remains in the version history.
+    </p>
+    <label for="wd_reason">Reason</label>
+    <textarea id="wd_reason" name="reason" rows="4"
+              placeholder="e.g. 'Major error in equation 3, no salvageable result.'">{{ reason }}</textarea>
+    <button type="submit">Submit withdrawal request</button>
+</form>
+{% else %}
+<div class="dash-card">
+    <h2>Withdrawal request received</h2>
+    <p>
+        Ticket: <code id="withdraw-ticket" style="user-select:all;">{{ ticket }}</code>
+    </p>
+    <table class="data">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>arxiv_id</td><td><code>{{ paper.arxiv_id }}</code></td></tr>
+        <tr><td>Reason</td><td>{{ reason }}</td></tr>
+        <tr><td>Review SLA</td><td>{{ review_lag_days }} business day</td></tr>
+        <tr><td>Notice announce date</td><td>{{ announce_at }}</td></tr>
+    </table>
+    <p class="muted">
+        You can track the request at
+        <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">/abs/{{ paper.arxiv_id }}</a>.
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

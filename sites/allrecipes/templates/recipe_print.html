@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Print-friendly view of {{ recipe.title }} — single column, no nav, optimized for paper.{% endblock %}
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block extra_css %}
+<style>
+  @media print {
+    .site-header, .site-footer, .nav-top, .nav-categories,
+    .lang-banner, .skip-link, .print-controls { display:none !important; }
+    body { background:#fff !important; color:#000 !important; }
+    .recipe-print { max-width:none; padding:0; margin:0; }
+    a { color:#000 !important; text-decoration:none !important; }
+  }
+  .recipe-print { font-family:Georgia, serif; line-height:1.5; max-width:780px; }
+  .recipe-print h1 { font-size:32px; margin:0 0 12px; }
+  .recipe-print h2 { font-size:20px; margin:20px 0 8px; border-bottom:1px solid #ccc; padding-bottom:4px; }
+  .recipe-print .meta-row { color:#444; font-size:14px; margin-bottom:16px; }
+  .recipe-print .meta-row span { margin-right:18px; }
+  .recipe-print ul, .recipe-print ol { padding-left:22px; }
+  .recipe-print li { margin:4px 0; }
+  .print-controls { margin:12px 0 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container recipe-print" style="margin:24px auto;padding:0 16px;">
+  <div class="print-controls">
+    <button onclick="window.print()" type="button"
+            style="padding:6px 12px;border:1px solid #999;background:#fafaf6;cursor:pointer;">
+      Print this page
+    </button>
+    <a href="/recipe/{{ recipe.slug }}" style="margin-left:12px;">Back to recipe</a>
+  </div>
+
+  <h1>{{ recipe.title }}</h1>
+  <div class="meta-row">
+    <span><strong>Prep:</strong> {{ recipe.prep_time or '—' }}</span>
+    <span><strong>Cook:</strong> {{ recipe.cook_time or '—' }}</span>
+    <span><strong>Total:</strong> {{ recipe.total_time or '—' }}</span>
+    <span><strong>Servings:</strong> {{ recipe.servings or '—' }}</span>
+    <span><strong>Calories:</strong> {{ recipe.calories or '—' }}</span>
+  </div>
+
+  {% if recipe.description %}
+    <p>{{ recipe.description }}</p>
+  {% endif %}
+
+  <h2>Ingredients</h2>
+  <ul data-test-id="print-ingredients">
+    {% for ing in recipe.get_ingredients() %}
+      <li>{{ ing }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Instructions</h2>
+  <ol data-test-id="print-instructions">
+    {% for step in recipe.get_instructions() %}
+      <li>{{ step }}</li>
+    {% endfor %}
+  </ol>
+
+  {% if recipe.storage_instructions %}
+    <h2>Storage</h2>
+    <p>{{ recipe.storage_instructions }}</p>
+  {% endif %}
+
+  <p style="margin-top:24px;font-size:12px;color:#777;">
+    Printed from Allrecipes — /recipe/{{ recipe.slug }} ·
+    Author: {{ recipe.author_name }}
+  </p>
+</section>
+{% endblock %}

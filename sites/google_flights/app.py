@@ -3725,6 +3725,656 @@ def api_cabin_class_glossary():
 
 
 # ============================================================
+# R9 — Charter / Jet-card / Group / Tariff / Mileage-run / Baggage-track
+# ============================================================
+# All seven endpoints below are deterministic stateless helpers (no DB writes,
+# no new tables). Outputs are derived from hashes of the inputs so that two
+# rebuilds on different hosts return byte-identical bodies for identical
+# requests — required for benchmark auto_eval.
+import hashlib as _r9_h
+from flask import render_template_string as _r9_tpl
+
+_R9_BASE_WRAPPER = """{% extends 'base.html' %}{% block title %}{{ title }} | Google Flights{% endblock %}
+{% block content %}
+<section style='max-width:1100px;margin:0 auto;padding:32px 24px;'>
+  <header style='margin-bottom:24px;'>
+    <h1 style="font-family:'Google Sans',sans-serif;font-size:32px;font-weight:500;margin:0;">{{ title }}</h1>
+    {% if subtitle %}<p style='color:#5f6368;margin-top:8px;font-size:15px;'>{{ subtitle }}</p>{% endif %}
+  </header>
+  __INNER__
+</section>
+{% endblock %}
+"""
+
+_R9_JET_CARD_TIERS = [
+    # (tier, annual_fee, included_hours, hourly_rate, peak_days, jet_class, perks)
+    ('Bronze', 95000, 25, 4900, 18, 'Light jet (Phenom 100, Citation Mustang)',
+     'No peak-day surcharge below 18 days; one-way pricing on 12 routes; complimentary catering'),
+    ('Silver', 165000, 50, 5400, 12, 'Midsize jet (Citation XLS+, Hawker 800XP)',
+     'Pet-friendly cabin; lounge access at 80 FBOs; rollover of unused hours'),
+    ('Gold', 285000, 90, 6100, 8, 'Super-midsize (Citation Sovereign, Challenger 350)',
+     'Fixed hourly rate with no fuel surcharges; 24h availability; ground concierge'),
+    ('Platinum', 495000, 150, 7200, 4, 'Heavy jet (Gulfstream G450, Falcon 7X)',
+     'Worldwide coverage; intercontinental upgrade included; dedicated account manager'),
+    ('Black', 950000, 300, 8800, 2, 'Ultra-long-range (Gulfstream G650ER, Bombardier Global 7500)',
+     'Two-tail dispatch on demand; uncapped peak access; private security detail'),
+]
+
+
+def _r9_render(title, subtitle, inner_html):
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner_html)
+    return _r9_tpl(tpl, title=title, subtitle=subtitle)
+
+
+def _r9_hash_int(*parts, mod=1000):
+    h = _r9_h.sha1('|'.join(str(p) for p in parts).encode()).hexdigest()
+    return int(h[:8], 16) % mod
+
+
+# ---- Charter ----
+
+@app.route('/charter')
+def charter_landing():
+    """Charter-flight landing page. Lists jet classes + quote button."""
+    classes = [
+        ('Light', 'Up to 6 passengers', 1350, 4, 'Citation Mustang, Phenom 100, HondaJet HA-420'),
+        ('Midsize', 'Up to 8 passengers', 1980, 6, 'Citation XLS+, Hawker 800XP, Learjet 60'),
+        ('Super-midsize', 'Up to 9 passengers', 2620, 7, 'Citation Sovereign, Challenger 350, Falcon 50EX'),
+        ('Heavy', 'Up to 14 passengers', 3950, 9, 'Gulfstream G450, Falcon 7X, Embraer Legacy 600'),
+        ('Ultra-long-range', 'Up to 19 passengers', 6450, 14, 'Gulfstream G650ER, Bombardier Global 7500'),
+    ]
+    inner = """
+    <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;'>
+      {% for c in classes %}
+      <article style='border:1px solid #dadce0;border-radius:12px;padding:20px;background:#fff;'>
+        <h2 style="font-family:'Google Sans',sans-serif;font-size:20px;font-weight:500;margin:0 0 6px;">{{ c[0] }} jet</h2>
+        <p style='color:#5f6368;font-size:13px;margin:0 0 12px;'>{{ c[1] }}</p>
+        <dl style='font-size:14px;line-height:1.7;color:#202124;margin:0;'>
+          <div><strong>Hourly rate:</strong> ${{ '{:,}'.format(c[2]) }}</div>
+          <div><strong>Range:</strong> ~{{ c[3] }} hours block-time</div>
+          <div><strong>Common aircraft:</strong> {{ c[4] }}</div>
+        </dl>
+      </article>
+      {% endfor %}
+    </div>
+    <p style='margin-top:28px;font-size:15px;'><a href='/charter/quote' style='color:#1a73e8;'>Request a charter quote</a> &middot; <a href='/jet-card' style='color:#1a73e8;'>Compare jet-card memberships</a></p>
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Charter jets', subtitle='On-demand private aviation from any airport in the catalog.', classes=classes)
+
+
+@app.route('/charter/quote', methods=['GET', 'POST'])
+@csrf.exempt
+def charter_quote():
+    """Charter quote form. POST returns deterministic quote token + price.
+    Hash inputs to derive a price multiplier so the same (origin, dest,
+    pax, jet_class, date) tuple always yields the same quote.
+    """
+    JET_CLASSES = ['Light', 'Midsize', 'Super-midsize', 'Heavy', 'Ultra-long-range']
+    JET_HOURLY = {'Light': 1350, 'Midsize': 1980, 'Super-midsize': 2620, 'Heavy': 3950, 'Ultra-long-range': 6450}
+    result = None
+    error = None
+    if request.method == 'POST':
+        o = (request.form.get('origin') or '').upper().strip()[:4]
+        d = (request.form.get('destination') or '').upper().strip()[:4]
+        pax_str = (request.form.get('pax') or '1').strip()
+        jet = (request.form.get('jet_class') or 'Midsize').strip()
+        dep = (request.form.get('departure_date') or '').strip()
+        try:
+            pax = max(1, min(19, int(pax_str)))
+        except ValueError:
+            pax = 1
+        oa = Airport.query.filter_by(iata=o).first() if o else None
+        da = Airport.query.filter_by(iata=d).first() if d else None
+        if not oa or not da:
+            error = 'Both origin and destination must be valid IATA codes in the catalog.'
+        elif jet not in JET_HOURLY:
+            error = f"Unknown jet class. Must be one of: {', '.join(JET_CLASSES)}"
+        else:
+            # Deterministic block-time based on great-circle distance / 800 km/h
+            km = _haversine_km(oa.latitude or 0, oa.longitude or 0,
+                                da.latitude or 0, da.longitude or 0)
+            block_hours = round(max(1.0, km / 800.0 + 0.5), 1)
+            base = JET_HOURLY[jet] * block_hours
+            # Peak-day surcharge if date hash lands in "peak" bucket
+            peak = _r9_hash_int(dep, 'peak', mod=10) < 3  # 30% peak
+            surcharge_pct = 18 if peak else 0
+            # Pax surcharge above 6
+            pax_surcharge = max(0, pax - 6) * 240
+            # Repositioning estimate (proportional to distance, with a hash variance)
+            reposition = round(base * 0.12 + _r9_hash_int(o, d, 'rp', mod=1500), 0)
+            subtotal = round(base + base * surcharge_pct / 100 + pax_surcharge + reposition, 0)
+            taxes = round(subtotal * 0.075, 0)
+            total = int(subtotal + taxes)
+            token = 'CHQ-' + _r9_h.sha1(f"{o}|{d}|{pax}|{jet}|{dep}".encode()).hexdigest()[:10].upper()
+            result = {
+                'quote_token': token,
+                'origin': o, 'destination': d, 'pax': pax,
+                'jet_class': jet, 'departure_date': dep,
+                'block_hours': block_hours,
+                'base_cost': int(base),
+                'peak_day': peak, 'peak_surcharge_pct': surcharge_pct,
+                'pax_surcharge': pax_surcharge,
+                'repositioning_fee': int(reposition),
+                'subtotal': int(subtotal),
+                'taxes': int(taxes),
+                'total_usd': total,
+                'expires_in_hours': 48,
+            }
+    inner = """
+    <form method='post' style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;max-width:560px;margin-bottom:24px;'>
+      <input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Origin (IATA)</label>
+      <input name='origin' value='{{ request.form.get("origin","") }}' required style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Destination (IATA)</label>
+      <input name='destination' value='{{ request.form.get("destination","") }}' required style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Passengers</label>
+      <input name='pax' type='number' min='1' max='19' value='{{ request.form.get("pax","2") }}' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Jet class</label>
+      <select name='jet_class' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+        {% for jc in jet_classes %}<option value='{{ jc }}' {% if request.form.get("jet_class")==jc %}selected{% endif %}>{{ jc }}</option>{% endfor %}
+      </select>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Departure date</label>
+      <input name='departure_date' type='date' value='{{ request.form.get("departure_date","") }}' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:18px;'>
+      <button type='submit' style='background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;'>Request quote</button>
+    </form>
+    {% if error %}<div style='background:#fef7e0;border:1px solid #f9ab00;padding:12px;border-radius:8px;color:#5f4400;'>{{ error }}</div>{% endif %}
+    {% if result %}
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:22px;'>
+      <h2 style="font-family:'Google Sans',sans-serif;font-size:20px;font-weight:500;margin:0 0 6px;">Charter quote {{ result.quote_token }}</h2>
+      <p style='color:#5f6368;font-size:13px;margin:0 0 14px;'>{{ result.origin }} -> {{ result.destination }} &middot; {{ result.pax }} pax &middot; {{ result.jet_class }} jet &middot; {{ result.departure_date }}</p>
+      <table style='width:100%;font-size:14px;border-collapse:collapse;'>
+        <tr><td>Block-time</td><td style='text-align:right;'>{{ result.block_hours }} h</td></tr>
+        <tr><td>Base cost</td><td style='text-align:right;'>${{ '{:,}'.format(result.base_cost) }}</td></tr>
+        <tr><td>Peak-day surcharge {% if result.peak_day %}(applied){% endif %}</td><td style='text-align:right;'>{{ result.peak_surcharge_pct }}%</td></tr>
+        <tr><td>Passenger surcharge (over 6 pax)</td><td style='text-align:right;'>${{ '{:,}'.format(result.pax_surcharge) }}</td></tr>
+        <tr><td>Repositioning fee</td><td style='text-align:right;'>${{ '{:,}'.format(result.repositioning_fee) }}</td></tr>
+        <tr><td>Subtotal</td><td style='text-align:right;'>${{ '{:,}'.format(result.subtotal) }}</td></tr>
+        <tr><td>Federal excise &amp; taxes (7.5%)</td><td style='text-align:right;'>${{ '{:,}'.format(result.taxes) }}</td></tr>
+        <tr style='font-weight:600;border-top:1px solid #dadce0;'><td style='padding-top:8px;'>Total</td><td style='text-align:right;padding-top:8px;'>${{ '{:,}'.format(result.total_usd) }}</td></tr>
+      </table>
+      <p style='color:#5f6368;font-size:12px;margin-top:14px;'>Quote valid for {{ result.expires_in_hours }} hours. Token: <code>{{ result.quote_token }}</code></p>
+    </article>
+    {% endif %}
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Charter quote', subtitle='Instant charter pricing across light, midsize, and heavy jets.',
+                   jet_classes=JET_CLASSES, result=result, error=error)
+
+
+# ---- Jet-card membership ----
+
+@app.route('/jet-card')
+def jet_card_membership():
+    """Jet-card membership tier table. GET-only, deterministic.
+
+    Also exposes the same data at /jet-card?format=json for API-style fetches.
+    """
+    if request.args.get('format') == 'json':
+        return jsonify({
+            'tiers': [{
+                'tier': t[0], 'annual_fee_usd': t[1], 'included_hours': t[2],
+                'hourly_rate_usd': t[3], 'peak_days_per_year': t[4],
+                'jet_class': t[5], 'perks': t[6],
+            } for t in _R9_JET_CARD_TIERS],
+        })
+    inner = """
+    <div style='overflow-x:auto;background:#fff;border:1px solid #dadce0;border-radius:12px;'>
+      <table style='width:100%;border-collapse:collapse;font-size:14px;'>
+        <thead style='background:#f8f9fa;'>
+          <tr>
+            <th style='text-align:left;padding:12px;'>Tier</th>
+            <th style='text-align:right;padding:12px;'>Annual fee</th>
+            <th style='text-align:right;padding:12px;'>Included hours</th>
+            <th style='text-align:right;padding:12px;'>Hourly rate</th>
+            <th style='text-align:right;padding:12px;'>Peak days</th>
+            <th style='text-align:left;padding:12px;'>Jet class</th>
+            <th style='text-align:left;padding:12px;'>Perks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tiers %}
+          <tr style='border-top:1px solid #f0f1f3;'>
+            <td style='padding:12px;font-weight:600;'>{{ t[0] }}</td>
+            <td style='padding:12px;text-align:right;'>${{ '{:,}'.format(t[1]) }}</td>
+            <td style='padding:12px;text-align:right;'>{{ t[2] }} h</td>
+            <td style='padding:12px;text-align:right;'>${{ '{:,}'.format(t[3]) }}/h</td>
+            <td style='padding:12px;text-align:right;'>{{ t[4] }}</td>
+            <td style='padding:12px;'>{{ t[5] }}</td>
+            <td style='padding:12px;color:#5f6368;'>{{ t[6] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p style='margin-top:24px;'><a href='/jet-card?format=json' style='color:#1a73e8;'>JSON view</a> &middot; <a href='/charter/quote' style='color:#1a73e8;'>Charter quote</a></p>
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Jet-card memberships',
+                   subtitle='Five-tier private jet membership programs. Annual fees pay for guaranteed availability and capped hourly pricing.',
+                   tiers=_R9_JET_CARD_TIERS)
+
+
+# ---- Group booking (15+) ----
+
+@app.route('/group-booking/quote', methods=['GET', 'POST'])
+@csrf.exempt
+def group_booking_quote():
+    """Group quote for 15+ passengers. Discounts scale with party size."""
+    result = None
+    error = None
+    if request.method == 'POST':
+        o = (request.form.get('origin') or '').upper().strip()[:4]
+        d = (request.form.get('destination') or '').upper().strip()[:4]
+        try:
+            pax = int(request.form.get('pax') or '15')
+        except ValueError:
+            pax = 15
+        cabin = (request.form.get('cabin') or 'Economy').strip()
+        dep = (request.form.get('departure_date') or '').strip()
+        oa = Airport.query.filter_by(iata=o).first() if o else None
+        da = Airport.query.filter_by(iata=d).first() if d else None
+        if not oa or not da:
+            error = 'Both origin and destination must be valid IATA codes.'
+        elif pax < 15:
+            error = 'Group bookings require 15 or more passengers. Use the normal flight search for parties of 14 or fewer.'
+        else:
+            # Pull the cheapest published fare on the route to anchor pricing
+            sample = Flight.query.filter_by(
+                origin_id=oa.id, destination_id=da.id
+            ).order_by(Flight.price.asc()).first()
+            if sample:
+                base = sample.price
+            else:
+                # Estimate by haversine if no published fare
+                km = _haversine_km(oa.latitude or 0, oa.longitude or 0,
+                                    da.latitude or 0, da.longitude or 0)
+                base = round(max(80, km * 0.12), 0)
+            cabin_mult = {'Economy': 1.0, 'Premium': 1.55, 'Business': 3.1, 'First': 5.0}.get(cabin, 1.0)
+            per_pax_pre = base * cabin_mult
+            # Tiered group discount
+            if pax >= 100:
+                discount_pct = 22
+            elif pax >= 50:
+                discount_pct = 17
+            elif pax >= 30:
+                discount_pct = 12
+            elif pax >= 20:
+                discount_pct = 8
+            else:
+                discount_pct = 5
+            per_pax = round(per_pax_pre * (1 - discount_pct / 100), 0)
+            subtotal = int(per_pax * pax)
+            # Group-services fee covers dedicated coordinator + name-change window
+            services_fee = 350 + 22 * pax
+            taxes = round((subtotal + services_fee) * 0.085, 0)
+            total = int(subtotal + services_fee + taxes)
+            token = 'GRP-' + _r9_h.sha1(f"{o}|{d}|{pax}|{cabin}|{dep}".encode()).hexdigest()[:10].upper()
+            result = {
+                'quote_token': token, 'origin': o, 'destination': d,
+                'pax': pax, 'cabin': cabin, 'departure_date': dep,
+                'published_fare': base,
+                'per_pax_quote_usd': int(per_pax),
+                'discount_pct': discount_pct,
+                'subtotal': subtotal,
+                'group_services_fee': int(services_fee),
+                'taxes': int(taxes),
+                'total_usd': total,
+                'name_change_window_days': 14,
+                'free_seat_selection': cabin != 'Economy',
+            }
+    inner = """
+    <form method='post' style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;max-width:560px;margin-bottom:24px;'>
+      <input type='hidden' name='csrf_token' value='{{ csrf_token() }}'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Origin (IATA)</label>
+      <input name='origin' value='{{ request.form.get("origin","") }}' required style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Destination (IATA)</label>
+      <input name='destination' value='{{ request.form.get("destination","") }}' required style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Group size (15-300)</label>
+      <input name='pax' type='number' min='15' max='300' value='{{ request.form.get("pax","15") }}' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Cabin</label>
+      <select name='cabin' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+        {% for c in ['Economy','Premium','Business','First'] %}<option value='{{ c }}' {% if request.form.get("cabin")==c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Departure date</label>
+      <input name='departure_date' type='date' value='{{ request.form.get("departure_date","") }}' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:18px;'>
+      <button type='submit' style='background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;'>Request group quote</button>
+    </form>
+    {% if error %}<div style='background:#fef7e0;border:1px solid #f9ab00;padding:12px;border-radius:8px;color:#5f4400;'>{{ error }}</div>{% endif %}
+    {% if result %}
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:22px;'>
+      <h2 style="font-family:'Google Sans',sans-serif;font-size:20px;font-weight:500;margin:0 0 6px;">Group quote {{ result.quote_token }}</h2>
+      <p style='color:#5f6368;font-size:13px;margin:0 0 14px;'>{{ result.origin }} -> {{ result.destination }} &middot; {{ result.pax }} pax &middot; {{ result.cabin }} &middot; {{ result.departure_date }}</p>
+      <table style='width:100%;font-size:14px;border-collapse:collapse;'>
+        <tr><td>Published fare anchor</td><td style='text-align:right;'>${{ '{:,.0f}'.format(result.published_fare) }}</td></tr>
+        <tr><td>Per-pax quote (after {{ result.discount_pct }}% group discount)</td><td style='text-align:right;'>${{ '{:,}'.format(result.per_pax_quote_usd) }}</td></tr>
+        <tr><td>Subtotal ({{ result.pax }} pax)</td><td style='text-align:right;'>${{ '{:,}'.format(result.subtotal) }}</td></tr>
+        <tr><td>Group services fee</td><td style='text-align:right;'>${{ '{:,}'.format(result.group_services_fee) }}</td></tr>
+        <tr><td>Taxes (8.5%)</td><td style='text-align:right;'>${{ '{:,}'.format(result.taxes) }}</td></tr>
+        <tr style='font-weight:600;border-top:1px solid #dadce0;'><td style='padding-top:8px;'>Total</td><td style='text-align:right;padding-top:8px;'>${{ '{:,}'.format(result.total_usd) }}</td></tr>
+      </table>
+      <ul style='font-size:13px;color:#5f6368;margin-top:14px;'>
+        <li>Name-change window: {{ result.name_change_window_days }} days before departure</li>
+        <li>Free seat selection: {{ 'Yes' if result.free_seat_selection else 'No (Economy)' }}</li>
+      </ul>
+    </article>
+    {% endif %}
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Group booking (15+ passengers)',
+                   subtitle='Discounted fares for groups of 15 or more. Dedicated coordinator and name-change window included.',
+                   result=result, error=error)
+
+
+# ---- Fare-class change tariff ----
+
+# Tariff matrix: (from_class, to_class) -> base fee + per-airline modifier.
+_R9_FARE_TARIFFS = {
+    ('Basic Economy', 'Economy Standard'): 65,
+    ('Economy Standard', 'Premium Economy'): 145,
+    ('Premium Economy', 'Business'): 480,
+    ('Business', 'First'): 950,
+    ('Economy Standard', 'Business'): 595,
+    ('Basic Economy', 'Premium Economy'): 210,
+    ('Premium Economy', 'First'): 1430,
+    ('Economy Standard', 'First'): 1545,
+    ('Basic Economy', 'Business'): 660,
+    ('Basic Economy', 'First'): 1610,
+}
+
+# Per-carrier multipliers — same fare class change, different fee depending on
+# operating airline. Hash-stable.
+_R9_FARE_AIRLINE_MULT = {
+    'Delta Air Lines': 1.00, 'American Airlines': 0.95, 'United Airlines': 1.05,
+    'Lufthansa': 1.20, 'Air France': 1.18, 'British Airways': 1.25,
+    'KLM': 1.15, 'Emirates': 1.40, 'Qatar Airways': 1.35,
+    'Singapore Airlines': 1.45, 'Cathay Pacific': 1.30, 'Japan Airlines': 1.28,
+    'ANA': 1.32, 'Korean Air': 1.22, 'Turkish Airlines': 1.10,
+    'Southwest Airlines': 0.50, 'JetBlue Airways': 0.65, 'Alaska Airlines': 0.80,
+    'Air Canada': 1.08, 'Qantas': 1.30,
+}
+
+
+@app.route('/tools/fare-class-tariff', methods=['GET'])
+def tools_fare_class_tariff():
+    """Look up fare-class change tariff. Inputs via query string:
+       from_class, to_class, airline. Outputs deterministic fee."""
+    classes = ['Basic Economy', 'Economy Standard', 'Premium Economy', 'Business', 'First']
+    from_class = request.args.get('from_class') or ''
+    to_class = request.args.get('to_class') or ''
+    airline = request.args.get('airline') or ''
+    if request.args.get('format') == 'json':
+        if not from_class or not to_class:
+            return jsonify({
+                'error': 'Missing from_class or to_class',
+                'allowed_classes': classes,
+                'allowed_airlines': sorted(_R9_FARE_AIRLINE_MULT),
+            }), 400
+        key = (from_class, to_class)
+        if key not in _R9_FARE_TARIFFS:
+            return jsonify({
+                'error': 'No upgrade path defined for the requested class transition.',
+                'requested': {'from_class': from_class, 'to_class': to_class},
+                'allowed_transitions': [
+                    {'from_class': k[0], 'to_class': k[1]} for k in _R9_FARE_TARIFFS],
+            }), 404
+        base = _R9_FARE_TARIFFS[key]
+        mult = _R9_FARE_AIRLINE_MULT.get(airline, 1.10)
+        fee = int(round(base * mult, 0))
+        # Cancellation-window pricing
+        window = request.args.get('window') or 'standard'  # standard | within24h | within2h
+        window_mult = {'standard': 1.00, 'within24h': 1.35, 'within2h': 2.10}.get(window, 1.00)
+        final = int(round(fee * window_mult, 0))
+        return jsonify({
+            'from_class': from_class, 'to_class': to_class,
+            'airline': airline or '(default)',
+            'base_fee_usd': base,
+            'airline_multiplier': mult,
+            'window': window, 'window_multiplier': window_mult,
+            'fee_usd': final,
+            'currency': 'USD',
+        })
+    # HTML
+    result = None
+    if from_class and to_class:
+        key = (from_class, to_class)
+        if key in _R9_FARE_TARIFFS:
+            base = _R9_FARE_TARIFFS[key]
+            mult = _R9_FARE_AIRLINE_MULT.get(airline, 1.10)
+            window = request.args.get('window') or 'standard'
+            window_mult = {'standard': 1.00, 'within24h': 1.35, 'within2h': 2.10}.get(window, 1.00)
+            fee = int(round(base * mult * window_mult, 0))
+            result = {'fee': fee, 'base': base, 'mult': mult, 'window': window,
+                       'window_mult': window_mult}
+    inner = """
+    <form method='get' style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;max-width:560px;margin-bottom:24px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>From class</label>
+      <select name='from_class' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+        <option value=''>-- pick --</option>
+        {% for c in classes %}<option value='{{ c }}' {% if from_class==c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>To class</label>
+      <select name='to_class' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+        <option value=''>-- pick --</option>
+        {% for c in classes %}<option value='{{ c }}' {% if to_class==c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Airline</label>
+      <select name='airline' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+        <option value=''>(default tariff)</option>
+        {% for a in airlines %}<option value='{{ a }}' {% if airline==a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+      </select>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Change window</label>
+      <select name='window' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:18px;'>
+        <option value='standard'>Standard (more than 24h before departure)</option>
+        <option value='within24h'>Within 24 hours of departure</option>
+        <option value='within2h'>Within 2 hours of departure</option>
+      </select>
+      <button type='submit' style='background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;'>Look up tariff</button>
+    </form>
+    {% if result %}
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:22px;max-width:560px;'>
+      <h2 style="font-family:'Google Sans',sans-serif;font-size:18px;font-weight:500;margin:0 0 12px;">Tariff: <strong>${{ result.fee }}</strong></h2>
+      <ul style='font-size:14px;color:#5f6368;margin:0;line-height:1.7;'>
+        <li>Base: ${{ result.base }}</li>
+        <li>Airline multiplier: x{{ result.mult }}</li>
+        <li>Window ({{ result.window }}) multiplier: x{{ result.window_mult }}</li>
+      </ul>
+    </article>
+    {% endif %}
+    <p style='margin-top:24px;'><a href='/tools/fare-class-tariff?format=json&amp;from_class=Economy%20Standard&amp;to_class=Business&amp;airline=Delta%20Air%20Lines' style='color:#1a73e8;'>JSON: Eco->Biz on Delta</a></p>
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Fare-class change tariff',
+                   subtitle='Per-airline fee schedule for upgrading or changing fare classes after ticketing.',
+                   classes=classes, airlines=sorted(_R9_FARE_AIRLINE_MULT),
+                   from_class=from_class, to_class=to_class, airline=airline,
+                   result=result)
+
+
+# ---- Mileage-runs finder ----
+
+@app.route('/tools/mileage-runs')
+def tools_mileage_runs():
+    """Find low-cost long-haul flights that earn high frequent-flyer miles.
+    Rank candidate flights by EQM (elite-qualifying miles) per dollar.
+    """
+    origin = (request.args.get('origin') or '').upper().strip()[:4]
+    max_price = request.args.get('max_price') or '500'
+    min_miles = request.args.get('min_miles') or '4000'
+    try:
+        max_price_v = float(max_price)
+    except ValueError:
+        max_price_v = 500
+    try:
+        min_miles_v = int(min_miles)
+    except ValueError:
+        min_miles_v = 4000
+
+    candidates = []
+    if origin:
+        oa = Airport.query.filter_by(iata=origin).first()
+        if oa:
+            # Pull a sample of long-haul flights from this origin, cheap fares
+            flights = (Flight.query
+                       .filter(Flight.origin_id == oa.id,
+                               Flight.price <= max_price_v,
+                               Flight.duration_minutes >= 240)
+                       .order_by(Flight.price.asc())
+                       .limit(80).all())
+            for f in flights:
+                if not f.destination:
+                    continue
+                # EQM estimate: great-circle * cabin multiplier
+                km = _haversine_km(oa.latitude or 0, oa.longitude or 0,
+                                    f.destination.latitude or 0, f.destination.longitude or 0)
+                miles = int(km * 0.621371)  # km -> miles
+                if miles < min_miles_v:
+                    continue
+                cents_per_mile = round((f.price * 100) / max(1, miles), 2)
+                candidates.append({
+                    'flight_id': f.id, 'flight_number': f.flight_number,
+                    'airline': f.airline,
+                    'origin': oa.iata, 'destination': f.destination.iata,
+                    'destination_city': f.destination.city,
+                    'departure_date': f.departure_date.isoformat() if f.departure_date else '',
+                    'price_usd': f.price, 'eqm': miles,
+                    'cents_per_mile': cents_per_mile,
+                    'duration_minutes': f.duration_minutes,
+                    'stops': f.stops,
+                })
+            candidates.sort(key=lambda r: r['cents_per_mile'])
+            candidates = candidates[:25]
+    if request.args.get('format') == 'json':
+        return jsonify({
+            'origin': origin, 'max_price_usd': max_price_v,
+            'min_miles': min_miles_v,
+            'count': len(candidates),
+            'results': candidates,
+        })
+    inner = """
+    <form method='get' style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;max-width:640px;margin-bottom:24px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Origin (IATA)</label>
+      <input name='origin' value='{{ origin }}' required style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;' placeholder='JFK'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Max price (USD)</label>
+      <input name='max_price' value='{{ max_price }}' type='number' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;'>
+      <label style='display:block;font-size:13px;color:#5f6368;margin-bottom:6px;'>Min EQM</label>
+      <input name='min_miles' value='{{ min_miles }}' type='number' style='width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:18px;'>
+      <button type='submit' style='background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer;'>Find mileage runs</button>
+    </form>
+    {% if origin and not candidates %}<p style='color:#5f6368;'>No mileage runs found matching the filter. Try raising the price cap or lowering the EQM floor.</p>{% endif %}
+    {% if candidates %}
+    <div style='overflow-x:auto;background:#fff;border:1px solid #dadce0;border-radius:12px;'>
+      <table style='width:100%;border-collapse:collapse;font-size:13px;'>
+        <thead style='background:#f8f9fa;'><tr>
+          <th style='text-align:left;padding:10px;'>#</th>
+          <th style='text-align:left;padding:10px;'>Flight</th>
+          <th style='text-align:left;padding:10px;'>Route</th>
+          <th style='text-align:left;padding:10px;'>Date</th>
+          <th style='text-align:right;padding:10px;'>Price</th>
+          <th style='text-align:right;padding:10px;'>EQM</th>
+          <th style='text-align:right;padding:10px;'>cents/mile</th>
+        </tr></thead>
+        <tbody>
+        {% for r in candidates %}
+          <tr style='border-top:1px solid #f0f1f3;'>
+            <td style='padding:10px;'>{{ loop.index }}</td>
+            <td style='padding:10px;'><a href='/flight/{{ r.flight_id }}' style='color:#1a73e8;'>{{ r.flight_number }}</a> &middot; {{ r.airline }}</td>
+            <td style='padding:10px;'>{{ r.origin }} -> {{ r.destination }} ({{ r.destination_city }})</td>
+            <td style='padding:10px;'>{{ r.departure_date }}</td>
+            <td style='padding:10px;text-align:right;'>${{ r.price_usd }}</td>
+            <td style='padding:10px;text-align:right;'>{{ r.eqm }}</td>
+            <td style='padding:10px;text-align:right;font-weight:600;'>{{ r.cents_per_mile }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Mileage-runs finder',
+                   subtitle='Rank low-cost long-haul flights by elite-qualifying miles (EQM) per dollar.',
+                   origin=origin, max_price=max_price_v, min_miles=min_miles_v,
+                   candidates=candidates)
+
+
+# ---- Baggage track by tag ----
+
+# Status table — deterministic from tag prefix hash.
+_R9_BAG_STATUSES = [
+    ('checked_in', 'Bag checked in at origin counter.'),
+    ('loaded', 'Loaded onto the aircraft hold at origin.'),
+    ('in_transit', 'In transit — bag is en route between connecting flights.'),
+    ('arrived', 'Arrived at destination baggage claim.'),
+    ('delivered', 'Picked up by the passenger at the carousel.'),
+    ('mishandled', 'Delayed at a connecting hub. Tracer opened — agents working it.'),
+    ('lost', 'Reported lost. Compensation claim ready to file.'),
+]
+
+
+@app.route('/baggage/track/<tag>')
+def baggage_track_by_tag(tag):
+    """Track a bag by its baggage tag. Status is deterministic from the
+    tag — no DB writes. Tag format is enforced loosely: 6-12 alnum chars.
+    """
+    tag_norm = (tag or '').upper().strip()[:20]
+    if not tag_norm or not tag_norm.isalnum() or len(tag_norm) < 6:
+        if request.args.get('format') == 'json':
+            return jsonify({'error': 'Invalid baggage tag. Must be 6-20 alphanumeric chars.', 'tag': tag_norm}), 400
+        inner = "<p style='color:#a50e0e;'>Invalid baggage tag. Must be 6 to 20 alphanumeric characters.</p>"
+        tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+        return _r9_tpl(tpl, title='Baggage tracking',
+                       subtitle='Invalid tag format.'), 400
+    # Map hash -> status
+    idx = _r9_hash_int(tag_norm, 'bag', mod=len(_R9_BAG_STATUSES))
+    status, message = _R9_BAG_STATUSES[idx]
+    # Most recent location: pick a hub deterministically
+    HUBS = ['JFK', 'LHR', 'CDG', 'DXB', 'AMS', 'FRA', 'SIN', 'ATL', 'ORD', 'LAX',
+            'MIA', 'NRT', 'HND', 'HKG', 'DOH', 'IST', 'YYZ', 'MEX', 'BKK', 'SYD']
+    location = HUBS[_r9_hash_int(tag_norm, 'loc', mod=len(HUBS))]
+    # Carrier
+    CARRIERS = ['Delta Air Lines', 'American Airlines', 'United Airlines',
+                'Lufthansa', 'Air France', 'British Airways', 'Emirates',
+                'Qatar Airways', 'Singapore Airlines', 'Cathay Pacific']
+    carrier = CARRIERS[_r9_hash_int(tag_norm, 'car', mod=len(CARRIERS))]
+    # Weight in kg
+    weight_kg = round(_r9_hash_int(tag_norm, 'wt', mod=2400) / 100 + 5.0, 1)
+    # Last-scan offset minutes (older for delivered/lost)
+    minutes_ago = _r9_hash_int(tag_norm, 'mins', mod=720) + 5
+    pnr = 'PNR-' + _r9_h.sha1((tag_norm + ':pnr').encode()).hexdigest()[:6].upper()
+    payload = {
+        'tag': tag_norm,
+        'status': status,
+        'status_message': message,
+        'last_scan_location': location,
+        'carrier': carrier,
+        'weight_kg': weight_kg,
+        'pnr': pnr,
+        'minutes_since_last_scan': minutes_ago,
+    }
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    inner = """
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:22px;max-width:560px;'>
+      <h2 style="font-family:'Google Sans',sans-serif;font-size:20px;font-weight:500;margin:0 0 6px;">Tag {{ payload.tag }}</h2>
+      <p style='font-size:18px;color:#1a73e8;margin:0 0 10px;'><strong>Status: {{ payload.status }}</strong></p>
+      <p style='color:#5f6368;margin:0 0 16px;'>{{ payload.status_message }}</p>
+      <dl style='font-size:14px;line-height:1.8;color:#202124;margin:0;'>
+        <div><strong>Last scan:</strong> {{ payload.last_scan_location }} ({{ payload.minutes_since_last_scan }} minutes ago)</div>
+        <div><strong>Carrier:</strong> {{ payload.carrier }}</div>
+        <div><strong>Weight:</strong> {{ payload.weight_kg }} kg</div>
+        <div><strong>Linked PNR:</strong> {{ payload.pnr }}</div>
+      </dl>
+    </article>
+    <p style='margin-top:24px;'><a href='/baggage/track/{{ payload.tag }}?format=json' style='color:#1a73e8;'>JSON view</a></p>
+    """
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner)
+    return _r9_tpl(tpl, title='Baggage tracking',
+                   subtitle='Trace any checked bag by its 10-digit tag number.',
+                   payload=payload)
+
+
+# ============================================================
 # SEED DATA
 # ============================================================
 

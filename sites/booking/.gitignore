@@ -1,0 +1,15 @@
+# Booking mirror — local-only artifacts that must NEVER be committed.
+# R8 left 4x 100MB+ files (db_a.db / db_b.db / dump_a.sql / dump_b.sql)
+# behind that aborted the push, so these patterns are pinned here too in
+# case the repo root .gitignore drifts.
+
+# Debug DB snapshots, SQL dumps, and any *.backup files
+db_*.db
+dump_*.sql
+*.db_backup
+*.backup
+
+# Throwaway scratchpads from inspection runs (size / md5 / index diffs)
+d?.txt
+sm_?.txt
+idx_?.txt

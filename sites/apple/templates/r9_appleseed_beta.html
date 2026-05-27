@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}AppleSeed Beta Program{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:40px auto;padding:0 20px;">
+  <h1 style="font-size:48px;font-weight:700;color:#1d1d1f;letter-spacing:-0.5px;">AppleSeed</h1>
+  <p style="color:#6e6e73;font-size:21px;margin:14px 0 32px;">
+    Help shape the next release of iOS, iPadOS, macOS, watchOS, tvOS, visionOS, and HomePod Software. Install the beta profile, run pre-release builds, and send Apple feedback right from your device.
+  </p>
+
+  <form id="r9-appleseed-form" method="POST" action="/appleseed-beta" style="display:grid;gap:16px;max-width:520px;">
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Apple ID email</span>
+      <input type="email" name="email" required placeholder="seeder@example.com" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+    </label>
+
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Operating system</span>
+      <select name="os" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+        {% for os in oses %}<option value="{{ os }}">{{ os }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <label style="display:grid;gap:6px;font-size:14px;color:#1d1d1f;">
+      <span>Channel</span>
+      <select name="channel" style="padding:12px;border:1px solid #d2d2d7;border-radius:10px;font-size:16px;">
+        {% for ch in channels %}<option value="{{ ch }}">{{ ch }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <button type="submit" style="padding:12px 24px;background:#0071e3;color:#fff;border:none;border-radius:980px;font-size:16px;font-weight:500;cursor:pointer;">Enroll my device</button>
+  </form>
+
+  <h2 style="font-size:28px;font-weight:700;margin:48px 0 16px;color:#1d1d1f;">How AppleSeed works</h2>
+  <ol style="line-height:1.9;padding-left:20px;color:#1d1d1f;">
+    <li>Sign in with your Apple ID and agree to the AppleSeed confidentiality terms.</li>
+    <li>Install the AppleSeed beta configuration profile on each device.</li>
+    <li>Software Update will offer the latest beta builds.</li>
+    <li>Use the Feedback Assistant app to file targeted feedback.</li>
+  </ol>
+
+  <p style="margin-top:48px;color:#6e6e73;font-size:13px;">Reference date: {{ reference_date }}.</p>
+</div>
+{% endblock %}

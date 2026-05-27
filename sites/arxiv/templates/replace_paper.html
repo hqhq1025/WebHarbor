@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Replace paper {{ paper.arxiv_id }} — arXiv{% endblock %}
+{% block content %}
+
+<h1>Replace paper</h1>
+
+<div class="dash-card">
+    <h2>{{ paper.title }}</h2>
+    <p class="muted">
+        arXiv:<code>{{ paper.arxiv_id }}</code> &middot;
+        current version <code>{{ current_version }}</code> &rarr;
+        next version <code>{{ next_version }}</code>
+    </p>
+</div>
+
+{% if not submitted %}
+<form method="POST" action="{{ url_for('replace_paper', arxiv_id=paper.arxiv_id) }}" class="dash-card">
+    <h2>New version</h2>
+    <p class="muted">
+        Replacement keeps the same arxiv_id, increments the version
+        suffix, and appends a versions row in the history.  Provide a
+        short summary of changes (mandatory, ≤500 chars).
+    </p>
+    <label for="rp_summary">Summary of changes</label>
+    <textarea id="rp_summary" name="summary" rows="4" required
+              placeholder="e.g. 'Fixed sign error in Theorem 2, added two more experiments.'">{{ summary }}</textarea>
+    <button type="submit">Submit new version</button>
+</form>
+{% else %}
+<div class="dash-card">
+    <h2>Replacement queued</h2>
+    <p>Ticket: <code id="replace-ticket" style="user-select:all;">{{ ticket }}</code></p>
+    <table class="data">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>arxiv_id</td><td><code>{{ paper.arxiv_id }}</code></td></tr>
+        <tr><td>From version</td><td><code>{{ current_version }}</code></td></tr>
+        <tr><td>To version</td><td><code>{{ next_version }}</code></td></tr>
+        <tr><td>Summary</td><td>{{ summary }}</td></tr>
+        <tr><td>Announce on</td><td>{{ announce_at }}</td></tr>
+    </table>
+</div>
+{% endif %}
+
+<p class="muted">
+    Back to <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">/abs/{{ paper.arxiv_id }}</a>.
+</p>
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Nutrition Meal Plan Builder — WolframAlpha{% endblock %}
+{% block body_class %}page-nutrition-meal-plan{% endblock %}
+{% block content %}
+<section class="wa-nutrition">
+  <h1>Nutrition Meal Plan Builder</h1>
+  <p class="wa-intro">
+    Deterministic daily meal plan generator. Set calorie target, meal frequency,
+    and dietary preference.
+  </p>
+  <form method="get" action="/nutrition/meal-plan" class="wa-form" id="nutritionForm">
+    <label>Calories <input name="cal" value="{{ cal }}" type="number" min="800" max="4000" step="50"></label>
+    <label>Meals <input name="meals" value="{{ meals }}" type="number" min="1" max="8"></label>
+    <label>Diet
+      <select name="diet">
+        {% for d in diets %}<option value="{{ d }}" {% if d==diet %}selected{% endif %}>{{ d }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit">Generate</button>
+  </form>
+  <h2>Plan</h2>
+  <table class="wa-plan-table">
+    <thead><tr><th>#</th><th>Slot</th><th>Calories</th><th>Notes</th></tr></thead>
+    <tbody>
+      {% for slot in plan %}
+      <tr><td>{{ loop.index }}</td><td>{{ slot.label }}</td><td>{{ slot.kcal }} kcal</td><td>{{ slot.notes }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Macros</h2>
+  <ul class="wa-macros">
+    <li>Total: <strong>{{ cal }}</strong> kcal across <strong>{{ meals }}</strong> meals ({{ per_meal }} kcal/meal).</li>
+    <li>Protein: <strong>{{ p_g }}</strong> g &middot; Carbs: <strong>{{ c_g }}</strong> g &middot; Fat: <strong>{{ f_g }}</strong> g.</li>
+    <li>Diet preference: <strong>{{ diet }}</strong>.</li>
+    <li>Schema: <code>wa-nutrition-v1</code>.</li>
+  </ul>
+  <p class="wa-related">
+    See <a href="/topic/nutrition-meal-plan-builder">nutrition-meal-plan-builder</a>,
+    <a href="/drugs/interaction-checker">drug interactions</a>,
+    and the <a href="/api/command-palette">Cmd+K palette</a>.
+  </p>
+</section>
+{% endblock %}

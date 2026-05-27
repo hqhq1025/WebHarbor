@@ -2681,6 +2681,628 @@ def r8_api_palette():
     })
 
 
+# ---------- R9: AI-Overview / generative SERP / Lens-photo / NotebookLM /
+#               AR / conversational search ------------------------------------
+#
+# Seven new surfaces that mirror the "AI-overview-era" Google features the
+# real google.com is rolling out. Every endpoint is deterministic and
+# wall-clock-free so byte-id reset stays intact.
+
+# Pinned AI Overview cards. Each card is a 4-tuple:
+#   (slug, query_text, summary, [citation dicts])
+# Citations dicts: {label, title, url, snippet, source}
+_R9_AI_OVERVIEW_CARDS = [
+    {
+        'slug': 'photosynthesis',
+        'query': 'how does photosynthesis work',
+        'summary': (
+            'Photosynthesis converts light energy, water, and carbon dioxide '
+            'into glucose and oxygen. It happens in two coupled stages: the '
+            'light-dependent reactions in the thylakoid membranes capture '
+            'photon energy into ATP and NADPH, and the Calvin cycle in the '
+            'stroma uses that energy to fix CO2 into sugars.'),
+        'citations': [
+            {'label': '[1]', 'title': 'Photosynthesis - Wikipedia',
+             'url': 'https://en.wikipedia.org/wiki/Photosynthesis',
+             'snippet': 'Photosynthesis is a biological process used by plants and other organisms to convert light into chemical energy.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[2]', 'title': 'Khan Academy: Light reactions',
+             'url': 'https://www.khanacademy.org/science/biology/photosynthesis-in-plants',
+             'snippet': 'Free video and reading on the light-dependent reactions and the Calvin cycle.',
+             'source': 'www.khanacademy.org'},
+            {'label': '[3]', 'title': 'Britannica - Photosynthesis',
+             'url': 'https://www.britannica.com/science/photosynthesis',
+             'snippet': 'Process by which green plants and certain other organisms transform light energy into chemical energy.',
+             'source': 'www.britannica.com'},
+            {'label': '[4]', 'title': 'Nature - photosynthesis',
+             'url': 'https://www.nature.com/subjects/photosynthesis',
+             'snippet': 'Latest research articles on photosynthesis from Nature journals.',
+             'source': 'www.nature.com'},
+            {'label': '[5]', 'title': 'NASA - The Carbon Cycle',
+             'url': 'https://earthobservatory.nasa.gov/features/CarbonCycle',
+             'snippet': 'NASA Earth Observatory feature on the global carbon cycle and the role of photosynthesis.',
+             'source': 'earthobservatory.nasa.gov'},
+            {'label': '[6]', 'title': 'Quanta - The chloroplast',
+             'url': 'https://www.quantamagazine.org/tag/photosynthesis/',
+             'snippet': 'Quanta Magazine reporting on photosynthesis research and the structure of the chloroplast.',
+             'source': 'www.quantamagazine.org'},
+            {'label': '[7]', 'title': 'NIH PubMed - photosynthesis review',
+             'url': 'https://pubmed.ncbi.nlm.nih.gov/?term=photosynthesis+review',
+             'snippet': 'Open-access peer-reviewed review articles on photosynthesis indexed by PubMed.',
+             'source': 'pubmed.ncbi.nlm.nih.gov'},
+        ],
+    },
+    {
+        'slug': 'large_language_model',
+        'query': 'what is a large language model',
+        'summary': (
+            'A large language model (LLM) is a neural network trained on '
+            'large text corpora to predict next tokens. Modern LLMs use the '
+            'Transformer architecture (self-attention) and scale to billions '
+            'of parameters; they are typically pre-trained on a generic '
+            'corpus then fine-tuned for instruction-following with human '
+            'feedback (RLHF or DPO).'),
+        'citations': [
+            {'label': '[1]', 'title': 'Large language model - Wikipedia',
+             'url': 'https://en.wikipedia.org/wiki/Large_language_model',
+             'snippet': 'A large language model is a type of foundation model trained on vast amounts of text.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[2]', 'title': 'Attention Is All You Need - arXiv',
+             'url': 'https://arxiv.org/abs/1706.03762',
+             'snippet': 'Vaswani et al. 2017 - the Transformer paper introducing self-attention.',
+             'source': 'arxiv.org'},
+            {'label': '[3]', 'title': 'OpenAI: GPT-4 Technical Report',
+             'url': 'https://openai.com/research/gpt-4',
+             'snippet': 'Technical report on GPT-4 - capabilities, evaluations, and safety.',
+             'source': 'openai.com'},
+            {'label': '[4]', 'title': 'Anthropic: Claude family models',
+             'url': 'https://www.anthropic.com/news/claude-3-family',
+             'snippet': 'Anthropic announcement on the Claude 3 family of large language models.',
+             'source': 'www.anthropic.com'},
+            {'label': '[5]', 'title': 'Stanford CRFM - Foundation models',
+             'url': 'https://crfm.stanford.edu/',
+             'snippet': 'Stanford Center for Research on Foundation Models (CRFM) - report and research.',
+             'source': 'crfm.stanford.edu'},
+            {'label': '[6]', 'title': 'DeepMind - Chinchilla scaling laws',
+             'url': 'https://www.deepmind.com/publications/an-empirical-analysis-of-compute-optimal-large-language-model-training',
+             'snippet': 'Hoffmann et al. 2022 - the Chinchilla compute-optimal scaling law.',
+             'source': 'www.deepmind.com'},
+            {'label': '[7]', 'title': 'Hugging Face - open LLM leaderboard',
+             'url': 'https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard',
+             'snippet': 'Community leaderboard ranking open-source large language models.',
+             'source': 'huggingface.co'},
+        ],
+    },
+    {
+        'slug': 'black_hole',
+        'query': 'what is a black hole',
+        'summary': (
+            'A black hole is a region of spacetime where gravity is so '
+            'strong that nothing - not even light - can escape. The '
+            'boundary is called the event horizon. Stellar-mass black holes '
+            'form from the gravitational collapse of massive stars; '
+            'supermassive black holes sit at galactic centers.'),
+        'citations': [
+            {'label': '[1]', 'title': 'Black hole - Wikipedia',
+             'url': 'https://en.wikipedia.org/wiki/Black_hole',
+             'snippet': 'A black hole is a region of spacetime where gravity is so strong nothing can escape.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[2]', 'title': 'NASA Black holes',
+             'url': 'https://science.nasa.gov/universe/black-holes/',
+             'snippet': 'NASA overview of black holes - types, formation, and observations.',
+             'source': 'science.nasa.gov'},
+            {'label': '[3]', 'title': 'Event Horizon Telescope',
+             'url': 'https://eventhorizontelescope.org/',
+             'snippet': 'The Event Horizon Telescope collaboration - first images of black holes M87* and Sgr A*.',
+             'source': 'eventhorizontelescope.org'},
+            {'label': '[4]', 'title': 'Stephen Hawking - black hole radiation',
+             'url': 'https://en.wikipedia.org/wiki/Hawking_radiation',
+             'snippet': 'Hawking radiation - theoretical black-body emission predicted by Stephen Hawking in 1974.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[5]', 'title': 'ESO press release - Sgr A*',
+             'url': 'https://www.eso.org/public/news/eso2208-eht-mw/',
+             'snippet': 'ESO press release on the first image of the supermassive black hole at the centre of our Milky Way galaxy.',
+             'source': 'www.eso.org'},
+            {'label': '[6]', 'title': 'Britannica - Black hole',
+             'url': 'https://www.britannica.com/science/black-hole',
+             'snippet': 'Encyclopedia Britannica entry covering theory, observation, and history of black holes.',
+             'source': 'www.britannica.com'},
+            {'label': '[7]', 'title': 'Quanta Magazine - black holes',
+             'url': 'https://www.quantamagazine.org/tag/black-holes/',
+             'snippet': 'Long-form science journalism on black hole research from Quanta Magazine.',
+             'source': 'www.quantamagazine.org'},
+        ],
+    },
+    {
+        'slug': 'mediterranean_diet',
+        'query': 'is the mediterranean diet healthy',
+        'summary': (
+            'The Mediterranean diet emphasizes vegetables, legumes, whole '
+            'grains, olive oil, nuts, fish, and moderate wine. Multiple '
+            'randomized trials and meta-analyses (PREDIMED, Lyon Diet Heart '
+            'Study) link it to lower cardiovascular events and reduced '
+            'all-cause mortality. The US News Best Diets panel has ranked '
+            'it #1 overall for multiple consecutive years.'),
+        'citations': [
+            {'label': '[1]', 'title': 'Mediterranean diet - Wikipedia',
+             'url': 'https://en.wikipedia.org/wiki/Mediterranean_diet',
+             'snippet': 'A diet inspired by the eating habits of Greece, Spain, Italy and southern France.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[2]', 'title': 'PREDIMED trial - NEJM',
+             'url': 'https://www.nejm.org/doi/full/10.1056/NEJMoa1800389',
+             'snippet': 'Primary prevention of cardiovascular disease with a Mediterranean diet supplemented with extra-virgin olive oil or nuts.',
+             'source': 'www.nejm.org'},
+            {'label': '[3]', 'title': 'US News Best Diets ranking',
+             'url': 'https://health.usnews.com/best-diet/best-diets-overall',
+             'snippet': 'US News & World Report annual Best Diets ranking - Mediterranean diet repeatedly #1 overall.',
+             'source': 'health.usnews.com'},
+            {'label': '[4]', 'title': 'Harvard School of Public Health',
+             'url': 'https://www.hsph.harvard.edu/nutritionsource/healthy-weight/diet-reviews/mediterranean-diet/',
+             'snippet': 'Harvard T.H. Chan School of Public Health Nutrition Source review of the Mediterranean diet.',
+             'source': 'www.hsph.harvard.edu'},
+            {'label': '[5]', 'title': 'Mayo Clinic - Mediterranean diet',
+             'url': 'https://www.mayoclinic.org/healthy-lifestyle/nutrition-and-healthy-eating/in-depth/mediterranean-diet/art-20047801',
+             'snippet': 'Mayo Clinic expert overview of how to follow a Mediterranean-style eating pattern.',
+             'source': 'www.mayoclinic.org'},
+            {'label': '[6]', 'title': 'Cochrane - Mediterranean diet review',
+             'url': 'https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD009825.pub3/full',
+             'snippet': 'Cochrane systematic review of Mediterranean-style diet for the primary and secondary prevention of cardiovascular disease.',
+             'source': 'www.cochranelibrary.com'},
+            {'label': '[7]', 'title': 'Lyon Diet Heart Study',
+             'url': 'https://www.ahajournals.org/doi/10.1161/01.CIR.99.6.779',
+             'snippet': 'Lyon Diet Heart Study - cardioprotective effect of Mediterranean diet on coronary heart disease.',
+             'source': 'www.ahajournals.org'},
+        ],
+    },
+    {
+        'slug': 'quantum_entanglement',
+        'query': 'what is quantum entanglement',
+        'summary': (
+            'Quantum entanglement is a correlation between two or more '
+            'particles such that the quantum state of each cannot be '
+            'described independently of the others, even when separated by '
+            'arbitrary distance. Measurements of one particle instantly '
+            'project the state of the other - within the bounds of the '
+            'no-communication theorem. The 2022 Nobel Prize in Physics was '
+            'awarded for experimental tests of Bell inequalities.'),
+        'citations': [
+            {'label': '[1]', 'title': 'Quantum entanglement - Wikipedia',
+             'url': 'https://en.wikipedia.org/wiki/Quantum_entanglement',
+             'snippet': 'Quantum entanglement is the phenomenon where a group of particles share a single quantum state.',
+             'source': 'en.wikipedia.org'},
+            {'label': '[2]', 'title': '2022 Nobel Prize in Physics',
+             'url': 'https://www.nobelprize.org/prizes/physics/2022/summary/',
+             'snippet': 'Awarded to Aspect, Clauser, and Zeilinger for experiments with entangled photons.',
+             'source': 'www.nobelprize.org'},
+            {'label': '[3]', 'title': 'Stanford Encyclopedia of Philosophy',
+             'url': 'https://plato.stanford.edu/entries/qt-entangle/',
+             'snippet': 'Philosophical and historical overview of quantum entanglement.',
+             'source': 'plato.stanford.edu'},
+            {'label': '[4]', 'title': 'CERN - quantum entanglement experiments',
+             'url': 'https://home.cern/science/physics/quantum-physics',
+             'snippet': 'CERN explainer on quantum physics and entanglement experiments.',
+             'source': 'home.cern'},
+            {'label': '[5]', 'title': 'Nature - entanglement research',
+             'url': 'https://www.nature.com/subjects/quantum-entanglement',
+             'snippet': 'Nature subject page indexing recent research on quantum entanglement.',
+             'source': 'www.nature.com'},
+            {'label': '[6]', 'title': 'IBM Quantum - entanglement primer',
+             'url': 'https://learning.quantum.ibm.com/course/basics-of-quantum-information/entanglement',
+             'snippet': 'IBM Quantum interactive course on the basics of quantum information including entanglement.',
+             'source': 'learning.quantum.ibm.com'},
+            {'label': '[7]', 'title': 'arXiv - Bell experiments review',
+             'url': 'https://arxiv.org/abs/1707.04591',
+             'snippet': 'Loophole-free Bell-inequality experiments - review and recent results on arXiv.',
+             'source': 'arxiv.org'},
+        ],
+    },
+    {
+        'slug': 'climate_change_causes',
+        'query': 'what causes climate change',
+        'summary': (
+            'The dominant driver of present-day climate change is the '
+            'increase in atmospheric concentrations of greenhouse gases - '
+            'principally CO2, methane, and nitrous oxide - from human '
+            'activities. Burning fossil fuels for electricity, heat, and '
+            'transport is the single largest source; land-use change and '
+            'agriculture also contribute. The IPCC AR6 attributes the '
+            'observed warming since 1850 unequivocally to human influence.'),
+        'citations': [
+            {'label': '[1]', 'title': 'IPCC Sixth Assessment Report',
+             'url': 'https://www.ipcc.ch/report/ar6/wg1/',
+             'snippet': 'IPCC AR6 Working Group I report - the physical science basis of climate change.',
+             'source': 'www.ipcc.ch'},
+            {'label': '[2]', 'title': 'NASA Climate Change - causes',
+             'url': 'https://climate.nasa.gov/causes/',
+             'snippet': 'NASA overview of the scientific consensus on the causes of climate change.',
+             'source': 'climate.nasa.gov'},
+            {'label': '[3]', 'title': 'NOAA - Climate.gov',
+             'url': 'https://www.climate.gov/',
+             'snippet': 'NOAA Climate.gov - science and services portal for climate change.',
+             'source': 'www.climate.gov'},
+            {'label': '[4]', 'title': 'UN: causes of climate change',
+             'url': 'https://www.un.org/en/climatechange/science/causes-effects-climate-change',
+             'snippet': 'United Nations explainer on the causes and effects of climate change.',
+             'source': 'www.un.org'},
+            {'label': '[5]', 'title': 'Our World in Data: CO2 emissions',
+             'url': 'https://ourworldindata.org/co2-and-greenhouse-gas-emissions',
+             'snippet': 'Long-run dataset on global CO2 and greenhouse gas emissions by source.',
+             'source': 'ourworldindata.org'},
+            {'label': '[6]', 'title': 'EPA - Causes of climate change',
+             'url': 'https://www.epa.gov/climatechange-science/causes-climate-change',
+             'snippet': 'US EPA primer on natural and human causes of climate change.',
+             'source': 'www.epa.gov'},
+            {'label': '[7]', 'title': 'Carbon Brief - explainers',
+             'url': 'https://www.carbonbrief.org/category/explainers/',
+             'snippet': 'Carbon Brief technical explainers on the climate-change evidence base.',
+             'source': 'www.carbonbrief.org'},
+        ],
+    },
+]
+
+
+_R9_AI_OVERVIEW_INDEX = {c['slug']: c for c in _R9_AI_OVERVIEW_CARDS}
+
+
+@app.route('/search/ai-overview')
+def r9_ai_overview():
+    """AI Overview landing - lists every prepared overview card with its
+    one-paragraph summary. Filterable by ?q=, and indexed by ?slug= to
+    open a specific card.
+
+    Wall-clock-free, deterministic across resets.
+    """
+    q = (request.args.get('q') or '').strip().lower()
+    slug = (request.args.get('slug') or '').strip().lower()
+    one = _R9_AI_OVERVIEW_INDEX.get(slug)
+    items = _R9_AI_OVERVIEW_CARDS
+    if q:
+        items = [c for c in items
+                 if q in c['slug'].lower()
+                 or q in c['query'].lower()
+                 or q in c['summary'].lower()]
+    return render_template(
+        'r9_ai_overview.html',
+        items=items, one=one, q=request.args.get('q') or '',
+    )
+
+
+@app.route('/search/ai-overview/citations')
+@app.route('/search/ai-overview/citations/<slug>')
+def r9_ai_overview_citations(slug=None):
+    """Per-card citation list. ?slug= or path-segment routing. If no slug,
+    return an index page with citation counts. If POST-style ?format=json,
+    return JSON for programmatic consumers."""
+    slug_q = (slug or request.args.get('slug') or '').strip().lower()
+    fmt = (request.args.get('format') or '').strip().lower()
+    one = _R9_AI_OVERVIEW_INDEX.get(slug_q)
+    if fmt == 'json':
+        if one is None:
+            return jsonify({
+                'cards': [{'slug': c['slug'], 'query': c['query'],
+                           'citation_count': len(c['citations'])}
+                          for c in _R9_AI_OVERVIEW_CARDS],
+                'count': len(_R9_AI_OVERVIEW_CARDS),
+            })
+        return jsonify({
+            'slug': one['slug'], 'query': one['query'],
+            'summary': one['summary'],
+            'citations': one['citations'],
+            'citation_count': len(one['citations']),
+        })
+    return render_template(
+        'r9_ai_overview_citations.html',
+        one=one, cards=_R9_AI_OVERVIEW_CARDS, slug=slug_q,
+    )
+
+
+_R9_GENERATIVE_MODES = [
+    ('off',     'Off',     'Classic 10 blue links only. No AI summary above results.'),
+    ('compact', 'Compact', 'A 2-line generative gist above the SERP with collapsed citations.'),
+    ('full',    'Full',    'A full AI overview with inline citations and follow-up question chips.'),
+    ('chat',    'Chat',    'Conversational mode - the SERP becomes a chat with retained context across messages.'),
+]
+
+
+@app.route('/search/generative-toggle', methods=['GET', 'POST'])
+def r9_generative_toggle():
+    """Generative search toggle. Persists the selected mode in the Flask
+    session so subsequent /search calls *could* opt in (no actual SERP
+    behavior change - keeps byte-id reset intact)."""
+    current = session.get('generative_mode', 'compact')
+    saved = None
+    if request.method == 'POST':
+        choice = (request.form.get('mode') or '').strip().lower()
+        if choice in {m[0] for m in _R9_GENERATIVE_MODES}:
+            session['generative_mode'] = choice
+            current = choice
+            saved = choice
+    return render_template(
+        'r9_generative_toggle.html',
+        modes=_R9_GENERATIVE_MODES, current=current, saved=saved,
+    )
+
+
+_R9_LENS_EXPLANATIONS = [
+    {'tag': 'flower', 'label': 'Identify a flower',
+     'how': 'Open Lens, tap "Search what you see", center the flower in the viewfinder. Lens crops the bloom, runs it through the visual-similarity index, and offers a likely species plus visually-similar matches.',
+     'confidence_hint': 'Confidence is high when the bloom is sharp and well-lit and the leaves are visible.'},
+    {'tag': 'clothing', 'label': 'Find a clothing item',
+     'how': 'Take a photo of the garment, tap the shopping chip. Lens segments the item, matches it against the product index, and returns shoppable links with prices and reviews.',
+     'confidence_hint': 'Confidence is high when the garment is shot against a clean background with the pattern visible.'},
+    {'tag': 'landmark', 'label': 'Identify a landmark',
+     'how': 'Photograph the landmark from a typical postcard angle. Lens consults the Maps photo corpus + GPS hint to surface the canonical name, Wikipedia card, opening hours, and reviews.',
+     'confidence_hint': 'Confidence is high when the GPS location matches a well-photographed landmark.'},
+    {'tag': 'plant', 'label': 'Diagnose a plant problem',
+     'how': 'Capture the leaf with the affected area centered. Lens cross-references the visual-similarity index plus PlantNet contributions to suggest a likely disease or pest.',
+     'confidence_hint': 'Confidence is high when the photo is in focus and shows both healthy and affected tissue for contrast.'},
+    {'tag': 'math', 'label': 'Solve a math problem',
+     'how': 'Snap the worksheet or screen. Lens OCRs the equation, hands it to a step-by-step solver, and renders the worked solution with intermediate steps and a definition card.',
+     'confidence_hint': 'Confidence is high when the handwriting/print is legible and the problem is a standard form.'},
+    {'tag': 'recipe', 'label': 'Look up a recipe from a dish photo',
+     'how': 'Photograph the plated dish. Lens classifies the dish, surfaces a likely name, and offers ranked recipe links with cooking-time, calorie, and review-score chips.',
+     'confidence_hint': 'Confidence is high when the dish is photographed in good lighting and is a common cuisine.'},
+]
+
+
+@app.route('/lens/find-photo-ai')
+@app.route('/lens/find-photo-ai/<tag>')
+def r9_lens_find_photo_ai(tag=None):
+    """Lens 'find by photo' AI explanation page. Lists each supported
+    photo-recognition task with the step-by-step Lens behavior."""
+    tag_q = (tag or request.args.get('tag') or '').strip().lower()
+    one = next((e for e in _R9_LENS_EXPLANATIONS if e['tag'] == tag_q), None)
+    return render_template(
+        'r9_lens_find_photo_ai.html',
+        items=_R9_LENS_EXPLANATIONS, one=one, tag=tag_q,
+    )
+
+
+# NotebookLM-style sources + suggested follow-ups
+_R9_NOTEBOOKLM_NOTEBOOKS = [
+    {
+        'slug': 'photosynthesis_study',
+        'title': 'Photosynthesis - study pack',
+        'description': 'A NotebookLM-style notebook grounded on Wikipedia + Khan Academy + a Nature review.',
+        'sources': [
+            'Wikipedia - Photosynthesis',
+            'Khan Academy - Light reactions',
+            'Nature Reviews - Photosynthesis 2024',
+            'Britannica - Photosynthesis',
+            'NASA - The Carbon Cycle',
+        ],
+        'follow_ups': [
+            'Compare the light-dependent vs Calvin-cycle reactions.',
+            'Why does C4 photosynthesis evolve in hot/dry climates?',
+            'What is photorespiration and why does it matter?',
+            'Summarize the Z-scheme of electron transport.',
+        ],
+    },
+    {
+        'slug': 'llm_evaluation',
+        'title': 'LLM evaluation - lit review notebook',
+        'description': 'A NotebookLM-style notebook grounded on a curated set of LLM-evaluation papers and blog posts.',
+        'sources': [
+            'HELM - Holistic Evaluation of Language Models (Stanford)',
+            'BIG-bench - Beyond the Imitation Game',
+            'MMLU - Massive Multitask Language Understanding',
+            'OpenAI evals',
+            'Anthropic - measuring model deception',
+        ],
+        'follow_ups': [
+            'What are the limitations of MMLU as a knowledge benchmark?',
+            'How does HELM handle calibration and robustness?',
+            'Summarize the contamination concerns with public benchmarks.',
+            'What is the Chatbot Arena Elo system?',
+        ],
+    },
+    {
+        'slug': 'climate_overview',
+        'title': 'Climate change - executive summary',
+        'description': 'A NotebookLM-style notebook grounded on IPCC + NASA + Our World in Data.',
+        'sources': [
+            'IPCC AR6 WG1 Summary for Policymakers',
+            'NASA - Climate change causes',
+            'Our World in Data - Greenhouse gas emissions',
+            'NOAA Climate.gov - State of the climate',
+            'Carbon Brief - explainers',
+        ],
+        'follow_ups': [
+            'What is the difference between RCP and SSP scenarios?',
+            'How are climate models validated against the historical record?',
+            'Summarize methane vs CO2 radiative forcing.',
+            'Compare net-zero pledges by major economies.',
+        ],
+    },
+    {
+        'slug': 'mediterranean_diet_brief',
+        'title': 'Mediterranean diet - clinical brief',
+        'description': 'A NotebookLM-style notebook grounded on PREDIMED + Cochrane + Harvard nutrition.',
+        'sources': [
+            'PREDIMED - NEJM 2018',
+            'Cochrane systematic review',
+            'Harvard School of Public Health - Nutrition Source',
+            'Mayo Clinic - patient guide',
+            'Lyon Diet Heart Study',
+        ],
+        'follow_ups': [
+            'What is the effect size for cardiovascular outcomes in PREDIMED?',
+            'How does PREDIMED-Plus differ from the original PREDIMED?',
+            'Compare with DASH and MIND diets.',
+            'Summarize adherence-score instruments used in trials.',
+        ],
+    },
+]
+
+
+_R9_NOTEBOOKLM_INDEX = {n['slug']: n for n in _R9_NOTEBOOKLM_NOTEBOOKS}
+
+
+@app.route('/notebooklm')
+@app.route('/notebooklm/<slug>')
+def r9_notebooklm(slug=None):
+    """NotebookLM-style grounded research notebook listing. Read-only -
+    no state writes so byte-id reset stays intact."""
+    slug_q = (slug or request.args.get('slug') or '').strip().lower()
+    one = _R9_NOTEBOOKLM_INDEX.get(slug_q)
+    fmt = (request.args.get('format') or '').strip().lower()
+    if fmt == 'json':
+        if one is None:
+            return jsonify({
+                'notebooks': [{'slug': n['slug'], 'title': n['title'],
+                               'source_count': len(n['sources']),
+                               'follow_up_count': len(n['follow_ups'])}
+                              for n in _R9_NOTEBOOKLM_NOTEBOOKS],
+                'count': len(_R9_NOTEBOOKLM_NOTEBOOKS),
+            })
+        return jsonify(one)
+    return render_template(
+        'r9_notebooklm.html',
+        items=_R9_NOTEBOOKLM_NOTEBOOKS, one=one, slug=slug_q,
+    )
+
+
+_R9_AR_SCENES = [
+    {'slug': 'tiger',   'label': 'Tiger',
+     'caption': 'Project a life-size tiger onto your floor with AR. Walk around it for a sense of scale.'},
+    {'slug': 'shark',   'label': 'Great White Shark',
+     'caption': 'Drop a 4.5 m great white shark into the room. Tap to hear a roar.'},
+    {'slug': 'tyrannosaurus', 'label': 'Tyrannosaurus rex',
+     'caption': 'Place a 12 m T. rex in the garden. Lens annotates the skeleton.'},
+    {'slug': 'octopus', 'label': 'Giant Pacific Octopus',
+     'caption': 'See a 5 m octopus crawl across the floor in AR. Tap to label each arm.'},
+    {'slug': 'wolf',    'label': 'Gray Wolf',
+     'caption': 'Bring a gray wolf into your living room. Lens narrates its hunting behavior.'},
+    {'slug': 'panda',   'label': 'Giant Panda',
+     'caption': 'Drop a giant panda eating bamboo into the AR scene. Lens captions the diet.'},
+    {'slug': 'planet_saturn', 'label': 'Saturn',
+     'caption': 'Project Saturn with its ring system at 1:1 billion scale. Lens annotates each moon.'},
+    {'slug': 'apollo_lander', 'label': 'Apollo Lunar Module',
+     'caption': 'Place the Apollo 11 lunar module on your table. Tap to hear the landing audio.'},
+]
+
+
+_R9_AR_SCENES_INDEX = {s['slug']: s for s in _R9_AR_SCENES}
+
+
+@app.route('/ar-search')
+@app.route('/ar-search/<slug>')
+def r9_ar_search(slug=None):
+    """AR-on-camera search stub. Read-only AR-scene picker that explains
+    the camera-AR feature without launching any actual AR runtime."""
+    slug_q = (slug or request.args.get('slug') or '').strip().lower()
+    one = _R9_AR_SCENES_INDEX.get(slug_q)
+    return render_template('r9_ar_search.html',
+                           items=_R9_AR_SCENES, one=one, slug=slug_q)
+
+
+_R9_CONVERSATION_TRANSCRIPTS = [
+    {
+        'slug': 'plan_paris_trip',
+        'title': 'Plan a 5-day Paris trip',
+        'turns': [
+            ('user', 'plan a 5-day paris trip for two adults in spring'),
+            ('assistant',
+             'Day 1: Louvre + Tuileries + Seine sunset cruise. Day 2: Versailles. '
+             'Day 3: Montmartre + Sacre-Coeur + Musee d Orsay. Day 4: Eiffel Tower + Trocadero + Champ de Mars picnic. '
+             'Day 5: Marais walk + Notre-Dame exterior + Pere Lachaise.'),
+            ('user', 'add a day trip to Reims for champagne'),
+            ('assistant',
+             'Reims is 45 minutes by TGV from Gare de l Est. Swap Day 5 for: Reims TGV (8:30), '
+             'Veuve Clicquot cellar tour (10:30), Reims Cathedral and lunch (12:30), '
+             'Taittinger cellar tour (15:00), TGV back to Paris (18:00).'),
+            ('user', 'what budget should we plan for the food?'),
+            ('assistant',
+             'For two adults: cafe breakfast ~EUR 18, casual lunch ~EUR 50, mid-range dinner ~EUR 120. '
+             'Total food ~EUR 188 per day. Add ~EUR 80 for the Reims tastings.'),
+        ],
+    },
+    {
+        'slug': 'learn_python_path',
+        'title': 'Build a Python learning path',
+        'turns': [
+            ('user', 'i know basic javascript, build me a 6-week python path'),
+            ('assistant',
+             'Week 1: syntax, types, control flow (vs JS). Week 2: functions, list/dict/set, comprehensions. '
+             'Week 3: classes + dunder methods. Week 4: stdlib (itertools, collections, pathlib). '
+             'Week 5: testing (pytest) + packaging. Week 6: build a CLI with click and publish to PyPI.'),
+            ('user', 'add a project for each week'),
+            ('assistant',
+             'W1: implement FizzBuzz + a calculator. W2: a Markdown -> HTML converter. '
+             'W3: a tiny task tracker with subclasses. W4: a static-site generator. '
+             'W5: 80% test coverage on the static-site generator. W6: publish todocli to PyPI.'),
+            ('user', 'what resources should i use?'),
+            ('assistant',
+             'Free: Python docs tutorial, Real Python free tier, Automate the Boring Stuff. '
+             'Paid: Fluent Python by Luciano Ramalho (intermediate-to-advanced). '
+             'Video: Corey Schafer YouTube playlist for stdlib deep-dives.'),
+        ],
+    },
+    {
+        'slug': 'compare_air_purifiers',
+        'title': 'Compare 3 air purifiers',
+        'turns': [
+            ('user', 'compare blueair 211+ vs coway airmega 200m vs winix 5500-2'),
+            ('assistant',
+             'Coverage: Blueair 211+ 540 sq ft, Coway 200m 361 sq ft, Winix 5500-2 360 sq ft. '
+             'CADR (smoke): 350, 240, 232. Filter cost/yr: ~USD 80, ~USD 50, ~USD 50. '
+             'Noise at max: 56, 53, 55 dB. All three carry True HEPA + activated carbon.'),
+            ('user', 'which is best for a 350 sq ft bedroom?'),
+            ('assistant',
+             'For 350 sq ft, all three are adequate. The Winix 5500-2 is the most affordable, has Sleep mode, '
+             'and a PlasmaWave option you can disable. The Coway 200m is the quietest at lowest setting (24 dB).'),
+            ('user', 'and for allergies?'),
+            ('assistant',
+             'For allergies, prioritize True HEPA + 4-5x ACH (air changes per hour) for the room. '
+             'In a 350 sq ft bedroom, Blueair 211+ achieves 5 ACH on medium and is the strongest performer. '
+             'The Coway 200m is a good budget alternative with 4.8 ACH on high.'),
+        ],
+    },
+]
+
+
+_R9_CONVERSATION_INDEX = {c['slug']: c for c in _R9_CONVERSATION_TRANSCRIPTS}
+
+
+@app.route('/search/conversation')
+@app.route('/search/conversation/<slug>')
+def r9_search_conversation(slug=None):
+    """Search-as-conversation (multi-step) transcript browser. Read-only -
+    enumerates curated multi-turn agent traces tied to common SERP topics."""
+    slug_q = (slug or request.args.get('slug') or '').strip().lower()
+    one = _R9_CONVERSATION_INDEX.get(slug_q)
+    fmt = (request.args.get('format') or '').strip().lower()
+    if fmt == 'json':
+        if one is None:
+            return jsonify({
+                'transcripts': [{'slug': c['slug'], 'title': c['title'],
+                                 'turn_count': len(c['turns'])}
+                                for c in _R9_CONVERSATION_TRANSCRIPTS],
+                'count': len(_R9_CONVERSATION_TRANSCRIPTS),
+            })
+        return jsonify({
+            'slug': one['slug'], 'title': one['title'],
+            'turns': [{'role': r, 'text': t} for r, t in one['turns']],
+            'turn_count': len(one['turns']),
+        })
+    return render_template(
+        'r9_search_conversation.html',
+        items=_R9_CONVERSATION_TRANSCRIPTS, one=one, slug=slug_q,
+    )
+
+
+# Extend the command palette with R9 jump-targets.
+_R8_PALETTE_ITEMS = _R8_PALETTE_ITEMS + [
+    ('AI Overview',       'Generative AI overview cards',                   '/search/ai-overview'),
+    ('AI Overview citations', 'Per-card citation list',                     '/search/ai-overview/citations'),
+    ('Generative toggle', 'Switch generative-mode (off/compact/full/chat)', '/search/generative-toggle'),
+    ('Lens find by photo','Lens AI explanation for photo recognition',      '/lens/find-photo-ai'),
+    ('NotebookLM',        'Grounded research notebooks',                    '/notebooklm'),
+    ('AR Search',         'AR-on-camera scenes (stub)',                     '/ar-search'),
+    ('Conversation',      'Search-as-conversation (multi-step) traces',     '/search/conversation'),
+]
+
+
 # ---------- error handlers --------------------------------------------------
 
 @app.errorhandler(404)

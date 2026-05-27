@@ -5077,3 +5077,233 @@ def seed_v9(db, models):
     print(f"  + seed_v9: added {created} courses (R8 2026 K-12/lifelong/prof-dev), "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ─── seed_v10 — R9 polish (iter 9/10) ────────────────────────────────────────
+# Coursera Hands-On Labs + Career Academies + Industry Certificates.
+# 17 R9 domains × 6 R9 subtopics × 5 partners × 7 R5 variants ≈ 3570 courses.
+# Gated on partner slug `r9-2026-anchor`. Deterministic + byte-id safe.
+
+R9_NEW_PARTNERS = [
+    ('Coursera Labs',               'coursera-labs-r9',    'United States', 'institution', 'Coursera Labs'),
+    ('Coursera Career Academy',     'coursera-academy-r9', 'United States', 'institution', 'Career Academy'),
+    ('AWS Skill Builder',            'aws-skillbuilder-r9', 'United States', 'company',     'AWS Skill'),
+    ('Google Cloud Skills Boost',    'gcp-skillsboost-r9',  'United States', 'company',     'GCP Boost'),
+    ('Microsoft Learn Sandbox',      'mslearn-sandbox-r9',  'United States', 'company',     'MS Learn'),
+    ('Red Hat OpenShift Academy',    'redhat-openshift-r9', 'United States', 'company',     'OpenShift'),
+    ('HashiCorp Learn',              'hashicorp-learn-r9',  'United States', 'company',     'HashiCorp'),
+    ('CompTIA Industry Cert',        'comptia-r9',          'United States', 'institution', 'CompTIA'),
+    ('PMI Industry Cert',            'pmi-r9',              'United States', 'institution', 'PMI'),
+    ('Scrum Alliance Cert',          'scrum-alliance-r9',   'United States', 'institution', 'Scrum'),
+    ('R9 2026 Anchor',               'r9-2026-anchor',      'United States', 'institution', 'R9 Anchor'),
+]
+
+R9_DOMAINS = [
+    # ── Coursera Hands-On Labs track (6 domains) ─────────────────────────
+    ('AWS Cloud Labs 2026',          'AWS Cloud Labs',     'Information Technology',
+     ['coursera-labs-r9', 'aws-skillbuilder-r9', 'aws', 'google', 'microsoft']),
+    ('Kubernetes Labs 2026',         'Kubernetes Labs',    'Information Technology',
+     ['coursera-labs-r9', 'redhat-openshift-r9', 'google', 'microsoft', 'aws']),
+    ('Cybersecurity Red-Team Labs',  'Red-Team Labs',      'Information Technology',
+     ['coursera-labs-r9', 'comptia-r9', 'cisco', 'google', 'microsoft']),
+    ('ML Engineer Hands-On Labs',    'ML Engineer Labs',   'Data Science',
+     ['coursera-labs-r9', 'nvidia', 'google', 'ibm', 'microsoft']),
+    ('Data Engineering Labs 2026',   'Data Eng Labs',      'Data Science',
+     ['coursera-labs-r9', 'gcp-skillsboost-r9', 'ibm', 'google', 'microsoft']),
+    ('DevOps Pipeline Labs',         'DevOps Labs',        'Information Technology',
+     ['coursera-labs-r9', 'hashicorp-learn-r9', 'redhat-openshift-r9', 'aws', 'microsoft']),
+    # ── Coursera Career Academy track (6 domains) ────────────────────────
+    ('Software Engineer Academy',    'SWE Career Path',    'Computer Science',
+     ['coursera-academy-r9', 'meta', 'google', 'ibm', 'microsoft']),
+    ('Product Manager Academy',      'PM Career Path',     'Business',
+     ['coursera-academy-r9', 'google', 'meta', 'pmi-r9', 'ibm']),
+    ('UX Designer Academy',          'UX Career Path',     'Arts and Humanities',
+     ['coursera-academy-r9', 'google', 'meta', 'adobe', 'cmu']),
+    ('Data Scientist Academy',       'Data Sci Career',    'Data Science',
+     ['coursera-academy-r9', 'ibm', 'google', 'microsoft', 'nvidia']),
+    ('Cloud Architect Academy',      'Cloud Architect',    'Information Technology',
+     ['coursera-academy-r9', 'aws-skillbuilder-r9', 'gcp-skillsboost-r9', 'microsoft', 'redhat-openshift-r9']),
+    ('Cybersecurity Analyst Academy','Cyber Analyst Path', 'Information Technology',
+     ['coursera-academy-r9', 'comptia-r9', 'cisco', 'google', 'ibm']),
+    # ── Industry Certificate track (5 domains) ───────────────────────────
+    ('IBM Industry Certificate 2026', 'IBM Industry Cert', 'Computer Science',
+     ['ibm', 'coursera-academy-r9', 'comptia-r9', 'cisco', 'oracle']),
+    ('Google Industry Certificate 2026', 'Google Industry Cert', 'Computer Science',
+     ['google', 'gcp-skillsboost-r9', 'coursera-academy-r9', 'comptia-r9', 'pmi-r9']),
+    ('Microsoft Industry Certificate 2026', 'Microsoft Industry Cert', 'Computer Science',
+     ['microsoft', 'mslearn-sandbox-r9', 'coursera-academy-r9', 'comptia-r9', 'pmi-r9']),
+    ('AWS Industry Certificate 2026', 'AWS Industry Cert', 'Information Technology',
+     ['aws', 'aws-skillbuilder-r9', 'coursera-academy-r9', 'comptia-r9', 'hashicorp-learn-r9']),
+    ('Meta Industry Certificate 2026', 'Meta Industry Cert', 'Computer Science',
+     ['meta', 'coursera-academy-r9', 'scrum-alliance-r9', 'google', 'adobe']),
+]
+
+R9_SUBTOPICS = [
+    'Foundations',
+    'Hands-On Sandbox',
+    'Real-World Case Study',
+    'Industry-Aligned Project',
+    'Certification Exam Prep',
+    'Career Outcomes 2026',
+]
+
+
+def seed_v10(db, models):
+    """R9 catalog polish (iter 9/10) — adds ~3570 deterministic 2026 courses
+    across 17 Hands-On Lab / Career Academy / Industry Certificate domains
+    × 6 subtopics × 5 partners × 7 R5 variants, plus +10 publisher partners
+    (Coursera Labs, Coursera Career Academy, AWS Skill Builder, GCP Skills
+    Boost, MS Learn Sandbox, Red Hat OpenShift Academy, HashiCorp Learn,
+    CompTIA, PMI, Scrum Alliance). Backfills R5 columns on any new rows.
+    Idempotent — gated on partner slug `r9-2026-anchor`."""
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='r9-2026-anchor').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in R9_NEW_PARTNERS:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} — 2026 Lab/Academy Orientation'
+                md = (f'Orientation: 2026 industry workflow for {primary}, '
+                      f'sandbox tour, target role baseline.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Industry-Aligned {primary} Project'
+                md = (f'Capstone: ship a portfolio-grade {primary} project '
+                      f'reviewed against 2026 industry rubric.')
+            else:
+                mt = f'Week {w}: Sandbox Drill — {primary}'
+                md = (f'Hands-on sandbox lab + graded assignment running real '
+                      f'{primary} workloads in the 2026 stack.')
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked sandbox demo for {primary}',
+                f'Lesson {w}.3: Industry case study ({course_title})',
+                f'Lesson {w}.4: 2026 hiring signal to optimise for',
+                f'Lesson {w}.5: Captions: en, es, zh, ja, ar, fr, de, pt, ko, hi, ru',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    for d_idx, (domain, primary, category, partners) in enumerate(R9_DOMAINS):
+        for s_idx, subtopic in enumerate(R9_SUBTOPICS):
+            topic_title = f'{domain} {subtopic}'
+            for p_idx, partner_slug in enumerate(partners):
+                partner_eff = (partner_slug if pid.get(partner_slug)
+                               else 'r9-2026-anchor')
+                for v_idx, variant in enumerate(R5_VARIANTS):
+                    idx = (d_idx * 1000 + s_idx * 100
+                           + p_idx * 10 + v_idx)
+                    spec = _v6_make_course(
+                        R5_VARIANT=variant, topic=topic_title,
+                        primary=primary, category=category,
+                        partner_eff=partner_eff, pid=pid,
+                        idx=idx, anchor_tag='r9-2026',
+                        prefix_slug='r9-2026')
+                    spec['is_new'] = True
+                    spec['sort_date'] = (SEED_REF_DATE - timedelta(
+                        days=(d_idx * 5 + s_idx * 2 + v_idx) % 75
+                    )).strftime('%Y-%m-%d')
+                    # Append R9 track tag so /labs, /career-academy and
+                    # /certificate/verify routes can filter cheaply.
+                    track_tag = (
+                        'r9-hands-on-lab' if d_idx < 6
+                        else ('r9-career-academy' if d_idx < 12
+                              else 'r9-industry-cert'))
+                    base_tags = json.loads(json.dumps(spec['feature_tags']))
+                    if track_tag not in base_tags:
+                        base_tags.append(track_tag)
+                    spec['feature_tags'] = base_tags
+                    if Course.query.filter_by(slug=spec['slug']).first():
+                        continue
+                    _persist(spec)
+                    created += 1
+        db.session.commit()
+
+    # Backfill R5 columns on any rows still missing them (safety net) ──────
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+    finally:
+        conn.close()
+
+    print(f"  + seed_v10: added {created} courses (R9 2026 Labs/Academy/Industry-Cert), "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

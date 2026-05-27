@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vocabulary builder — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container vocab-builder" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <span>Vocab builder</span>
+  </nav>
+  <h1>Vocabulary builder <span class="release-tag">R9</span></h1>
+  <p class="vb-blurb">Pick a deck to study using spaced repetition (Leitner-style boxes).
+    Snapshot: <strong>{{ snapshot }}</strong>.</p>
+  <ul class="deck-catalog">
+    {% for d in decks %}
+      <li class="deck-row" data-deck="{{ d.slug }}">
+        <a href="{{ d.url }}" class="deck-name">{{ d.name }}</a>
+        <span class="deck-size">{{ d.size }} cards</span>
+        <span class="cefr">{{ d.level }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

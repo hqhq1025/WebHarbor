@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Host quality score — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Host quality score</h1>
+    <p class="page-subtitle">Host #{{ s.host_id }} — last evaluated {{ s.last_evaluated }}.</p>
+
+    <div class="pd-section">
+        <h2>Overall</h2>
+        <p style="font-size:36px;color:#003580;font-weight:bold;">{{ s.overall_score }} / 10</p>
+        <p style="color:#666;">Hosts scoring below <strong>{{ s.flag_threshold }}</strong> are flagged for review.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Sub-scores ({{ s.sub_scores|length }} categories)</h2>
+        <ul>
+            {% for k, v in s.sub_scores.items() %}
+            <li><strong>{{ k|replace('_', ' ')|title }}</strong>: {{ v }}</li>
+            {% endfor %}
+        </ul>
+        <h3>Listing accuracy</h3>
+        <p>This score reflects how closely the photographs, amenities and room descriptions in the host's listings match the on-site experience reported by recent guests. It is updated nightly.</p>
+        <h3>Cancellation</h3>
+        <p>Rolling 90-day cancellation rate: <strong>{{ s.rolling_90d_cancellation_rate_pct }}%</strong>.</p>
+    </div>
+
+    <p><a class="btn btn-secondary" href="/list-your-property">Become a host</a></p>
+</div>
+{% endblock %}

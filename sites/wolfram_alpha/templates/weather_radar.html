@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Weather Radar — {{ name }}{% endblock %}
+{% block body_class %}page-weather-radar{% endblock %}
+{% block content %}
+<section class="wa-weather-radar">
+  <h1>Weather Radar &mdash; {{ name }}</h1>
+  <p class="wa-intro">Tile-style radar for region <code>{{ region }}</code>.</p>
+  <div class="wa-radar-tile" data-region="{{ region }}" data-band="{{ band }}">
+    {{ tile_svg | safe }}
+  </div>
+  <table class="wa-radar-table">
+    <tr><th>Region slug</th><td>{{ region }}</td></tr>
+    <tr><th>Display name</th><td>{{ name }}</td></tr>
+    <tr><th>Predominant band</th><td>{{ band }}</td></tr>
+    <tr><th>Last update</th><td>-{{ age_min }} min</td></tr>
+    <tr><th>Intensity bands</th><td>light, moderate, heavy, severe, extreme</td></tr>
+  </table>
+  <p class="wa-meta">Schema: <code>wa-radar-v1</code>.</p>
+  <p class="wa-related">
+    See <a href="/topic/weather-radar-image">weather-radar-image</a>,
+    <a href="/topic/radar-region-catalog">radar-region-catalog</a>.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}NIL Tracker{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="nil-tracker">
+  <header class="page-header">
+    <h1>NIL Deals Tracker</h1>
+    <p class="page-header__sub">Disclosed and projected Name-Image-Likeness deal values, by recruit and booster collective. Total tracked: <strong>${{ '{:,}'.format(totals.sum_usd) }}</strong> across <strong>{{ totals.count }}</strong> deals (<strong>{{ totals.disclosed_count }}</strong> disclosed).</p>
+  </header>
+
+  <table class="data-table" id="r9-nil-table">
+    <thead>
+      <tr>
+        <th scope="col">Recruit</th>
+        <th scope="col">School</th>
+        <th scope="col">Sport</th>
+        <th scope="col">Season</th>
+        <th scope="col">Collective</th>
+        <th scope="col">Amount</th>
+        <th scope="col">Disclosed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in deals %}
+      <tr data-r9-nil-name="{{ d.recruit.name }}" data-r9-nil-disclosed="{{ d.disclosed }}">
+        <td>{{ d.recruit.name }}</td>
+        <td>{{ d.school }}</td>
+        <td>{{ d.recruit.sport_slug }}</td>
+        <td>{{ d.season }}</td>
+        <td>{{ d.collective }}</td>
+        <td>{{ d.amount_label }}</td>
+        <td>{% if d.disclosed %}<span class="badge badge--ok">YES</span>{% else %}<span class="badge badge--muted">NO</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

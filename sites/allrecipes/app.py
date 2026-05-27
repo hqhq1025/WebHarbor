@@ -2952,6 +2952,308 @@ def recipe_export_mealie(slug):
 
 
 # ---------------------------------------------------------------------------
+# R9 — Video tutorial / print / nutrition / allergens / versions / share /
+# import-from-URL / AI-suggest. All deterministic stubs.
+# ---------------------------------------------------------------------------
+
+@app.route('/recipe/<slug>/video')
+def recipe_video(slug):
+    """Stub video-tutorial page. Renders an <iframe>-equivalent placeholder
+    plus a structured chapter list derived deterministically from the recipe
+    instructions, so 'find chapter N of the tutorial' tasks have a stable
+    answer."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    steps = recipe.get_instructions() or []
+    chapters = []
+    cursor = 0
+    slug_h = int(_hash_slug(recipe.slug), 16)
+    for i, step in enumerate(steps):
+        # Each chapter is ~90 + 30*i seconds; derived purely from slug+index.
+        h = (slug_h + i * 17) % 60
+        duration = 60 + h + i * 15
+        chapters.append({
+            'index': i + 1,
+            'title': f"Step {i + 1}",
+            'summary': step,
+            'start_seconds': cursor,
+            'duration_seconds': duration,
+        })
+        cursor += duration
+    total_seconds = cursor
+    return render_template('recipe_video.html',
+                           recipe=recipe, chapters=chapters,
+                           total_seconds=total_seconds,
+                           page_title=f"Video tutorial — {recipe.title}")
+
+
+@app.route('/recipe/<slug>/print')
+def recipe_print(slug):
+    """Print-friendly view of the recipe. No nav, no sidebar — just the recipe
+    in a single-column black-on-white layout designed for paper output."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    return render_template('recipe_print.html', recipe=recipe,
+                           page_title=f"Print — {recipe.title}")
+
+
+@app.route('/recipe/<slug>/nutrition')
+def recipe_nutrition_detail(slug):
+    """Deep nutrition detail page. Reformulates ``nutrition_json`` plus
+    derived macros, vitamins, and a tiny per-100g table so 'find the carbs'
+    or 'find calcium per serving' tasks have a stable answer."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    base = recipe.get_nutrition() or {}
+    cal = int(base.get('Calories') or recipe.calories or 0)
+    # Deterministic derived fields from slug hash; values are plausible.
+    h = int(_hash_slug(recipe.slug), 16)
+
+    def _g_int(key, default):
+        v = base.get(key, '')
+        if isinstance(v, (int, float)):
+            return int(v) or default
+        try:
+            return int(str(v).rstrip('g').rstrip('mg').strip() or 0) or default
+        except (ValueError, TypeError):
+            return default
+    derived = {
+        'serving_size': '1 serving',
+        'calories': cal,
+        'protein_g': _g_int('Protein', 10 + h % 30),
+        'fat_g': _g_int('Fat', 8 + (h * 3) % 24),
+        'saturated_fat_g': 3 + (h * 5) % 9,
+        'trans_fat_g': 0,
+        'carbs_g': _g_int('Carbs', 20 + (h * 7) % 40),
+        'sugar_g': 4 + (h * 11) % 16,
+        'fiber_g': 2 + (h * 13) % 8,
+        'sodium_mg': 200 + (h * 17) % 500,
+        'cholesterol_mg': 30 + (h * 19) % 100,
+        'potassium_mg': 200 + (h * 23) % 400,
+        'calcium_mg': 40 + (h * 29) % 200,
+        'iron_mg': 1 + (h * 31) % 6,
+        'vitamin_a_iu': 200 + (h * 37) % 1500,
+        'vitamin_c_mg': 4 + (h * 41) % 30,
+    }
+    # % daily values
+    dv_basis = {
+        'fat_g': 78, 'saturated_fat_g': 20, 'carbs_g': 275, 'sugar_g': 50,
+        'fiber_g': 28, 'sodium_mg': 2300, 'cholesterol_mg': 300,
+        'potassium_mg': 4700, 'calcium_mg': 1300, 'iron_mg': 18,
+        'vitamin_c_mg': 90,
+    }
+    pct_dv = {k: round(derived[k] * 100.0 / v, 1) for k, v in dv_basis.items() if derived.get(k)}
+    return render_template('recipe_nutrition_detail.html',
+                           recipe=recipe, derived=derived, pct_dv=pct_dv,
+                           page_title=f"Nutrition detail — {recipe.title}")
+
+
+@app.route('/recipe/<slug>/allergens')
+def recipe_allergens(slug):
+    """Allergen cross-reference page. Scans the ingredient list for the 9
+    FDA major-allergens and reports presence + ingredient evidence + safe
+    substitutions."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    ings = recipe.get_ingredients() or []
+    text_blob = ' '.join(str(i).lower() for i in ings)
+    # FDA-9 major food allergens + curated keyword lists + safe subs.
+    allergen_table = [
+        ('milk',      ['milk', 'butter', 'cheese', 'cream', 'yogurt', 'ghee', 'paneer'],
+                      'use coconut milk, plant-based butter or olive oil'),
+        ('eggs',      ['egg ', 'eggs', 'egg-', 'egg,', 'yolk', 'white'],
+                      'use flax egg (1 tbsp flax + 3 tbsp water) or aquafaba'),
+        ('fish',      ['fish', 'salmon', 'tuna', 'cod', 'halibut', 'tilapia', 'rohu', 'carp', 'flying fish'],
+                      'substitute firm tofu or seitan'),
+        ('shellfish', ['shrimp', 'prawn', 'crab', 'lobster', 'scallop', 'crayfish'],
+                      'substitute white mushroom or hearts of palm'),
+        ('tree-nuts', ['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut'],
+                      'use sunflower seeds or pumpkin seeds 1:1'),
+        ('peanuts',   ['peanut'],
+                      'use sunflower-seed butter 1:1'),
+        ('wheat',     ['flour', 'bread', 'pasta', 'noodle', 'phyllo', 'puff pastry', 'bulgur', 'roti'],
+                      'use a 1:1 gluten-free flour blend or rice flour'),
+        ('soy',       ['soy', 'tofu', 'tempeh', 'edamame', 'miso'],
+                      'use chickpeas, hemp seeds or coconut aminos for soy sauce'),
+        ('sesame',    ['sesame', 'tahini'],
+                      'use sunflower-seed paste for tahini'),
+    ]
+    findings = []
+    for name, kws, sub in allergen_table:
+        evidence = [ing for ing in ings if any(kw in str(ing).lower() for kw in kws)]
+        findings.append({
+            'allergen': name,
+            'present': bool(evidence),
+            'evidence': evidence[:3],
+            'substitution': sub if evidence else '',
+        })
+    return render_template('recipe_allergens.html',
+                           recipe=recipe, findings=findings,
+                           page_title=f"Allergen check — {recipe.title}")
+
+
+@app.route('/recipe/<slug>/versions')
+def recipe_versions(slug):
+    """Recipe version history. Returns a deterministic list of 3 prior
+    revisions derived from the recipe's slug + created_at so 'find the
+    revision that changed the bake temperature' tasks have stable answers."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    base_date = recipe.created_at or MIRROR_REFERENCE_DATE
+    h = int(_hash_slug(recipe.slug), 16)
+    versions = []
+    edit_kinds = [
+        ('typo-fix', 'Fixed a typo in step {n} and re-tested.'),
+        ('quantity-update', 'Reduced {ing} by 10% after reader feedback.'),
+        ('technique-clarification', 'Clarified the {phase} step with more detail on timing.'),
+        ('temperature-adjust', 'Adjusted oven temperature by 25 F for a more even bake.'),
+        ('serving-update', 'Updated serving size to reflect the actual yield.'),
+    ]
+    for i in range(3):
+        kind, tmpl = edit_kinds[(h + i) % len(edit_kinds)]
+        ing = (recipe.get_ingredients() or ['flour'])[i % max(1, len(recipe.get_ingredients() or [1]))]
+        note = tmpl.format(n=(h + i) % 5 + 1, ing=ing, phase=('mise', 'sear', 'simmer', 'bake')[(h + i) % 4])
+        versions.append({
+            'version_id': f"v{3 - i}.{(h + i * 7) % 10}",
+            'edited_at': base_date - timedelta(days=30 * (i + 1) + ((h + i) % 7)),
+            'kind': kind,
+            'note': note,
+            'editor': ('Allrecipes Editor', 'Recipe Tester A', 'Recipe Tester B')[(h + i) % 3],
+        })
+    return render_template('recipe_versions.html',
+                           recipe=recipe, versions=versions,
+                           page_title=f"Version history — {recipe.title}")
+
+
+@app.route('/recipe/<slug>/share/<platform>')
+def recipe_share_to(slug, platform):
+    """Build a share URL for Pinterest / Twitter / Facebook and either render
+    a landing page (HTML) or 302-redirect when ``?go=1`` is passed."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    platform = platform.lower()
+    if platform not in ('pinterest', 'twitter', 'facebook'):
+        return abort(404)
+    canonical = canonical_url() if False else f"{request.host_url.rstrip('/')}/recipe/{recipe.slug}"
+    title = recipe.title
+    image = (request.host_url.rstrip('/') + recipe.image) if recipe.image and recipe.image.startswith('/') else (recipe.image or '')
+    text = f"{title} — Allrecipes"
+    if platform == 'pinterest':
+        share_url = (
+            f"https://pinterest.com/pin/create/button/?"
+            f"url={canonical}&media={image}&description={title}"
+        )
+    elif platform == 'twitter':
+        share_url = (
+            f"https://twitter.com/intent/tweet?"
+            f"url={canonical}&text={text}&via=Allrecipes"
+        )
+    else:  # facebook
+        share_url = (
+            f"https://www.facebook.com/sharer/sharer.php?"
+            f"u={canonical}&quote={text}"
+        )
+    if request.args.get('go') == '1':
+        return redirect(share_url, code=302)
+    return render_template('recipe_share_to.html',
+                           recipe=recipe, platform=platform,
+                           share_url=share_url, canonical=canonical,
+                           page_title=f"Share — {recipe.title} on {platform.capitalize()}")
+
+
+@app.route('/recipe/import-url', methods=['GET', 'POST'])
+@csrf.exempt
+def recipe_import_from_url():
+    """Recipe-from-URL importer. GET shows a form + documentation. POST
+    accepts a JSON body ``{"url": "https://..."}`` and returns a parsed
+    Mealie-compatible recipe stub. The stub is deterministic — slug = the
+    URL's last path segment, ingredients/steps derived from URL hash."""
+    if request.method == 'GET':
+        return render_template('recipe_import_from_url.html',
+                               page_title='Import recipe from URL')
+    payload = request.get_json(silent=True) or {}
+    url = str(payload.get('url') or '').strip()
+    if not url:
+        return jsonify(error='url is required', format='mealie'), 400
+    # Deterministic stub parse — slug = last path segment
+    m = re.search(r'/([a-z0-9\-]+)/?$', url.lower())
+    derived_slug = m.group(1) if m else 'imported-recipe'
+    h = int(_hash_slug(derived_slug), 16)
+    ings = [
+        f"{1 + h % 3} cup imported main ingredient",
+        f"{1 + (h * 3) % 4} tbsp imported secondary",
+        f"{1 + (h * 7) % 3} tsp imported seasoning",
+        "salt and pepper to taste",
+    ]
+    steps = [
+        "Combine the imported main and secondary ingredients in a bowl.",
+        f"Heat the pan to medium-high for {3 + h % 4} minutes.",
+        "Cook the mixture stirring frequently until heated through.",
+        "Adjust seasoning and serve immediately.",
+    ]
+    return jsonify(
+        format='mealie',
+        schema_version='1.5',
+        source_url=url,
+        slug=derived_slug,
+        title=derived_slug.replace('-', ' ').title(),
+        recipeYield='4',
+        recipeIngredient=ings,
+        recipeInstructions=[{'@type': 'HowToStep', 'text': s} for s in steps],
+        prepTime='PT15M', cookTime='PT20M', totalTime='PT35M',
+        confidence=round(min(1.0, 0.4 + (h % 50) * 0.01), 2),
+    )
+
+
+@app.route('/api/ai-suggest', methods=['GET', 'POST'])
+@csrf.exempt
+def api_ai_suggest():
+    """AI-from-pantry suggestion endpoint. POST a JSON body
+    ``{"pantry": ["chicken", "rice", "onion"]}`` (or GET ``?pantry=a,b,c``)
+    and receive the top-N recipes that match the largest fraction of the
+    pantry ingredients. Deterministic — pure ingredient lookup, no real ML."""
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        pantry = payload.get('pantry') or []
+    else:
+        raw = request.args.get('pantry') or ''
+        pantry = [p.strip() for p in raw.split(',') if p.strip()]
+    if not isinstance(pantry, list):
+        pantry = [str(pantry)]
+    pantry_lc = [str(p).lower().strip() for p in pantry if p]
+    limit = min(int(request.args.get('limit') or 10), 25)
+    if not pantry_lc:
+        return jsonify(
+            format='allrecipes.ai-suggest', schema_version='1.0',
+            pantry=[], results=[],
+            note='Provide a non-empty pantry list to get suggestions.',
+        )
+    # Score every recipe by # pantry items found in its ingredient_count window.
+    candidates = (Recipe.query
+                  .filter(Recipe.review_count >= 0)
+                  .order_by(Recipe.id)
+                  .limit(800)
+                  .all())
+    scored = []
+    for r in candidates:
+        ing_blob = ' '.join(str(i).lower() for i in (r.get_ingredients() or []))
+        hits = sum(1 for p in pantry_lc if p and p in ing_blob)
+        if hits:
+            scored.append((hits, r))
+    scored.sort(key=lambda t: (-t[0], t[1].id))
+    out = []
+    for hits, r in scored[:limit]:
+        out.append({
+            'slug': r.slug, 'title': r.title,
+            'url': f"/recipe/{r.slug}",
+            'cuisine': r.cuisine or '',
+            'total_time': r.total_time or '',
+            'avg_rating': r.avg_rating,
+            'pantry_match': hits,
+            'pantry_match_ratio': round(hits / max(1, len(pantry_lc)), 2),
+        })
+    return jsonify(
+        format='allrecipes.ai-suggest', schema_version='1.0',
+        pantry=pantry_lc, total=len(out),
+        results=out,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 

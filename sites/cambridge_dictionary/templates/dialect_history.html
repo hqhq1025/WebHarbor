@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Dialect history — {{ word.headword }} — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container dialect-history" data-word="{{ word.slug }}"
+     data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &raquo;
+    <span>Dialect history</span>
+  </nav>
+  <h1>Dialect history of <em>{{ word.headword }}</em>
+    <span class="release-tag">R9 trace</span></h1>
+  <p class="dh-meta">
+    Specialty: {{ specialty or '—' }} &middot;
+    Subdomain: {{ subdomain or '—' }} &middot;
+    Snapshot {{ snapshot }}
+  </p>
+  <ol class="dh-timeline">
+    {% for h in history %}
+      <li class="dh-stage" data-stage="{{ h.stage }}">
+        <span class="stage-num">{{ h.stage }}</span>
+        <span class="era">{{ h.era }}</span>
+        <span class="ipa">{{ h.ipa }}</span>
+        <span class="note">{{ h.note }}</span>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

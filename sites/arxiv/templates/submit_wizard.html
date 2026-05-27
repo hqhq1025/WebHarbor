@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Submit a paper — step {{ step_index }} of {{ step_total }} — arXiv{% endblock %}
+{% block content %}
+
+<h1>Submit a paper</h1>
+<p class="muted">
+    Step <strong>{{ step_index }}</strong> of {{ step_total }} —
+    <span class="step-name">{{ title }}</span>
+</p>
+
+<nav class="dash-card">
+    <ol class="wizard-progress">
+    {% for s_key, s_title, _ in steps %}
+        <li{% if s_key == step %} class="current"{% endif %}>
+            <a href="{{ url_for('submit_wizard_step', step=s_key) }}">{{ s_title }}</a>
+        </li>
+    {% endfor %}
+    </ol>
+</nav>
+
+<div class="dash-card">
+    <h2>{{ title }}</h2>
+    <p>{{ blurb }}</p>
+
+    <p class="muted">
+        Step ticket:
+        <code style="user-select:all;">{{ ticket }}</code>
+    </p>
+
+    {% if submitted %}
+    <p class="success-banner">
+        Submitted step <code>{{ step }}</code>. Proceed to the next step
+        {% if next_step %}
+            (<a href="{{ url_for('submit_wizard_step', step=next_step) }}">{{ next_step }}</a>).
+        {% else %}
+            — the wizard is complete.
+        {% endif %}
+    </p>
+    {% endif %}
+
+    {% if step != "complete" %}
+    <form method="POST" action="{{ url_for('submit_wizard_step', step=step) }}">
+        <label for="payload_{{ step }}">Payload for step <code>{{ step }}</code></label>
+        <input type="text" id="payload_{{ step }}" name="payload" value="step-{{ step }}-value">
+        <button type="submit">Continue</button>
+    </form>
+    {% else %}
+    <p>Your paper has been queued.  You will receive an arxiv_id at the
+       next announcement window.</p>
+    {% endif %}
+</div>
+
+<div class="dash-card">
+    <p>
+    {% if prev_step %}
+        <a href="{{ url_for('submit_wizard_step', step=prev_step) }}">&larr; Previous: {{ prev_step }}</a>
+    {% endif %}
+    {% if prev_step and next_step %} &middot; {% endif %}
+    {% if next_step %}
+        <a href="{{ url_for('submit_wizard_step', step=next_step) }}">Next: {{ next_step }} &rarr;</a>
+    {% endif %}
+    </p>
+</div>
+
+{% endblock %}

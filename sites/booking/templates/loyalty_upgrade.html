@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Loyalty tier upgrade — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Move up to the next Genius level</h1>
+    <p class="page-subtitle">Book more, save more. Every level unlocks bigger rewards on stays around the world.</p>
+
+    <div class="pd-section">
+        <h2>Your next milestone</h2>
+        <p>Target tier: <strong>{{ target_tier.name }}</strong></p>
+        <p>Unlock criteria: <strong>{{ target_tier.unlock_bookings }} completed bookings</strong> in a <strong>{{ target_tier.unlock_window }}</strong> window.</p>
+        {% if target_tier.unlock_nights %}
+        <p>Or alternately <strong>{{ target_tier.unlock_nights }} stay nights</strong> within the same window.</p>
+        {% endif %}
+        <p>Headline discount: <strong style="color:#003580;">{{ target_tier.discount_pct }}% off select stays</strong>.</p>
+        {% if completed_bookings %}
+        <p>You have completed <strong>{{ completed_bookings }}</strong> bookings — <strong>{{ remaining_bookings }}</strong> more to unlock.</p>
+        {% endif %}
+        <p style="color:#666;">Median Genius level 2 members complete <strong>{{ median_level2_to_level3_bookings }}</strong> qualifying bookings before reaching level 3.</p>
+    </div>
+
+    <div class="card-grid cards-3">
+        {% for t in tiers %}
+        <div class="pd-section">
+            <h2>{{ t.name }}</h2>
+            <p>Unlock: <strong>{{ t.unlock_bookings }} bookings</strong></p>
+            <p>Discount: <strong>{{ t.discount_pct }}%</strong></p>
+            <ul>
+                {% for h in t.highlights %}<li>{{ h }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="mt-3"><a href="/genius" class="btn btn-secondary">See full benefits</a></p>
+</div>
+{% endblock %}

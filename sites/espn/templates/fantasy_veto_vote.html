@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Trade Veto Vote — #{{ trade_id }}{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="fantasy-veto-vote">
+  <header class="page-header">
+    <h1>Trade Veto Vote: #{{ trade_id }}</h1>
+    <p class="page-header__sub">Read-only summary of league poll for trade <code>{{ trade_id }}</code>. Voting closes in approximately <strong>{{ deadline_hours }} hours</strong>.</p>
+  </header>
+
+  <section class="veto-tally" id="r9-veto-tally">
+    <table class="data-table">
+      <thead><tr><th scope="col">Side</th><th scope="col">Votes</th></tr></thead>
+      <tbody>
+        <tr data-r9-vote-side="yes"><td>Approve trade</td><td>{{ yes }}</td></tr>
+        <tr data-r9-vote-side="no"><td>Veto trade</td><td>{{ no }}</td></tr>
+        <tr data-r9-vote-side="abstain"><td>Abstain</td><td>{{ abstain }}</td></tr>
+        <tr data-r9-vote-side="total"><td><strong>Total</strong></td><td><strong>{{ total }}</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Quorum: {% if quorum_met %}<strong>met</strong>{% else %}<em>not yet</em>{% endif %}.</p>
+    {% if commissioner_override_available %}
+    <p class="muted">Commissioner override is available via <code>/fantasy/league/&lt;id&gt;/commissioner</code>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}ESPN BET Promo: {{ promo.code }}{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="espn-bet-promo-detail">
+  <header class="page-header">
+    <h1>Promo Code: <code>{{ promo.code }}</code></h1>
+    <p class="page-header__sub">{{ promo.title }}</p>
+  </header>
+
+  <div class="promo-card" id="r9-promo-card">
+    <dl class="promo-card__meta">
+      <dt>Status</dt>
+      <dd>
+        {% if promo.status == 'live' %}<strong>LIVE</strong>
+        {% else %}<em>{{ promo.status|upper }}</em>{% endif %}
+      </dd>
+      <dt>Sport</dt><dd>{{ promo.sport }}</dd>
+      <dt>Opens on</dt><dd>{{ promo.opens_on }}</dd>
+      <dt>Closes on</dt><dd>{{ promo.closes_on }}</dd>
+      <dt>Min stake</dt><dd>${{ promo.min_stake }}</dd>
+      <dt>Max payout</dt><dd>${{ promo.max_payout }}</dd>
+    </dl>
+    <h2>Terms</h2>
+    <p>{{ promo.terms }}</p>
+    <p class="muted">Back to <a href="/espn-bet/promo">all promo codes</a>.</p>
+  </div>
+</div>
+{% endblock %}

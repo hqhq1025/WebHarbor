@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ deck.name }} SRS — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container srs-deck" data-deck="{{ deck.slug }}" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('vocab_builder_index') }}">Vocab builder</a> &raquo;
+    <span>{{ deck.name }}</span>
+  </nav>
+  <h1>{{ deck.name }}
+    <span class="release-tag">R9 SRS</span>
+    <span class="card-count">{{ total_cards }} cards</span>
+  </h1>
+  <p class="deck-blurb">CEFR level: <strong>{{ deck.level }}</strong>.
+     Snapshot: <strong>{{ snapshot }}</strong>.
+     Cards are split across five Leitner boxes — review intervals are
+     1, 2, 4, 7 and 15 days respectively.</p>
+  <table class="box-summary">
+    <thead><tr><th>Box</th><th>Cards</th><th>Next review (days)</th></tr></thead>
+    <tbody>
+      {% for b in [1,2,3,4,5] %}
+        <tr><td>Box {{ b }}</td>
+            <td>{{ counts_per_box[b] }}</td>
+            <td>{{ [1,2,4,7,15][b-1] }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2>Cards due now (showing {{ boxes|length }})</h2>
+  <ol class="card-list">
+    {% for c in boxes %}
+      <li class="srs-card" data-box="{{ c.box }}">
+        <a href="{{ url_for('word_detail', slug=c.word.slug) }}">{{ c.word.headword }}</a>
+        <span class="box-chip">Box {{ c.box }}</span>
+        <span class="next-due">next in {{ c.days_to_next }} d</span>
+        {% if c.word.level %}<span class="cefr">{{ c.word.level }}</span>{% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

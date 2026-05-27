@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Create a Study Group | Coursera{% endblock %}
+{% block content %}
+<div class="study-group" id="main-content" style="max-width:920px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:20px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">STUDY GROUPS</div>
+    <h1 style="font-size:30px;letter-spacing:-.5px;margin:12px 0 6px;">Create a study group</h1>
+    <p style="color:#5B6780;font-size:15px;margin:0;">Form a small cohort around any 2026 course. We'll generate a shareable group code on the next step.</p>
+  </header>
+
+  <form method="POST" action="{{ url_for('study_group_create') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="title">Group name</label>
+    <input id="title" name="title" type="text" required style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;margin-bottom:14px;" placeholder="Tuesday Night Sandbox Crew">
+
+    <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="course_slug">Course slug</label>
+    <input id="course_slug" name="course_slug" type="text" required list="course-suggest"
+           style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;margin-bottom:14px;">
+    <datalist id="course-suggest">
+      {% for c in sample %}<option value="{{ c.slug }}">{{ c.title }}</option>{% endfor %}
+    </datalist>
+
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="capacity">Capacity</label>
+        <input id="capacity" name="capacity" type="number" min="2" max="40" value="6" style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;">
+      </div>
+      <div style="flex:2;">
+        <label style="display:block;font-weight:700;font-size:14px;margin-bottom:6px;" for="meeting_time">Weekly meeting time</label>
+        <input id="meeting_time" name="meeting_time" type="text" placeholder="Tuesdays 7pm PT" style="width:100%;border:1px solid #DAE1ED;border-radius:8px;padding:10px;font-size:14px;">
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button type="submit" style="background:#0056D2;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">Create group</button>
+    </div>
+  </form>
+
+  {% if confirmation %}
+  <section style="margin-top:22px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <div style="font-size:12px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;margin-bottom:6px;">Group created</div>
+    <h2 style="font-size:22px;margin:0 0 6px;">{{ confirmation.title }}</h2>
+    <div style="color:#374151;font-size:14px;margin-bottom:10px;">For <a href="{{ url_for('course_detail', slug=confirmation.course.slug) }}" style="color:#0056D2;">{{ confirmation.course.title }}</a></div>
+    <div style="font-size:14px;color:#374151;margin-bottom:6px;">Capacity: <strong>{{ confirmation.capacity }}</strong></div>
+    {% if confirmation.meeting %}<div style="font-size:14px;color:#374151;margin-bottom:10px;">Meeting: {{ confirmation.meeting }}</div>{% endif %}
+    <div style="font-size:14px;color:#374151;">Shareable code: <code style="background:#fff;padding:4px 10px;border-radius:6px;border:1px solid #DAE1ED;">{{ confirmation.group_code }}</code></div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

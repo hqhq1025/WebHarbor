@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}IELTS mock test — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container ielts-mock" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <span>IELTS mock test</span>
+  </nav>
+  <h1>IELTS mock test <span class="release-tag">R9</span>
+    <span class="q-count">{{ total }} questions</span></h1>
+  <p class="im-meta">
+    Listening: {{ sections.Listening }} &middot;
+    Reading: {{ sections.Reading }} &middot;
+    Writing: {{ sections.Writing }} &middot;
+    Snapshot {{ snapshot }}
+  </p>
+  <ol class="ielts-questions">
+    {% for q in questions %}
+      <li class="ielts-q" data-n="{{ q.n }}" data-section="{{ q.section }}">
+        <p class="prompt">
+          <span class="qn">Q{{ q.n }}.</span>
+          <span class="section-tag">{{ q.section }}</span>
+          Which of the following is the headword whose definition starts with
+          <em>"{{ (q.target.guide_word or q.target.headword)[:70] }}"</em>?
+        </p>
+        <ol class="options" type="A">
+          {% for opt in q.options %}
+            <li class="opt">{{ opt.headword }}</li>
+          {% endfor %}
+        </ol>
+        <p class="answer"><strong>Answer:</strong> {{ q.answer_letter }}
+          (<a href="{{ url_for('word_detail', slug=q.target.slug) }}">
+            {{ q.target.headword }}</a>)</p>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

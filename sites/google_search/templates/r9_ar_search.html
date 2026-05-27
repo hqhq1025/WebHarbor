@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}AR Search - Google{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">AR Search</h1>
+  <p class="muted">
+    Pick an AR scene to project into your space (camera-AR feature stub).
+    Each scene includes a caption that explains what AR-on-camera does in
+    the live product.
+  </p>
+
+  {% if one %}
+  <article style="border: 1px solid #dadce0; border-radius: 12px; padding: 18px; margin: 16px 0; background: #f8f9fa;">
+    <h2 style="font-size: 20px; margin: 0 0 4px;">{{ one.label }}</h2>
+    <p class="muted" style="margin: 0 0 12px; font-size: 12px;">slug: <code>{{ one.slug }}</code></p>
+    <p>{{ one.caption }}</p>
+    <p style="margin: 0;">
+      <a href="/ar-search">- back to all AR scenes</a>
+    </p>
+  </article>
+  {% endif %}
+
+  <div style="border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+    {% for s in items %}
+    <a href="/ar-search/{{ s.slug }}"
+       style="display: flex; justify-content: space-between; padding: 12px 14px;
+              border-bottom: 1px solid #f1f3f4; text-decoration: none; color: inherit;">
+      <span>
+        <strong>{{ s.label }}</strong>
+        <span class="muted" style="font-size: 12px; margin-left: 6px;"><code>{{ s.slug }}</code></span>
+      </span>
+      <code style="font-size: 12px; color: #5f6368;">AR</code>
+    </a>
+    {% endfor %}
+  </div>
+
+  <p class="muted" style="margin-top: 18px; font-size: 12px;">
+    Related: <a href="/lens/find-photo-ai">Lens find by photo</a>,
+    <a href="/imghp">image search</a>.
+  </p>
+</div>
+{% endblock %}

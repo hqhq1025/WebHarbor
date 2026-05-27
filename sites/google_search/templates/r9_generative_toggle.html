@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Generative search toggle - Google{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 720px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">Generative search toggle</h1>
+  <p class="muted">
+    Choose how much AI-generated overview appears above your search results.
+    The selection is stored in your session - the underlying SERP ranking
+    does not change in the mirror.
+  </p>
+
+  {% if saved %}
+  <div style="background: #e6f4ea; border: 1px solid #34a853; padding: 10px 14px;
+              border-radius: 8px; margin: 14px 0; font-size: 14px;">
+    Saved. Generative mode is now <strong>{{ saved }}</strong>.
+  </div>
+  {% endif %}
+
+  <p style="margin: 12px 0;">Currently: <strong>{{ current }}</strong></p>
+
+  <form method="post" action="/search/generative-toggle">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <fieldset style="border: 1px solid #dadce0; border-radius: 12px; padding: 14px;">
+      <legend style="padding: 0 6px;">Generative mode</legend>
+      {% for slug, label, desc in modes %}
+      <label style="display: block; padding: 8px 0; border-bottom: 1px solid #f1f3f4;">
+        <input type="radio" name="mode" value="{{ slug }}"
+               {% if current == slug %}checked{% endif %}>
+        <strong>{{ label }}</strong>
+        <span class="muted" style="font-size: 13px; margin-left: 4px;">{{ desc }}</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <button type="submit" style="margin-top: 14px; padding: 8px 16px; border-radius: 6px;
+                                 background: #1a73e8; color: #fff; border: 0;">Save</button>
+  </form>
+
+  <p class="muted" style="margin-top: 18px; font-size: 12px;">
+    Related: <a href="/search/ai-overview">AI Overview cards</a>,
+    <a href="/search/conversation">conversational search</a>.
+  </p>
+</div>
+{% endblock %}

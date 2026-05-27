@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Suggest a word — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container suggest-word" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('about') }}">About</a> &raquo;
+    <span>Contribute a word</span>
+  </nav>
+  <h1>Suggest a new headword
+    <span class="release-tag">R9 contributor portal</span></h1>
+  <p class="contrib-blurb">Submissions are reviewed by the editorial team
+    on snapshot <strong>{{ snapshot }}</strong>. Required fields are
+    <em>headword</em> and <em>definition</em>.</p>
+  <form method="POST" action="/contribute/suggest-word" class="contrib-form"
+        data-endpoint="/contribute/suggest-word">
+    <label>Headword
+      <input type="text" name="headword" required maxlength="80">
+    </label>
+    <label>Definition
+      <textarea name="definition" required rows="3" maxlength="600"></textarea>
+    </label>
+    <label>Your name (optional)
+      <input type="text" name="submitter" maxlength="80">
+    </label>
+    <label>Specialty (optional)
+      <select name="specialty">
+        <option value="">(general)</option>
+        <option value="programming">programming</option>
+        <option value="finance">finance</option>
+        <option value="medicine">medicine</option>
+      </select>
+    </label>
+    <button type="submit" class="cta">Submit suggestion</button>
+  </form>
+  <p class="contrib-note">The endpoint returns JSON with a
+    <code>tracking_id</code> and a <code>queue_position</code> derived
+    deterministically from the headword.</p>
+</div>
+{% endblock %}

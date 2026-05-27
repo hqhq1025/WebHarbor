@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Live Stream DRM — {{ show.title }}{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="watch-live-drm">
+  <header class="page-header">
+    <h1>Live-Stream DRM &amp; Region Notes</h1>
+    <p class="page-header__sub">Entitlement and DRM detail for <strong>{{ show.title }}</strong>. ESPN+ subscribers should not see geo-blocks inside their entitled region. Region-locked content displays as <em>not allowed</em> below.</p>
+  </header>
+
+  <section class="drm-summary" id="r9-drm-summary">
+    <dl>
+      <dt>Entitlement</dt><dd>{{ entitlement }}</dd>
+      <dt>Manifest URL</dt><dd><code>{{ manifest_url }}</code></dd>
+      <dt>Widevine license</dt><dd><code>{{ drm_widevine_url }}</code></dd>
+      <dt>PlayReady license</dt><dd><code>{{ drm_playready_url }}</code></dd>
+      <dt>FairPlay license</dt><dd><code>{{ drm_fairplay_url }}</code></dd>
+    </dl>
+  </section>
+
+  <table class="data-table" id="r9-drm-regions">
+    <thead>
+      <tr>
+        <th scope="col">Region</th>
+        <th scope="col">Allowed</th>
+        <th scope="col">DRM</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in regions %}
+      <tr data-r9-drm-region="{{ r.region }}">
+        <td>{{ r.region }}</td>
+        <td>{% if r.allowed %}<span class="badge badge--ok">YES</span>{% else %}<span class="badge badge--muted">NO</span>{% endif %}</td>
+        <td><code>{{ r.drm }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -7281,3 +7281,517 @@ def expand_places_r8(db, Place, Category, City):
                 db.session.commit()
     db.session.commit()
     print(f"expand_places_r8: added {added} R8 places (total {Place.query.count()})")
+
+
+# ============================================================================
+# R9: outdoor verticals + chain expansion.
+#   trail / beach / lighthouse / scenic-byway / geocache / large parks +
+#   ~7.5k new chain rows.  Targets ~195k new places so seed tops 750k.
+#   Idempotent: gated on Place count >= 740000.
+# ============================================================================
+
+# Each template tuple: (cat_slug, name_pattern, subtitle, description,
+#                       price, rating_lo, rating_hi, r9_kind)
+# r9_kind is one of: "trail", "beach", "lighthouse", "byway",
+# "geocache", "park", "chain"; used to route to specialized pages
+# (/trail/<id>, /trail/<id>/difficulty, /beach/<id>/water-quality, etc.)
+_R9_TRAIL_BASES = [
+    ("Ridge Loop Trail",       "Ridge hike",           "easy"),
+    ("Summit Trail",           "Mountain hike",        "hard"),
+    ("Canyon Rim Trail",       "Canyon hike",          "moderate"),
+    ("Waterfall Loop Trail",   "Waterfall hike",       "easy"),
+    ("Bluff Overlook Trail",   "Bluff hike",           "moderate"),
+    ("Creekside Trail",        "Creek hike",           "easy"),
+    ("Pine Forest Trail",      "Forest hike",          "easy"),
+    ("Sequoia Grove Trail",    "Old-growth hike",      "moderate"),
+    ("Desert Wash Trail",      "Desert hike",          "moderate"),
+    ("Lakeshore Loop",         "Lakeside hike",        "easy"),
+    ("Granite Dome Trail",     "Granite hike",         "hard"),
+    ("Alpine Meadow Trail",    "Alpine hike",          "hard"),
+    ("Cascade Falls Trail",    "Falls hike",           "moderate"),
+    ("Marsh Boardwalk",        "Wetland hike",         "easy"),
+    ("Glacial Cirque Trail",   "Cirque hike",          "hard"),
+    ("Sunset Ridge Trail",     "Ridge hike",           "moderate"),
+    ("Bear Paw Trail",         "Wilderness hike",      "hard"),
+    ("Aspen Grove Trail",      "Aspen hike",           "easy"),
+    ("Cedar Hollow Trail",     "Cedar hike",           "moderate"),
+    ("Iron Bridge Loop",       "Historic hike",        "easy"),
+    ("Volcanic Crater Trail",  "Volcanic hike",        "hard"),
+    ("Cinder Cone Trail",      "Cinder hike",          "hard"),
+    ("Eagle Vista Trail",      "Vista hike",           "moderate"),
+    ("Foggy Bay Trail",        "Coastal hike",         "moderate"),
+    ("Driftwood Cove Trail",   "Coastal hike",         "easy"),
+    ("Riverbend Trail",        "River hike",           "easy"),
+    ("Bristlecone Spur",       "Bristlecone hike",     "moderate"),
+    ("Hidden Valley Trail",    "Valley hike",          "moderate"),
+    ("Mossy Glen Trail",       "Glen hike",            "easy"),
+    ("Boulder Field Trail",    "Boulder hike",         "hard"),
+    ("Wildflower Loop",        "Flower hike",          "easy"),
+    ("Birch Knoll Trail",      "Knoll hike",           "easy"),
+    ("Tundra Crossing Trail",  "Tundra hike",          "hard"),
+    ("Salt Marsh Trail",       "Marsh hike",           "easy"),
+    ("Coastal Headland Trail", "Headland hike",        "moderate"),
+    ("Pinnacle Spur",          "Pinnacle hike",        "hard"),
+    ("Sandstone Loop",         "Sandstone hike",       "moderate"),
+    ("Petroglyph Trail",       "Petroglyph hike",      "easy"),
+    ("Old Growth Trail",       "Old-growth hike",      "easy"),
+    ("Switchback Climb",       "Switchback hike",      "hard"),
+    ("Saddle Pass Trail",      "Pass hike",            "hard"),
+    ("Ironwood Trail",         "Desert hike",          "moderate"),
+    ("Reservoir Loop",         "Reservoir hike",       "easy"),
+    ("Spruce Bog Trail",       "Bog hike",             "easy"),
+    ("Coyote Mesa Trail",      "Mesa hike",            "moderate"),
+    ("Mountain Lion Spur",     "Wilderness hike",      "hard"),
+    ("Quartz Vein Trail",      "Geology hike",         "moderate"),
+    ("Heritage Loop Trail",    "Historic hike",        "easy"),
+    ("Bristol Brook Trail",    "Brook hike",           "easy"),
+    ("Painted Hills Trail",    "Geology hike",         "moderate"),
+    ("Two Lakes Loop",         "Lakes hike",           "moderate"),
+    ("Twin Falls Spur",        "Falls hike",           "moderate"),
+    ("Cinder Hollow Trail",    "Volcanic hike",        "hard"),
+    ("Hemlock Stand Trail",    "Forest hike",          "easy"),
+    ("Watershed Loop",         "Watershed hike",       "moderate"),
+    ("Skyline Ridge Trail",    "Ridge hike",           "moderate"),
+    ("Goat Rock Trail",        "Rock hike",            "hard"),
+    ("Wolf Creek Trail",       "Creek hike",           "moderate"),
+    ("Bobcat Ridge Trail",     "Ridge hike",           "moderate"),
+    ("Owl Hollow Trail",       "Hollow hike",          "easy"),
+    ("Falcon Crag Trail",      "Crag hike",            "hard"),
+    ("Manzanita Loop",         "Chaparral hike",       "easy"),
+    ("Coastal Pine Trail",     "Coastal hike",         "easy"),
+    ("Driftwood Beach Spur",   "Coastal hike",         "easy"),
+    ("Roaring Brook Trail",    "Brook hike",           "moderate"),
+    ("Sunrise Summit Loop",    "Summit hike",          "hard"),
+    ("Sunset Bluff Trail",     "Bluff hike",           "easy"),
+    ("Lupine Meadow Trail",    "Meadow hike",          "easy"),
+    ("Bear Creek Trail",       "Creek hike",           "moderate"),
+    ("Fern Canyon Trail",      "Canyon hike",          "easy"),
+    ("Mariposa Spur",          "Spur hike",            "moderate"),
+    ("Indian Hollow Trail",    "Heritage hike",        "easy"),
+    ("Saw Mill Trail",         "Historic hike",        "easy"),
+    ("Boundary Ridge Trail",   "Boundary hike",        "moderate"),
+    ("River Otter Trail",      "River hike",           "easy"),
+    ("Pelican Point Trail",    "Coastal hike",         "easy"),
+    ("Heron Marsh Trail",      "Wetland hike",         "easy"),
+    ("Old Fort Trail",         "Historic hike",        "easy"),
+    ("Crystal Cave Trail",     "Cave hike",            "moderate"),
+    ("Three Sisters Loop",     "Mountain hike",        "hard"),
+    ("Lava Tube Trail",        "Volcanic hike",        "moderate"),
+    ("Cinder Cone Spur",       "Volcanic hike",        "hard"),
+    ("Hawkwatch Trail",        "Vista hike",           "easy"),
+    ("Coyote Howl Trail",      "Desert hike",          "moderate"),
+    ("Maple Loop Trail",       "Maple hike",           "easy"),
+    ("Hickory Ridge Trail",    "Ridge hike",           "easy"),
+    ("Trillium Trail",         "Wildflower hike",      "easy"),
+    ("Cattail Marsh Trail",    "Marsh hike",           "easy"),
+    ("Black Bear Ridge",       "Ridge hike",           "hard"),
+    ("Fox Den Trail",          "Forest hike",          "easy"),
+    ("Lighthouse Point Trail", "Coastal hike",         "easy"),
+    ("Old Mine Trail",         "Historic hike",        "moderate"),
+    ("Roosevelt Grove Trail",  "Historic hike",        "easy"),
+    ("Powder River Trail",     "River hike",           "moderate"),
+    ("Sundew Bog Spur",        "Bog hike",             "easy"),
+    ("Quail Hollow Trail",     "Hollow hike",          "easy"),
+    ("Painted Cave Trail",     "Cave hike",            "moderate"),
+    ("Shortcut Spur",          "Spur hike",            "easy"),
+    ("North Rim Trail",        "Rim hike",             "moderate"),
+    ("South Rim Trail",        "Rim hike",             "moderate"),
+    ("Riverwalk Loop",         "Riverwalk hike",       "easy"),
+    ("Bald Eagle Spur",        "Spur hike",            "moderate"),
+    ("Mountain Goat Pass",     "Pass hike",            "hard"),
+    ("Mountain Laurel Loop",   "Laurel hike",          "easy"),
+    ("Catamount Crest Trail",  "Crest hike",           "hard"),
+    ("Salmonberry Trail",      "Berry hike",           "easy"),
+    ("Skunk Cabbage Trail",    "Wetland hike",         "easy"),
+    ("Coastal Spruce Trail",   "Coastal hike",         "easy"),
+    ("Talus Field Trail",      "Talus hike",           "hard"),
+    ("Glacier Lake Trail",     "Glacier hike",         "hard"),
+]
+
+_R9_BEACH_BASES = [
+    ("Driftwood Cove Beach",        "Cove beach",       "good"),
+    ("Long Strand Public Beach",    "Public beach",     "excellent"),
+    ("Pelican Point Beach",         "Point beach",      "excellent"),
+    ("Sea Glass Cove",              "Glass cove",       "good"),
+    ("Sandpiper Beach",             "Family beach",     "excellent"),
+    ("Heron Bay Beach",             "Bay beach",        "good"),
+    ("Surfside Public Beach",       "Surf beach",       "excellent"),
+    ("Tidepool Cove",               "Tidepool beach",   "good"),
+    ("Crescent Bay Beach",          "Crescent beach",   "excellent"),
+    ("Cobble Cove",                 "Cobble beach",     "good"),
+    ("Northshore Beach",            "Northshore beach", "excellent"),
+    ("Southshore Beach",            "Southshore beach", "excellent"),
+    ("Bayside Beach Park",          "Family beach",     "good"),
+    ("Reef Point Beach",            "Reef beach",       "good"),
+    ("Saltwater State Beach",       "State beach",      "excellent"),
+    ("Black Sand Beach",            "Black sand",       "good"),
+    ("White Cliffs Beach",          "Cliff beach",      "excellent"),
+    ("Coral Cove Beach",            "Coral beach",      "good"),
+    ("Coquina Beach",               "Shell beach",      "good"),
+    ("Driftwood Strand",            "Strand beach",     "good"),
+    ("Sea Otter Beach",             "Wildlife beach",   "good"),
+    ("Lighthouse Point Beach",      "Lighthouse beach", "excellent"),
+    ("Whaler's Beach",              "Heritage beach",   "good"),
+    ("Boardwalk Public Beach",      "Boardwalk beach",  "excellent"),
+    ("Beachcomber Cove",            "Comber cove",      "good"),
+    ("Sunset Public Beach",         "Sunset beach",     "excellent"),
+    ("Sunrise State Beach",         "Sunrise beach",    "excellent"),
+    ("Marina Beach",                "Marina beach",     "good"),
+    ("Mussel Rock Beach",           "Rocky beach",      "fair"),
+    ("Anemone Cove",                "Tidepool beach",   "good"),
+    ("Coastal Bluff Beach",         "Bluff beach",      "excellent"),
+    ("Driftwood Bay Beach",         "Bay beach",        "good"),
+    ("Surfers Point Beach",         "Surf point",       "excellent"),
+    ("Family Cove Beach",           "Family cove",      "excellent"),
+    ("Dunes Public Beach",          "Dune beach",       "good"),
+    ("Gull Rock Beach",             "Rocky beach",      "fair"),
+    ("Quiet Cove",                  "Quiet beach",      "excellent"),
+    ("Windsurfer's Beach",          "Wind beach",       "good"),
+    ("Sailmaker's Beach",           "Sailing beach",    "good"),
+    ("Smuggler's Cove Beach",       "Hidden cove",      "good"),
+    ("Cape Inlet Beach",            "Inlet beach",      "good"),
+    ("Tide Pool State Beach",       "Tidepool beach",   "excellent"),
+    ("Whitecap Beach",              "Surf beach",       "good"),
+    ("Marbled Sand Beach",          "Marbled beach",    "good"),
+    ("Star Cove Beach",             "Hidden cove",      "good"),
+    ("Pebble Stack Cove",           "Pebble beach",     "fair"),
+    ("Beach Glass Strand",          "Glass strand",     "good"),
+    ("Heron Lookout Beach",         "Wildlife beach",   "good"),
+    ("Cormorant Rock Beach",        "Rocky beach",      "fair"),
+    ("Pelican Roost Beach",         "Wildlife beach",   "good"),
+]
+
+_R9_LIGHTHOUSE_BASES = [
+    "Point Lighthouse",          "Cape Lighthouse",      "Harbor Lighthouse",
+    "Old Bay Lighthouse",        "Inlet Lighthouse",     "Coastal Beacon",
+    "Reef Light Station",        "North Point Light",    "South Cape Light",
+    "Old Channel Light",         "Twin Light Station",   "Reef Range Light",
+    "Outer Banks Light",         "Whaler's Lighthouse",  "Pilot Point Light",
+    "Sailor's Beacon",           "Driftwood Point Light", "Cormorant Range Light",
+    "Pelican Bluff Light",       "Foggy Cape Light",     "Tidewater Light",
+    "Compass Rock Light",        "Mariner's Beacon",     "Halfway Rock Light",
+    "Knife Edge Light",
+]
+
+_R9_BYWAY_BASES = [
+    ("Coastal Heritage Scenic Byway",   "coastal"),
+    ("Lighthouse Loop Byway",           "coastal"),
+    ("Mountain Crest Byway",            "mountain"),
+    ("Volcanic Highlands Byway",        "volcanic"),
+    ("Wine Country Byway",              "wine"),
+    ("Big River Byway",                 "river"),
+    ("High Desert Byway",               "desert"),
+    ("Glacier Trail Byway",             "glacier"),
+    ("Forest Loop Byway",               "forest"),
+    ("Old Mission Byway",               "heritage"),
+    ("Pioneer Trail Byway",             "heritage"),
+    ("Salmon River Byway",              "river"),
+    ("Painted Cliffs Byway",            "geology"),
+    ("Cattle Drive Byway",              "heritage"),
+    ("Cottonwood Canyon Byway",         "canyon"),
+    ("Pine Ridge Byway",                "mountain"),
+    ("Lakeshore Drive Byway",           "lake"),
+    ("Marsh & Bayou Byway",             "wetland"),
+    ("Tundra Crossing Byway",           "tundra"),
+    ("Old Mining Byway",                "heritage"),
+]
+
+_R9_GEOCACHE_BASES = [
+    ("Old Oak Cache",            "traditional",  "small"),
+    ("Lighthouse Step Cache",    "traditional",  "micro"),
+    ("Hidden Fern Cache",        "traditional",  "regular"),
+    ("Roadside Marker Cache",    "traditional",  "small"),
+    ("Park Bench Cache",         "traditional",  "micro"),
+    ("Library Stack Cache",      "puzzle",       "micro"),
+    ("Trailhead Cache",          "traditional",  "regular"),
+    ("Bridge Pillar Cache",      "traditional",  "small"),
+    ("Hollow Log Cache",         "traditional",  "regular"),
+    ("Stone Wall Cache",         "traditional",  "small"),
+    ("Old Mill Cache",           "traditional",  "regular"),
+    ("Pier Piling Cache",        "traditional",  "micro"),
+    ("Cliff Edge Cache",         "earth",        "small"),
+    ("Cemetery Gate Cache",      "puzzle",       "micro"),
+    ("Old Schoolhouse Cache",    "traditional",  "small"),
+    ("Boardwalk Cache",          "traditional",  "small"),
+    ("Boulder Top Cache",        "multi",        "regular"),
+    ("Quaking Aspen Cache",      "traditional",  "small"),
+    ("Bottlebrush Cache",        "traditional",  "micro"),
+    ("Crooked Trail Cache",      "traditional",  "small"),
+    ("Lookout Tower Cache",      "earth",        "regular"),
+    ("Spring Box Cache",         "traditional",  "small"),
+    ("Old Fence Post Cache",     "traditional",  "micro"),
+    ("Cattail Marsh Cache",      "traditional",  "small"),
+    ("Ridge Cairn Cache",        "earth",        "regular"),
+    ("Petroglyph Cache",         "earth",        "small"),
+    ("Wishing Well Cache",       "puzzle",       "small"),
+    ("Stream Crossing Cache",    "multi",        "regular"),
+    ("Iron Bridge Cache",        "traditional",  "small"),
+    ("Whispering Pines Cache",   "traditional",  "regular"),
+    ("Old Lighthouse Cache",     "traditional",  "small"),
+    ("Sea Cliff Cache",          "earth",        "small"),
+    ("Buoy Marker Cache",        "traditional",  "micro"),
+    ("Driftwood Cache",          "traditional",  "small"),
+    ("Tide Pool Cache",          "earth",        "micro"),
+]
+
+# Large named parks (separate from R8 chains; permit-eligible)
+_R9_PARK_BASES = [
+    ("Riverside Heritage Park",      "regional",    True),
+    ("Pioneer Memorial Park",        "regional",    True),
+    ("Old Quarry State Park",        "state",       True),
+    ("Cattail Marsh Reserve",        "reserve",     False),
+    ("Cottonwood Grove Park",        "regional",    False),
+    ("Painted Cliffs State Park",    "state",       True),
+    ("Sunset Bluff Park",            "city",        False),
+    ("Sunrise Ridge Park",           "city",        False),
+    ("Big Cedar State Park",         "state",       True),
+    ("Tall Pines Reserve",           "reserve",     True),
+    ("Sequoia Sentinel Park",        "state",       True),
+    ("Wild River State Park",        "state",       True),
+    ("Salt Flats National Reserve",  "reserve",     True),
+    ("Volcanic Crater Reserve",      "reserve",     True),
+    ("Twin Lakes State Park",        "state",       True),
+    ("Marble Canyon State Park",     "state",       True),
+    ("Eagle Mesa State Park",        "state",       True),
+    ("Old Fort Heritage Park",       "regional",    True),
+    ("Mariposa Grove Park",          "state",       True),
+    ("North Sound Marine Reserve",   "reserve",     True),
+    ("Coastal Bluffs State Park",    "state",       True),
+    ("Inland Sea State Park",        "state",       True),
+    ("Quiet Forest Reserve",         "reserve",     False),
+    ("Granite Dome Park",            "state",       True),
+    ("Foggy Bay State Park",         "state",       True),
+    ("High Desert State Park",       "state",       True),
+    ("Old Growth Reserve",           "reserve",     True),
+    ("Cathedral Pines Park",         "state",       True),
+    ("Sandstone Arch State Park",    "state",       True),
+    ("Glacier Field Reserve",        "reserve",     True),
+]
+
+# Chains: limited city subset so total chain rows ≈ 7.5k.
+_R9_CHAIN_BASES = [
+    ("Blank Street Coffee",        "coffee-shops",   "$",   4.3, 4.8),
+    ("Devocion Coffee Bar",        "coffee-shops",   "$$",  4.5, 4.9),
+    ("Joe & The Juice",            "coffee-shops",   "$",   4.1, 4.6),
+    ("Pret A Manger",              "restaurants",    "$",   4.0, 4.5),
+    ("Sweetgreen Outpost",         "restaurants",    "$$",  4.2, 4.7),
+    ("Cava Mezze Grill",           "restaurants",    "$$",  4.3, 4.8),
+    ("Five Guys",                  "restaurants",    "$",   4.1, 4.6),
+    ("Shake Shack Curbside",       "restaurants",    "$$",  4.4, 4.9),
+    ("MOD Pizza",                  "restaurants",    "$",   4.2, 4.7),
+    ("Cane's Curbside Window",     "restaurants",    "$",   4.3, 4.8),
+]
+
+
+def _r9_make_chain_seed(city_slug):
+    return int.from_bytes(
+        hashlib.md5(("r9chainpick:" + city_slug).encode()).digest()[:4],
+        "big")
+
+
+def expand_places_r9(db, Place, Category, City):
+    """R9 expansion: trail/beach/lighthouse/scenic-byway/geocache/park +
+    fresh chain rows.
+
+    Sweeps R9 template lists against every city in deterministic order,
+    seed_int_hex-driven attribute synthesis identical to R6/R7/R8.
+    Adds ~195k new venues so Place count tops 750k.  Idempotent.
+    """
+    if Place.query.count() >= 740000:
+        return
+
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    # Donor pool of real hero images (ordered, same pattern as R8).
+    donor_pool = []
+    for p in (Place.query
+              .filter(Place.hero_image.like("/static/images/places/%"))
+              .order_by(Place.id).limit(80).all()):
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    # Build the unified template stream — each entry is
+    # (cat_slug, name_fmt, subtitle, desc, price, rlo, rhi, r9_kind, extra)
+    # `extra` carries kind-specific metadata (difficulty, water-quality,
+    # park scope, byway theme, geocache size, cache type).
+    stream = []
+
+    for base, sub, diff in _R9_TRAIL_BASES:
+        stream.append((
+            "parks",
+            "{anchor} " + base,
+            sub,
+            f"A {diff}-rated {sub.lower()} winding through the {{anchor}} "
+            f"area; trailhead parking + signed map at the kiosk.",
+            "Free", 4.2, 4.9, "trail", {"difficulty": diff},
+        ))
+
+    for base, sub, wq in _R9_BEACH_BASES:
+        stream.append((
+            "beaches",
+            "{anchor} " + base,
+            sub,
+            f"{sub} with lifeguard tower, restrooms, and current water-quality "
+            f"reading published weekly by the {{anchor}} health department.",
+            "Free", 4.1, 4.8, "beach", {"water_quality": wq},
+        ))
+
+    for base in _R9_LIGHTHOUSE_BASES:
+        stream.append((
+            "attractions",
+            "{anchor} " + base,
+            "Lighthouse",
+            f"Historic {base.lower()} at the entrance to {{anchor}} harbor; "
+            f"guided tower tour, museum room, and beam-room observation deck.",
+            "$", 4.3, 4.9, "lighthouse", {},
+        ))
+
+    for base, theme in _R9_BYWAY_BASES:
+        stream.append((
+            "attractions",
+            "{anchor} " + base,
+            "Scenic byway",
+            f"State-designated scenic byway looping the {{anchor}} region with "
+            f"interpretive pullouts, ranger talks, and a {theme}-themed audio tour.",
+            "Free", 4.4, 4.9, "byway", {"theme": theme},
+        ))
+
+    for base, ctype, size in _R9_GEOCACHE_BASES:
+        stream.append((
+            "parks",
+            "{anchor} " + base,
+            "Geocache",
+            f"Public-listed {ctype} geocache of size {size} placed near "
+            f"{{anchor}} community grounds; bring pen, BYO swag, and CITO.",
+            "Free", 4.0, 4.7, "geocache", {"cache_type": ctype, "size": size},
+        ))
+
+    for base, scope, permit in _R9_PARK_BASES:
+        permit_word = "Permit reservations available online." if permit else "No permit required."
+        stream.append((
+            "parks",
+            "{anchor} " + base,
+            f"{scope.capitalize()} park",
+            f"{scope.capitalize()}-scope park near {{anchor}} with picnic "
+            f"shelters, restrooms, and group-event reservations. {permit_word}",
+            "Free", 4.3, 4.9, "park", {"scope": scope, "permit": permit},
+        ))
+
+    for chain, cat, price, rlo, rhi in _R9_CHAIN_BASES:
+        stream.append((
+            cat, f"{chain} — {{anchor}}",
+            "Chain", f"{chain} location serving the {{anchor}} area.",
+            price, rlo, rhi, "chain", {"chain": chain},
+        ))
+
+    added = 0
+    # For chain rows we only seed in a deterministic 750-city subset so total
+    # chain placements come out close to 7,500 (10 chains × 750 cities).
+    chain_city_threshold = 750
+
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        city_seed = _r9_make_chain_seed(city.slug)
+        chain_eligible = (city_seed % len(cities)) < chain_city_threshold
+
+        # Deterministic per-city template shuffle (matches R8 style).
+        templates = list(enumerate(stream))
+        for i in range(len(templates) - 1, 0, -1):
+            j = int.from_bytes(
+                hashlib.md5(f"r9sh:{city.slug}:{i}".encode()).digest()[:4],
+                "big") % (i + 1)
+            templates[i], templates[j] = templates[j], templates[i]
+
+        for idx, tpl in templates:
+            (cat_slug, pattern, subtitle, desc, price, rlo, rhi, kind, extra) = tpl
+            if kind == "chain" and not chain_eligible:
+                continue
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            # Slug encodes r9_kind so the new routes can filter by prefix
+            # without adding a column.  Pattern: r9-<kind>-<city>-<idx>.
+            slug = f"r9-{kind}-{city.slug}-{idx:03d}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            local_seed = _seed_int_hex(slug, "r9loc")
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + ((local_seed % 800) - 400) / 10000.0
+            lng = city.lng + (((local_seed // 800) % 1000) - 500) / 10000.0
+            rating = round(rlo + (local_seed % 100) / 100.0 * (rhi - rlo), 1)
+            review_count = 11 + (local_seed % 3300)
+
+            chain_brand = extra.get("chain", "")
+            tags = ["r9", kind, cat_slug, anchor.lower(), city.country.lower()]
+            for k, v in extra.items():
+                if isinstance(v, (str, int, float)):
+                    tags.append(f"{k}-{v}".lower().replace(" ", "-"))
+                elif isinstance(v, bool):
+                    if v:
+                        tags.append(k)
+
+            hours_opts = [
+                "Daily: dawn to dusk",
+                "Mon-Sun: 6:00 AM - 10:00 PM",
+                "Tue-Sun: 8:00 AM - 8:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 9:00 AM - 5:00 PM, Weekends 9:00 AM - 7:00 PM",
+                "Daily: 7:00 AM - 9:00 PM",
+                "Mon-Sun: 5:30 AM - 11:00 PM",
+            ]
+            hours_pick = (local_seed >> 5) % 7
+            outdoor_cats = {"parks", "beaches"}
+            is_24h_flag = (hours_pick == 3) or (cat_slug in outdoor_cats and hours_pick == 0)
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc.format(anchor=anchor) if "{anchor}" in desc else desc,
+                address=f"{20 + (local_seed % 9800)} {['Maple','Birch','Spruce','Linden','Hawthorn','Sycamore','Juniper','Cedar','Cottonwood','Willow'][local_seed % 10]} Rd, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_opts[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                subcategory=subtitle,
+                chain_brand=chain_brand,
+                is_24h=is_24h_flag,
+                is_popular=(rating >= 4.7 and (local_seed % 5) == 0),
+                has_parking_lot=(cat_slug in outdoor_cats or (local_seed % 4) == 0),
+                ev_charging=False,
+                bicycle_parking=(cat_slug in outdoor_cats or (local_seed % 2) == 0),
+                indoor_zone_type="",
+                floor_number="",
+                parking_lot_capacity=0,
+                delivery_available=(kind == "chain" and cat_slug == "restaurants" and (local_seed % 2) == 0),
+                dine_in=(cat_slug in ("restaurants", "coffee-shops")),
+                takeout=(cat_slug in ("restaurants", "coffee-shops")),
+                accepts_reservations=(kind == "park" and extra.get("permit", False)),
+                serves_breakfast=(cat_slug == "coffee-shops"),
+                serves_lunch=(cat_slug == "restaurants"),
+                serves_dinner=(cat_slug == "restaurants"),
+                serves_alcohol=False,
+                serves_vegetarian=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+            ))
+            added += 1
+            if added % 2000 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"expand_places_r9: added {added} R9 places (total {Place.query.count()})")

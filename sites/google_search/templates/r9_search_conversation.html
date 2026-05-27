@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Search as conversation - Google{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">Search as conversation</h1>
+  <p class="muted">
+    Multi-step search transcripts. The SERP becomes a chat - prior turns
+    stay in context so follow-ups build on earlier answers.
+  </p>
+
+  {% if one %}
+  <article style="border: 1px solid #dadce0; border-radius: 12px; padding: 18px; margin: 16px 0; background: #f8f9fa;">
+    <h2 style="font-size: 20px; margin: 0 0 4px;">{{ one.title }}</h2>
+    <p class="muted" style="margin: 0 0 12px; font-size: 12px;">slug: <code>{{ one.slug }}</code> - {{ one.turns|length }} turns</p>
+    {% for role, text in one.turns %}
+    <div style="margin: 10px 0; padding: 10px 14px; border-radius: 10px;
+                background: {% if role == 'user' %}#e8f0fe{% else %}#f1f3f4{% endif %};">
+      <strong style="font-size: 12px; text-transform: uppercase; color: #5f6368;">{{ role }}</strong>
+      <div style="margin-top: 4px;">{{ text }}</div>
+    </div>
+    {% endfor %}
+    <p style="margin: 0;">
+      <a href="/search/conversation/{{ one.slug }}?format=json">JSON form</a> -
+      <a href="/search/conversation">- back to all transcripts</a>
+    </p>
+  </article>
+  {% endif %}
+
+  <div style="border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+    {% for c in items %}
+    <a href="/search/conversation/{{ c.slug }}"
+       style="display: flex; justify-content: space-between; padding: 12px 14px;
+              border-bottom: 1px solid #f1f3f4; text-decoration: none; color: inherit;">
+      <span>
+        <strong>{{ c.title }}</strong>
+        <span class="muted" style="font-size: 12px; margin-left: 6px;"><code>{{ c.slug }}</code></span>
+      </span>
+      <code style="font-size: 12px; color: #5f6368;">{{ c.turns|length }} turns</code>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

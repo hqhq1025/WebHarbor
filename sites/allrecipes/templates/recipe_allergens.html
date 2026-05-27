@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Allergen cross-reference for {{ recipe.title }} — FDA-9 major-allergen check with safe substitution suggestions.{% endblock %}
+
+{% block content %}
+<section class="container recipe-allergens" style="max-width:920px;margin:32px auto;padding:0 16px;">
+  <h1>Allergen check — {{ recipe.title }}</h1>
+  <p class="lede" style="color:#555;">
+    We scan the ingredient list for the nine FDA major food allergens
+    (milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soy, sesame).
+    If an allergen is present we also suggest a safe substitution.
+  </p>
+
+  <h2 style="margin-top:24px;">Cross-reference table</h2>
+  <table data-test-id="allergen-table"
+         style="width:100%;border-collapse:collapse;font-size:0.95rem;">
+    <thead>
+      <tr style="background:#fafaf6;text-align:left;">
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Allergen</th>
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Present?</th>
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Ingredient evidence</th>
+        <th style="padding:8px;border-bottom:1px solid #ccc;">Safe substitution</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in findings %}
+      <tr>
+        <td style="padding:6px 8px;text-transform:capitalize;">{{ f.allergen }}</td>
+        <td style="padding:6px 8px;">
+          {% if f.present %}
+            <span data-test-id="allergen-present" style="color:#a3262f;font-weight:600;">Yes</span>
+          {% else %}
+            <span data-test-id="allergen-absent" style="color:#2c6a3d;font-weight:600;">No</span>
+          {% endif %}
+        </td>
+        <td style="padding:6px 8px;color:#444;">
+          {% if f.evidence %}
+            {{ f.evidence | join(', ') }}
+          {% else %}—{% endif %}
+        </td>
+        <td style="padding:6px 8px;color:#444;">
+          {% if f.substitution %}{{ f.substitution }}{% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top:18px;font-size:0.9rem;color:#666;">
+    This scan is a heuristic — always confirm with the ingredient labels and
+    your local health authority's allergen guidance.
+  </p>
+
+  <p style="margin-top:18px;">
+    See also: <a href="/recipe/{{ recipe.slug }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/nutrition">nutrition detail</a>.
+  </p>
+</section>
+{% endblock %}

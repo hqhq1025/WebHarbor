@@ -152,6 +152,16 @@ class Word(db.Model):
     # /dictionary/register/<reg> register-index pages added in R8.
     r8_modern_equiv = db.Column(db.String(120), default='')
 
+    # R9 extensions ----------------------------------------------------------
+    # Technical specialty bucket: '' | programming | finance | medicine.
+    # Drives the /dictionary/specialty/<spec> sub-catalog pages and the
+    # specialty badge rendered beside the headword. Indexed because the
+    # /api/v2/graphql stats query lists distinct specialties.
+    r9_specialty = db.Column(db.String(20), default='', index=True)
+    # Specialty subdomain (e.g. cardiology / derivatives / compilers).
+    # Surfaced on word_detail and on /dialect/<slug>/history.
+    r9_subdomain = db.Column(db.String(40), default='')
+
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
 
@@ -2334,13 +2344,16 @@ def healthz():
     import hashlib as _hl
     return jsonify({
         'status': 'ok',
-        'release': R8_RELEASE_TAG,
-        'build_id': 'cambridge-r8-' + _hl.md5(
-            f'r8|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
+        'release': R9_RELEASE_TAG,
+        'build_id': 'cambridge-r9-' + _hl.md5(
+            f'r9|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
         ).hexdigest()[:10],
         'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
         'words_total': db.session.query(func.count(Word.id)).filter(
             Word.is_thesaurus_phrase == False).scalar(),  # noqa
+        'specialties_total': db.session.query(func.count(Word.id)).filter(
+            Word.is_thesaurus_phrase == False,  # noqa
+            Word.r9_specialty != '').scalar(),
         'checks': {
             'db': 'ok',
             'cache': 'ok',
@@ -2356,7 +2369,7 @@ def api_uptime():
     wall-clock value here; we expose a snapshot count so /reset stays
     byte-id."""
     return jsonify({
-        'release': R8_RELEASE_TAG,
+        'release': R9_RELEASE_TAG,
         'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
         'last_deploy_iso': MIRROR_REFERENCE_DATE.isoformat() + 'Z',
         'uptime_seconds_since_snapshot': 0,
@@ -2439,6 +2452,8 @@ def _r8_word_to_graphql(w):
         'register': w.register or '',
         'domain': w.r7_domain or '',
         'modernEquiv': w.r8_modern_equiv or '',
+        'specialty': w.r9_specialty or '',
+        'subdomain': w.r9_subdomain or '',
     }
 
 
@@ -2484,11 +2499,14 @@ def api_v2_graphql():
             limit = 10
         level = _vget('level')
         register = _vget('register')
+        specialty = _vget('specialty')
         q = Word.query.filter(Word.is_thesaurus_phrase == False)  # noqa
         if level:
             q = q.filter(Word.level == level)
         if register:
             q = q.filter(Word.register == register)
+        if specialty:
+            q = q.filter(Word.r9_specialty == specialty)
         rows = q.order_by(Word.headword.asc()).limit(limit).all()
         return jsonify({'data': {'words':
                                  [_r8_word_to_graphql(w) for w in rows]}})
@@ -2520,10 +2538,16 @@ def api_v2_graphql():
                 .filter(Word.is_thesaurus_phrase == False,  # noqa
                         Word.r7_domain != '')
                 .distinct().order_by(Word.r7_domain.asc()).all()]
+        specs = [s for (s,) in db.session.query(Word.r9_specialty)
+                 .filter(Word.is_thesaurus_phrase == False,  # noqa
+                         Word.r9_specialty != '')
+                 .distinct().order_by(Word.r9_specialty.asc()).all()]
         return jsonify({'data': {'stats': {
             'totalWords': n,
             'registers': regs,
             'domains': doms,
+            'specialties': specs,
+            'release': R9_RELEASE_TAG,
         }}})
 
     return jsonify({
@@ -2626,6 +2650,340 @@ def r8_tour():
                            shortcuts=R8_SHORTCUTS,
                            release=R8_RELEASE_TAG,
                            snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+# ---------------------------------------------------------------------------
+# R9 — technical-specialty surfaces
+#
+# Adds /dictionary/specialty/<spec>, /game/pronunciation-streak,
+# /vocab-builder + SRS decks, /blog/<slug>/comments,
+# /contribute/suggest-word, /dialect/<slug>/history, /ielts/mock-test.
+#
+# Every surface is byte-deterministic — derived from MIRROR_REFERENCE_DATE
+# and slug hashes so /reset stays byte-id and the response can be asserted
+# from tasks word-for-word.
+# ---------------------------------------------------------------------------
+
+R9_RELEASE_TAG = 'r9'
+R9_SPECIALTIES = ('programming', 'finance', 'medicine')
+R9_SPECIALTY_LABEL = {
+    'programming': 'Programming',
+    'finance': 'Finance',
+    'medicine': 'Medicine',
+}
+R9_SPECIALTY_BLURB = {
+    'programming': ('Software-engineering vocabulary — language keywords, '
+                    'API patterns, compiler / OS / network terms.'),
+    'finance': ('Capital-markets vocabulary — derivatives, fixed-income, '
+                'banking, audit, tax and risk terms.'),
+    'medicine': ('Medical vocabulary — anatomy, clinical pharmacology, '
+                 'cardiology, neurology and public-health terms.'),
+}
+
+
+def _r9_h(*parts):
+    return int.from_bytes(hashlib.md5(
+        '|'.join(str(p) for p in parts).encode()).digest()[:4], 'big')
+
+
+@app.route('/dictionary/specialty/<spec>')
+def dictionary_specialty(spec):
+    """R9 specialty-index page — alphabetical listing of all words tagged
+    with the given technical specialty."""
+    if spec not in R9_SPECIALTIES:
+        abort(404)
+    page = max(1, int(request.args.get('page', 1) or 1))
+    per_page = 60
+    base_q = (Word.query
+              .filter(Word.is_thesaurus_phrase == False,  # noqa
+                      Word.r9_specialty == spec)
+              .order_by(Word.headword.asc()))
+    total = base_q.count()
+    words = base_q.offset((page - 1) * per_page).limit(per_page).all()
+    return render_template('specialty_index.html',
+                           spec=spec,
+                           label=R9_SPECIALTY_LABEL[spec],
+                           blurb=R9_SPECIALTY_BLURB[spec],
+                           total=total, page=page,
+                           per_page=per_page, words=words)
+
+
+@app.route('/game/pronunciation-streak')
+@app.route('/game/pronunciation-streak/')
+def game_pronunciation_streak():
+    """R9 pronunciation game — deterministic streak/leaderboard derived
+    from MIRROR_REFERENCE_DATE so two calls return byte-id HTML."""
+    snapshot = MIRROR_REFERENCE_DATE.date().isoformat()
+    # 7-word deck for today, seeded by snapshot date.
+    pool = (Word.query.filter(Word.is_thesaurus_phrase == False,  # noqa
+                              Word.level.in_(['B2', 'C1']))
+            .order_by(Word.headword.asc()).limit(2000).all())
+    if not pool:
+        deck = []
+    else:
+        idxs = sorted({_r9_h('pstreak', snapshot, i) % len(pool)
+                       for i in range(20)})[:7]
+        deck = [pool[i] for i in idxs]
+    # Leaderboard — 10 deterministic players keyed off snapshot.
+    names = ['ada', 'turing', 'hopper', 'knuth', 'ritchie',
+             'lovelace', 'codd', 'dijkstra', 'liskov', 'gosling']
+    leaderboard = []
+    for i, n in enumerate(names):
+        score = 100 + _r9_h('pstreak_lb', snapshot, n) % 400
+        streak = 3 + _r9_h('pstreak_st', snapshot, n) % 20
+        leaderboard.append({'rank': i + 1, 'name': n,
+                            'score': score, 'streak': streak})
+    leaderboard.sort(key=lambda r: (-r['score'], r['name']))
+    for i, r in enumerate(leaderboard):
+        r['rank'] = i + 1
+    return render_template('game_pronunciation_streak.html',
+                           deck=deck,
+                           leaderboard=leaderboard,
+                           snapshot=snapshot,
+                           release=R9_RELEASE_TAG)
+
+
+# Deterministic SRS deck catalog. Decks are derived from the highest-
+# frequency C1 entries grouped by leading letter so re-seeds don't reorder.
+R9_VOCAB_DECKS = [
+    {'slug': 'c1-core-200', 'name': 'C1 Core 200', 'size': 200, 'level': 'C1'},
+    {'slug': 'b2-traveller', 'name': 'B2 Traveller', 'size': 150, 'level': 'B2'},
+    {'slug': 'ielts-academic', 'name': 'IELTS Academic', 'size': 250,
+     'level': 'C1'},
+    {'slug': 'toefl-essentials', 'name': 'TOEFL Essentials', 'size': 200,
+     'level': 'B2'},
+    {'slug': 'business-english', 'name': 'Business English', 'size': 180,
+     'level': 'B2'},
+    {'slug': 'medical-anatomy', 'name': 'Medical Anatomy', 'size': 220,
+     'level': 'C1'},
+    {'slug': 'finance-derivatives', 'name': 'Finance — Derivatives',
+     'size': 160, 'level': 'C2'},
+    {'slug': 'programming-foundations',
+     'name': 'Programming Foundations', 'size': 220, 'level': 'C1'},
+]
+
+
+def _r9_deck_words(deck_slug, size, level):
+    """Deterministic SRS card pool keyed off (deck_slug, snapshot)."""
+    pool = (Word.query.filter(Word.is_thesaurus_phrase == False,  # noqa
+                              Word.level == level)
+            .order_by(Word.headword.asc()).limit(2000).all())
+    if not pool:
+        return []
+    # Hash-sample N cards.
+    snap = MIRROR_REFERENCE_DATE.date().isoformat()
+    ranked = sorted(
+        pool, key=lambda w: (_r9_h('srs', deck_slug, snap, w.slug),
+                             w.slug))[:size]
+    return ranked
+
+
+@app.route('/vocab-builder')
+@app.route('/vocab-builder/')
+def vocab_builder_index():
+    decks = [dict(d) for d in R9_VOCAB_DECKS]
+    for d in decks:
+        d['url'] = url_for('vocab_builder_srs', deck=d['slug'])
+    return render_template('vocab_builder.html',
+                           decks=decks,
+                           release=R9_RELEASE_TAG,
+                           snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+@app.route('/vocab-builder/srs/<deck>')
+def vocab_builder_srs(deck):
+    spec = next((d for d in R9_VOCAB_DECKS if d['slug'] == deck), None)
+    if not spec:
+        abort(404)
+    words = _r9_deck_words(deck, spec['size'], spec['level'])
+    # Synthesize a 5-stage SRS schedule (Leitner-style boxes).
+    boxes = []
+    for i, w in enumerate(words[:60]):
+        box = 1 + _r9_h('box', deck, w.slug) % 5
+        days_to_next = (1, 2, 4, 7, 15)[box - 1]
+        boxes.append({'word': w, 'box': box, 'days_to_next': days_to_next})
+    counts_per_box = {b: sum(1 for x in boxes if x['box'] == b)
+                      for b in (1, 2, 3, 4, 5)}
+    return render_template('vocab_builder_srs.html',
+                           deck=spec, boxes=boxes,
+                           total_cards=len(words),
+                           counts_per_box=counts_per_box,
+                           release=R9_RELEASE_TAG,
+                           snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+# Deterministic blog-comment thread. Comments are seeded off (post_slug,
+# snapshot) so the rendered HTML is byte-id across reset.
+R9_BLOG_COMMENT_AUTHORS = [
+    'Linnea S.', 'Ade O.', 'Marek K.', 'Yuki T.', 'Priya N.',
+    'Hassan R.', 'Joana B.', 'Diego M.', 'Sasha P.', 'Femi A.',
+]
+
+
+def _r9_blog_comments(post_slug, n=8):
+    """Deterministic comment list for a given blog post slug."""
+    comments = []
+    for i in range(n):
+        author = R9_BLOG_COMMENT_AUTHORS[
+            _r9_h('cmt_author', post_slug, i)
+            % len(R9_BLOG_COMMENT_AUTHORS)]
+        # Body templates — one of three patterns picked by hash.
+        pat = _r9_h('cmt_pat', post_slug, i) % 3
+        if pat == 0:
+            body = (f'Great explanation — I had been confused about this '
+                    f'until I read your section on "{post_slug.replace("-", " ")}".')
+        elif pat == 1:
+            body = (f'Question: can you give one more example contrasting '
+                    f'this with the related entry? I keep mixing them up.')
+        else:
+            body = (f'Sharing this with my study group. The point about the '
+                    f'CEFR ladder was particularly useful.')
+        delta = 7 + i * 3
+        from datetime import timedelta as _td
+        posted = (MIRROR_REFERENCE_DATE - _td(days=delta)).date().isoformat()
+        comments.append({
+            'id': i + 1,
+            'author': author,
+            'body': body,
+            'posted_at': posted,
+            'upvotes': 1 + _r9_h('cmt_up', post_slug, i) % 20,
+        })
+    return comments
+
+
+@app.route('/blog/<post>/comments')
+@app.route('/blog/<post>/comments/')
+def blog_post_comments(post):
+    """R9 blog-comment thread. Renders a deterministic 8-comment thread
+    for any blog post slug — even slugs not in BLOG_POSTS get a synthetic
+    thread so tasks can address arbitrary posts."""
+    comments = _r9_blog_comments(post, n=8)
+    avg = sum(c['upvotes'] for c in comments) / max(1, len(comments))
+    return render_template('blog_comments.html',
+                           post_slug=post,
+                           comments=comments,
+                           total=len(comments),
+                           avg_upvotes=round(avg, 2),
+                           release=R9_RELEASE_TAG,
+                           snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+@csrf.exempt
+@app.route('/contribute/suggest-word', methods=['GET', 'POST'])
+def contribute_suggest_word():
+    """R9 contributor suggestion endpoint. GET renders the form; POST
+    returns a deterministic ack derived from the slug field."""
+    if request.method == 'GET':
+        return render_template('contribute_suggest_word.html',
+                               release=R9_RELEASE_TAG,
+                               snapshot=MIRROR_REFERENCE_DATE.date()
+                               .isoformat())
+    payload = request.get_json(silent=True) or request.form.to_dict()
+    headword = (payload.get('headword') or '').strip()
+    definition = (payload.get('definition') or '').strip()
+    submitter = (payload.get('submitter') or '').strip()
+    if not headword or not definition:
+        return jsonify({'accepted': False,
+                        'error': 'headword and definition are required'}), 400
+    tracking = 'sug-' + hashlib.md5(
+        f'{headword}|{submitter}|r9'.encode()).hexdigest()[:14]
+    return jsonify({
+        'accepted': True,
+        'release': R9_RELEASE_TAG,
+        'tracking_id': tracking,
+        'headword': headword,
+        'submitter': submitter,
+        'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        'queue_position': 1 + _r9_h('queue', headword) % 50,
+    }), 202
+
+
+@app.route('/dialect/<slug>/history')
+@app.route('/dialect/<slug>/history/')
+def dialect_history(slug):
+    """R9 dialect-history trace. Builds a deterministic 6-step timeline of
+    how the IPA for `slug` evolved from Old English / early Modern English
+    through to RP and General American."""
+    w = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+    if not w:
+        abort(404)
+    stages = [
+        ('Old English (c. 800 CE)', 'OE attestation'),
+        ('Middle English (c. 1300 CE)', 'Open syllable lengthening'),
+        ('Great Vowel Shift (1500–1700)', 'Long-vowel raising'),
+        ('Early Modern English (c. 1700)', 'Loss of post-vocalic r in RP'),
+        ('Received Pronunciation (1900–today)', 'RP form'),
+        ('General American (1900–today)', 'GA form'),
+    ]
+    history = []
+    for i, (era, note) in enumerate(stages):
+        # Deterministic synthetic IPA per stage.
+        salt = ('dialect_history', slug, i)
+        seed = _r9_h(*salt)
+        head = w.headword
+        ipa_chars = []
+        for j, ch in enumerate(head):
+            if ch in 'aeiou':
+                ipa_chars.append(
+                    ('ɑ', 'eː', 'iː', 'oː', 'uː', 'aː', 'eɪ')[
+                        (seed + j) % 7])
+            elif ch.isalpha():
+                ipa_chars.append(ch)
+            else:
+                ipa_chars.append(' ')
+        history.append({
+            'stage': i + 1,
+            'era': era,
+            'note': note,
+            'ipa': '/' + ''.join(ipa_chars) + '/',
+        })
+    return render_template('dialect_history.html',
+                           word=w, history=history,
+                           subdomain=w.r9_subdomain or '',
+                           specialty=w.r9_specialty or '',
+                           release=R9_RELEASE_TAG,
+                           snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+# Deterministic 30-question IELTS mock test, derived from MIRROR_REFERENCE_DATE.
+@app.route('/ielts/mock-test')
+@app.route('/ielts/mock-test/')
+def ielts_mock_test():
+    snap = MIRROR_REFERENCE_DATE.date().isoformat()
+    pool = (Word.query.filter(Word.is_thesaurus_phrase == False,  # noqa
+                              Word.level.in_(['B2', 'C1', 'C2']))
+            .order_by(Word.headword.asc()).limit(3000).all())
+    questions = []
+    if pool:
+        ranked = sorted(
+            pool, key=lambda w: (_r9_h('ielts', snap, w.slug), w.slug))[:30]
+        for i, w in enumerate(ranked):
+            # Distractors deterministically picked.
+            distractors = sorted(
+                [x for x in pool if x.slug != w.slug],
+                key=lambda x: _r9_h('ielts_d', snap, w.slug, x.slug))[:3]
+            options = [w] + distractors
+            options.sort(key=lambda x: _r9_h('ielts_opt', snap, w.slug,
+                                             x.slug))
+            answer_idx = next(j for j, x in enumerate(options)
+                              if x.slug == w.slug)
+            questions.append({
+                'n': i + 1,
+                'target': w,
+                'options': options,
+                'answer_letter': 'ABCD'[answer_idx],
+                'section': 'Listening' if i < 10 else
+                           'Reading' if i < 20 else 'Writing',
+            })
+    sections = {'Listening': 0, 'Reading': 0, 'Writing': 0}
+    for q in questions:
+        sections[q['section']] += 1
+    return render_template('ielts_mock_test.html',
+                           questions=questions,
+                           sections=sections,
+                           total=len(questions),
+                           release=R9_RELEASE_TAG,
+                           snapshot=snap)
 
 
 # ---------------------------------------------------------------------------
@@ -4363,6 +4721,49 @@ def seed_database():
                 dialect_us=wd.get('dialect_us', ''),
                 defined_term_id=wd.get('defined_term_id', ''),
                 r8_modern_equiv=wd.get('r8_modern_equiv', ''),
+            ))
+        # R9 expansion: ~10500 specialty-tagged entries (programming /
+        # finance / medicine). Each row carries ``r9_specialty`` and
+        # ``r9_subdomain``. Append-after-r8 so legacy ids stay stable.
+        extra8 = _load_json('words_r9.json') or []
+        for wd in extra8:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+                antonyms_json=_j(wd.get('antonyms', [])),
+                roots_json=_j(wd.get('roots', [])),
+                shared_coll_anchor=wd.get('shared_coll_anchor', ''),
+                r6_dict=wd.get('r6_dict', 'learner'),
+                r7_domain=wd.get('r7_domain', ''),
+                dialect_uk=wd.get('dialect_uk', ''),
+                dialect_us=wd.get('dialect_us', ''),
+                defined_term_id=wd.get('defined_term_id', ''),
+                r8_modern_equiv=wd.get('r8_modern_equiv', ''),
+                r9_specialty=wd.get('r9_specialty', ''),
+                r9_subdomain=wd.get('r9_subdomain', ''),
             ))
     else:
         # Fallback: inline curated lists.

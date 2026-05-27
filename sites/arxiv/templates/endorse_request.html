@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Request an endorsement — arXiv{% endblock %}
+{% block content %}
+
+<h1>Request an endorsement</h1>
+<p class="muted">
+    Submit an endorsement request for a single (user, subject class)
+    pair.  The issued code is deterministic — paste the same email and
+    subject class twice and the same <code>END-XXXXXXXXXX</code> token
+    comes back.
+</p>
+
+<form method="POST" action="{{ url_for('endorse_request') }}" class="dash-card">
+    <label for="er_email">Your registered email</label>
+    <input type="email" id="er_email" name="email" value="{{ email }}"
+           placeholder="you@institution.edu" required>
+
+    <label for="er_subject_class">Subject class</label>
+    <select id="er_subject_class" name="subject_class" required>
+        <option value="">-- choose a class --</option>
+        {% for c in classes %}
+        <option value="{{ c }}" {% if c == subject_class %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="er_note">Note to endorser (optional, &lt;200 chars)</label>
+    <input type="text" id="er_note" name="note" value="{{ note }}"
+           placeholder="A short message accompanying the request">
+
+    <button type="submit">Issue endorsement code</button>
+</form>
+
+{% if code %}
+<div class="dash-card">
+    <h2>Endorsement code</h2>
+    <p><code id="endorsement-code" style="user-select:all;background:#f4f4f4;padding:4px 8px;">{{ code }}</code></p>
+    <table class="data">
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Email</td><td><code>{{ email }}</code></td></tr>
+        <tr><td>Subject class</td><td><code>{{ subject_class }}</code></td></tr>
+        <tr><td>Valid from</td><td>{{ valid_from }}</td></tr>
+        <tr><td>Valid until</td><td>{{ valid_until }}</td></tr>
+    </table>
+    <p class="muted">
+        Paste this code into the submission wizard at
+        <a href="{{ url_for('submit_wizard_step', step='metadata') }}">/submit/metadata</a>.
+    </p>
+</div>
+{% endif %}
+
+<p class="muted">
+    Back to <a href="{{ url_for('endorsements_index') }}">/endorsements</a>.
+</p>
+
+{% endblock %}

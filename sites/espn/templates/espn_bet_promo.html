@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}ESPN BET Promo Codes{% endblock %}
+{% block content %}
+<div class="container" data-r9-page="espn-bet-promo">
+  <header class="page-header">
+    <h1>ESPN BET Promo Codes</h1>
+    <p class="page-header__sub">Active and recently expired ESPN BET promo codes. Each row is read-only; click a code to view its full terms at <code>/espn-bet/promo/&lt;CODE&gt;</code>.</p>
+  </header>
+
+  <table class="data-table" id="r9-promo-table">
+    <thead>
+      <tr>
+        <th scope="col">Code</th>
+        <th scope="col">Title</th>
+        <th scope="col">Sport</th>
+        <th scope="col">Status</th>
+        <th scope="col">Opens</th>
+        <th scope="col">Closes</th>
+        <th scope="col">Max payout</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in codes %}
+      <tr data-r9-promo-code="{{ c.code }}" data-r9-promo-status="{{ c.status }}">
+        <td><a href="/espn-bet/promo/{{ c.code }}"><code>{{ c.code }}</code></a></td>
+        <td>{{ c.title }}</td>
+        <td>{{ c.sport }}</td>
+        <td>
+          {% if c.status == 'live' %}<span class="badge badge--ok">LIVE</span>
+          {% else %}<span class="badge badge--muted">{{ c.status|upper }}</span>{% endif %}
+        </td>
+        <td>{{ c.opens_on }}</td>
+        <td>{{ c.closes_on }}</td>
+        <td>${{ c.max_payout }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

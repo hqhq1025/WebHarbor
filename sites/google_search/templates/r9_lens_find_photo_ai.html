@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Lens - find by photo (AI explanation){% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">Lens - find by photo</h1>
+  <p class="muted">
+    Step-by-step explanation of what Google Lens does for each supported
+    photo-recognition task. Pure read-only - no camera permissions required.
+  </p>
+
+  {% if one %}
+  <article style="border: 1px solid #dadce0; border-radius: 12px; padding: 18px; margin: 16px 0; background: #f8f9fa;">
+    <h2 style="font-size: 20px; margin: 0 0 4px;">{{ one.label }}</h2>
+    <p class="muted" style="margin: 0 0 12px; font-size: 12px;">tag: <code>{{ one.tag }}</code></p>
+    <p><strong>How it works:</strong> {{ one.how }}</p>
+    <p><strong>Confidence hint:</strong> {{ one.confidence_hint }}</p>
+    <p style="margin: 0;">
+      <a href="/lens/find-photo-ai">- back to all photo tasks</a>
+    </p>
+  </article>
+  {% endif %}
+
+  <div style="border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+    {% for it in items %}
+    <a href="/lens/find-photo-ai/{{ it.tag }}"
+       style="display: block; padding: 14px; border-bottom: 1px solid #f1f3f4;
+              text-decoration: none; color: inherit;">
+      <strong>{{ it.label }}</strong>
+      <span class="muted" style="font-size: 12px; margin-left: 6px;"><code>{{ it.tag }}</code></span>
+      <div style="font-size: 13px; color: #444;">{{ it.how[:160] }}{% if it.how|length > 160 %}...{% endif %}</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

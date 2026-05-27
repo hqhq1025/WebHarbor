@@ -3,6 +3,7 @@
 import os
 import json
 import re
+import hashlib
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -2357,6 +2358,214 @@ def help_keyboard():
         ('Esc', 'Close any open dialog or palette.'),
     ]
     return render_template('help_keyboard.html', shortcuts=shortcuts)
+
+
+# ─── R9 Routes: promo codes, DRM, fantasy commissioner, NIL, 247 board ───────
+
+R9_PROMO_CODES = [
+    ('SIGNUP100', 'New-user $100 bet credit',
+     'Place your first $10 bet; receive $100 in bet credits.',
+     'live', 'all', '2026-06-01', '2027-12-31', 100, 10),
+    ('NBARESET', 'NBA 2026-27 reset boost',
+     '20% odds boost on any NBA spread or moneyline.',
+     'live', 'nba', '2026-10-01', '2027-04-15', 50, 5),
+    ('MVP25', 'MVP futures boost',
+     '+25% on any MVP futures wager up to $25.',
+     'live', 'nba', '2026-11-01', '2027-04-15', 25, 5),
+    ('NFLKICKOFF', 'NFL kickoff bet match',
+     'Bet $50, get $250 in bet credits for week 1.',
+     'live', 'nfl', '2026-09-01', '2026-09-15', 250, 50),
+    ('CFB_PARLAY', 'CFB parlay insurance',
+     '4-leg parlay loss refund up to $25.',
+     'live', 'ncaaf', '2026-08-25', '2027-01-15', 25, 10),
+    ('MLB_OPENER', 'MLB opener cash-back',
+     '$50 back if your first opener bet loses.',
+     'expired', 'mlb', '2026-03-25', '2026-04-05', 50, 10),
+    ('NHL_PLAYOFF', 'NHL playoff boost',
+     '15% odds boost on any conference final wager.',
+     'live', 'nhl', '2027-04-20', '2027-06-20', 50, 5),
+    ('SOCCER_UCL', 'UCL knockout boost',
+     'Odds boost on any UEFA Champions League knockout-round wager.',
+     'live', 'soccer', '2027-02-01', '2027-06-01', 50, 5),
+    ('NIL_REPORT', 'NIL-disclosure promo',
+     'Free $5 bet for users who view the NIL tracker.',
+     'live', 'ncaaf', '2026-09-01', '2027-01-15', 5, 0),
+    ('OLDLINK', 'Legacy promo (expired)',
+     'Legacy R8 carry-over — no longer redeemable.',
+     'expired', 'all', '2024-01-01', '2024-12-31', 0, 0),
+]
+
+
+@app.route('/espn-bet/promo')
+@app.route('/espn-bet/promo/')
+def espn_bet_promo_index():
+    """ESPN BET promo-code registry — read-only landing page."""
+    codes = []
+    for code, title, terms, status, sport, opens, closes, payout, stake in \
+            R9_PROMO_CODES:
+        codes.append({
+            'code': code, 'title': title, 'terms': terms,
+            'status': status, 'sport': sport,
+            'opens_on': opens, 'closes_on': closes,
+            'max_payout': payout, 'min_stake': stake,
+        })
+    return render_template('espn_bet_promo.html', codes=codes)
+
+
+@app.route('/espn-bet/promo/<code>')
+def espn_bet_promo_detail(code):
+    code_upper = code.upper()
+    for row in R9_PROMO_CODES:
+        if row[0] == code_upper:
+            return render_template('espn_bet_promo_detail.html', promo={
+                'code': row[0], 'title': row[1], 'terms': row[2],
+                'status': row[3], 'sport': row[4],
+                'opens_on': row[5], 'closes_on': row[6],
+                'max_payout': row[7], 'min_stake': row[8],
+            })
+    abort(404)
+
+
+@app.route('/watch/live/<event>/drm')
+def watch_live_drm(event):
+    """Live-stream DRM region notes for a given watchable event slug."""
+    show = Watchable.query.filter_by(slug=event).first_or_404()
+    digest = hashlib.sha1(event.encode()).hexdigest()
+    # Deterministic region/DRM matrix from slug hash.
+    all_regions = ['US-East', 'US-West', 'US-Central', 'Canada', 'UK', 'EU',
+                   'LATAM', 'Asia-Pacific']
+    region_count = 4 + int(digest[0], 16) % 5
+    regions = [{
+        'region': r,
+        'allowed': (int(digest[i % len(digest)], 16) % 4) != 0,
+        'drm': ['Widevine L1', 'PlayReady SL3000',
+                'FairPlay'][(int(digest[(i + 1) % len(digest)], 16)) % 3],
+    } for i, r in enumerate(all_regions[:region_count])]
+    return render_template('watch_live_drm.html',
+                           show=show, regions=regions,
+                           entitlement='ESPN+',
+                           manifest_url=f'/static/manifest/{event}.mpd',
+                           drm_widevine_url='https://license.example.com/wv',
+                           drm_playready_url='https://license.example.com/pr',
+                           drm_fairplay_url='https://license.example.com/fp')
+
+
+@app.route('/fantasy/league/<league_id>/commissioner')
+def fantasy_league_commissioner(league_id):
+    """Fantasy league commissioner tools — read-only stub page.
+
+    The league id can be either an integer or a slug ('alice-and-bob-league').
+    Output is deterministic from the id."""
+    digest = hashlib.sha1(str(league_id).encode()).hexdigest()
+    name = f'League #{league_id}'
+    tools = [
+        {'key': 'lineup-veto',
+         'label': 'Lineup veto controls',
+         'description': 'Override a manager lineup before lock time.'},
+        {'key': 'scoring-overrides',
+         'label': 'Custom scoring overrides',
+         'description': 'Adjust season-long scoring weights.'},
+        {'key': 'playoff-bracket',
+         'label': 'Manual playoff bracket',
+         'description': 'Force a playoff seeding outside the formula.'},
+        {'key': 'trade-freeze',
+         'label': 'Trade deadline freeze',
+         'description': 'Lock all rosters at the deadline minute.'},
+        {'key': 'transaction-log',
+         'label': 'Transaction audit log',
+         'description': 'Read-only history of every roster action.'},
+    ]
+    stats = {
+        'members': 4 + int(digest[0], 16) % 9,
+        'open_trades': int(digest[1], 16) % 4,
+        'pending_vetoes': int(digest[2], 16) % 3,
+        'commissioner_email': 'alice.j@test.com',
+    }
+    return render_template('fantasy_commissioner.html',
+                           league_id=league_id, league_name=name,
+                           tools=tools, stats=stats)
+
+
+@app.route('/fantasy/trade/<trade_id>/veto-vote')
+def fantasy_trade_veto_vote(trade_id):
+    """Trade-veto vote screen — read-only summary of a pending vote."""
+    digest = hashlib.sha1(str(trade_id).encode()).hexdigest()
+    yes = 1 + int(digest[0], 16) % 8
+    no = 1 + int(digest[1], 16) % 8
+    abstain = int(digest[2], 16) % 4
+    total = yes + no + abstain
+    deadline_hours = 1 + int(digest[3], 16) % 24
+    quorum_met = (yes + no) > total // 2
+    return render_template('fantasy_veto_vote.html',
+                           trade_id=trade_id,
+                           yes=yes, no=no, abstain=abstain, total=total,
+                           deadline_hours=deadline_hours,
+                           quorum_met=quorum_met,
+                           commissioner_override_available=True)
+
+
+@app.route('/recruiting/247-board')
+@app.route('/recruiting/247-board/')
+def recruiting_247_board():
+    """Cross-sport 247 composite board with flip-risk annotations."""
+    sport_filter = request.args.get('sport', '').strip()
+    q = Recruit.query
+    if sport_filter:
+        q = q.filter_by(sport_slug=sport_filter)
+    recruits = q.order_by(Recruit.rank).all()
+    annotated = []
+    for r in recruits:
+        digest = hashlib.sha1((r.name or '').encode()).hexdigest()
+        flip_risk = ['low', 'medium', 'high'][int(digest[0], 16) % 3]
+        oos_visits = int(digest[1], 16) % 4
+        annotated.append({
+            'recruit': r,
+            'flip_risk': flip_risk,
+            'oos_visits': oos_visits,
+            'last_update_days_ago': int(digest[2], 16) % 14,
+        })
+    return render_template('recruiting_247_board.html',
+                           board=annotated,
+                           sport_filter=sport_filter)
+
+
+@app.route('/nil/tracker')
+@app.route('/nil/tracker/')
+def nil_tracker():
+    """NIL deals tracker — deterministic dollar amounts derived from recruits."""
+    sport_filter = request.args.get('sport', '').strip()
+    q = Recruit.query
+    if sport_filter:
+        q = q.filter_by(sport_slug=sport_filter)
+    recruits = q.order_by(Recruit.rank).limit(120).all()
+    deals = []
+    collectives = ['One More Year Collective', 'Burnt Orange NIL',
+                   'Yea Alabama', 'OSU NIL Fund', 'Bayou Traditions',
+                   'Champions Circle', 'Crimson NIL Society',
+                   'On3 NIL Collective', 'Dawgs of a Feather',
+                   'Friends of the U']
+    for r in recruits:
+        digest = hashlib.sha1(('nil-' + (r.name or '')).encode()).hexdigest()
+        amount = 25000 + int(digest[:6], 16) % 4_975_000  # $25k - $5M
+        collective = collectives[int(digest[6], 16) % len(collectives)]
+        disclosed = int(digest[7], 16) % 2 == 0
+        deals.append({
+            'recruit': r,
+            'amount_usd': amount,
+            'amount_label': f'${amount:,}',
+            'collective': collective,
+            'disclosed': disclosed,
+            'school': r.committed_to,
+            'season': r.season or '2026-27',
+        })
+    deals.sort(key=lambda d: -d['amount_usd'])
+    totals = {
+        'count': len(deals),
+        'sum_usd': sum(d['amount_usd'] for d in deals),
+        'disclosed_count': sum(1 for d in deals if d['disclosed']),
+    }
+    return render_template('nil_tracker.html', deals=deals,
+                           totals=totals, sport_filter=sport_filter)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────

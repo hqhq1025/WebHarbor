@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Comments — {{ post_slug }} — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container blog-comments" data-post="{{ post_slug }}" data-release="{{ release }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('blog_index') }}">Blog</a> &raquo;
+    <a href="{{ url_for('blog_post', slug=post_slug) }}">{{ post_slug }}</a> &raquo;
+    <span>Comments</span>
+  </nav>
+  <h1>Comments on <em>{{ post_slug }}</em></h1>
+  <p class="thread-meta">
+    {{ total }} comments &middot; average upvotes {{ avg_upvotes }}
+    &middot; snapshot {{ snapshot }}
+  </p>
+  <ol class="comment-thread">
+    {% for c in comments %}
+      <li class="comment" data-id="{{ c.id }}">
+        <div class="cmt-head">
+          <span class="cmt-author">{{ c.author }}</span>
+          <span class="cmt-date">{{ c.posted_at }}</span>
+          <span class="cmt-up">&uarr; {{ c.upvotes }}</span>
+        </div>
+        <p class="cmt-body">{{ c.body }}</p>
+      </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

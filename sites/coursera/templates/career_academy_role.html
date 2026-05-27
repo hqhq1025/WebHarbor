@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ role_name }} | Coursera Career Academy{% endblock %}
+{% block content %}
+<div class="academy-role" id="main-content" style="max-width:1200px;margin:32px auto;padding:0 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:16px;">
+    <a href="{{ url_for('career_academy_index') }}" style="color:#0056D2;">Career Academy</a> &rsaquo; <span>{{ role_name }}</span>
+  </nav>
+  <header style="background:linear-gradient(135deg,#0056D2 0%,#0048B0 100%);color:#fff;padding:36px;border-radius:14px;margin-bottom:24px;">
+    <div style="font-size:12px;letter-spacing:.6px;font-weight:800;opacity:.9;">CAREER ACADEMY ROLE</div>
+    <h1 style="font-size:32px;margin:8px 0 12px;letter-spacing:-.5px;">{{ role_name }}</h1>
+    <div style="font-size:14px;opacity:.95;">{{ courses|length }} 2026 courses &middot; Primary skill: {{ primary }} &middot; Track: {{ category }}</div>
+  </header>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;">
+    {% for c in courses %}
+    <a href="{{ url_for('course_detail', slug=c.slug) }}" style="display:block;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;">
+      <div style="font-size:11px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;">{{ c.course_type }} &middot; {{ c.level }}</div>
+      <div style="font-size:17px;font-weight:700;margin:6px 0 8px;line-height:1.3;">{{ c.title }}</div>
+      <div style="color:#5B6780;font-size:13px;">{{ c.duration_text }} &middot; {{ '%.1f'|format(c.rating or 0) }}&#9733; ({{ c.review_count }})</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

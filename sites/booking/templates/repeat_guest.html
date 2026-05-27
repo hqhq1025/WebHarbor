@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Repeat guest discount — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Repeat guest discount</h1>
+    <p class="page-subtitle">Returning to a property you've already stayed at? We'll knock <strong>{{ cfg.discount_pct }}%</strong> off the public rate.</p>
+
+    <div class="pd-section">
+        <h2>How it qualifies</h2>
+        <ul>
+            <li>Your previous stay must be at the <strong>same property</strong>.</li>
+            <li>The previous stay must be at least <strong>{{ cfg.min_previous_nights }} consecutive nights</strong>.</li>
+            <li>The repeat booking must be made within <strong>{{ cfg.eligibility_window_months }} months</strong> of the prior check-out.</li>
+            <li>{% if cfg.stacks_with_genius %}The discount <strong>stacks</strong> with Genius rewards.{% else %}The discount does <strong>not</strong> stack with Genius rewards.{% endif %}</li>
+        </ul>
+    </div>
+
+    {% if personalised_property %}
+    <div class="pd-section">
+        <h2>You're eligible at:</h2>
+        <p><strong>{{ personalised_property.name }}</strong></p>
+        <p>{{ cfg.discount_pct }}% off shown at checkout when you re-book this property.</p>
+    </div>
+    {% endif %}
+
+    <p><a class="btn btn-secondary" href="/account/bookings">My eligible properties</a></p>
+
+    <div class="pd-section">
+        <h2>FAQ</h2>
+        <p><strong>Does this stack with Genius?</strong> {% if cfg.stacks_with_genius %}Yes — both discounts apply.{% else %}No — the larger of the two applies.{% endif %}</p>
+        <p><strong>Is the discount automatic?</strong> Yes, as long as you're signed in to the same account that completed the prior stay.</p>
+    </div>
+</div>
+{% endblock %}

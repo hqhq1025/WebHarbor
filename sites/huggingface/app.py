@@ -5218,6 +5218,12 @@ def api_command_palette():
         ("Healthz", "/healthz", "page"),
         ("Uptime", "/api/uptime", "page"),
         ("Events", "/api/events", "page"),
+        ("GGUF quant compare", "/tools/gguf-quant-compare", "page"),
+        ("Safetensors check", "/tools/safetensors-check", "page"),
+        ("Model merge", "/model-merge", "page"),
+        ("ZeroGPU quota", "/spaces/zerogpu-quota", "page"),
+        ("Papers · Daily vote", "/papers/daily-vote", "page"),
+        ("AutoTrain configs", "/autotrain/config/llama-3-8b-sft-alpaca", "page"),
     ]
     for label, url, kind in nav:
         if not q or q in label.lower() or q in url.lower():
@@ -5246,6 +5252,478 @@ def api_command_palette():
         })
     payload = {"count": len(items), "items": items[:40]}
     return Response(json.dumps(payload), mimetype="application/json")
+
+
+# ============================================================================
+# R9 — AutoTrain config / GGUF quant compare / safetensors check /
+# model-merge / Spaces ZeroGPU quota / papers Daily vote
+# ============================================================================
+import hashlib as _r9_hashlib
+from flask import render_template_string as _r9_render_template_string
+
+_R9_PAGE_WRAP = """{% extends "base.html" %}
+{% block title %}{{ page_title }} · Hugging Face{% endblock %}
+{% block content %}
+<div class="container-wide" style="max-width:980px;padding:32px 24px;">
+{{ body|safe }}
+</div>
+{% endblock %}
+"""
+
+
+def _r9_render(title, body_html):
+    return _r9_render_template_string(_R9_PAGE_WRAP, page_title=title, body=body_html)
+
+
+# --- 1) AutoTrain job config -------------------------------------------------
+_R9_AUTOTRAIN_JOBS = {
+    "llama-3-8b-sft-alpaca": {
+        "base_model": "meta-llama/Llama-3.3-70B-Instruct",
+        "task": "text-generation",
+        "trainer": "sft",
+        "dataset": "tatsu-lab/alpaca",
+        "hardware": "a100-large",
+        "epochs": 3, "lr": 2e-5, "batch_size": 4, "grad_accum": 16,
+        "lora_r": 16, "lora_alpha": 32, "use_peft": True,
+    },
+    "whisper-fr-finetune": {
+        "base_model": "openai/whisper-large-v3",
+        "task": "automatic-speech-recognition",
+        "trainer": "asr",
+        "dataset": "mozilla-foundation/common_voice_17_0",
+        "hardware": "a10g-large",
+        "epochs": 5, "lr": 1e-5, "batch_size": 8, "grad_accum": 2,
+        "lora_r": 8, "lora_alpha": 16, "use_peft": False,
+    },
+    "gemma-2-9b-dpo": {
+        "base_model": "google/gemma-2-9b-it",
+        "task": "text-generation",
+        "trainer": "dpo",
+        "dataset": "HuggingFaceH4/ultrachat_200k",
+        "hardware": "a100-large",
+        "epochs": 1, "lr": 5e-7, "batch_size": 2, "grad_accum": 32,
+        "lora_r": 32, "lora_alpha": 64, "use_peft": True,
+    },
+    "qwen-2-5-vl-vqa": {
+        "base_model": "Qwen/Qwen2.5-72B-Instruct",
+        "task": "visual-question-answering",
+        "trainer": "vision-sft",
+        "dataset": "HuggingFaceFW/fineweb",
+        "hardware": "a100-large",
+        "epochs": 2, "lr": 1e-5, "batch_size": 1, "grad_accum": 64,
+        "lora_r": 16, "lora_alpha": 32, "use_peft": True,
+    },
+    "deepseek-v3-orpo": {
+        "base_model": "deepseek-ai/DeepSeek-V3",
+        "task": "text-generation",
+        "trainer": "orpo",
+        "dataset": "lmsys/lmsys-chat-1m",
+        "hardware": "a100-large",
+        "epochs": 1, "lr": 5e-6, "batch_size": 1, "grad_accum": 128,
+        "lora_r": 64, "lora_alpha": 128, "use_peft": True,
+    },
+    "bge-large-en-finetune": {
+        "base_model": "BAAI/bge-large-en-v1.5",
+        "task": "feature-extraction",
+        "trainer": "embedding",
+        "dataset": "sentence-transformers/all-nli",
+        "hardware": "t4-medium",
+        "epochs": 4, "lr": 2e-5, "batch_size": 32, "grad_accum": 1,
+        "lora_r": 0, "lora_alpha": 0, "use_peft": False,
+    },
+}
+
+
+@app.route("/autotrain/config/<job>")
+def autotrain_config(job):
+    cfg = _R9_AUTOTRAIN_JOBS.get(job)
+    if not cfg:
+        # Render the index of known jobs (200, listing) — easier for agents.
+        rows = []
+        for slug, c in sorted(_R9_AUTOTRAIN_JOBS.items()):
+            rows.append(
+                f'<li><a href="/autotrain/config/{slug}"><code>{slug}</code></a> '
+                f'— {c["task"]} via {c["trainer"]}</li>'
+            )
+        body = (
+            f"<h1>AutoTrain · job configs</h1>"
+            f"<p class='text-muted'>No job named <code>{_html_mod.escape(job)}</code>. "
+            f"Pick one of the {len(_R9_AUTOTRAIN_JOBS)} known job slugs:</p>"
+            f"<ul style='line-height:1.9;'>{''.join(rows)}</ul>"
+        )
+        return _r9_render("AutoTrain · job not found", body)
+    yaml = (
+        f"# AutoTrain job: {job}\n"
+        f"job_name: {job}\n"
+        f"task: {cfg['task']}\n"
+        f"trainer: {cfg['trainer']}\n"
+        f"base_model: {cfg['base_model']}\n"
+        f"dataset: {cfg['dataset']}\n"
+        f"hardware: {cfg['hardware']}\n"
+        f"hyperparameters:\n"
+        f"  epochs: {cfg['epochs']}\n"
+        f"  learning_rate: {cfg['lr']}\n"
+        f"  batch_size: {cfg['batch_size']}\n"
+        f"  gradient_accumulation: {cfg['grad_accum']}\n"
+        f"peft:\n"
+        f"  enabled: {str(cfg['use_peft']).lower()}\n"
+        f"  lora_r: {cfg['lora_r']}\n"
+        f"  lora_alpha: {cfg['lora_alpha']}\n"
+    )
+    body = (
+        f"<h1 style='font-size:32px;margin:0 0 8px;'>AutoTrain · <code>{_html_mod.escape(job)}</code></h1>"
+        f"<p class='text-muted' style='margin:0 0 16px;'>Job config for AutoTrain. Copy the YAML and submit it via the AutoTrain CLI.</p>"
+        f"<dl style='display:grid;grid-template-columns:160px 1fr;gap:8px 16px;margin:0 0 24px;'>"
+        f"<dt><b>Base model</b></dt><dd data-field='base_model'><a href='/{cfg['base_model']}'><code>{cfg['base_model']}</code></a></dd>"
+        f"<dt><b>Trainer</b></dt><dd data-field='trainer'>{cfg['trainer']}</dd>"
+        f"<dt><b>Dataset</b></dt><dd data-field='dataset'><a href='/datasets/{cfg['dataset']}'><code>{cfg['dataset']}</code></a></dd>"
+        f"<dt><b>Hardware</b></dt><dd data-field='hardware'>{cfg['hardware']}</dd>"
+        f"<dt><b>PEFT</b></dt><dd data-field='use_peft'>{str(cfg['use_peft']).lower()}</dd>"
+        f"</dl>"
+        f"<h2>Generated YAML</h2>"
+        f"<pre style='background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;overflow:auto;'>{_html_mod.escape(yaml)}</pre>"
+        f"<p><a href='/autotrain'>← back to AutoTrain</a></p>"
+    )
+    return _r9_render(f"AutoTrain · {job}", body)
+
+
+# --- 2) GGUF quant comparison ------------------------------------------------
+_R9_GGUF_QUANTS = [
+    # (level, bits/weight, size_ratio, ppl_delta, recommend)
+    ("Q2_K",   2.625, 0.27, "+1.50", "Last-resort, mobile only"),
+    ("Q3_K_S", 3.05,  0.32, "+0.62", "Squeeze for laptops"),
+    ("Q3_K_M", 3.30,  0.34, "+0.40", "Good 4-8GB tradeoff"),
+    ("Q3_K_L", 3.55,  0.37, "+0.30", "Slightly better than Q3_K_M"),
+    ("Q4_0",   4.00,  0.42, "+0.20", "Legacy quant, lower quality than K-quants"),
+    ("Q4_K_S", 4.20,  0.44, "+0.12", "Tighter than Q4_K_M"),
+    ("Q4_K_M", 4.40,  0.46, "+0.08", "Recommended default"),
+    ("Q5_0",   5.00,  0.51, "+0.06", "Legacy; prefer Q5_K_M"),
+    ("Q5_K_S", 5.25,  0.53, "+0.04", "Slightly larger Q4_K_M"),
+    ("Q5_K_M", 5.45,  0.55, "+0.03", "Recommended for 16GB+"),
+    ("Q6_K",   6.30,  0.65, "+0.01", "Near-lossless"),
+    ("Q8_0",   8.00,  0.85, "+0.00", "Practically lossless"),
+    ("f16",   16.00,  1.00, "+0.00", "Original half-precision"),
+]
+
+
+@app.route("/tools/gguf-quant-compare")
+def tools_gguf_quant_compare():
+    slug = (request.args.get("slug") or "meta-llama/Llama-3.3-70B-Instruct").strip()
+    repo = Repository.query.filter_by(slug=slug, repo_type="model").first()
+    # Estimate the f16 file size from params (B params * 2 bytes/weight).
+    params_b = float(repo.params_b) if (repo and repo.params_b) else 8.0
+    base_gb = params_b * 2.0
+    rows_html = []
+    for lvl, bpw, ratio, ppl, note in _R9_GGUF_QUANTS:
+        size_gb = round(base_gb * ratio, 2)
+        rows_html.append(
+            f"<tr data-quant='{lvl}'>"
+            f"<td><code>{lvl}</code></td>"
+            f"<td style='text-align:right;'>{bpw:.2f}</td>"
+            f"<td style='text-align:right;'>{size_gb} GB</td>"
+            f"<td style='text-align:right;'>{ppl}</td>"
+            f"<td>{_html_mod.escape(note)}</td>"
+            f"</tr>"
+        )
+    suggested = (Repository.query.filter(Repository.repo_type == "model")
+                 .filter(Repository.params_b > 0)
+                 .order_by(Repository.downloads.desc()).limit(8).all())
+    sug_html = " · ".join(
+        f"<a href='/tools/gguf-quant-compare?slug={r.slug}'><code>{r.slug}</code></a>"
+        for r in suggested
+    )
+    body = (
+        f"<h1 style='font-size:32px;margin:0 0 8px;'>GGUF quant comparison</h1>"
+        f"<p class='text-muted' style='margin:0 0 16px;'>Estimated file sizes and perplexity-delta for each GGUF quant level. "
+        f"Sizes assume the base model is <b>{params_b:.1f}B</b> parameters at fp16.</p>"
+        f"<form method='get' style='margin:0 0 24px;display:flex;gap:8px;'>"
+        f"<input type='text' name='slug' value='{_html_mod.escape(slug)}' "
+        f"style='flex:1;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-family:ui-monospace,Menlo,monospace;'>"
+        f"<button type='submit' class='btn btn-primary' style='padding:8px 18px;'>Re-estimate</button>"
+        f"</form>"
+        f"<table data-tool='gguf-quant-compare' style='width:100%;border-collapse:collapse;'>"
+        f"<thead><tr style='border-bottom:2px solid #e5e7eb;text-align:left;'>"
+        f"<th>Quant</th><th style='text-align:right;'>bpw</th><th style='text-align:right;'>Size</th>"
+        f"<th style='text-align:right;'>Δppl</th><th>Recommendation</th></tr></thead>"
+        f"<tbody>{''.join(rows_html)}</tbody></table>"
+        f"<p style='margin-top:24px;'><b>Other base models:</b> {sug_html}</p>"
+    )
+    return _r9_render("GGUF quant compare", body)
+
+
+# --- 3) Safetensors format check --------------------------------------------
+@app.route("/tools/safetensors-check", methods=["GET", "POST"])
+@csrf.exempt
+def tools_safetensors_check():
+    filename = (request.values.get("filename") or "").strip()
+    verdict = None
+    warning = None
+    safe = False
+    fmt = "unknown"
+    if filename:
+        fl = filename.lower()
+        if fl.endswith(".safetensors"):
+            fmt = "safetensors"
+            verdict = "safe"
+            safe = True
+        elif fl.endswith(".bin") or fl.endswith(".pt") or fl.endswith(".pth") or fl.endswith(".ckpt") or fl.endswith(".pkl") or fl.endswith(".pickle"):
+            fmt = "pickle"
+            verdict = "unsafe"
+            warning = (
+                "This file uses Python pickle, which can execute arbitrary code "
+                "on load. Convert to safetensors before uploading: "
+                "<code>safetensors_torch_convert input.bin output.safetensors</code>."
+            )
+        elif fl.endswith(".gguf"):
+            fmt = "gguf"
+            verdict = "safe"
+            safe = True
+        elif fl.endswith(".onnx"):
+            fmt = "onnx"
+            verdict = "safe"
+            safe = True
+        else:
+            fmt = "unknown"
+            verdict = "unknown"
+            warning = "Unknown extension. Only .safetensors / .gguf / .onnx are explicitly accepted."
+    body_parts = [
+        "<h1 style='font-size:32px;margin:0 0 8px;'>Safetensors format check</h1>",
+        "<p class='text-muted' style='margin:0 0 16px;'>Paste a model filename and we'll tell you whether the format is safe to download (no arbitrary-code execution on load).</p>",
+        "<form method='post' style='margin:0 0 24px;display:flex;gap:8px;'>",
+        f"<input type='text' name='filename' value='{_html_mod.escape(filename)}' "
+        f"placeholder='pytorch_model.bin' "
+        f"style='flex:1;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-family:ui-monospace,Menlo,monospace;'>",
+        "<button type='submit' class='btn btn-primary' style='padding:8px 18px;'>Check</button>",
+        "</form>",
+    ]
+    if verdict:
+        color = "#16a34a" if safe else ("#dc2626" if verdict == "unsafe" else "#ca8a04")
+        body_parts.append(
+            f"<div data-verdict='{verdict}' data-format='{fmt}' "
+            f"style='border-left:4px solid {color};padding:12px 16px;background:#f9fafb;'>"
+            f"<p style='margin:0 0 4px;'><b>Filename:</b> <code>{_html_mod.escape(filename)}</code></p>"
+            f"<p style='margin:0 0 4px;'><b>Format:</b> {fmt}</p>"
+            f"<p style='margin:0;'><b>Verdict:</b> {verdict}</p>"
+            + (f"<p style='margin:8px 0 0;color:{color};'>{warning}</p>" if warning else "")
+            + "</div>"
+        )
+    body_parts.append(
+        "<h2 style='margin-top:32px;'>Accepted formats</h2>"
+        "<ul>"
+        "<li><code>.safetensors</code> — preferred; no code execution on load</li>"
+        "<li><code>.gguf</code> — llama.cpp container, safe</li>"
+        "<li><code>.onnx</code> — open neural network exchange, safe</li>"
+        "</ul>"
+        "<h2>Rejected formats</h2>"
+        "<ul>"
+        "<li><code>.bin / .pt / .pth / .ckpt</code> — PyTorch pickle, unsafe</li>"
+        "<li><code>.pkl / .pickle</code> — raw pickle, unsafe</li>"
+        "</ul>"
+    )
+    return _r9_render("Safetensors check", "".join(body_parts))
+
+
+# --- 4) Model merge stub -----------------------------------------------------
+@app.route("/model-merge", methods=["GET", "POST"])
+@csrf.exempt
+def model_merge():
+    a_slug = (request.values.get("a") or "meta-llama/Llama-3.3-70B-Instruct").strip()
+    b_slug = (request.values.get("b") or "mistralai/Mistral-7B-Instruct-v0.3").strip()
+    method = (request.values.get("method") or "ties").strip().lower()
+    weight_a = request.values.get("weight_a") or "0.5"
+    try:
+        wa = max(0.0, min(1.0, float(weight_a)))
+    except ValueError:
+        wa = 0.5
+    wb = round(1.0 - wa, 4)
+    methods = ("linear", "slerp", "ties", "dare-ties", "passthrough", "model-stock")
+    a_repo = Repository.query.filter_by(slug=a_slug, repo_type="model").first()
+    b_repo = Repository.query.filter_by(slug=b_slug, repo_type="model").first()
+    h = _r9_hashlib.md5(f"{a_slug}|{b_slug}|{method}|{wa}".encode()).hexdigest()[:12]
+    merge_slug = f"community-merges/merge-{h}"
+    config_yaml = (
+        "# mergekit config (generated)\n"
+        f"merge_method: {method}\n"
+        f"base_model: {a_slug}\n"
+        "models:\n"
+        f"  - model: {a_slug}\n"
+        f"    parameters:\n      weight: {wa}\n"
+        f"  - model: {b_slug}\n"
+        f"    parameters:\n      weight: {wb}\n"
+        "dtype: bfloat16\n"
+        f"name: {merge_slug}\n"
+    )
+    body = (
+        f"<h1 style='font-size:32px;margin:0 0 8px;'>Model merge</h1>"
+        f"<p class='text-muted' style='margin:0 0 16px;'>Generate a <code>mergekit</code> YAML for combining two models on the Hub. This is a stub — no actual weights are mixed.</p>"
+        f"<form method='post' class='card' style='display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;border:1px solid #e5e7eb;border-radius:10px;margin:0 0 24px;'>"
+        f"<label style='grid-column:1/-1;'><b>Model A (base)</b><br><input name='a' value='{_html_mod.escape(a_slug)}' style='width:100%;padding:8px;border:1px solid #d1d5db;border-radius:4px;font-family:ui-monospace,Menlo,monospace;'></label>"
+        f"<label style='grid-column:1/-1;'><b>Model B</b><br><input name='b' value='{_html_mod.escape(b_slug)}' style='width:100%;padding:8px;border:1px solid #d1d5db;border-radius:4px;font-family:ui-monospace,Menlo,monospace;'></label>"
+        f"<label><b>Method</b><br><select name='method' style='padding:8px;border:1px solid #d1d5db;border-radius:4px;width:100%;'>"
+        + "".join(f"<option value='{m}'{' selected' if m==method else ''}>{m}</option>" for m in methods)
+        + f"</select></label>"
+        f"<label><b>Weight A</b><br><input name='weight_a' type='number' min='0' max='1' step='0.05' value='{wa}' style='padding:8px;border:1px solid #d1d5db;border-radius:4px;width:100%;'></label>"
+        f"<button type='submit' class='btn btn-primary' style='grid-column:1/-1;padding:10px;'>Generate config</button>"
+        f"</form>"
+        f"<dl style='display:grid;grid-template-columns:160px 1fr;gap:6px 14px;margin:0 0 16px;'>"
+        f"<dt><b>Predicted slug</b></dt><dd data-field='merge_slug'><code>{merge_slug}</code></dd>"
+        f"<dt><b>Method</b></dt><dd data-field='method'>{method}</dd>"
+        f"<dt><b>Weight A / B</b></dt><dd data-field='weights'>{wa} / {wb}</dd>"
+        f"<dt><b>Model A on hub</b></dt><dd data-field='a_present'>{'yes' if a_repo else 'no'}</dd>"
+        f"<dt><b>Model B on hub</b></dt><dd data-field='b_present'>{'yes' if b_repo else 'no'}</dd>"
+        f"</dl>"
+        f"<h2>mergekit YAML</h2>"
+        f"<pre style='background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:8px;overflow:auto;'>{_html_mod.escape(config_yaml)}</pre>"
+    )
+    return _r9_render("Model merge", body)
+
+
+# --- 5) Spaces ZeroGPU quota ------------------------------------------------
+@app.route("/spaces/zerogpu-quota")
+def spaces_zerogpu_quota():
+    user = (request.args.get("user") or "").strip()
+    # Quota depends deterministically on user slug
+    if user:
+        h = int(_r9_hashlib.md5(user.encode()).hexdigest(), 16)
+        used = h % 240   # 0–239 min
+        plan = ("free", "pro", "enterprise")[h % 3]
+        cap = {"free": 240, "pro": 1440, "enterprise": 14400}[plan]
+        next_reset = "2026-05-28T00:00:00Z"
+    else:
+        used = 0
+        plan = "anonymous"
+        cap = 0
+        next_reset = "n/a"
+    remaining = max(0, cap - used) if cap else 0
+    pct = round(100.0 * used / cap, 1) if cap else 0.0
+    body = (
+        f"<h1 style='font-size:32px;margin:0 0 8px;'>Spaces · ZeroGPU quota</h1>"
+        f"<p class='text-muted' style='margin:0 0 16px;'>ZeroGPU lets Spaces share an A100. Each user gets a daily compute budget in seconds; this page reports the current balance.</p>"
+        f"<form method='get' style='margin:0 0 24px;display:flex;gap:8px;'>"
+        f"<input type='text' name='user' value='{_html_mod.escape(user)}' "
+        f"placeholder='username' "
+        f"style='flex:1;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-family:ui-monospace,Menlo,monospace;'>"
+        f"<button type='submit' class='btn btn-primary' style='padding:8px 18px;'>Check quota</button>"
+        f"</form>"
+        f"<dl data-tool='zerogpu-quota' style='display:grid;grid-template-columns:200px 1fr;gap:6px 14px;margin:0 0 24px;'>"
+        f"<dt><b>User</b></dt><dd data-field='user'>{_html_mod.escape(user) or '(anonymous)'}</dd>"
+        f"<dt><b>Plan</b></dt><dd data-field='plan'>{plan}</dd>"
+        f"<dt><b>Daily cap (minutes)</b></dt><dd data-field='cap'>{cap}</dd>"
+        f"<dt><b>Used today</b></dt><dd data-field='used'>{used} min ({pct}%)</dd>"
+        f"<dt><b>Remaining</b></dt><dd data-field='remaining'>{remaining} min</dd>"
+        f"<dt><b>Resets at</b></dt><dd data-field='reset'>{next_reset}</dd>"
+        f"</dl>"
+        f"<h2>Quota tiers</h2>"
+        f"<ul>"
+        f"<li><b>free</b> — 240 min/day; lower priority</li>"
+        f"<li><b>pro</b> — 1440 min/day (24 GPU-hours); higher priority queue</li>"
+        f"<li><b>enterprise</b> — 14400 min/day; dedicated reservations</li>"
+        f"</ul>"
+    )
+    return _r9_render("ZeroGPU quota", body)
+
+
+# --- 6) Papers · Daily vote --------------------------------------------------
+_R9_DAILY_PAPERS = [
+    ("2411.17041", "GAIA-Bench 2: agent evaluations at scale"),
+    ("2410.20587", "Diffusion ODEs are noise-aware solvers"),
+    ("2411.04944", "RWKV-7: linear attention with rotation"),
+    ("2410.10630", "MoE routing without auxiliary loss"),
+    ("2411.10440", "Speculative decoding beats memory bandwidth"),
+    ("2411.01098", "DeepSeek-V3 technical report"),
+    ("2410.19133", "Mamba-2 SSM: state expansion theory"),
+    ("2411.03570", "Pixtral 12B: an interleaved vision-language model"),
+    ("2410.18890", "OLMo-2 training data deep-dive"),
+    ("2411.07641", "Qwen-2.5 family report"),
+    ("2411.08868", "FineWeb-Edu: filtering for educational signal"),
+    ("2410.07073", "BitNet b1.58: 1-bit LLMs"),
+]
+
+
+def _r9_papers_vote_state():
+    """Compute a deterministic per-paper vote total + the cast-vote
+    boolean for the current session. Votes are kept in `session['r9_voted']`
+    so the page can show a 'thank you' state without hitting the DB."""
+    voted = set(session.get("r9_voted") or [])
+    items = []
+    for aid, title in _R9_DAILY_PAPERS:
+        h = int(_r9_hashlib.md5(aid.encode()).hexdigest(), 16)
+        base_votes = 12 + (h % 240)  # 12–251
+        bonus = 1 if aid in voted else 0
+        items.append({
+            "arxiv_id": aid,
+            "title": title,
+            "votes": base_votes + bonus,
+            "voted": aid in voted,
+        })
+    items.sort(key=lambda i: (-i["votes"], i["arxiv_id"]))
+    return items
+
+
+@app.route("/papers/daily-vote", methods=["GET", "POST"])
+@csrf.exempt
+def papers_daily_vote():
+    msg = None
+    if request.method == "POST":
+        aid = (request.form.get("arxiv_id") or request.values.get("arxiv_id") or "").strip()
+        known_ids = {a for a, _ in _R9_DAILY_PAPERS}
+        if aid not in known_ids:
+            msg = ("error", f"Unknown arxiv id: {aid or '(empty)'}")
+        else:
+            voted = list(session.get("r9_voted") or [])
+            if aid in voted:
+                msg = ("info", f"You already upvoted {aid} today.")
+            else:
+                voted.append(aid)
+                session["r9_voted"] = voted
+                msg = ("ok", f"Thanks — your vote for {aid} is in.")
+        if (request.headers.get("Accept") or "").startswith("application/json"):
+            from flask import Response
+            return Response(json.dumps({"status": msg[0], "message": msg[1]}),
+                            mimetype="application/json",
+                            status=200 if msg[0] != "error" else 400)
+    items = _r9_papers_vote_state()
+    rows = []
+    for i, p in enumerate(items):
+        btn = (
+            f"<form method='post' style='display:inline;'>"
+            f"<input type='hidden' name='arxiv_id' value='{p['arxiv_id']}'>"
+            f"<button type='submit' "
+            f"data-action='vote' data-arxiv-id='{p['arxiv_id']}' "
+            f"style='padding:4px 10px;border:1px solid #d1d5db;border-radius:4px;background:#f9fafb;cursor:pointer;'>"
+            f"{'✓ voted' if p['voted'] else '▲ upvote'}</button>"
+            f"</form>"
+        )
+        rows.append(
+            f"<tr data-arxiv-id='{p['arxiv_id']}'>"
+            f"<td style='text-align:right;padding:4px 8px;'>{i+1}</td>"
+            f"<td style='padding:4px 8px;'><a href='/papers/arxiv/{p['arxiv_id']}'><code>{p['arxiv_id']}</code></a></td>"
+            f"<td style='padding:4px 8px;'>{_html_mod.escape(p['title'])}</td>"
+            f"<td style='text-align:right;padding:4px 8px;' data-field='votes'>{p['votes']}</td>"
+            f"<td style='padding:4px 8px;'>{btn}</td>"
+            f"</tr>"
+        )
+    banner_html = ""
+    if msg:
+        color = {"ok": "#16a34a", "info": "#2563eb", "error": "#dc2626"}.get(msg[0], "#6b7280")
+        banner_html = (
+            f"<div data-banner='{msg[0]}' style='border-left:4px solid {color};"
+            f"padding:10px 14px;background:#f9fafb;margin:0 0 16px;'>{_html_mod.escape(msg[1])}</div>"
+        )
+    body = (
+        f"<h1 style='font-size:32px;margin:0 0 8px;'>Papers · Daily vote</h1>"
+        f"<p class='text-muted' style='margin:0 0 16px;'>Vote on today's papers. Top-voted entries get featured on /papers and in the trending feed.</p>"
+        f"{banner_html}"
+        f"<table data-tool='papers-daily-vote' style='width:100%;border-collapse:collapse;border-bottom:1px solid #e5e7eb;'>"
+        f"<thead><tr style='border-bottom:2px solid #e5e7eb;text-align:left;'>"
+        f"<th style='text-align:right;padding:6px 8px;'>#</th>"
+        f"<th style='padding:6px 8px;'>arxiv</th>"
+        f"<th style='padding:6px 8px;'>Title</th>"
+        f"<th style='text-align:right;padding:6px 8px;'>Votes</th>"
+        f"<th style='padding:6px 8px;'>Action</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
+    return _r9_render("Papers · Daily vote", body)
 
 
 with app.app_context():

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Coursera Career Academy | Coursera{% endblock %}
+{% block content %}
+<div class="academy-index" id="main-content" style="max-width:1200px;margin:32px auto;padding:0 24px;">
+  <header style="margin-bottom:28px;">
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">CAREER ACADEMY &middot; 2026</div>
+    <h1 style="font-size:34px;letter-spacing:-.5px;margin:12px 0 6px;">Coursera Career Academy</h1>
+    <p style="color:#5B6780;font-size:16px;margin:0 0 6px;max-width:760px;">Six 2026 role tracks &mdash; project-based, industry-aligned, mentor-guided. Pick a role and follow a curated learning path to your next job.</p>
+  </header>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;">
+    {% for r in roles %}
+    <a href="{{ url_for('career_academy_role', role=r.slug) }}" style="display:block;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;text-decoration:none;color:inherit;">
+      <div style="font-size:11px;letter-spacing:.6px;color:#0056D2;font-weight:800;text-transform:uppercase;">{{ r.category }}</div>
+      <div style="font-size:20px;font-weight:700;margin:6px 0 6px;">{{ r.name }}</div>
+      <div style="color:#5B6780;font-size:13px;margin-bottom:10px;">Primary skill: <strong>{{ r.primary }}</strong></div>
+      <div style="font-size:13px;color:#374151;">{{ r.count }} curated 2026 courses</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

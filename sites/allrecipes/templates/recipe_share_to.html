@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Share {{ recipe.title }} on {{ platform.capitalize() }} — pre-filled share URL with title, image and canonical link.{% endblock %}
+{% block meta_robots %}noindex, follow{% endblock %}
+
+{% block content %}
+<section class="container recipe-share" style="max-width:760px;margin:32px auto;padding:0 16px;">
+  <h1>Share on {{ platform.capitalize() }}</h1>
+  <p class="lede" style="color:#555;">
+    Click the button below to open {{ platform.capitalize() }}'s share
+    dialog with the recipe pre-filled. Or copy the URL directly for use
+    in a scheduling tool.
+  </p>
+
+  <p style="margin:18px 0;">
+    <strong>Recipe:</strong> {{ recipe.title }}<br>
+    <strong>Canonical URL:</strong> <code data-test-id="share-canonical">{{ canonical }}</code>
+  </p>
+
+  <a href="{{ url_for('recipe_share_to', slug=recipe.slug, platform=platform) }}?go=1"
+     target="_blank"
+     class="nav-btn"
+     style="display:inline-block;padding:10px 20px;background:#a3262f;color:#fff;border-radius:6px;text-decoration:none;">
+    Open {{ platform.capitalize() }} share dialog
+  </a>
+
+  <h2 style="margin-top:32px;">Pre-built share URL</h2>
+  <pre data-test-id="share-url"
+       style="background:#fafaf6;border:1px solid #eee;padding:12px;border-radius:6px;overflow-x:auto;font-family:monospace;font-size:0.88rem;">{{ share_url }}</pre>
+
+  <p style="margin-top:18px;font-size:0.9rem;color:#666;">
+    Platform: <span data-test-id="share-platform">{{ platform }}</span>.
+    {% if platform == 'pinterest' %}Pinterest accepts <code>url</code>, <code>media</code> and <code>description</code> query parameters.
+    {% elif platform == 'twitter' %}Twitter's <code>intent/tweet</code> endpoint accepts <code>url</code>, <code>text</code> and <code>via</code> parameters.
+    {% elif platform == 'facebook' %}Facebook's <code>sharer.php</code> endpoint accepts <code>u</code> and <code>quote</code> parameters.{% endif %}
+  </p>
+
+  <p style="margin-top:18px;">
+    See also other platforms:
+    {% for p in ['pinterest', 'twitter', 'facebook'] if p != platform %}
+      <a href="/recipe/{{ recipe.slug }}/share/{{ p }}">{{ p.capitalize() }}</a>{% if not loop.last %} · {% endif %}
+    {% endfor %}
+  </p>
+</section>
+{% endblock %}

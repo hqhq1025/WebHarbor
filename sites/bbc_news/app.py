@@ -1817,6 +1817,177 @@ def reading_list_folder_create():
     return redirect(request.referrer or url_for("reading_list"))
 
 
+@app.route("/reading-list/folder/<name>")
+@login_required
+def reading_list_folder_view(name):
+    """R9: view a single reading-list folder by name. Folder is matched
+    case-insensitively so /reading-list/folder/playlists, /Playlists and
+    /PLAYLISTS all resolve to the same items."""
+    folder_q = (name or "").strip()[:100]
+    items = (ReadingListItem.query
+             .filter_by(user_id=current_user.id)
+             .filter(ReadingListItem.folder.ilike(folder_q))
+             .order_by(ReadingListItem.added_at.desc())
+             .all())
+    folders = (db.session.query(ReadingListItem.folder,
+                                func.count(ReadingListItem.id))
+               .filter_by(user_id=current_user.id)
+               .group_by(ReadingListItem.folder).all())
+    return render_template("reading_list.html", items=items,
+                           folders=folders, current_folder=folder_q)
+
+
+# =======================================================================
+# R9 — kids (CBeebies / CBBC), Sounds playlists, news quizzes,
+#      accessibility filters. Each is a thin redirect so the new
+#      URLs resolve through the existing topic / article surfaces.
+# =======================================================================
+
+@app.route("/cbeebies")
+def cbeebies_root():
+    return redirect(url_for("section_page", slug="cbeebies"))
+
+
+@app.route("/cbeebies/<show>")
+def cbeebies_show(show):
+    """List CBeebies episodes for a given show slug (e.g. /cbeebies/bluey)."""
+    return redirect(url_for("topic_page", topic=f"cbeebies-show-{show}"))
+
+
+@app.route("/cbbc")
+def cbbc_root():
+    return redirect(url_for("section_page", slug="cbbc"))
+
+
+@app.route("/cbbc/<show>")
+def cbbc_show(show):
+    """List CBBC episodes for a given show slug (e.g. /cbbc/blue-peter)."""
+    return redirect(url_for("topic_page", topic=f"cbbc-show-{show}"))
+
+
+@app.route("/bbc-three")
+@app.route("/three")
+def bbc_three_root():
+    return redirect(url_for("section_page", slug="bbc_three"))
+
+
+@app.route("/bbc-four")
+@app.route("/four")
+def bbc_four_root():
+    return redirect(url_for("section_page", slug="bbc_four"))
+
+
+@app.route("/sounds/playlist/<pl_id>")
+def sounds_playlist(pl_id):
+    """Resolve a Sounds playlist by slug. Falls back to the playlists
+    listing when the slug isn't recognised."""
+    art = Article.query.filter(
+        Article.feature_tags.ilike(f'%"playlist-{pl_id}"%')
+    ).first()
+    if art:
+        return redirect(url_for("article_detail", slug=art.slug))
+    return redirect(url_for("section_page", slug="sounds_playlists"))
+
+
+@app.route("/news/quiz/<quiz_id>")
+def news_quiz(quiz_id):
+    """Resolve a news quiz by theme slug or by quiz article slug."""
+    art = Article.query.filter_by(slug=quiz_id).first()
+    if not art:
+        art = Article.query.filter(
+            Article.feature_tags.ilike(f'%"quiz-theme-{quiz_id}"%')
+        ).first()
+    if art:
+        return redirect(url_for("article_detail", slug=art.slug))
+    return redirect(url_for("section_page", slug="news_quizzes"))
+
+
+@app.route("/accessibility/signed")
+def accessibility_signed():
+    """List articles flagged with British Sign Language presentation."""
+    return redirect(url_for("topic_page", topic="signed-content"))
+
+
+@app.route("/accessibility/audio-described")
+def accessibility_audio_described():
+    """List articles flagged as audio-described."""
+    return redirect(url_for("topic_page", topic="audio-described"))
+
+
+@app.route("/api/accessibility/signed/toggle", methods=["POST"])
+@csrf.exempt
+def api_signed_toggle():
+    """Persist the user's preference for signed-content mode."""
+    val = (request.values.get("value") or "").strip().lower()
+    if val not in ("on", "off"):
+        return jsonify({"ok": False, "error": "invalid_value"}), 400
+    resp = jsonify({"ok": True, "value": val, "marker": "signed-toggle"})
+    resp.set_cookie("bbc_signed_mode", val, max_age=60 * 60 * 24 * 365,
+                    samesite="Lax")
+    return resp
+
+
+@app.route("/api/accessibility/audio-described/toggle", methods=["POST"])
+@csrf.exempt
+def api_audio_described_toggle():
+    """Persist the user's preference for audio-described content mode."""
+    val = (request.values.get("value") or "").strip().lower()
+    if val not in ("on", "off"):
+        return jsonify({"ok": False, "error": "invalid_value"}), 400
+    resp = jsonify({"ok": True, "value": val, "marker": "ad-toggle"})
+    resp.set_cookie("bbc_audio_described_mode", val, max_age=60 * 60 * 24 * 365,
+                    samesite="Lax")
+    return resp
+
+
+@app.route("/api/sounds/playlist/create", methods=["POST"])
+@csrf.exempt
+def api_sounds_playlist_create():
+    """Stub endpoint for sounds-create-playlist tasks. Deterministically
+    echoes the requested playlist name back as a slug + a created marker."""
+    name = (request.values.get("name") or "My Playlist")[:120]
+    slug_root = re.sub(r"[^a-z0-9]+", "-",
+                       name.lower()).strip("-")[:60] or "playlist"
+    marker = hashlib.sha1(slug_root.encode("utf-8")).hexdigest()[:10]
+    return jsonify({
+        "ok": True,
+        "playlist_slug": f"user-{slug_root}-{marker}",
+        "name": name,
+        "marker": "sounds-pl-created",
+    })
+
+
+@app.route("/api/story/bookmark-folder", methods=["POST"])
+@csrf.exempt
+def api_story_bookmark_folder():
+    """Stub for story-bookmark-folder tasks. Echoes the folder name +
+    article slug. When signed in, writes a ReadingListItem under the
+    requested folder."""
+    folder = (request.values.get("folder") or "Saved")[:100]
+    slug = (request.values.get("slug") or "").strip()[:120]
+    art = Article.query.filter_by(slug=slug).first() if slug else None
+    saved = False
+    if art and current_user.is_authenticated:
+        existing = ReadingListItem.query.filter_by(
+            user_id=current_user.id, article_id=art.id
+        ).first()
+        if existing:
+            existing.folder = folder
+        else:
+            db.session.add(ReadingListItem(
+                user_id=current_user.id, article_id=art.id, folder=folder,
+            ))
+        db.session.commit()
+        saved = True
+    return jsonify({
+        "ok": True,
+        "folder": folder,
+        "slug": slug,
+        "saved": saved,
+        "marker": "sbf-v1",
+    })
+
+
 # =======================================================================
 # ROUTES — BOOKMARKS (wishlist analog)
 # =======================================================================

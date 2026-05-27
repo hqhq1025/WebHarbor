@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Video tutorial for {{ recipe.title }} on Allrecipes — chapter-by-chapter step walkthrough.{% endblock %}
+
+{% block content %}
+<section class="container recipe-video" style="max-width:920px;margin:32px auto;padding:0 16px;">
+  <h1>Video tutorial — {{ recipe.title }}</h1>
+  <p class="lede" style="color:#555;">
+    A {{ '%.0f' | format(total_seconds / 60) }} minute walkthrough by the
+    Allrecipes test kitchen. Use the chapter list below to jump to any step.
+  </p>
+
+  <div class="video-player" role="region" aria-label="Video player"
+       style="background:#111;color:#eee;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:monospace;">
+    <div style="text-align:center;">
+      <div style="font-size:48px;line-height:1;">&#9658;</div>
+      <div style="margin-top:12px;font-size:14px;">
+        Video stub — total length <span data-test-id="video-total-seconds">{{ total_seconds }}</span> seconds
+      </div>
+      <div style="margin-top:6px;font-size:12px;opacity:0.7;">
+        Source: allrecipes.com/recipe/{{ recipe.slug }}/video.mp4
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:24px;">Chapters</h2>
+  <ol class="video-chapters" data-test-id="video-chapters">
+    {% for ch in chapters %}
+    <li style="margin-bottom:8px;">
+      <strong>Chapter {{ ch.index }}</strong>
+      <span style="color:#666;">— starts at {{ ch.start_seconds }}s, runs {{ ch.duration_seconds }}s</span><br>
+      <span>{{ ch.summary }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <p style="margin-top:24px;">
+    See also: <a href="/recipe/{{ recipe.slug }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/print">print view</a> ·
+    <a href="/recipe/{{ recipe.slug }}/nutrition">nutrition detail</a> ·
+    <a href="/recipe/{{ recipe.slug }}/allergens">allergen check</a>.
+  </p>
+</section>
+{% endblock %}

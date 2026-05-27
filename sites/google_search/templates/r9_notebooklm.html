@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}NotebookLM - Google Search{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">NotebookLM</h1>
+  <p class="muted">
+    NotebookLM-style grounded research notebooks - each notebook is built
+    on a curated source set, and lists suggested follow-up questions you
+    can ask the AI grounded on those sources.
+  </p>
+
+  {% if one %}
+  <article style="border: 1px solid #dadce0; border-radius: 12px; padding: 18px; margin: 16px 0; background: #f8f9fa;">
+    <h2 style="font-size: 20px; margin: 0 0 4px;">{{ one.title }}</h2>
+    <p class="muted" style="margin: 0 0 12px; font-size: 12px;">slug: <code>{{ one.slug }}</code></p>
+    <p>{{ one.description }}</p>
+    <h3 style="font-size: 16px;">Sources ({{ one.sources|length }})</h3>
+    <ul>
+      {% for s in one.sources %}<li>{{ s }}</li>{% endfor %}
+    </ul>
+    <h3 style="font-size: 16px;">Suggested follow-ups ({{ one.follow_ups|length }})</h3>
+    <ol>
+      {% for f in one.follow_ups %}<li>{{ f }}</li>{% endfor %}
+    </ol>
+    <p style="margin: 0;">
+      <a href="/notebooklm/{{ one.slug }}?format=json">JSON form</a> -
+      <a href="/notebooklm">- back to all notebooks</a>
+    </p>
+  </article>
+  {% endif %}
+
+  <div style="border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+    {% for n in items %}
+    <a href="/notebooklm/{{ n.slug }}"
+       style="display: block; padding: 14px; border-bottom: 1px solid #f1f3f4;
+              text-decoration: none; color: inherit;">
+      <strong>{{ n.title }}</strong>
+      <span class="muted" style="font-size: 12px; margin-left: 6px;">{{ n.sources|length }} sources / {{ n.follow_ups|length }} follow-ups</span>
+      <div style="font-size: 13px; color: #444;">{{ n.description }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
