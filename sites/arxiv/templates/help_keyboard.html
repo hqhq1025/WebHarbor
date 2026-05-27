@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Keyboard Shortcuts — arXiv{% endblock %}
+{% block content %}
+
+<h1>Keyboard Shortcuts</h1>
+<p class="muted">
+    The arXiv mirror ships a small set of keyboard shortcuts for power
+    users. Press <kbd>?</kbd> on any page to open the help panel.
+</p>
+
+<div class="dash-card">
+    <table class="data" id="keyboard-shortcuts">
+        <thead>
+            <tr><th>Key</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+        {% for key, desc in shortcuts %}
+            <tr>
+                <td><kbd>{{ key }}</kbd></td>
+                <td>{{ desc }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="dash-card">
+    <h2>Command palette</h2>
+    <p>
+        <kbd>Ctrl</kbd>+<kbd>K</kbd> (or <kbd>Cmd</kbd>+<kbd>K</kbd> on macOS)
+        opens a palette where you can paste any arxiv_id (e.g.
+        <code>2401.12345</code>) and press <kbd>Enter</kbd> to jump
+        straight to <code>/abs/&lt;id&gt;</code>.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Listing navigation</h2>
+    <p>
+        On listings and search results, <kbd>j</kbd> moves to the next
+        paper and <kbd>k</kbd> to the previous — the same vim-style
+        muscle memory used by mu4e and Gmail.
+    </p>
+</div>
+
+{% endblock %}

@@ -4,6 +4,7 @@ import os
 import json
 import random
 import re
+import hashlib
 from datetime import datetime
 
 from flask import (Flask, render_template, request, redirect, url_for,
@@ -142,6 +143,14 @@ class Word(db.Model):
     # injected into the entry page head. Empty string for r0..r6 rows; R7
     # rows ship a deterministic 'dt-xxxxxxxxxxxx' value.
     defined_term_id = db.Column(db.String(40), default='')
+
+    # R8 extensions ----------------------------------------------------------
+    # For archaic / slang headwords, the modern English equivalent slug a
+    # learner would normally reach for ("thou" -> "you"). Empty for entries
+    # with no clean mapping (historical / colloquial). Surfaced as a
+    # "Modern equivalent" chip on word_detail and on the
+    # /dictionary/register/<reg> register-index pages added in R8.
+    r8_modern_equiv = db.Column(db.String(120), default='')
 
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
@@ -2120,6 +2129,506 @@ def dictionary_domain_spotlight(dom):
 
 
 # ---------------------------------------------------------------------------
+# R8 — register-tagged sub-catalog (archaic / historical / slang / colloquial)
+# ---------------------------------------------------------------------------
+
+R8_REGISTERS = ('archaic', 'historical', 'slang', 'colloquial')
+R8_REGISTER_LABEL = {
+    'archaic': 'Archaic',
+    'historical': 'Historical',
+    'slang': 'Slang',
+    'colloquial': 'Colloquial',
+}
+R8_REGISTER_BLURB = {
+    'archaic': (
+        'Words now retired from everyday English. The dictionary keeps them '
+        'because they appear in classic literature, hymns and legal texts.'
+    ),
+    'historical': (
+        'Words tied to institutions, roles or objects that belong to an '
+        'earlier era. Their meaning is historical even when the form is '
+        'still used today.'
+    ),
+    'slang': (
+        'Informal vocabulary used in casual speech. Avoid in formal writing '
+        'or examinations; the dictionary lists each entry with a standard '
+        'equivalent where possible.'
+    ),
+    'colloquial': (
+        'Vocabulary common in everyday conversation. Less formal than the '
+        'main entries but not labelled slang.'
+    ),
+}
+
+
+@app.route('/dictionary/register/<reg>')
+def dictionary_register(reg):
+    """R8 register-index page — alphabetical listing of all words tagged
+    with the given register."""
+    if reg not in R8_REGISTERS:
+        abort(404)
+    page = max(1, int(request.args.get('page', 1) or 1))
+    per_page = 60
+    base_q = (Word.query
+              .filter(Word.is_thesaurus_phrase == False,  # noqa
+                      Word.register == reg)
+              .order_by(Word.headword.asc()))
+    total = base_q.count()
+    words = base_q.offset((page - 1) * per_page).limit(per_page).all()
+    return render_template('register_index.html',
+                           reg=reg,
+                           label=R8_REGISTER_LABEL[reg],
+                           blurb=R8_REGISTER_BLURB[reg],
+                           total=total, page=page,
+                           per_page=per_page, words=words)
+
+
+# ---------------------------------------------------------------------------
+# R8 — keyboard-navigation neighbours endpoint. Used by the j/k shortcut
+# wired into base.html so the front-end never has to hold a per-page
+# alphabetical index.
+# ---------------------------------------------------------------------------
+
+@app.route('/api/word/neighbors/<slug>')
+def api_word_neighbors(slug):
+    w = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+    if not w:
+        return jsonify({'error': 'not_found', 'slug': slug}), 404
+    prev_w = (Word.query
+              .filter(Word.is_thesaurus_phrase == False,  # noqa
+                      Word.headword < w.headword)
+              .order_by(Word.headword.desc()).first())
+    next_w = (Word.query
+              .filter(Word.is_thesaurus_phrase == False,  # noqa
+                      Word.headword > w.headword)
+              .order_by(Word.headword.asc()).first())
+    return jsonify({
+        'slug': slug,
+        'headword': w.headword,
+        'prev': ({'slug': prev_w.slug, 'headword': prev_w.headword,
+                  'url': f'/dictionary/english/{prev_w.slug}'}
+                 if prev_w else None),
+        'next': ({'slug': next_w.slug, 'headword': next_w.headword,
+                  'url': f'/dictionary/english/{next_w.slug}'}
+                 if next_w else None),
+    })
+
+
+# ---------------------------------------------------------------------------
+# R8 — command palette index. Returns a deterministic top-N list of the
+# most-cited slugs (by frequency_rank ascending) for the Cmd+K quick-jump.
+# Bounded so the response stays small.
+# ---------------------------------------------------------------------------
+
+@app.route('/api/command-palette')
+def api_command_palette():
+    q = (request.args.get('q') or '').strip().lower()
+    limit = min(40, max(5, int(request.args.get('limit', 20) or 20)))
+    query = Word.query.filter(Word.is_thesaurus_phrase == False)  # noqa
+    if q:
+        query = query.filter(Word.headword.ilike(f'{q}%'))
+    rows = (query.order_by(Word.frequency_rank.asc(),
+                           Word.headword.asc())
+            .limit(limit).all())
+    static_actions = [
+        {'kind': 'action', 'label': 'Word of the Day',
+         'url': '/word-of-the-day'},
+        {'kind': 'action', 'label': 'Translate', 'url': '/translate'},
+        {'kind': 'action', 'label': 'Grammar', 'url': '/grammar/british-grammar/'},
+        {'kind': 'action', 'label': 'Flashcards', 'url': '/flashcards'},
+        {'kind': 'action', 'label': 'API docs', 'url': '/api/v1/docs'},
+        {'kind': 'action', 'label': 'Keyboard shortcuts', 'url': '/help/shortcuts'},
+        {'kind': 'action', 'label': 'CEFR glossary', 'url': '/help/cefr-glossary'},
+    ]
+    actions = static_actions if not q else [
+        a for a in static_actions if q in a['label'].lower()
+    ]
+    return jsonify({
+        'query': q,
+        'limit': limit,
+        'results': [
+            {'kind': 'word', 'slug': w.slug, 'headword': w.headword,
+             'level': w.level or '',
+             'register': w.register or '',
+             'url': f'/dictionary/english/{w.slug}'}
+            for w in rows
+        ],
+        'actions': actions,
+    })
+
+
+# ---------------------------------------------------------------------------
+# R8 — contextual help: shortcuts + CEFR glossary
+# ---------------------------------------------------------------------------
+
+R8_SHORTCUTS = [
+    {'keys': '/', 'label': 'Focus the search box'},
+    {'keys': '?', 'label': 'Show the keyboard-shortcut help overlay'},
+    {'keys': 'j', 'label': 'Jump to the next word (alphabetical order)'},
+    {'keys': 'k', 'label': 'Jump to the previous word (alphabetical order)'},
+    {'keys': '1', 'label': 'Play UK audio for the current entry'},
+    {'keys': '2', 'label': 'Play US audio for the current entry'},
+    {'keys': 'Cmd / Ctrl + K', 'label': 'Open the command palette'},
+    {'keys': 'g then h', 'label': 'Go to the homepage'},
+    {'keys': 'g then s', 'label': 'Open the saved-words flashcards page'},
+    {'keys': 'Esc', 'label': 'Close any open overlay or modal'},
+]
+
+
+@app.route('/help/shortcuts')
+@app.route('/help/shortcuts/')
+def help_shortcuts():
+    return render_template('help_shortcuts.html',
+                           shortcuts=R8_SHORTCUTS)
+
+
+R8_CEFR_GLOSSARY = [
+    {'code': 'A1', 'label': 'Beginner',
+     'descr': 'Can understand and use familiar everyday expressions.'},
+    {'code': 'A2', 'label': 'Elementary',
+     'descr': 'Can communicate in simple, routine tasks on familiar topics.'},
+    {'code': 'B1', 'label': 'Intermediate',
+     'descr': 'Can deal with most situations likely to arise whilst travelling.'},
+    {'code': 'B2', 'label': 'Upper Intermediate',
+     'descr': 'Can interact with a degree of fluency and spontaneity.'},
+    {'code': 'C1', 'label': 'Advanced',
+     'descr': 'Can express ideas fluently and use language flexibly.'},
+    {'code': 'C2', 'label': 'Proficient',
+     'descr': 'Can understand virtually everything heard or read.'},
+]
+
+
+@app.route('/help/cefr-glossary')
+@app.route('/help/cefr-glossary/')
+def help_cefr_glossary():
+    counts = {row.level: row.n for row in
+              db.session.query(Word.level, func.count(Word.id).label('n'))
+              .filter(Word.is_thesaurus_phrase == False)  # noqa
+              .group_by(Word.level).all()}
+    glossary = [
+        {**g, 'word_count': counts.get(g['code'], 0)}
+        for g in R8_CEFR_GLOSSARY
+    ]
+    return render_template('help_cefr_glossary.html',
+                           glossary=glossary)
+
+
+# ---------------------------------------------------------------------------
+# R8 — observability stubs (/healthz, /api/uptime, /api/events)
+#
+# All three are byte-deterministic across rebuilds: there is no wall clock
+# in the response payload. The "uptime" / "events" are derived from
+# MIRROR_REFERENCE_DATE so /reset stays byte-id and tests can assert exact
+# strings.
+# ---------------------------------------------------------------------------
+
+R8_RELEASE_TAG = 'r8'
+R8_BUILD_ID = 'cambridge-r8-' + hashlib.md5(
+    f'r8|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
+).hexdigest()[:10] if False else None  # placeholder, see below
+
+
+@app.route('/healthz')
+@app.route('/healthz/')
+def healthz():
+    import hashlib as _hl
+    return jsonify({
+        'status': 'ok',
+        'release': R8_RELEASE_TAG,
+        'build_id': 'cambridge-r8-' + _hl.md5(
+            f'r8|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
+        ).hexdigest()[:10],
+        'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        'words_total': db.session.query(func.count(Word.id)).filter(
+            Word.is_thesaurus_phrase == False).scalar(),  # noqa
+        'checks': {
+            'db': 'ok',
+            'cache': 'ok',
+            'index': 'ok',
+        },
+    })
+
+
+@app.route('/api/uptime')
+def api_uptime():
+    """Deterministic "uptime" — derived from MIRROR_REFERENCE_DATE so two
+    consecutive requests return the same JSON. Real upstreams expose a
+    wall-clock value here; we expose a snapshot count so /reset stays
+    byte-id."""
+    return jsonify({
+        'release': R8_RELEASE_TAG,
+        'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        'last_deploy_iso': MIRROR_REFERENCE_DATE.isoformat() + 'Z',
+        'uptime_seconds_since_snapshot': 0,
+        'service': 'cambridge-dictionary-mirror',
+        'healthy': True,
+    })
+
+
+@app.route('/api/events')
+def api_events():
+    """Recent dictionary events feed. Deterministic: derived from
+    MIRROR_REFERENCE_DATE and the slug hash of the daily word-of-day pool."""
+    import hashlib as _hl
+    from datetime import timedelta as _td
+    # Stable pool of recent C2 words for the events feed.
+    pool = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa
+                    Word.level == 'C2')
+            .order_by(Word.slug.asc()).limit(200).all())
+    if not pool:
+        pool = (Word.query
+                .filter(Word.is_thesaurus_phrase == False)  # noqa
+                .order_by(Word.slug.asc()).limit(50).all())
+    base = MIRROR_REFERENCE_DATE
+    events = []
+    for i in range(20):
+        seed = int(_hl.md5(f'r8|event|{i}|{base.date().isoformat()}'
+                           .encode()).hexdigest()[:8], 16)
+        w = pool[seed % len(pool)]
+        kind = ('word_published', 'definition_revised',
+                'audio_added', 'translation_added')[seed % 4]
+        events.append({
+            'sequence': i + 1,
+            'occurred_at': (base - _td(days=i)).isoformat() + 'Z',
+            'kind': kind,
+            'slug': w.slug,
+            'headword': w.headword,
+            'level': w.level or '',
+            'url': f'/dictionary/english/{w.slug}',
+        })
+    return jsonify({
+        'release': R8_RELEASE_TAG,
+        'snapshot_date': base.date().isoformat(),
+        'count': len(events),
+        'events': events,
+    })
+
+
+# ---------------------------------------------------------------------------
+# R8 — public GraphQL stub (POST /api/v2/graphql)
+#
+# This is a minimal GraphQL adapter — not a full parser. It recognises three
+# named queries: ``word``, ``words`` and ``stats`` and dispatches to the
+# existing SQL layer. Any other query string falls through with a
+# documented 400 so the tasks can assert the error shape. CSRF is exempt
+# because real GraphQL endpoints accept cross-origin POSTs.
+# ---------------------------------------------------------------------------
+
+R8_GRAPHQL_SCHEMA = (
+    'type Word {\n'
+    '  slug: String!\n  headword: String!\n  pos: String\n'
+    '  level: String\n  register: String\n  domain: String\n'
+    '  modernEquiv: String\n'
+    '}\n'
+    'type Stats { totalWords: Int!, registers: [String!]!, domains: [String!]! }\n'
+    'type Query {\n'
+    '  word(slug: String!): Word\n'
+    '  words(limit: Int, level: String, register: String): [Word!]!\n'
+    '  stats: Stats!\n'
+    '}\n'
+)
+
+
+def _r8_word_to_graphql(w):
+    return {
+        'slug': w.slug,
+        'headword': w.headword,
+        'pos': w.pos or '',
+        'level': w.level or '',
+        'register': w.register or '',
+        'domain': w.r7_domain or '',
+        'modernEquiv': w.r8_modern_equiv or '',
+    }
+
+
+@csrf.exempt
+@app.route('/api/v2/graphql', methods=['GET', 'POST'])
+def api_v2_graphql():
+    if request.method == 'GET' and not request.args.get('query'):
+        return jsonify({
+            'api': 'cambridge-dictionary-graphql',
+            'release': R8_RELEASE_TAG,
+            'schema': R8_GRAPHQL_SCHEMA,
+            'supported_queries': ['word', 'words', 'stats'],
+            'endpoint': '/api/v2/graphql',
+            'method': 'POST',
+        })
+    payload = (request.get_json(silent=True) or {}) if request.method == 'POST' else {}
+    query = (payload.get('query') if payload else None) \
+        or request.args.get('query') or ''
+    variables = (payload.get('variables') if payload else None) or {}
+
+    qlc = query.lower()
+    # NOTE: order matters — 'words(' contains 'word(' as a substring, so we
+    # match the plural collection query first.
+    if 'words(' in qlc or qlc.strip().startswith('{ words'):
+        def _vget(key):
+            v = (variables or {}).get(key) if isinstance(variables, dict) else None
+            if v is not None:
+                return v
+            a = request.args.get(key)
+            if a is not None:
+                return a
+            m = re.search(rf'{key}\s*:\s*"([^"]*)"', query)
+            if m:
+                return m.group(1)
+            m = re.search(rf'{key}\s*:\s*(\d+)', query)
+            if m:
+                return int(m.group(1))
+            return None
+        limit = _vget('limit') or 10
+        try:
+            limit = min(50, max(1, int(limit)))
+        except (TypeError, ValueError):
+            limit = 10
+        level = _vget('level')
+        register = _vget('register')
+        q = Word.query.filter(Word.is_thesaurus_phrase == False)  # noqa
+        if level:
+            q = q.filter(Word.level == level)
+        if register:
+            q = q.filter(Word.register == register)
+        rows = q.order_by(Word.headword.asc()).limit(limit).all()
+        return jsonify({'data': {'words':
+                                 [_r8_word_to_graphql(w) for w in rows]}})
+
+    if 'word(' in qlc or qlc.strip().startswith('{ word'):
+        slug = (variables.get('slug') if isinstance(variables, dict)
+                else None) or request.args.get('slug') or ''
+        if not slug:
+            # Inline arg form: { word(slug: "foo") { ... } }
+            m = re.search(r'slug\s*:\s*"([^"]+)"', query)
+            if m:
+                slug = m.group(1)
+        w = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+        if not w:
+            return jsonify({
+                'data': {'word': None},
+                'errors': [{'message': f'word not found: {slug}'}],
+            }), 200
+        return jsonify({'data': {'word': _r8_word_to_graphql(w)}})
+
+    if 'stats' in qlc:
+        n = db.session.query(func.count(Word.id)).filter(
+            Word.is_thesaurus_phrase == False).scalar()  # noqa
+        regs = [r for (r,) in db.session.query(Word.register)
+                .filter(Word.is_thesaurus_phrase == False,  # noqa
+                        Word.register != '')
+                .distinct().order_by(Word.register.asc()).all()]
+        doms = [d for (d,) in db.session.query(Word.r7_domain)
+                .filter(Word.is_thesaurus_phrase == False,  # noqa
+                        Word.r7_domain != '')
+                .distinct().order_by(Word.r7_domain.asc()).all()]
+        return jsonify({'data': {'stats': {
+            'totalWords': n,
+            'registers': regs,
+            'domains': doms,
+        }}})
+
+    return jsonify({
+        'data': None,
+        'errors': [{
+            'message': 'unsupported query',
+            'supported_queries': ['word', 'words', 'stats'],
+        }],
+    }), 400
+
+
+# ---------------------------------------------------------------------------
+# R8 — webhooks + telemetry stubs. Both accept POST and return a
+# deterministic ack so the tasks can assert the response shape. No state is
+# persisted (this is a static mirror).
+# ---------------------------------------------------------------------------
+
+@csrf.exempt
+@app.route('/webhook/word-of-day', methods=['GET', 'POST'])
+def webhook_word_of_day():
+    if request.method == 'GET':
+        return jsonify({
+            'webhook': 'word-of-day',
+            'release': R8_RELEASE_TAG,
+            'method': 'POST',
+            'expects': {
+                'slug': 'string',
+                'subscriber_id': 'string',
+                'channel': 'email|slack|discord',
+            },
+            'docs': '/api/v1/docs',
+        })
+    payload = request.get_json(silent=True) or {}
+    slug = (payload.get('slug') or '').strip()
+    sub = (payload.get('subscriber_id') or '').strip()
+    channel = (payload.get('channel') or 'email').strip().lower()
+    if channel not in ('email', 'slack', 'discord'):
+        return jsonify({'accepted': False,
+                        'error': f'unsupported channel: {channel}'}), 400
+    import hashlib as _hl
+    delivery_id = 'wod-' + _hl.md5(
+        f'{slug}|{sub}|{channel}|r8'.encode()).hexdigest()[:14]
+    return jsonify({
+        'accepted': True,
+        'release': R8_RELEASE_TAG,
+        'delivery_id': delivery_id,
+        'slug': slug,
+        'channel': channel,
+        'subscriber_id': sub,
+        'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    }), 202
+
+
+@csrf.exempt
+@app.route('/telemetry', methods=['POST'])
+def telemetry_post():
+    payload = request.get_json(silent=True) or {}
+    event = (payload.get('event') or '').strip()
+    if not event:
+        return jsonify({'accepted': False,
+                        'error': 'missing required field: event'}), 400
+    import hashlib as _hl
+    tid = 't-' + _hl.md5(
+        f'{event}|{payload.get("session_id","")}|r8'.encode()
+    ).hexdigest()[:14]
+    return jsonify({
+        'accepted': True,
+        'telemetry_id': tid,
+        'event': event,
+        'release': R8_RELEASE_TAG,
+        'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    }), 202
+
+
+# ---------------------------------------------------------------------------
+# R8 — multi-step quick-jump page. Bundles healthz / register-index /
+# command-palette / shortcuts together so a single task can verify the
+# whole R8 surface in one walk.
+# ---------------------------------------------------------------------------
+
+@app.route('/dictionary/r8-tour')
+@app.route('/dictionary/r8-tour/')
+def r8_tour():
+    reg_counts = {
+        r: Word.query.filter(Word.is_thesaurus_phrase == False,  # noqa
+                             Word.register == r).count()
+        for r in R8_REGISTERS
+    }
+    sample_words = {
+        r: (Word.query.filter(Word.is_thesaurus_phrase == False,  # noqa
+                              Word.register == r)
+            .order_by(Word.headword.asc()).first())
+        for r in R8_REGISTERS
+    }
+    return render_template('r8_tour.html',
+                           registers=R8_REGISTERS,
+                           labels=R8_REGISTER_LABEL,
+                           counts=reg_counts,
+                           samples=sample_words,
+                           shortcuts=R8_SHORTCUTS,
+                           release=R8_RELEASE_TAG,
+                           snapshot=MIRROR_REFERENCE_DATE.date().isoformat())
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -3812,6 +4321,48 @@ def seed_database():
                 dialect_uk=wd.get('dialect_uk', ''),
                 dialect_us=wd.get('dialect_us', ''),
                 defined_term_id=wd.get('defined_term_id', ''),
+            ))
+        # R8 expansion: ~10000 register-tagged entries (archaic / historical /
+        # slang / colloquial). Same append-after pattern as r4..r7 so prior
+        # ids stay stable. The only new column wired through here is
+        # ``r8_modern_equiv``; the rest of the row reuses r7-shape fields.
+        extra7 = _load_json('words_r8.json') or []
+        for wd in extra7:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+                antonyms_json=_j(wd.get('antonyms', [])),
+                roots_json=_j(wd.get('roots', [])),
+                shared_coll_anchor=wd.get('shared_coll_anchor', ''),
+                r6_dict=wd.get('r6_dict', 'learner'),
+                r7_domain='',  # R8 rows are register-tagged, not domain-tagged
+                dialect_uk=wd.get('dialect_uk', ''),
+                dialect_us=wd.get('dialect_us', ''),
+                defined_term_id=wd.get('defined_term_id', ''),
+                r8_modern_equiv=wd.get('r8_modern_equiv', ''),
             ))
     else:
         # Fallback: inline curated lists.

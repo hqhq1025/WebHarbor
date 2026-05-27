@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Cabin-class glossary - Google Flights Help{% endblock %}
+{% block meta_description %}Glossary of cabin classes — Economy, Premium Economy, Business, and First — covering seat pitch, baggage, lounge access and meal service on Google Flights.{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Cabin class glossary</h1>
+    <p class="lead">
+      What every cabin class includes on this mirror. Hover the cabin-class
+      dropdown on the search form for a quick tooltip — this page has the
+      long-form explanation.
+    </p>
+
+    <dl class="cabin-glossary">
+      {% for cls, desc in glossary %}
+        <dt id="cls-{{ cls|lower|replace(' ', '-') }}" style="font-size:18px;font-weight:600;margin-top:18px;color:#1a73e8;">{{ cls }}</dt>
+        <dd style="margin:6px 0 0 0;color:#3c4043;line-height:1.55;">{{ desc }}</dd>
+      {% endfor %}
+    </dl>
+
+    <h2 style="margin-top:32px;">Choosing a cabin class</h2>
+    <ul>
+      <li><strong>Short-haul (under 3 hours):</strong> Premium Economy and Business are usually only available on wide-body equipment — most short-haul flights only sell Economy.</li>
+      <li><strong>Long-haul overnight:</strong> Premium Economy is typically 30-50% more than Economy; Business 2-3x; First 4-6x. Lie-flat seats start at Business on most carriers.</li>
+      <li><strong>Award redemption:</strong> First class points cost is usually only ~30% higher than Business for the same route — if you have the miles, the upgrade is usually the best value.</li>
+    </ul>
+
+    <p style="margin-top:24px;color:#5f6368;font-size:13px;">
+      Need the JSON version of this glossary? <a href="{{ url_for('api_cabin_class_glossary') }}">/api/cabin-class-glossary</a>.
+      Back to <a href="{{ url_for('help_page') }}">Help center</a>.
+    </p>
+  </div>
+</div>
+{% endblock %}

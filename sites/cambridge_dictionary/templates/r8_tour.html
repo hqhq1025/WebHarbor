@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}R8 tour — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container r8-tour">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <span>R8 release tour</span>
+  </nav>
+  <h1>Cambridge Dictionary — R8 release tour</h1>
+  <p class="r8-tour-intro">
+    The R8 release adds register-tagged sub-catalogs, keyboard shortcuts, a
+    command palette, contextual CEFR help, a GraphQL endpoint and an
+    observability surface. Use this page as the entry point to verify each
+    new surface in one walk.
+  </p>
+  <p class="release-tag">Release: {{ release }} &middot; Snapshot date: {{ snapshot }}</p>
+
+  <section class="r8-tour-section">
+    <h2>Register-tagged sub-catalogs</h2>
+    <ul>
+      {% for r in registers %}
+        <li>
+          <a href="{{ url_for('dictionary_register', reg=r) }}">{{ labels[r] }}</a>
+          — <span class="register-count">{{ counts[r] }} entries</span>
+          {% if samples[r] %}
+            (example: <a href="{{ url_for('word_detail', slug=samples[r].slug) }}">{{ samples[r].headword }}</a>)
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="r8-tour-section">
+    <h2>Keyboard shortcuts</h2>
+    <table class="shortcuts-table">
+      <thead><tr><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+      <tbody>
+        {% for s in shortcuts %}
+          <tr><td><kbd>{{ s.keys }}</kbd></td><td>{{ s.label }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p><a href="{{ url_for('help_shortcuts') }}">Open full shortcuts help page</a>.</p>
+  </section>
+
+  <section class="r8-tour-section">
+    <h2>APIs added in R8</h2>
+    <ul>
+      <li><code><a href="/api/v2/graphql">GET /api/v2/graphql</a></code> — GraphQL schema + supported queries.</li>
+      <li><code><a href="/healthz">GET /healthz</a></code> — health snapshot.</li>
+      <li><code><a href="/api/uptime">GET /api/uptime</a></code> — deterministic uptime payload.</li>
+      <li><code><a href="/api/events">GET /api/events</a></code> — recent dictionary events feed.</li>
+      <li><code><a href="/api/command-palette">GET /api/command-palette</a></code> — Cmd+K backing index.</li>
+      <li><code><a href="/webhook/word-of-day">POST /webhook/word-of-day</a></code> — word-of-day subscription webhook.</li>
+      <li><code>POST /telemetry</code> — anonymous interaction telemetry.</li>
+    </ul>
+  </section>
+
+  <section class="r8-tour-section">
+    <h2>Help &amp; contextual glossaries</h2>
+    <ul>
+      <li><a href="{{ url_for('help_cefr_glossary') }}">CEFR levels glossary</a> — surfaced as a tooltip from every CEFR chip on the site.</li>
+      <li><a href="{{ url_for('help_shortcuts') }}">Keyboard shortcuts overview</a>.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

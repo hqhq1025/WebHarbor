@@ -80,7 +80,10 @@
   </div>
 
 
-  <div class="entry-header">
+  <div class="entry-header"
+       data-word-slug="{{ word.slug }}"
+       data-audio-uk="{{ word.audio_uk_path }}"
+       data-audio-us="{{ word.audio_us_path }}">
     {% if current_user.is_authenticated %}
       <form method="POST" action="{{ url_for('save_word_form', word_id=word.id) }}" style="display:inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -118,6 +121,9 @@
       {% endif %}
       {% if word.register %}
         <span class="register-chip register-chip--{{ word.register }}" title="Register: {{ word.register }}">{{ word.register }}</span>
+      {% endif %}
+      {% if word.r8_modern_equiv %}
+        <span class="modern-equiv-chip" title="Modern equivalent">modern: <a href="{{ url_for('word_detail', slug=word.r8_modern_equiv) }}">{{ word.r8_modern_equiv }}</a></span>
       {% endif %}
       {% if word.frequency_rank %}
         <span class="freq-rank" title="Frequency rank (lower = more common)">freq #{{ word.frequency_rank }}</span>

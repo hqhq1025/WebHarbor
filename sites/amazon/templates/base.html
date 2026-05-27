@@ -246,6 +246,29 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/command_palette.js') }}" defer></script>
     {% block extra_js %}{% endblock %}
+
+    {# R8 — Cmd+K command palette (browse departments / orders / wishlist / cart) #}
+    <div id="cmdk-overlay" role="dialog" aria-modal="true" aria-label="Command palette" hidden
+         style="position:fixed;inset:0;background:rgba(15,17,17,.5);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding-top:80px">
+        <div id="cmdk-panel" role="combobox" aria-expanded="true" aria-haspopup="listbox"
+             style="background:#fff;border-radius:10px;width:560px;max-width:92vw;box-shadow:0 18px 48px rgba(0,0,0,.32);overflow:hidden">
+            <div style="display:flex;align-items:center;border-bottom:1px solid #e5e7eb;padding:0 14px">
+                <span aria-hidden="true" style="font-size:18px;color:#5a6671">⌘K</span>
+                <input id="cmdk-input" type="text" placeholder="Jump to… (try: deals · orders · wishlist · grocery)"
+                       autocomplete="off" spellcheck="false" aria-controls="cmdk-list" aria-autocomplete="list"
+                       style="border:0;outline:0;padding:14px 12px;font-size:15px;width:100%">
+                <kbd style="font-size:11px;color:#5a6671;border:1px solid #d5dadc;border-radius:4px;padding:2px 6px">esc</kbd>
+            </div>
+            <ul id="cmdk-list" role="listbox" aria-label="Suggestions"
+                style="list-style:none;margin:0;padding:6px;max-height:380px;overflow:auto"></ul>
+            <div style="border-top:1px solid #e5e7eb;padding:8px 14px;font-size:12px;color:#5a6671;display:flex;justify-content:space-between">
+                <span><kbd>↑</kbd> <kbd>↓</kbd> navigate · <kbd>enter</kbd> open</span>
+                <span><kbd>/</kbd> focus search · <kbd>g h</kbd> home</span>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

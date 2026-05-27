@@ -124,6 +124,28 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- R8: Command palette overlay (opened via Cmd+K / Ctrl+K) -->
+  <div id="r8-palette" class="r8-palette" role="dialog" aria-modal="true"
+       aria-label="Command palette" hidden
+       style="position:fixed;inset:0;background:rgba(32,33,36,0.45);z-index:1200;display:flex;align-items:flex-start;justify-content:center;padding-top:96px;">
+    <div class="r8-palette-card" style="background:#fff;border-radius:12px;width:min(560px, 92vw);box-shadow:0 16px 48px rgba(0,0,0,0.25);overflow:hidden;">
+      <div class="r8-palette-input-row" style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #e8eaed;">
+        <span class="material-symbols-outlined" style="color:#5f6368;">search</span>
+        <input id="r8-palette-input" type="text" autocomplete="off" spellcheck="false"
+               aria-label="Search commands, airports, bookings"
+               placeholder="Type to jump - airports, tools, settings..."
+               style="flex:1;border:0;outline:none;font-size:16px;padding:6px 10px;background:transparent;">
+        <kbd style="background:#f1f3f4;border:1px solid #dadce0;border-radius:4px;padding:2px 6px;font-size:12px;color:#5f6368;">Esc</kbd>
+      </div>
+      <ul id="r8-palette-list" class="r8-palette-list" role="listbox"
+          style="list-style:none;margin:0;padding:6px;max-height:360px;overflow-y:auto;"></ul>
+      <div class="r8-palette-footer" style="padding:8px 14px;border-top:1px solid #e8eaed;font-size:12px;color:#5f6368;display:flex;justify-content:space-between;">
+        <span><kbd>Up</kbd> <kbd>Down</kbd> to move, <kbd>Enter</kbd> to open</span>
+        <a href="/keyboard-shortcuts" style="color:#1a73e8;text-decoration:none;">All shortcuts</a>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-top">
@@ -184,6 +206,8 @@
         <a href="{{ url_for('terms') }}">Terms</a>
         <a href="{{ url_for('help_page') }}">Help</a>
         <a href="{{ url_for('help_page', topic='feedback') }}">Feedback</a>
+        <a href="/keyboard-shortcuts">Keyboard shortcuts</a>
+        <a href="/developer/widget-embed">Developer</a>
         <span>&copy; {{ current_year }} Google Flights mirror - educational project</span>
       </div>
     </div>

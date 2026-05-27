@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Keyboard shortcuts — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Keyboard shortcuts</h1>
+    <p class="page-subtitle">Power-user shortcuts available across the Booking site. Press <kbd>?</kbd> anywhere to summon a quick reference overlay.</p>
+
+    <div class="pd-section">
+        <table class="kbd-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f0f4f9;"><th style="text-align:left;padding:8px;">Shortcut</th><th style="text-align:left;padding:8px;">Action</th></tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding:8px;"><kbd>/</kbd></td><td style="padding:8px;">Focus the destination search input on the current page</td></tr>
+                <tr><td style="padding:8px;"><kbd>Cmd</kbd>+<kbd>K</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd></td><td style="padding:8px;">Open the command palette (jump to city / property / saved / trip tools)</td></tr>
+                <tr><td style="padding:8px;"><kbd>?</kbd></td><td style="padding:8px;">Toggle this keyboard-shortcuts overlay</td></tr>
+                <tr><td style="padding:8px;"><kbd>Esc</kbd></td><td style="padding:8px;">Dismiss the command palette / shortcuts overlay</td></tr>
+                <tr><td style="padding:8px;"><kbd>g</kbd> then <kbd>s</kbd></td><td style="padding:8px;">Jump to Saved properties</td></tr>
+                <tr><td style="padding:8px;"><kbd>g</kbd> then <kbd>b</kbd></td><td style="padding:8px;">Jump to your Bag</td></tr>
+                <tr><td style="padding:8px;"><kbd>g</kbd> then <kbd>h</kbd></td><td style="padding:8px;">Jump to the home page</td></tr>
+                <tr><td style="padding:8px;"><kbd>g</kbd> then <kbd>t</kbd></td><td style="padding:8px;">Jump to the trip budget splitter</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

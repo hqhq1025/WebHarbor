@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Allrecipes mirror health metrics — recipe count, category count, review count, exposed as HTML and Prometheus-style plain text.{% endblock %}
+
+{% block content %}
+<section class="container metrics-page" style="max-width:880px;margin:32px auto;padding:0 16px;">
+  <h1>Mirror Metrics</h1>
+  <p class="lede" style="color:#555;font-size:1.05rem;">
+    Aggregate counters for the Allrecipes mirror. Append
+    <a href="/metrics?format=prom"><code>?format=prom</code></a> to get
+    Prometheus text exposition (one line per metric, with HELP / TYPE
+    metadata).
+  </p>
+
+  <table class="metrics-table" style="width:100%;margin-top:24px;border-collapse:collapse;font-size:0.97rem;">
+    <thead>
+      <tr style="background:#f6efe7;text-align:left;">
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;width:280px;">Metric</th>
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;width:110px;text-align:right;">Value</th>
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, val, help_txt in metric_lines %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #eee;font-family:monospace;color:#1a5;" data-metric-name="{{ name }}">{{ name }}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;font-weight:600;" data-metric-value="{{ val }}">{{ val }}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;color:#333;">{{ help_txt }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:32px;">Related Endpoints</h2>
+  <ul>
+    <li><a href="/healthz"><code>/healthz</code></a> — liveness probe (JSON).</li>
+    <li><a href="/telemetry/events?n=5"><code>/telemetry/events?n=5</code></a> — last N telemetry events.</li>
+    <li><a href="/metrics?format=prom"><code>/metrics?format=prom</code></a> — Prometheus text exposition.</li>
+  </ul>
+</section>
+{% endblock %}

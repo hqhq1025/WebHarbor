@@ -2410,6 +2410,296 @@ def api_cached_popular():
 
 
 # ---------------------------------------------------------------------------
+# R8 surface extensions: keyboard-driven UX, command palette, math glossary,
+# GraphQL v3 endpoint, share webhook, advanced widget builder, observability.
+# All endpoints are deterministic and process-local; the telemetry ring
+# buffer is initialised from a pinned snapshot, then appended in-process.
+# ---------------------------------------------------------------------------
+
+R8_VERSION = 'r8'
+R8_BUILD_DATE = '2026-05-26'
+
+# ---- (a) Telemetry ring buffer ------------------------------------------
+# Capped at 200 events. Initialised lazily with deterministic seed events
+# so /api/events returns something useful on a cold container. Subsequent
+# POSTs to /webhook/result-shared and palette/computation views append more.
+_R8_EVENT_RING = []
+_R8_EVENT_CAP = 200
+
+
+def _r8_seed_events():
+    """Deterministic seed -- ensures /api/events is non-empty on fresh start."""
+    if _R8_EVENT_RING:
+        return
+    seeds = [
+        {"event": "computation.rendered", "topic": "command-palette",
+         "duration_ms": 142, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:00"},
+        {"event": "palette.opened", "topic": "command-palette",
+         "duration_ms": 12, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:01"},
+        {"event": "shortcut.cmdEnter", "topic": "keyboard-shortcut-cmd-enter-compute",
+         "duration_ms": 4, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:02"},
+        {"event": "glossary.hovered", "topic": "contextual-help-math-symbol-glossary",
+         "duration_ms": 21, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:03"},
+        {"event": "graphql.queried", "topic": "api-v3-graphql",
+         "duration_ms": 88, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:04"},
+        {"event": "webhook.received", "topic": "webhook-result-shared",
+         "duration_ms": 6, "schema": "wa-telemetry-v1",
+         "ts": "2026-05-26T12:00:05"},
+    ]
+    _R8_EVENT_RING.extend(seeds)
+
+
+def _r8_emit(event, topic, **extra):
+    _r8_seed_events()
+    rec = {"event": event, "topic": topic, "schema": "wa-telemetry-v1",
+           "ts": "2026-05-26T12:00:00"}
+    rec.update(extra)
+    _R8_EVENT_RING.append(rec)
+    # cap
+    if len(_R8_EVENT_RING) > _R8_EVENT_CAP:
+        del _R8_EVENT_RING[: len(_R8_EVENT_RING) - _R8_EVENT_CAP]
+
+
+# ---- (b) Observability probes -------------------------------------------
+@app.route('/healthz')
+def r8_healthz():
+    """Liveness probe -- deterministic, no DB hit on hot path."""
+    return jsonify({"status": "ok", "build": R8_VERSION,
+                    "snapshot": R8_BUILD_DATE})
+
+
+@app.route('/api/uptime')
+def r8_uptime():
+    """Returns a pinned uptime snapshot + the build version."""
+    return jsonify({"uptime_s": 3600, "version": R8_VERSION,
+                    "build_date": R8_BUILD_DATE, "schema": "wa-uptime-v1"})
+
+
+@app.route('/api/events')
+def r8_events():
+    """Ring buffer of recent telemetry events (last <=200)."""
+    _r8_seed_events()
+    limit = request.args.get('limit', '50')
+    try:
+        limit = max(1, min(_R8_EVENT_CAP, int(limit)))
+    except ValueError:
+        limit = 50
+    evt_filter = request.args.get('event')
+    items = _R8_EVENT_RING[-limit:]
+    if evt_filter:
+        items = [e for e in items if e.get('event') == evt_filter]
+    return jsonify({"events": items, "count": len(items),
+                    "schema": "wa-events-v1", "version": R8_VERSION})
+
+
+# ---- (c) GraphQL v3 endpoint --------------------------------------------
+R8_GRAPHQL_SDL = (
+    "type Computation { id: ID! parsed: String plaintext: String "
+    "category: String subcategory: String keywords: String "
+    "pods: [Pod!]! schemaVersion: String! }\n"
+    "type Pod { title: String! plaintext: String }\n"
+    "type Query { computation(expression: String!): Computation }\n"
+    "schema { query: Query }\n"
+)
+
+
+@app.route('/api/v3-graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_graphql():
+    """Tiny GraphQL-style endpoint. GET returns the SDL; POST accepts a
+    JSON body with `expression` (or a `query` containing a single
+    computation(expression:"...") call) and returns the matching record."""
+    if request.method == 'GET':
+        return Response(R8_GRAPHQL_SDL, mimetype='text/plain; charset=utf-8')
+    payload = request.get_json(silent=True) or {}
+    expr = payload.get('expression') or ''
+    if not expr:
+        q = payload.get('query', '')
+        m = re.search(r'computation\s*\(\s*expression\s*:\s*"([^"]*)"', q)
+        if m:
+            expr = m.group(1)
+    if not expr:
+        return jsonify({"errors": [{"message": "missing expression"}]}), 400
+    comp = _find_best_computation(expr)
+    if not comp:
+        return jsonify({"data": {"computation": None},
+                        "schemaVersion": "wa-graphql-v3"})
+    pods = [{"title": p.get("title", ""),
+             "plaintext": p.get("plaintext", "")} for p in comp.get_pods()]
+    _r8_emit('graphql.queried', comp.topic_slug or 'api-v3-graphql',
+             cr_id=comp.id)
+    return jsonify({
+        "data": {
+            "computation": {
+                "id": comp.id,
+                "parsed": comp.parsed_input,
+                "plaintext": comp.plaintext,
+                "category": comp.category,
+                "subcategory": comp.subcategory,
+                "keywords": comp.keywords,
+                "pods": pods,
+                "schemaVersion": "wa-graphql-v3",
+            }
+        },
+        "schemaVersion": "wa-graphql-v3",
+    })
+
+
+# ---- (d) Share-event webhook --------------------------------------------
+@app.route('/webhook/result-shared', methods=['POST'])
+@csrf.exempt
+def r8_webhook_result_shared():
+    """Records a share event. Payload schema: {cr_id, channel, topic?}.
+    The event is appended to the telemetry ring buffer so it shows up in
+    /api/events without any further configuration."""
+    payload = request.get_json(silent=True) or {}
+    cr_id = payload.get('cr_id')
+    channel = payload.get('channel') or 'unknown'
+    topic = payload.get('topic') or ''
+    if not topic and cr_id is not None:
+        try:
+            comp = db.session.get(ComputationResult, int(cr_id))
+            if comp:
+                topic = comp.topic_slug or ''
+        except (TypeError, ValueError):
+            pass
+    _r8_emit('webhook.received', topic or 'webhook-result-shared',
+             channel=channel, cr_id=cr_id)
+    return jsonify({"ok": True, "schema": "wa-webhook-v1",
+                    "event": "result.shared",
+                    "topic": topic, "channel": channel,
+                    "version": R8_VERSION})
+
+
+# ---- (e) Command palette catalog ----------------------------------------
+@app.route('/api/command-palette')
+def r8_command_palette():
+    """JSON catalog of items exposed in the Cmd+K command palette. Items
+    cover topics, R8 surface routes, and a small selection of computations.
+    Supports ?q= for case-insensitive substring filtering."""
+    q = (request.args.get('q') or '').strip().lower()
+    items = []
+    # Static R8 routes
+    static_routes = [
+        ('Open math symbol glossary', '/help/symbols', 'help'),
+        ('Account takeout (JSON)', '/account/takeout', 'export'),
+        ('Cached popular queries', '/api/cached/popular', 'api'),
+        ('GraphQL v3 SDL', '/api/v3-graphql', 'api'),
+        ('Healthz probe', '/healthz', 'observability'),
+        ('Uptime', '/api/uptime', 'observability'),
+        ('Telemetry events', '/api/events', 'observability'),
+        ('Advanced widget builder', '/developer/widget-builder-advanced', 'developer'),
+        ('Switch locale: English', '/locale/en', 'locale'),
+        ('Switch locale: Deutsch', '/locale/de', 'locale'),
+        ('Switch locale: Espanol', '/locale/es', 'locale'),
+        ('Switch locale: Nihongo', '/locale/jp', 'locale'),
+    ]
+    for label, url, kind in static_routes:
+        items.append({"label": label, "url": url, "kind": kind,
+                      "shortcut": "Cmd+K"})
+    # Featured topics (deterministic order)
+    topics = (Topic.query.filter_by(is_featured=True)
+              .order_by(Topic.id).limit(40).all())
+    for t in topics:
+        items.append({"label": t.name, "url": f"/topic/{t.slug}",
+                      "kind": "topic", "shortcut": "Cmd+K"})
+    # First few computations, byte-stable order
+    sample = (ComputationResult.query.order_by(ComputationResult.id)
+              .limit(40).all())
+    for c in sample:
+        items.append({"label": (c.parsed_input or c.input_query)[:80],
+                      "url": f"/input?i={(c.parsed_input or c.input_query)}",
+                      "kind": "computation", "shortcut": "Cmd+Enter"})
+    if q:
+        items = [it for it in items
+                 if q in it['label'].lower() or q in it['url'].lower()]
+    _r8_emit('palette.opened', 'command-palette',
+             query=q, returned=len(items))
+    return jsonify({"items": items, "count": len(items),
+                    "schema": "wa-palette-v1", "version": R8_VERSION})
+
+
+# ---- (f) Math symbol glossary page --------------------------------------
+@app.route('/help/symbols')
+def r8_help_symbols():
+    """Math symbol glossary. Documents every glyph that gets a hover
+    tooltip in the result UI."""
+    glossary = [
+        ('+', 'plus', 'binary addition operator'),
+        ('-', 'minus', 'binary subtraction or unary negation'),
+        ('*', 'times', 'binary multiplication operator'),
+        ('/', 'divide', 'binary division operator'),
+        ('^', 'caret', 'exponentiation operator (a^b = a to the power b)'),
+        ('=', 'equals', 'equality predicate'),
+        ('!', 'factorial', 'factorial when postfix; logical-not when prefix'),
+        ('pi', 'pi', 'the constant pi (~3.14159265...)'),
+        ('e', 'euler-e', 'Euler number (~2.71828...)'),
+        ('sqrt', 'sqrt', 'principal square root'),
+        ('sin', 'sin', 'circular sine function'),
+        ('cos', 'cos', 'circular cosine function'),
+        ('tan', 'tan', 'circular tangent function'),
+        ('log', 'log', 'natural log (base e) unless a base is given'),
+        ('ln', 'ln', 'natural log (alias for log base e)'),
+        ('integral', 'integral', 'definite/indefinite integral operator'),
+        ('derivative', 'derivative', 'derivative operator (d/dx)'),
+        ('nabla', 'nabla', 'vector differential operator (gradient)'),
+        ('partial', 'partial', 'partial derivative operator'),
+        ('sum', 'sigma', 'finite or infinite summation'),
+        ('product', 'capital-pi', 'finite or infinite product'),
+        ('matrix', 'matrix', 'rectangular array of numbers/expressions'),
+        ('limit', 'lim', 'limit operator'),
+    ]
+    _r8_emit('glossary.shown', 'contextual-help-math-symbol-glossary',
+             count=len(glossary))
+    return render_template('help_symbols.html', glossary=glossary)
+
+
+# ---- (g) Advanced widget builder page -----------------------------------
+@app.route('/developer/widget-builder-advanced')
+def r8_widget_builder_advanced():
+    """Developer-grade widget builder. Options: theme, locale, kind,
+    telemetry, expr -- all rendered into a preview iframe URL."""
+    theme = request.args.get('theme', 'light')
+    locale = request.args.get('locale', 'en')
+    kind = request.args.get('kind', 'inline')
+    telemetry = request.args.get('telemetry', 'off')
+    expr = request.args.get('expr', 'derivative of x^2')
+    if theme not in {'light', 'dark', 'sepia', 'high-contrast'}:
+        theme = 'light'
+    if locale not in R7_LOCALES:
+        locale = 'en'
+    if kind not in {'inline', 'card', 'fullscreen'}:
+        kind = 'inline'
+    if telemetry not in {'on', 'off', 'sampled'}:
+        telemetry = 'off'
+    preview_url = (f"/input?i={expr.replace(' ', '+')}"
+                   f"&theme={theme}&locale={locale}"
+                   f"&kind={kind}&telemetry={telemetry}")
+    embed_snippet = (
+        f'<iframe src="{preview_url}" data-theme="{theme}" '
+        f'data-locale="{locale}" data-kind="{kind}" '
+        f'data-telemetry="{telemetry}" width="600" height="400" '
+        f'loading="lazy"></iframe>'
+    )
+    _r8_emit('widget.embed', 'developer-widget-builder-advanced',
+             theme=theme, locale=locale, kind=kind, telemetry=telemetry)
+    return render_template('developer_widget_builder_advanced.html',
+                           theme=theme, locale=locale, kind=kind,
+                           telemetry=telemetry, expr=expr,
+                           preview_url=preview_url,
+                           embed_snippet=embed_snippet,
+                           themes=['light', 'dark', 'sepia', 'high-contrast'],
+                           locales=R7_LOCALES,
+                           kinds=['inline', 'card', 'fullscreen'],
+                           telems=['on', 'off', 'sampled'])
+
+
+# ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
 

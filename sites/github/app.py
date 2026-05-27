@@ -5008,6 +5008,585 @@ _R7_SITEMAP_LANGS = [canonical for _, canonical in _R7_SITEMAP_LANG_MAP]
 _R7_SITEMAP_SLUG_TO_LANG = dict(_R7_SITEMAP_LANG_MAP)
 
 
+# ─────────────────────── R8: observability + dev surface ───────────────────────
+# Eight read-only routes that cover what real github.com exposes for ops,
+# webhooks, GraphQL discovery, OAuth app registration, and a permission/scope
+# glossary. Every payload is derived from MIRROR_REFERENCE_DATE so two
+# rebuilds produce byte-identical seed DBs and tasks always have a stable
+# answer regardless of when they run.
+
+_R8_HEALTH_BUILD_SHA = hashlib.sha1(b'webharbor-github-r8').hexdigest()[:12]
+_R8_BUILD_TAG = 'r8.0.0'
+
+
+@app.route('/healthz')
+def healthz():
+    """Cheap liveness probe — also used by docker/start scripts. Returns a
+    fixed body so byte-identical seed audits can compare two runs. We do NOT
+    query the DB here on the hot path; the existence of /healthz is enough
+    for an L4 probe to declare the site up."""
+    accept = (request.headers.get('Accept', '') or '').lower()
+    body = {
+        'status': 'ok',
+        'service': 'github-mirror',
+        'build': _R8_BUILD_TAG,
+        'sha': _R8_HEALTH_BUILD_SHA,
+        'reference_date': MIRROR_REFERENCE_DATE.isoformat(),
+    }
+    if 'application/json' in accept or request.args.get('format') == 'json':
+        return jsonify(body)
+    return ('ok\n', 200, {'Content-Type': 'text/plain; charset=utf-8'})
+
+
+# Telemetry event bank. Same shape as the real GitHub audit-log API: a fixed
+# vocab of `action` strings plus a deterministic synthetic timestamp/actor.
+# Tasks can ask "what is the most recent event of type X" with a stable
+# answer because the bank is sorted by ts desc.
+_R8_TELEMETRY_ACTIONS = [
+    'repo.create', 'repo.archive', 'repo.transfer', 'repo.delete',
+    'pr.opened', 'pr.merged', 'pr.closed', 'pr.review_requested',
+    'issue.opened', 'issue.closed', 'issue.labeled',
+    'release.published', 'workflow_run.completed', 'workflow_run.failed',
+    'star.created', 'fork.created', 'webhook.delivered',
+    'oauth_app.created', 'oauth_app.revoked',
+    'secret_scanning.alert.created', 'secret_scanning.alert.dismissed',
+    'codespace.created', 'codespace.deleted',
+    'dependency_graph.updated',
+]
+
+
+def _r8_events(limit=50):
+    """Synthesize a deterministic stream of recent telemetry events.
+
+    Bound on `(MIRROR_REFERENCE_DATE - i*23min, sha1(i)% N)` so callers see
+    the same list across reloads. Limit is clamped to 1..200."""
+    limit = max(1, min(int(limit), 200))
+    out = []
+    for i in range(limit):
+        h = int(hashlib.sha1(f'r8-evt-{i}'.encode()).hexdigest()[:10], 16)
+        action = _R8_TELEMETRY_ACTIONS[h % len(_R8_TELEMETRY_ACTIONS)]
+        actor = ['octocat', 'mojombo', 'defunkt', 'pjhyett',
+                 'wycats', 'ezmobius', 'ivey', 'evanphx',
+                 'vanpelt', 'wayneeseguin', 'brynary'][(h >> 4) % 11]
+        ts = MIRROR_REFERENCE_DATE - timedelta(minutes=23 * i,
+                                               seconds=(h >> 7) % 60)
+        out.append({
+            'id': f'evt_{_R8_HEALTH_BUILD_SHA}_{i:04d}',
+            'action': action,
+            'actor': actor,
+            'created_at': ts.isoformat(),
+        })
+    return out
+
+
+@app.route('/api/events')
+def api_events():
+    """JSON stream of recent platform-level events. Mirrors the shape of
+    GitHub's audit-log API minus the org scope. Filterable by `?action=`."""
+    limit = request.args.get('limit', '50')
+    try:
+        limit_i = int(limit)
+    except ValueError:
+        limit_i = 50
+    events = _r8_events(limit_i)
+    action = request.args.get('action', '').strip()
+    if action:
+        events = [e for e in events if e['action'] == action]
+    return jsonify({
+        'total': len(events),
+        'reference_date': MIRROR_REFERENCE_DATE.isoformat(),
+        'events': events,
+    })
+
+
+@app.route('/api/uptime')
+def api_uptime():
+    """Past-30-day uptime breakdown per service. Driven by the same hash
+    that powers /status/page so the two views agree."""
+    today = MIRROR_REFERENCE_DATE.date()
+    services_out = []
+    overall_total = 0.0
+    overall_n = 0
+    for slug, name, _desc in _R7_STATUS_SERVICES:
+        days = []
+        svc_sum = 0.0
+        for i in range(30):
+            day = today - timedelta(days=29 - i)
+            dh = int(hashlib.sha1(
+                f'{slug}|{day.isoformat()}'.encode()).hexdigest()[:8], 16)
+            uptime_pct = 99.0 + (dh % 100) / 100.0
+            days.append({'date': day.isoformat(),
+                         'uptime': round(uptime_pct, 3)})
+            svc_sum += uptime_pct
+        avg = svc_sum / 30.0
+        services_out.append({
+            'slug': slug, 'name': name,
+            'avg_uptime_30d': round(avg, 3),
+            'days': days,
+        })
+        overall_total += avg
+        overall_n += 1
+    return jsonify({
+        'reference_date': MIRROR_REFERENCE_DATE.isoformat(),
+        'window_days': 30,
+        'overall_avg_uptime': round(overall_total / max(1, overall_n), 3),
+        'services': services_out,
+    })
+
+
+@app.route('/webhook/repository', methods=['GET', 'POST'])
+@csrf.exempt
+def webhook_repository():
+    """Webhook receiver stub. Accepts POST with `X-GitHub-Event` header and
+    returns a deterministic delivery id; never writes to the DB so seed
+    byte-identity holds. GET renders the docs/landing page describing the
+    payload shape, which is what the WebVoyager tasks read."""
+    if request.method == 'POST':
+        event = (request.headers.get('X-GitHub-Event', '') or 'ping').strip()
+        delivery_id = hashlib.sha1(
+            ('webhook|' + event + '|' + _R8_HEALTH_BUILD_SHA).encode()
+        ).hexdigest()
+        return jsonify({
+            'received': True,
+            'event': event,
+            'delivery_id': delivery_id,
+            'ref_date': MIRROR_REFERENCE_DATE.isoformat(),
+        }), 202
+    page = {
+        'title': 'Repository webhooks',
+        'eyebrow': 'Developer · Webhooks',
+        'subtitle': 'POST endpoint for repository events',
+        'meta_description': (
+            'Repository webhook receiver for the GitHub mirror. POST '
+            'with X-GitHub-Event header to receive a deterministic '
+            'delivery id.'),
+        'sections': [{
+            'h': 'Endpoint',
+            'p': ('<code>POST /webhook/repository</code> — accepts a JSON body '
+                  'and an <code>X-GitHub-Event</code> header. Returns a stable '
+                  '<code>delivery_id</code> derived from the event name and the '
+                  'mirror build SHA.'),
+        }, {
+            'h': 'Supported events',
+            'list': [
+                '<code>push</code> — branch / tag pushes',
+                '<code>pull_request</code> — opened, closed, synchronize',
+                '<code>issues</code> — opened, closed, labeled',
+                '<code>release</code> — published, edited',
+                '<code>workflow_run</code> — requested, completed',
+                '<code>star</code> — created, deleted',
+                '<code>ping</code> — connectivity check (default)',
+            ],
+        }, {
+            'h': 'Example response',
+            'pre': json.dumps({
+                'received': True,
+                'event': 'push',
+                'delivery_id': hashlib.sha1(
+                    ('webhook|push|' + _R8_HEALTH_BUILD_SHA).encode()
+                ).hexdigest(),
+                'ref_date': MIRROR_REFERENCE_DATE.isoformat(),
+            }, indent=2),
+        }],
+        'bullets': ['No state is persisted on this mirror',
+                    'Delivery ids are deterministic across rebuilds',
+                    'POST returns 202 Accepted'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+@app.route('/api/graphql', methods=['GET', 'POST'])
+@app.route('/api/graphql-stub', methods=['GET', 'POST'])
+@csrf.exempt
+def api_graphql_stub():
+    """Minimal GraphQL stub. GET returns the schema discovery page; POST
+    with a `{query:"..."}` body returns a deterministic shape for the small
+    subset of queries the mirror's docs advertise (viewer, repository)."""
+    if request.method == 'POST':
+        try:
+            body = request.get_json(silent=True) or {}
+        except Exception:
+            body = {}
+        q = (body.get('query') or '').strip()
+        if 'viewer' in q:
+            data = {'data': {'viewer': {
+                'login': 'octocat',
+                'name': 'The Octocat',
+                'bio': 'Frozen snapshot user.',
+            }}}
+        elif 'repository' in q:
+            # Always return facebook/react as the demo repo for the stub
+            # so docs examples line up with the response shape.
+            repo = Repository.query.filter_by(
+                full_name='facebook/react').first()
+            data = {'data': {'repository': {
+                'nameWithOwner': repo.full_name if repo else 'facebook/react',
+                'stargazerCount': repo.stars_count if repo else 0,
+                'forkCount': repo.forks_count if repo else 0,
+                'primaryLanguage': {'name':
+                                    repo.language if repo else 'JavaScript'},
+            }}}
+        else:
+            data = {'data': None,
+                    'errors': [{'message': 'Only `viewer` and `repository(...)` '
+                                'are exposed on this stub.'}]}
+        return jsonify(data)
+    page = {
+        'title': 'GraphQL API stub',
+        'eyebrow': 'Developer · GraphQL',
+        'subtitle': 'Minimal POST endpoint with two demo queries',
+        'meta_description': (
+            'GraphQL stub for the GitHub mirror. Exposes `viewer` and '
+            '`repository(owner:..., name:...)` for tasks that need a JSON '
+            'shape similar to the real GitHub GraphQL API.'),
+        'sections': [{
+            'h': 'Endpoint',
+            'p': ('<code>POST /api/graphql</code> (alias '
+                  '<code>/api/graphql-stub</code>) — body '
+                  '<code>{"query":"..."}</code>. The mirror inspects the '
+                  'query string for the words <code>viewer</code> or '
+                  '<code>repository</code> and returns a fixed shape.'),
+        }, {
+            'h': 'Sample — viewer',
+            'pre': '{\n  viewer {\n    login\n    name\n    bio\n  }\n}',
+        }, {
+            'h': 'Sample — repository',
+            'pre': ('{\n  repository(owner: "facebook", name: "react") {\n'
+                    '    nameWithOwner\n    stargazerCount\n    forkCount\n'
+                    '    primaryLanguage { name }\n  }\n}'),
+        }, {
+            'h': 'Out-of-scope',
+            'list': [
+                'Mutations are not supported (read-only mirror)',
+                'No authentication required',
+                'Schema introspection is not exposed',
+            ],
+        }],
+        'bullets': ['Two read-only queries',
+                    'Deterministic responses driven by the seed DB',
+                    'Returns JSON on POST, HTML on GET'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# Stable, deterministic OAuth app registry — three frozen entries that the
+# /developer/oauth-app and /developer/oauth-app/<slug> pages render.
+_R8_OAUTH_APPS = [
+    {
+        'slug': 'mirror-cli',
+        'name': 'Mirror CLI',
+        'client_id': 'Iv1.' + hashlib.sha1(b'mirror-cli').hexdigest()[:16],
+        'homepage': '/api',
+        'callback': '/login/oauth/callback/mirror-cli',
+        'scopes': ['repo:status', 'public_repo', 'read:user'],
+        'description': ('First-party CLI client used by the mirror tooling. '
+                        'Read-only scopes, no write surface.'),
+    },
+    {
+        'slug': 'webvoyager-bot',
+        'name': 'WebVoyager Eval Bot',
+        'client_id': 'Iv1.' + hashlib.sha1(b'webvoyager-bot').hexdigest()[:16],
+        'homepage': '/about',
+        'callback': '/login/oauth/callback/webvoyager-bot',
+        'scopes': ['read:user', 'read:org', 'notifications'],
+        'description': ('OAuth app used by automated WebVoyager evaluation '
+                        'runs to inspect read-only state.'),
+    },
+    {
+        'slug': 'gh-actions-inspector',
+        'name': 'Actions Inspector',
+        'client_id': 'Iv1.' + hashlib.sha1(b'gh-actions-inspector').hexdigest()[:16],
+        'homepage': '/marketplace',
+        'callback': '/login/oauth/callback/gh-actions-inspector',
+        'scopes': ['workflow', 'read:packages', 'repo:status'],
+        'description': ('Reads workflow run metadata. Cannot dispatch or '
+                        'cancel runs on this mirror.'),
+    },
+]
+
+
+@app.route('/developer/oauth-app')
+def developer_oauth_app_index():
+    """OAuth app developer registry — list view. Three entries, deterministic
+    client ids so tasks can ask for "the client id of the WebVoyager bot"."""
+    page = {
+        'title': 'OAuth Apps',
+        'eyebrow': 'Developer',
+        'subtitle': ('Register and inspect OAuth applications. Read-only '
+                     'on this mirror.'),
+        'meta_description': (
+            'OAuth app registry for the GitHub mirror. Lists three apps with '
+            'stable client ids derived from the build SHA.'),
+        'sections': ([{
+            'h': app_['name'],
+            'p': (f"<code>client_id={app_['client_id']}</code><br>"
+                  f"Homepage: <code>{app_['homepage']}</code><br>"
+                  f"Callback URL: <code>{app_['callback']}</code><br>"
+                  f"Scopes: <code>{', '.join(app_['scopes'])}</code><br>"
+                  f"{app_['description']} "
+                  f"<a href=\"/developer/oauth-app/{app_['slug']}\">View →</a>"),
+        } for app_ in _R8_OAUTH_APPS]),
+        'bullets': ['Read-only registry',
+                    'Client ids derived from build SHA',
+                    'No real OAuth dance — no /login/oauth endpoint here'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+@app.route('/developer/oauth-app/<slug>')
+def developer_oauth_app_detail(slug):
+    for app_ in _R8_OAUTH_APPS:
+        if app_['slug'] == slug:
+            page = {
+                'title': app_['name'],
+                'eyebrow': 'Developer · OAuth App',
+                'subtitle': app_['description'],
+                'meta_description':
+                    f"OAuth app details for {app_['name']}.",
+                'sections': [{
+                    'h': 'Identity',
+                    'list': [
+                        f"<strong>Name</strong>: {app_['name']}",
+                        f"<strong>Slug</strong>: <code>{app_['slug']}</code>",
+                        f"<strong>Client ID</strong>: <code>{app_['client_id']}</code>",
+                        f"<strong>Homepage</strong>: <code>{app_['homepage']}</code>",
+                        f"<strong>Callback URL</strong>: <code>{app_['callback']}</code>",
+                    ],
+                }, {
+                    'h': 'Scopes',
+                    'list': [f"<code>{s}</code>" for s in app_['scopes']],
+                }, {
+                    'h': 'About',
+                    'p': app_['description'],
+                }],
+                'bullets': ['Frozen registry entry',
+                            f"Build {_R8_BUILD_TAG}",
+                            'No client_secret exposed'],
+            }
+            return render_template('info_page.html', page=page)
+    abort(404)
+
+
+# Glossary entries for the contextual-help surface. Each maps a permission /
+# scope / API noun to a one-line explanation. The /help/glossary page renders
+# them and the base-template JS uses the same vocabulary to attach <abbr>-style
+# tooltips on matching tokens.
+_R8_GLOSSARY = [
+    ('repo', 'Full read/write access to public and private repositories.'),
+    ('public_repo', 'Read/write access to public repositories only.'),
+    ('repo:status', 'Read/write access to commit status (CI checks).'),
+    ('read:user', 'Read access to the authenticated user\'s profile.'),
+    ('read:org', 'Read access to org membership and team metadata.'),
+    ('workflow', 'Read/write access to GitHub Actions workflow runs.'),
+    ('read:packages', 'Read access to the package registry.'),
+    ('notifications', 'Read/write access to the notifications feed.'),
+    ('admin:repo_hook', 'Manage webhooks on a repository.'),
+    ('admin:org_hook', 'Manage org-level webhooks.'),
+    ('gist', 'Read/write access to Gists.'),
+    ('OAuth App', 'A third-party app that authenticates users via '
+                  'GitHub\'s OAuth flow.'),
+    ('GraphQL', 'A query language for fetching nested graph data in a '
+                'single round-trip.'),
+    ('webhook',  'An outbound HTTP POST triggered by repository events.'),
+    ('delivery_id', 'Stable identifier for a single webhook POST.'),
+    ('JSON-LD', 'Linked-data JSON embedded in HTML for SEO crawlers.'),
+    ('OpenAPI', 'A REST API description format (formerly Swagger).'),
+    ('REST', 'Stateless HTTP API style; uses GET/POST/PUT/DELETE verbs.'),
+    ('rate limit', 'Caps the number of API calls per unit time per actor.'),
+    ('CSRF', 'Cross-site request forgery — protected by per-form tokens.'),
+]
+
+
+@app.route('/help/glossary')
+def help_glossary():
+    """API / permission / scope glossary. Driven by `_R8_GLOSSARY`. Linked
+    from the help modal (?) and rendered as an indexable page so the
+    contextual-help vocabulary is discoverable both for humans and for
+    eval tasks like 'what does the `workflow` scope grant?'."""
+    page = {
+        'title': 'API & Permissions Glossary',
+        'eyebrow': 'Help',
+        'subtitle': ('One-line definitions for every scope, API surface and '
+                     'standards-acronym the mirror uses.'),
+        'meta_description': (
+            'Glossary of API surfaces, OAuth scopes and standards acronyms '
+            'used across the GitHub mirror.'),
+        'sections': [{
+            'h': f'{term}',
+            'p': defn,
+        } for term, defn in _R8_GLOSSARY],
+        'bullets': [f'{len(_R8_GLOSSARY)} entries',
+                    'Linked from the help modal (?)',
+                    'Stable across rebuilds'],
+    }
+    return render_template('info_page.html', page=page)
+
+
+# ─────────────────────────── R8 catalog growth ───────────────────────────
+# Push the catalog from R7's 32k → 40k+ by minting a fresh slot of repos
+# with the `r8-` prefix. Same hash-deterministic pattern as R5/R6/R7 so two
+# rebuilds match byte-for-byte.
+
+_R8_REPO_TARGET = 40000
+_R8_REPO_SUFFIXES = [
+    'palette', 'shortcut', 'glossary', 'helpdesk', 'tooltip',
+    'inspector', 'console', 'studio', 'workshop', 'gallery',
+    'beacon8', 'spotlight', 'meter', 'pulse', 'monitor',
+    'gauge', 'tracker', 'ledger', 'manifest', 'roster',
+    'directory', 'index8', 'registry8', 'catalog8', 'almanac',
+    'compendium', 'codex', 'primer', 'gazette',
+]
+
+
+def seed_r8_user_repos():
+    """Mint up to ~8000 R8 repos under existing owners. Each owner caps at
+    ~110 total repos so the largest orgs don't run away with the catalog.
+    Deterministic via SHA-1 of (owner.username, slot)."""
+    have = Repository.query.count()
+    if have >= _R8_REPO_TARGET:
+        return 0
+
+    owners = (User.query
+              .join(Repository, Repository.owner_id == User.id)
+              .order_by(User.username.asc())
+              .distinct()
+              .all())
+    if not owners:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    topics_pool = [
+        'developer-experience', 'platform-engineering', 'observability',
+        'webhooks', 'graphql', 'oauth', 'permission-system',
+        'rate-limiting', 'feature-flags', 'telemetry',
+        'distributed-tracing', 'audit-log', 'health-check',
+        'uptime', 'sre', 'reliability', 'open-telemetry',
+        'cli', 'sdk', 'rust', 'go', 'python', 'typescript',
+    ]
+
+    added = 0
+    for slot in range(len(_R8_REPO_SUFFIXES)):
+        if have + added >= _R8_REPO_TARGET:
+            break
+        for owner in owners:
+            if have + added >= _R8_REPO_TARGET:
+                break
+            existing_for_owner = sum(1 for fn in existing_full
+                                     if fn.startswith(owner.username + '/'))
+            if existing_for_owner >= 110:
+                continue
+            suffix = _R8_REPO_SUFFIXES[
+                (slot + _r6_hash(owner.username)) % len(_R8_REPO_SUFFIXES)]
+            base_name = f"r8-{suffix}-{slot}"
+            full = f"{owner.username}/{base_name}"
+            if full in existing_full:
+                base_name = (
+                    f"r8-{suffix}-{slot}-{_r6_hash(owner.username, slot) % 9999}")
+                full = f"{owner.username}/{base_name}"
+                if full in existing_full:
+                    continue
+            h = _r6_hash('r8', full)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = ['observability', 'webhooks', 'graphql', 'oauth',
+                    'rate-limit', 'telemetry', 'audit-log', 'health',
+                    'feature-flag', 'tracing', 'palette', 'shortcut'][(h >> 3) % 12]
+            desc = (
+                f"R8 polish on the {area} subsystem — deterministic stubs, "
+                f"glossary-backed docs, used in production by {owner.username}."
+            )[:255]
+            feature1 = _R6_FEATURE_BANK[(h >> 7) % len(_R6_FEATURE_BANK)]
+            feature2 = _R6_FEATURE_BANK[(h >> 11) % len(_R6_FEATURE_BANK)]
+            install_tmpl = _R6_INSTALL_BANK.get(lang, 'cargo install {name}')
+            cmd = install_tmpl.format(name=base_name, full=full,
+                                      org=owner.username.lower())
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            readme = (
+                f"# {full}\n\n> {desc}\n\n## Why\n\n"
+                f"- {feature1}\n- {feature2}\n"
+                f"- Ships an OpenAPI snippet and a GraphQL stub schema.\n\n"
+                f"## Install\n\n```bash\n{cmd}\n```\n\n"
+                f"## Glossary\n\nKey terms used in this repo are defined at "
+                f"`/help/glossary`. The `{area}` page in particular pairs "
+                f"with the `webhook` and `delivery_id` entries.\n"
+            )
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            stars = 5 + (h % 2800)
+            forks = max(0, stars // (3 + (h % 5)))
+            watchers = max(1, stars // 4)
+            open_issues = (h >> 4) % 12
+            is_archived = ((h >> 9) % 22 == 0)
+
+            topic_slugs = []
+            for k in range(3 + (h % 3)):
+                ts = topics_pool[(h * 7 + k * 23) % len(topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=120 + (h % 1300),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 140),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(f"r8|{full}".encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=owner.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 12) % 38 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 6 == 0),
+                has_issues=True,
+                owner_type='organization' if (h >> 14) % 3 == 0 else 'user',
+                default_branch=default_branch,
+                size_kb=140 + (h % 22000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=(
+                    f"v{1 + (h % 5)}.{(h >> 2) % 18}.{(h >> 4) % 16}"),
+                latest_release_date=pushed - timedelta(days=4 + (h % 60)),
+                latest_release_notes=(
+                    f"R8 polish on the {area} subsystem: contextual-help "
+                    "tooltips, command-palette wiring, glossary cross-links."
+                ),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"feat({area}): R8 polish — palette / shortcut / glossary"),
+                latest_commit_date=pushed,
+                latest_commit_additions=18 + (h % 320),
+                latest_commit_deletions=4 + ((h >> 1) % 160),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 1000 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
 # ─────────────────────────── Main ───────────────────────────
 
 def seed_benchmark_users():
@@ -8045,10 +8624,13 @@ def create_app():
         c14 = seed_r7_user_repos() or 0
         c1d = seed_extra_commits() or 0
         c15 = seed_r7_topup_commits() or 0
+        # R8: extend catalog to 40k+; commits topped via seed_extra_commits.
+        c16 = seed_r8_user_repos() or 0
+        c1e = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + ct) > 0)
     return app
 
 
@@ -8086,10 +8668,13 @@ with app.app_context():
         c14 = seed_r7_user_repos() or 0
         c1d = seed_extra_commits() or 0
         c15 = seed_r7_topup_commits() or 0
+        # R8
+        c16 = seed_r8_user_repos() or 0
+        c1e = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + ct) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

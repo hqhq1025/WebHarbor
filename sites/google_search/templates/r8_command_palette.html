@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Command palette — Google Search{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 4px;">Command palette</h1>
+  <p class="muted">
+    Press <kbd>Cmd</kbd> + <kbd>K</kbd> (or <kbd>Ctrl</kbd> + <kbd>K</kbd>) anywhere on Google
+    to open this palette. Jump to any vertical, settings page, or developer endpoint by name.
+    See also <a href="/accessibility/keyboard">keyboard shortcuts</a> for in-result
+    navigation (<kbd>J</kbd>/<kbd>K</kbd>).
+  </p>
+
+  <form method="get" action="/command-palette" style="margin: 16px 0;">
+    <input type="search" name="q" value="{{ q }}"
+           placeholder="Filter palette… (try: images, scholar, healthz)"
+           style="width: 100%; padding: 10px 14px; border: 1px solid #dadce0;
+                  border-radius: 8px; font-size: 15px;"
+           autofocus aria-label="Filter command palette">
+  </form>
+
+  <div role="listbox" aria-label="Command palette items"
+       style="border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
+    {% for label, desc, href in items %}
+    <a role="option" href="{{ href }}"
+       style="display: flex; justify-content: space-between; align-items: center;
+              padding: 12px 14px; border-bottom: 1px solid #f1f3f4;
+              text-decoration: none; color: inherit;">
+      <span>
+        <strong style="font-size: 14px;">{{ label }}</strong>
+        <span class="muted" style="font-size: 13px; margin-left: 8px;">{{ desc }}</span>
+      </span>
+      <code style="font-size: 12px; color: #5f6368;">{{ href }}</code>
+    </a>
+    {% else %}
+    <div style="padding: 14px;">No palette items match <code>{{ q }}</code>.</div>
+    {% endfor %}
+  </div>
+
+  <p class="muted" style="margin-top: 12px; font-size: 12px;">
+    JSON form available at <a href="/api/palette"><code>/api/palette</code></a>.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}BBC Local - all regions - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page" id="local-index">
+    <h1>BBC Local</h1>
+    <p class="lead">Local news, sport and weather from
+        <strong>{{ total_regions }}</strong> regions across the UK.</p>
+
+    <div class="local-region-grid">
+        {% for r in regions %}
+        <a class="local-region-card" href="{{ url_for('local_region_page', region_slug=r.slug) }}">
+            <h3>{{ r.name }}</h3>
+            <p class="local-region-nation">{{ r.nation }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

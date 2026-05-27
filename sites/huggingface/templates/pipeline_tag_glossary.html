@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Pipeline-tag glossary · Hugging Face{% endblock %}
+{% block content %}
+<div class="container-wide" style="max-width:920px;padding:32px 24px;">
+    <h1 style="font-size:32px;margin:0 0 8px;">Pipeline-tag glossary</h1>
+    <p class="text-muted" style="margin:0 0 24px;">A short reference for every pipeline-tag shown on model cards across the Hub. Tags are the canonical task slug — they drive the task badge, the filter pills on <a href="{{ url_for('models_list') }}">/models</a>, and the inference widget.</p>
+
+    <form method="get" action="" style="margin:0 0 24px;">
+        <input type="search" name="q" value="{{ q }}" placeholder="Filter glossary..." style="width:100%;max-width:480px;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;" aria-label="Filter glossary">
+    </form>
+
+    {% if not entries %}
+        <p style="color:#b45309;">No entries match "{{ q }}".</p>
+    {% endif %}
+
+    <dl class="pipeline-tag-glossary" style="display:grid;grid-template-columns:1fr;gap:14px;">
+        {% for slug, defn in entries %}
+            <div class="pipeline-tag-entry" id="tag-{{ slug }}" data-pipeline-tag="{{ slug }}" style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;background:#f9fafb;">
+                <dt style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 4px;">
+                    <code style="font-size:15px;font-weight:600;color:#111827;">{{ slug }}</code>
+                    <a href="{{ url_for('task_detail', slug=slug) }}" style="font-size:12px;color:#1d4ed8;text-decoration:none;">→ /tasks/{{ slug }}</a>
+                </dt>
+                <dd style="margin:0;font-size:14px;color:#374151;line-height:1.55;">{{ defn }}</dd>
+            </div>
+        {% endfor %}
+    </dl>
+
+    <p style="margin-top:32px;font-size:13px;color:#6b7280;">Press <kbd>?</kbd> anywhere on the site to open the keyboard-shortcut help. Press <kbd>Cmd</kbd>+<kbd>K</kbd> (or <kbd>Ctrl</kbd>+<kbd>K</kbd>) to open the command palette.</p>
+</div>
+{% endblock %}

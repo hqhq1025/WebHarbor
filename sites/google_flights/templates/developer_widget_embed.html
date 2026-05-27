@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Embed Google Flights widget - Developer docs{% endblock %}
+{% block meta_description %}Generate copy-pasteable HTML iframe or script snippets to embed a Google Flights search widget on your own site. Configure origin, destination, width, and height.{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Embed Google Flights on your site</h1>
+    <p class="lead">
+      Drop a Google Flights search box onto any web page. Configure the
+      default route, size, and styling — we return a snippet you can paste
+      straight into your HTML.
+    </p>
+
+    <h2>Configure your widget</h2>
+    <form method="GET" action="{{ url_for('developer_widget_embed') }}" class="widget-config-form" style="display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin:16px 0;">
+      <label>Origin (IATA)<br>
+        <input type="text" name="origin" value="{{ origin }}" maxlength="3" pattern="[A-Za-z]{3}" required
+               style="width:100%;padding:8px;border:1px solid #dadce0;border-radius:6px;">
+      </label>
+      <label>Destination (IATA)<br>
+        <input type="text" name="destination" value="{{ destination }}" maxlength="3" pattern="[A-Za-z]{3}" required
+               style="width:100%;padding:8px;border:1px solid #dadce0;border-radius:6px;">
+      </label>
+      <label>Width (px)<br>
+        <input type="number" name="width" value="{{ width }}" min="240" max="1200"
+               style="width:100%;padding:8px;border:1px solid #dadce0;border-radius:6px;">
+      </label>
+      <label>Height (px)<br>
+        <input type="number" name="height" value="{{ height }}" min="240" max="800"
+               style="width:100%;padding:8px;border:1px solid #dadce0;border-radius:6px;">
+      </label>
+      <div style="grid-column:1 / -1;">
+        <button type="submit" style="background:#1a73e8;color:#fff;border:0;padding:10px 20px;border-radius:6px;cursor:pointer;">Regenerate snippet</button>
+      </div>
+    </form>
+
+    <h2 id="iframe-snippet">Option 1 — iframe embed (recommended)</h2>
+    <p>Pure HTML, no JavaScript dependency. Best when you want strict isolation between the host page and the widget.</p>
+    <pre style="background:#f8f9fa;border:1px solid #dadce0;border-radius:6px;padding:14px;overflow-x:auto;font-family:monospace;font-size:13px;">{{ iframe_snippet }}</pre>
+
+    <h2 id="script-snippet">Option 2 — script embed (auto-resize)</h2>
+    <p>Drop in a div placeholder; our async script hydrates it and resizes to the host page width.</p>
+    <pre style="background:#f8f9fa;border:1px solid #dadce0;border-radius:6px;padding:14px;overflow-x:auto;font-family:monospace;font-size:13px;">{{ script_snippet }}</pre>
+
+    <h2 id="preview">Live preview</h2>
+    <p style="color:#5f6368;font-size:13px;">Embedded with the parameters above. The mirror serves the same <code>/flights</code> route with <code>?embed=1</code> stripped of the header chrome.</p>
+    <div style="border:1px solid #dadce0;border-radius:8px;padding:8px;display:inline-block;background:#fafbfc;">
+      <iframe src="{{ base }}/flights?from={{ origin }}&to={{ destination }}&embed=1"
+              width="{{ width }}" height="{{ height }}" frameborder="0" loading="lazy"
+              title="Google Flights — {{ origin }} to {{ destination }}"
+              style="border-radius:6px;display:block;"></iframe>
+    </div>
+
+    <h2 id="terms">Terms of use</h2>
+    <ul>
+      <li>The widget is provided as-is for educational/research embedding.</li>
+      <li>You must not modify the rendered chrome or hide our branding.</li>
+      <li>For high-volume traffic, contact us — burst above 10 RPS will be rate-limited.</li>
+    </ul>
+
+    <p style="margin-top:24px;color:#5f6368;font-size:13px;">
+      Need the JSON / programmatic catalog instead? Try the <a href="{{ url_for('api_v2_graphql') }}">/api/v2/graphql</a> endpoint.
+    </p>
+  </div>
+</div>
+{% endblock %}

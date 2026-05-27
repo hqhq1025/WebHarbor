@@ -2108,10 +2108,14 @@ def r7_accessibility():
         ('Alt + Left', 'Go back to previous page'),
         ('Alt + Right', 'Go forward'),
         ('?', 'Open the keyboard-shortcut overlay'),
+        ('Cmd + K', 'Open the Command palette (jump to any vertical/page)'),
+        ('Ctrl + K', 'Open the Command palette (Windows / Linux variant)'),
         ('G then T', 'Jump to Trending searches'),
         ('G then D', 'Jump to the Doodles archive'),
         ('G then H', 'Jump to your Search history'),
         ('G then S', 'Jump to Settings'),
+        ('G then P', 'Jump to the Command palette'),
+        ('G then ?', 'Jump to the syntax glossary (/help/syntax-glossary)'),
     ]
     return render_template('r7_accessibility.html', shortcuts=shortcuts)
 
@@ -2204,6 +2208,477 @@ def zero_results():
         sample = rng.sample(pool, min(3, len(pool)))
         alts = [{'q': t.name, 'snippet': (t.summary or '')[:160]} for t in sample]
     return render_template('zero_results.html', q=q, alts=alts)
+
+
+# ---------- R8 polish: observability + command palette + glossary + dev -----
+
+# Pinned mirror-build identity for byte-id determinism. Updated in lockstep
+# with seed_data.MIRROR_REFERENCE_DATE so /healthz and /api/uptime never
+# reveal wall-clock time on a fresh /reset.
+_R8_BUILD = {
+    'version': '8.0.0',
+    'build_id': 'gsearch-r8-2026-05-12',
+    'build_date': '2026-05-12T12:00:00Z',
+    'commit': 'a7c4e9d',
+    'env': 'mirror',
+}
+
+
+def _r8_table_counts():
+    """Cached row counts for the observability endpoints. Bypassing the
+    ORM so the response is cheap even on cold pages."""
+    from sqlalchemy import text
+    out = {}
+    with db.engine.connect() as c:
+        for tbl in ('topic', 'search_result', 'paa_question', 'knowledge_fact',
+                    'related_query', 'trending_term', 'doodle', 'google_app',
+                    'vertical', 'user'):
+            try:
+                out[tbl] = c.execute(text(f'SELECT COUNT(*) FROM {tbl}')).scalar()
+            except Exception:
+                out[tbl] = None
+    return out
+
+
+@app.route('/healthz')
+def r8_healthz():
+    """Liveness probe — returns JSON status of the mirror process + DB.
+
+    Always returns HTTP 200 when the request landed; downstream consumers
+    inspect the `status` field. Deterministic by design — no wall-clock
+    fields, no per-request randomness."""
+    counts = _r8_table_counts()
+    db_ok = all(v is not None for v in counts.values())
+    body = {
+        'status': 'ok' if db_ok else 'degraded',
+        'service': 'google-search-mirror',
+        'version': _R8_BUILD['version'],
+        'build_id': _R8_BUILD['build_id'],
+        'build_date': _R8_BUILD['build_date'],
+        'checks': {
+            'db': 'ok' if db_ok else 'fail',
+            'templates': 'ok',
+            'static': 'ok',
+        },
+        'row_counts': counts,
+    }
+    return jsonify(body)
+
+
+@app.route('/api/uptime')
+def r8_api_uptime():
+    """Mirror uptime / build identity. Wall-clock is pinned to the build
+    date so byte-id reset never observes time drift."""
+    return jsonify({
+        'service': 'google-search-mirror',
+        'version': _R8_BUILD['version'],
+        'build_id': _R8_BUILD['build_id'],
+        'build_date': _R8_BUILD['build_date'],
+        'commit': _R8_BUILD['commit'],
+        'env': _R8_BUILD['env'],
+        'reset_endpoint': '/reset',
+        'reference_date': '2026-05-12T12:00:00Z',
+    })
+
+
+# Pinned canonical events stream — surfaced from a static array so the
+# /api/events response is byte-identical across container restarts.
+_R8_EVENTS = [
+    {'ts': '2026-05-12T11:58:04Z', 'level': 'info',  'event': 'seed.start',
+     'detail': 'building seed DB from source'},
+    {'ts': '2026-05-12T11:59:11Z', 'level': 'info',  'event': 'seed.r4.done',
+     'detail': '+5 deep results per topic at rank>=10'},
+    {'ts': '2026-05-12T11:59:22Z', 'level': 'info',  'event': 'seed.r5.done',
+     'detail': '+6 results / +3 PAA / +4 KFs per topic at rank>=20'},
+    {'ts': '2026-05-12T11:59:33Z', 'level': 'info',  'event': 'seed.r6.done',
+     'detail': '+5 results / +2 PAA / +1 KF per topic at rank>=30'},
+    {'ts': '2026-05-12T11:59:44Z', 'level': 'info',  'event': 'seed.r7.done',
+     'detail': '+11 deep results / +5 KFs per topic at rank>=40'},
+    {'ts': '2026-05-12T11:59:55Z', 'level': 'info',  'event': 'seed.r8.done',
+     'detail': '+15 deep results / +4 KFs per topic at rank>=60'},
+    {'ts': '2026-05-12T12:00:00Z', 'level': 'info',  'event': 'app.ready',
+     'detail': 'mirror accepting requests on /search'},
+    {'ts': '2026-05-12T12:00:01Z', 'level': 'info',  'event': 'index.vacuum',
+     'detail': 'normalize_seed_db_layout VACUUM complete'},
+]
+
+
+@app.route('/api/events')
+def r8_api_events():
+    """Append-only event stream (filtered)."""
+    level = (request.args.get('level') or '').lower().strip()
+    evt = (request.args.get('event') or '').lower().strip()
+    items = list(_R8_EVENTS)
+    if level:
+        items = [e for e in items if e['level'] == level]
+    if evt:
+        items = [e for e in items if evt in e['event']]
+    return jsonify({'items': items, 'count': len(items),
+                    'service': 'google-search-mirror'})
+
+
+@app.route('/api/v3/graphql', methods=['GET', 'POST'])
+@app.route('/api/v3-graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_v3_graphql():
+    """Mirror's GraphQL-style endpoint.
+
+    GET — returns the schema introspection summary.
+    POST — accepts {"query": "...", "variables": {...}} and returns a
+    deterministic projection of Topic/SearchResult fields.
+
+    The runtime parser only supports a handful of fields (topic, search,
+    trending) but mimics the GraphQL response shape so agents can be
+    scripted against a stable mock."""
+    if request.method == 'GET':
+        return jsonify({
+            'service': 'google-search-mirror',
+            'graphql_version': '3.0',
+            'endpoint': '/api/v3/graphql',
+            'methods': ['GET', 'POST'],
+            'schema': {
+                'Query': {
+                    'topic(slug: String!)':
+                        'Topic by slug — { slug, name, summary, result_count, results { title, url, rank } }',
+                    'search(q: String!, limit: Int = 10)':
+                        'Top-N SearchResults — { topic { slug, name }, results { title, url, snippet, rank } }',
+                    'trending(limit: Int = 25)':
+                        'Trending terms — { term, rank, volume, trend_direction }',
+                    'verticals':
+                        'Available verticals — { slug, name, sort_order }',
+                },
+                'Topic': {'slug': 'String', 'name': 'String', 'summary': 'String',
+                          'result_count': 'Int', 'results': '[SearchResult]'},
+                'SearchResult': {'title': 'String', 'url': 'String', 'snippet': 'String',
+                                 'display_url': 'String', 'rank': 'Int'},
+                'TrendingTerm': {'term': 'String', 'rank': 'Int', 'volume': 'Int',
+                                 'trend_direction': 'String'},
+            },
+            'example': {
+                'POST_body': {'query': 'query { trending(limit: 3) { term rank } }'},
+            },
+        })
+
+    # POST
+    try:
+        body = request.get_json(silent=True) or {}
+    except Exception:
+        body = {}
+    query = (body.get('query') or request.values.get('query') or '').strip()
+    variables = body.get('variables') or {}
+
+    data = {}
+    errors = []
+
+    if not query:
+        errors.append({'message': 'missing query field'})
+    else:
+        ql = query.lower()
+        if 'trending' in ql:
+            limit = int(variables.get('limit') or 25)
+            rows = TrendingTerm.query.order_by(TrendingTerm.rank).limit(limit).all()
+            data['trending'] = [{'term': r.term, 'rank': r.rank,
+                                 'volume': r.volume, 'trend_direction': r.trend_direction}
+                                for r in rows]
+        if 'topic(' in ql or 'topic ' in ql or 'topic{' in ql:
+            slug = (variables.get('slug') or '').strip()
+            if not slug:
+                # Try to extract slug:"xxx" inline
+                m = re.search(r'slug\s*:\s*"([^"]+)"', query)
+                if m:
+                    slug = m.group(1)
+            if slug:
+                t = Topic.query.filter_by(slug=slug).first()
+                if t:
+                    data['topic'] = {
+                        'slug': t.slug, 'name': t.name, 'summary': t.summary,
+                        'result_count': t.result_count,
+                        'results': [{'title': r.title, 'url': r.url, 'rank': r.rank}
+                                    for r in sorted(t.results, key=lambda r: r.rank)[:5]],
+                    }
+                else:
+                    errors.append({'message': f'topic not found: {slug}'})
+            else:
+                errors.append({'message': 'missing slug variable for topic'})
+        if 'search(' in ql or 'search ' in ql:
+            q = (variables.get('q') or '').strip()
+            if not q:
+                m = re.search(r'q\s*:\s*"([^"]+)"', query)
+                if m:
+                    q = m.group(1)
+            limit = int(variables.get('limit') or 10)
+            if q:
+                t = find_topic(q)
+                if t:
+                    res = sorted(t.results, key=lambda r: r.rank)[:limit]
+                    data['search'] = {
+                        'topic': {'slug': t.slug, 'name': t.name},
+                        'results': [{'title': r.title, 'url': r.url,
+                                     'snippet': r.snippet, 'rank': r.rank}
+                                    for r in res],
+                    }
+                else:
+                    data['search'] = {'topic': None, 'results': []}
+            else:
+                errors.append({'message': 'missing q variable for search'})
+        if 'verticals' in ql:
+            data['verticals'] = [{'slug': v.slug, 'name': v.name, 'sort_order': v.sort_order}
+                                 for v in Vertical.query.order_by(Vertical.sort_order).all()]
+
+    return jsonify({'data': data, 'errors': errors if errors else None})
+
+
+# Canonical, deterministic recent SERP-change events for the alert webhook.
+# Same ordering on every reset because they're a static array.
+_R8_SERP_CHANGE_EVENTS = [
+    {'change_id': 'serp-001', 'topic_slug': 'chatgpt',
+     'kind': 'rank_shift', 'old_rank': 2, 'new_rank': 1,
+     'observed_at': '2026-05-11T08:00:00Z',
+     'note': 'OpenAI homepage took the top organic slot from Wikipedia'},
+    {'change_id': 'serp-002', 'topic_slug': 'climate_change',
+     'kind': 'panel_added', 'panel': 'knowledge',
+     'observed_at': '2026-05-11T09:15:00Z',
+     'note': 'Knowledge panel added for IPCC AR6'},
+    {'change_id': 'serp-003', 'topic_slug': 'paris',
+     'kind': 'new_result', 'rank': 4,
+     'observed_at': '2026-05-11T10:42:00Z',
+     'note': 'Time Out Paris article entered top 5'},
+    {'change_id': 'serp-004', 'topic_slug': 'nvidia_h100',
+     'kind': 'rank_shift', 'old_rank': 4, 'new_rank': 2,
+     'observed_at': '2026-05-12T03:00:00Z',
+     'note': 'NVIDIA datasheet jumped above third-party reviews'},
+    {'change_id': 'serp-005', 'topic_slug': 'tokyo',
+     'kind': 'panel_updated', 'panel': 'travel_advisory',
+     'observed_at': '2026-05-12T06:00:00Z',
+     'note': 'Travel advisory band changed to level 1'},
+]
+
+
+@app.route('/webhook/serp-change-alert', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_serp_change_webhook():
+    """Public webhook endpoint that streams pinned SERP-change events.
+
+    GET — return recent events filtered by ?topic= and/or ?kind=.
+    POST — accept a JSON subscription body and echo the validated config
+    plus the same events list, so an agent can verify the round-trip.
+
+    Wall-clock-free: every event is pinned to the build-reference date so
+    byte-id reset is preserved."""
+    topic_q = (request.args.get('topic') or '').strip().lower()
+    kind_q = (request.args.get('kind') or '').strip().lower()
+    items = list(_R8_SERP_CHANGE_EVENTS)
+    if topic_q:
+        items = [e for e in items if topic_q in e['topic_slug']]
+    if kind_q:
+        items = [e for e in items if e['kind'] == kind_q]
+
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or {}
+        callback = (body.get('callback_url') or '').strip()
+        topics = body.get('topics') or []
+        kinds = body.get('kinds') or []
+        return jsonify({
+            'subscription': {
+                'callback_url': callback,
+                'topics': list(topics) if isinstance(topics, list) else [],
+                'kinds':  list(kinds)  if isinstance(kinds,  list) else [],
+                'status': 'accepted' if callback else 'rejected',
+            },
+            'events': items,
+            'event_count': len(items),
+            'service': 'google-search-mirror',
+        })
+
+    return jsonify({
+        'endpoint': '/webhook/serp-change-alert',
+        'methods': ['GET', 'POST'],
+        'events': items,
+        'event_count': len(items),
+        'docs': '/developer/custom-search-engine-builder',
+    })
+
+
+@app.route('/developer/custom-search-engine-builder', methods=['GET', 'POST'])
+def r8_developer_cse_builder():
+    """Programmable search-engine builder.
+
+    GET — render a small form that previews the resulting JSON config.
+    POST — accept the form, render the same page with the saved config
+    summary plus a downloadable JSON snippet.
+
+    The "save" is in-process only — no DB writes — so byte-id reset stays
+    intact across rebuilds."""
+    saved = None
+    cse_id = ''
+    verts = [v.slug for v in Vertical.query.order_by(Vertical.sort_order).all()]
+    if request.method == 'POST':
+        name = (request.form.get('name') or 'My Custom Engine').strip()
+        sites = [s.strip() for s in (request.form.get('sites') or '').split(',') if s.strip()]
+        vertical = (request.form.get('vertical') or 'all').strip()
+        safe_search = (request.form.get('safe_search') or 'moderate').strip()
+        # Deterministic CSE id from inputs
+        cse_id = 'cse-' + hashlib.md5(
+            (name + '|' + ','.join(sorted(sites)) + '|' + vertical).encode('utf-8')
+        ).hexdigest()[:12]
+        saved = {
+            'name': name,
+            'sites': sites,
+            'vertical': vertical if vertical in verts else 'all',
+            'safe_search': safe_search if safe_search in ('off', 'moderate', 'strict') else 'moderate',
+            'cse_id': cse_id,
+            'embed_snippet': f'<script async src="/cse.js?cx={cse_id}"></script>',
+            'endpoint': f'/api/v3/graphql?cx={cse_id}',
+        }
+    return render_template('r8_developer_cse.html',
+                           verts=verts, saved=saved, cse_id=cse_id)
+
+
+# Per-operator glossary used by /help/syntax-glossary and reused below.
+_R8_SYNTAX_GLOSSARY = [
+    {'op': 'site:',     'name': 'Domain restriction',
+     'desc': 'Limit results to a single domain or subdomain.',
+     'pairs_well_with': ['intitle:', 'after:'],
+     'example': 'climate change site:nytimes.com',
+     'gotcha': 'site:.gov restricts to all U.S. government domains; site:gov does not.'},
+    {'op': 'intitle:',  'name': 'Title match',
+     'desc': 'The word(s) must appear in the page <title> element.',
+     'pairs_well_with': ['site:', 'OR'],
+     'example': 'intitle:"machine learning" survey',
+     'gotcha': 'Quote multi-word operands or the operator only binds to the first token.'},
+    {'op': 'intext:',   'name': 'Body match',
+     'desc': 'The term must appear in the body of the page, not just metadata.',
+     'pairs_well_with': ['site:'],
+     'example': 'intext:transformer architecture',
+     'gotcha': 'Body matching is slower than title matching at scale.'},
+    {'op': 'inurl:',    'name': 'URL match',
+     'desc': 'The term must appear in the URL path or query string.',
+     'pairs_well_with': ['site:'],
+     'example': 'inurl:wiki gravity',
+     'gotcha': 'Punctuation in URLs (.html, /docs) is dropped before matching.'},
+    {'op': 'filetype:', 'name': 'File extension',
+     'desc': 'Restrict to a single file extension (pdf, doc, pptx, csv, txt).',
+     'pairs_well_with': ['site:'],
+     'example': 'filetype:pdf annual report',
+     'gotcha': 'filetype: matches the file extension on the URL, not the Content-Type header.'},
+    {'op': 'OR',        'name': 'Logical OR',
+     'desc': 'Match results containing either term. Must be uppercase to be parsed as a boolean.',
+     'pairs_well_with': ['site:', 'intitle:'],
+     'example': 'Python OR JavaScript tutorial',
+     'gotcha': 'Lowercase "or" is treated as the English word, not the operator.'},
+    {'op': '-',         'name': 'Exclude',
+     'desc': 'Drop pages that contain the term following the minus sign.',
+     'pairs_well_with': ['site:'],
+     'example': 'jaguar -car',
+     'gotcha': 'A space before the minus disables the operator: "jaguar - car" is treated as three tokens.'},
+    {'op': '"…"',       'name': 'Exact phrase',
+     'desc': 'Match the enclosed words in order, verbatim, no stemming.',
+     'pairs_well_with': ['intitle:', 'site:'],
+     'example': '"to be or not to be"',
+     'gotcha': 'Closing the quote is required; an unmatched quote silently drops the operator.'},
+    {'op': '*',         'name': 'Wildcard',
+     'desc': 'Within an exact phrase, match any single word at the asterisk position.',
+     'pairs_well_with': ['"…"'],
+     'example': '"the * theory of relativity"',
+     'gotcha': 'Wildcard only applies inside an exact-phrase quote; bare * is ignored.'},
+    {'op': 'before:',   'name': 'Before date',
+     'desc': 'Only return pages published before the given YYYY-MM-DD date.',
+     'pairs_well_with': ['site:'],
+     'example': 'recession before:2020-01-01',
+     'gotcha': 'Publication date is inferred — many static pages have no date and are dropped.'},
+    {'op': 'after:',    'name': 'After date',
+     'desc': 'Only return pages published on or after the given YYYY-MM-DD date.',
+     'pairs_well_with': ['site:'],
+     'example': 'AI breakthroughs after:2024-01-01',
+     'gotcha': 'Use ISO dates only; locale-specific formats are not parsed.'},
+    {'op': 'related:',  'name': 'Similar pages',
+     'desc': 'Pages topically related to the supplied URL.',
+     'pairs_well_with': [],
+     'example': 'related:nytimes.com',
+     'gotcha': 'The URL must include a scheme or be a bare host; paths beyond / are ignored.'},
+    {'op': 'cache:',    'name': 'Cached copy',
+     'desc': 'Show the cached snapshot of the page closest to your query.',
+     'pairs_well_with': [],
+     'example': 'cache:wikipedia.org/wiki/Sun',
+     'gotcha': 'In the mirror, cached snapshots resolve through /external-view.'},
+    {'op': 'AROUND(N)', 'name': 'Proximity',
+     'desc': 'Two terms must appear within N words of each other.',
+     'pairs_well_with': ['intitle:'],
+     'example': 'Tesla AROUND(3) Musk',
+     'gotcha': 'N must be parenthesised; AROUND 3 (without parens) is parsed as plain text.'},
+    {'op': 'define:',   'name': 'Definition',
+     'desc': 'Return the dictionary definition of a single word.',
+     'pairs_well_with': [],
+     'example': 'define:serendipity',
+     'gotcha': 'Multi-word operands are silently truncated to the first token.'},
+]
+
+
+@app.route('/help/syntax-glossary')
+@app.route('/help/operators')
+def r8_syntax_glossary():
+    """Contextual help glossary — one card per operator with description,
+    pair-with hints, example, and a common gotcha. Linked from
+    /search/syntax."""
+    return render_template('r8_syntax_glossary.html', glossary=_R8_SYNTAX_GLOSSARY)
+
+
+# Pinned palette items — keys for Cmd+K. Deterministic across rebuilds.
+_R8_PALETTE_ITEMS = [
+    ('All',       'Jump to /search (default vertical)',         '/search?q='),
+    ('Images',    'Image search vertical',                      '/search?q=&tbm=images'),
+    ('Videos',    'Video search vertical',                      '/search?q=&tbm=videos'),
+    ('News',      'News search vertical',                       '/search?q=&tbm=news'),
+    ('Maps',      'Maps vertical',                              '/search?q=&tbm=maps'),
+    ('Shopping',  'Shopping vertical',                          '/search?q=&tbm=shopping'),
+    ('Books',     'Books vertical',                             '/search?q=&tbm=books'),
+    ('Finance',   'Finance vertical',                           '/search?q=&tbm=finance'),
+    ('Scholar',   'Google Scholar',                             '/scholar'),
+    ('Trending',  'Trending searches',                          '/trending'),
+    ('Doodles',   'Doodle archive',                             '/doodles'),
+    ('History',   'My search history',                          '/history'),
+    ('Bookmarks', 'My saved results',                           '/bookmarks'),
+    ('Collections', 'My result collections',                    '/collections'),
+    ('Alerts',    'My alerts',                                  '/alerts'),
+    ('Settings',  'Search preferences',                         '/settings'),
+    ('Locales',   'Switch locale (hl / gl)',                    '/locales'),
+    ('Syntax',    'Advanced search syntax',                     '/search/syntax'),
+    ('Glossary',  'Per-operator glossary (contextual help)',    '/help/syntax-glossary'),
+    ('Accessibility', 'Keyboard shortcuts + WCAG',              '/accessibility'),
+    ('Performance',   'SERP-render performance dashboard',      '/performance'),
+    ('Takeout',   'Export search history',                      '/takeout'),
+    ('Healthz',   'Liveness probe (JSON)',                      '/healthz'),
+    ('Uptime',    'Build identity (JSON)',                      '/api/uptime'),
+    ('Events',    'Mirror event log (JSON)',                    '/api/events'),
+    ('GraphQL',   'Mirror GraphQL endpoint',                    '/api/v3/graphql'),
+    ('CSE Builder', 'Custom search engine builder',             '/developer/custom-search-engine-builder'),
+    ('Webhook',   'SERP change alert webhook',                  '/webhook/serp-change-alert'),
+]
+
+
+@app.route('/command-palette')
+@app.route('/palette')
+def r8_command_palette():
+    """Command palette — Cmd+K shortcut target. Static list of jump
+    destinations with a filter input. Deterministic across resets."""
+    q = (request.args.get('q') or '').strip().lower()
+    items = _R8_PALETTE_ITEMS
+    if q:
+        items = [it for it in items if q in it[0].lower() or q in it[1].lower()]
+    return render_template('r8_command_palette.html',
+                           items=items, q=request.args.get('q') or '')
+
+
+@app.route('/api/palette')
+def r8_api_palette():
+    """JSON form of the command palette so an agent can introspect the
+    catalog without parsing HTML."""
+    return jsonify({
+        'service': 'google-search-mirror',
+        'items': [{'label': l, 'description': d, 'href': h}
+                  for l, d, h in _R8_PALETTE_ITEMS],
+        'count': len(_R8_PALETTE_ITEMS),
+    })
 
 
 # ---------- error handlers --------------------------------------------------

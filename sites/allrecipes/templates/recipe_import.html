@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Import a printed-magazine or photographed recipe into Allrecipes via OCR — paste the OCR text, get back a parsed ingredient list + step list.{% endblock %}
+
+{% block content %}
+<section class="container recipe-import" style="max-width:880px;margin:32px auto;padding:0 16px;">
+  <h1>Import via OCR — {{ recipe.title }}</h1>
+  <p class="lede" style="color:#555;font-size:1.05rem;">
+    Drop a photograph of a printed recipe into the upload zone and our
+    OCR pipeline returns the parsed ingredient list + step list. You
+    can also <code>POST</code> a JSON body with an <code>ocr_text</code>
+    field directly to <a href="/recipe/{{ recipe.slug }}/import"><code>/recipe/{{ recipe.slug }}/import</code></a>.
+  </p>
+
+  <h2 style="margin-top:24px;">OCR Pipeline</h2>
+  <ol>
+    <li>Upload or paste an image — JPEG / PNG / HEIC are supported.</li>
+    <li>The image is rasterised to 300 DPI and passed through Tesseract 5.</li>
+    <li>The raw OCR text is split line-by-line into <em>ingredient</em>
+        (line begins with a digit or fraction) and <em>step</em> (everything else).</li>
+    <li>The parsed structure is returned as JSON with a confidence score.</li>
+  </ol>
+
+  <h2 style="margin-top:24px;">Example POST body</h2>
+  <pre style="background:#fafaf6;border:1px solid #eee;padding:12px;border-radius:6px;font-family:monospace;font-size:0.92rem;">{
+  "image_url": "https://example.com/scan.jpg",
+  "ocr_text": "2 cups flour\n1 tsp salt\nWhisk dry ingredients...\nBake at 350F for 20 minutes."
+}</pre>
+
+  <h2 style="margin-top:24px;">Example response</h2>
+  <pre style="background:#fafaf6;border:1px solid #eee;padding:12px;border-radius:6px;font-family:monospace;font-size:0.92rem;">{
+  "slug": "{{ recipe.slug }}",
+  "title": "{{ recipe.title }}",
+  "ingredients": ["2 cups flour", "1 tsp salt"],
+  "steps": ["Whisk dry ingredients...", "Bake at 350F for 20 minutes."],
+  "confidence": 0.16
+}</pre>
+
+  <p style="margin-top:24px;">
+    See also: <a href="/recipe/{{ recipe.slug }}/export.json">Mealie-format export</a>
+    for round-tripping a recipe to/from another meal-planning tool.
+  </p>
+</section>
+{% endblock %}

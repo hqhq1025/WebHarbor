@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Master Allrecipes faster with a full keyboard-shortcut cheat sheet — press / to focus search, ? for help, and Cmd+K for the command palette.{% endblock %}
+
+{% block content %}
+<section class="container help-shortcuts" style="max-width:880px;margin:32px auto;padding:0 16px;">
+  <h1>Keyboard Shortcuts</h1>
+  <p class="lede" style="color:#555;font-size:1.05rem;">
+    Allrecipes ships a small set of global keyboard shortcuts so you can
+    navigate the site without leaving the keyboard. Press <kbd>?</kbd>
+    anywhere on the site to re-open this page.
+  </p>
+
+  <table class="shortcuts-table" style="width:100%;margin-top:24px;border-collapse:collapse;font-size:0.97rem;">
+    <thead>
+      <tr style="background:#f6efe7;text-align:left;">
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;width:160px;">Shortcut</th>
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;">What it does</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for key, desc in shortcuts %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #eee;">
+          <kbd data-shortcut-key="{{ key }}" style="background:#f3f3f3;padding:2px 8px;border:1px solid #ccc;border-radius:4px;font-family:monospace;">{{ key }}</kbd>
+        </td>
+        <td style="padding:10px;border-bottom:1px solid #eee;color:#333;">{{ desc }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:32px;">Command Palette (<kbd>Cmd+K</kbd>)</h2>
+  <p>
+    The command palette opens a fuzzy search overlay across recipes,
+    categories, collections, articles and static pages. Type any fragment
+    and press <kbd>Enter</kbd> to jump. The palette is also accessible
+    via the API at
+    <a href="/api/command-palette/search?q=apple"><code>/api/command-palette/search?q=apple</code></a>.
+  </p>
+
+  <h2 style="margin-top:32px;">Contextual Help Popovers</h2>
+  <p>
+    Throughout the site, small <strong>[?]</strong> badges open inline
+    popovers that explain the surrounding control. Press <kbd>.</kbd>
+    (period) on any page to toggle the popover for the current section.
+    A full inventory lives at
+    <a href="/help/popovers">/help/popovers</a>.
+  </p>
+
+  <h2 style="margin-top:32px;">Telemetry &amp; Observability</h2>
+  <p>
+    Each keyboard-shortcut press fires a small JSON event to
+    <a href="/telemetry"><code>POST /telemetry</code></a> so we can see
+    which shortcuts get used. Read the most recent events back from
+    <a href="/telemetry/events?n=5"><code>/telemetry/events?n=5</code></a>.
+    Service health is published at
+    <a href="/healthz"><code>/healthz</code></a> and aggregate counters at
+    <a href="/metrics"><code>/metrics</code></a> (append
+    <code>?format=prom</code> for Prometheus text exposition).
+  </p>
+</section>
+{% endblock %}

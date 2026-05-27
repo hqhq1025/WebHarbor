@@ -180,5 +180,175 @@
   </footer>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  {# R8: keyboard shortcuts + command palette + shortcuts-help overlay. #}
+  <div id="cmdPalette" class="cmd-palette" hidden role="dialog"
+       aria-modal="true" aria-label="Command palette">
+    <div class="cmd-palette__panel">
+      <input id="cmdPaletteInput" class="cmd-palette__input" type="text"
+             placeholder="Jump to a word, page or action…"
+             autocomplete="off" aria-label="Command palette query"/>
+      <ul id="cmdPaletteResults" class="cmd-palette__results"
+          aria-live="polite"></ul>
+      <div class="cmd-palette__hint">
+        <kbd>Esc</kbd> close &middot;
+        <kbd>&uarr;</kbd>/<kbd>&darr;</kbd> select &middot;
+        <kbd>Enter</kbd> open
+      </div>
+    </div>
+  </div>
+  <div id="shortcutsOverlay" class="shortcuts-overlay" hidden role="dialog"
+       aria-modal="true" aria-label="Keyboard shortcuts">
+    <div class="shortcuts-overlay__panel">
+      <h2>Keyboard shortcuts</h2>
+      <table class="shortcuts-table">
+        <tbody>
+          <tr><td><kbd>/</kbd></td><td>Focus the search box</td></tr>
+          <tr><td><kbd>?</kbd></td><td>Show this overlay</td></tr>
+          <tr><td><kbd>j</kbd></td><td>Next word (alphabetical)</td></tr>
+          <tr><td><kbd>k</kbd></td><td>Previous word (alphabetical)</td></tr>
+          <tr><td><kbd>1</kbd></td><td>Play UK audio</td></tr>
+          <tr><td><kbd>2</kbd></td><td>Play US audio</td></tr>
+          <tr><td><kbd>Cmd / Ctrl + K</kbd></td><td>Open command palette</td></tr>
+          <tr><td><kbd>g h</kbd></td><td>Go home</td></tr>
+          <tr><td><kbd>g s</kbd></td><td>Go to saved-words flashcards</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close this overlay</td></tr>
+        </tbody>
+      </table>
+      <p><a href="/help/shortcuts">Open full shortcuts help page</a>.</p>
+    </div>
+  </div>
+  <script>
+  // R8 keyboard shortcuts. All state is local — no analytics, no server
+  // round-trip beyond the j/k neighbour lookup which uses
+  // /api/word/neighbors/<slug> for the currently visible entry.
+  (function(){
+    const $ = (s, r) => (r || document).querySelector(s);
+    const palette = $('#cmdPalette');
+    const paletteInput = $('#cmdPaletteInput');
+    const paletteResults = $('#cmdPaletteResults');
+    const overlay = $('#shortcutsOverlay');
+    let selectedIdx = -1;
+    let lastResults = [];
+    let gPrefix = false;
+
+    function isTypingTarget(t){
+      if(!t) return false;
+      const tag = (t.tagName || '').toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select'
+             || t.isContentEditable;
+    }
+    function openPalette(){
+      palette.hidden = false;
+      paletteInput.value = '';
+      selectedIdx = -1;
+      loadPalette('');
+      setTimeout(() => paletteInput.focus(), 0);
+    }
+    function closePalette(){ palette.hidden = true; }
+    function openOverlay(){ overlay.hidden = false; }
+    function closeOverlay(){ overlay.hidden = true; }
+    async function loadPalette(q){
+      try {
+        const r = await fetch('/api/command-palette?q=' + encodeURIComponent(q));
+        const data = await r.json();
+        const combined = (data.actions || []).concat(data.results || []);
+        lastResults = combined;
+        paletteResults.innerHTML = combined.map((row, i) => {
+          const label = row.headword || row.label;
+          const meta = row.kind === 'word'
+            ? `<span class="cmd-meta">${row.level || ''} ${row.register || ''}</span>`
+            : '<span class="cmd-meta">action</span>';
+          return `<li data-idx="${i}" data-url="${row.url}">${label}${meta}</li>`;
+        }).join('');
+        selectedIdx = combined.length ? 0 : -1;
+        highlight();
+      } catch (e) {
+        paletteResults.innerHTML = '<li class="cmd-error">Lookup failed.</li>';
+      }
+    }
+    function highlight(){
+      const items = paletteResults.querySelectorAll('li');
+      items.forEach((el, i) => el.classList.toggle('cmd-selected', i === selectedIdx));
+    }
+    async function jumpNeighbour(direction){
+      const slugEl = document.querySelector('[data-word-slug]');
+      if(!slugEl) return;
+      const slug = slugEl.getAttribute('data-word-slug');
+      try {
+        const r = await fetch('/api/word/neighbors/' + encodeURIComponent(slug));
+        const data = await r.json();
+        const target = direction === 'next' ? data.next : data.prev;
+        if(target && target.url) window.location.href = target.url;
+      } catch(e){}
+    }
+    function playAudio(region){
+      const el = document.querySelector(`[data-audio-${region}]`);
+      if(!el) return;
+      const url = el.getAttribute(`data-audio-${region}`);
+      if(!url) return;
+      const audio = new Audio(url);
+      audio.play().catch(() => {});
+    }
+
+    paletteInput && paletteInput.addEventListener('input', (e) => {
+      loadPalette(e.target.value || '');
+    });
+    paletteInput && paletteInput.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowDown'){
+        selectedIdx = Math.min(lastResults.length - 1, selectedIdx + 1);
+        highlight(); e.preventDefault();
+      } else if(e.key === 'ArrowUp'){
+        selectedIdx = Math.max(0, selectedIdx - 1);
+        highlight(); e.preventDefault();
+      } else if(e.key === 'Enter'){
+        const r = lastResults[selectedIdx];
+        if(r && r.url) window.location.href = r.url;
+      } else if(e.key === 'Escape'){
+        closePalette();
+      }
+    });
+    paletteResults && paletteResults.addEventListener('click', (e) => {
+      const li = e.target.closest('li[data-url]');
+      if(li) window.location.href = li.getAttribute('data-url');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if(isTypingTarget(e.target)) return;
+      // Cmd+K / Ctrl+K — command palette
+      if((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){
+        e.preventDefault();
+        if(palette.hidden){ openPalette(); } else { closePalette(); }
+        return;
+      }
+      if(e.key === 'Escape'){
+        if(!palette.hidden) closePalette();
+        if(!overlay.hidden) closeOverlay();
+        return;
+      }
+      if(gPrefix){
+        if(e.key === 'h'){ window.location.href = '/'; gPrefix = false; return; }
+        if(e.key === 's'){ window.location.href = '/flashcards'; gPrefix = false; return; }
+        gPrefix = false;
+        return;
+      }
+      switch(e.key){
+        case '/':
+          e.preventDefault();
+          const s = document.getElementById('searchInput');
+          if(s){ s.focus(); s.select(); }
+          break;
+        case '?':
+          openOverlay();
+          break;
+        case 'j': jumpNeighbour('next'); break;
+        case 'k': jumpNeighbour('prev'); break;
+        case '1': playAudio('uk'); break;
+        case '2': playAudio('us'); break;
+        case 'g': gPrefix = true; setTimeout(() => { gPrefix = false; }, 1200); break;
+      }
+    });
+  })();
+  </script>
 </body>
 </html>

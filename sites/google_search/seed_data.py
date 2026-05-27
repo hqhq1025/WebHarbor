@@ -3027,6 +3027,203 @@ def _seed_r6_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact):
           f"{added_kf} KFs across {len(topics)} topics")
 
 
+# ---------- R8 enrichment ---------------------------------------------------
+# Goals: take search_result 46115 -> 65000+. Per-topic: +15 deep results at
+# rank>=60. Idempotent (sentinel '__R8_SEEDED__').  All rng derived from
+# _det_hash(slug + suffix) for byte-id reproducibility.
+
+_R8_DEEP_PROVIDERS = [
+    ('arxiv_sanity', 'arxiv-sanity-lite.com',
+     '{name} — arxiv-sanity ranked papers',
+     'https://arxiv-sanity-lite.com/?q={slug}',
+     'Karpathy-style ranked feed of arXiv preprints touching {name}: similarity, recency, and saved-paper signal blended.'),
+    ('papers_with_code', 'paperswithcode.com',
+     '{name} — Papers With Code benchmarks',
+     'https://paperswithcode.com/search?q_meta=&q_type=&q={slug}',
+     'Papers With Code listing of {name}: leaderboards, official code repos, and reproducible model checkpoints.'),
+    ('connectedpapers', 'www.connectedpapers.com',
+     '{name} — Connected Papers graph',
+     'https://www.connectedpapers.com/search?q={slug}',
+     'Citation-similarity graph for {name} on Connected Papers: prior work, derivative work, and contemporaneous neighbors.'),
+    ('elicit', 'elicit.com',
+     '{name} — Elicit research assistant',
+     'https://elicit.com/search?q={slug}',
+     'Elicit AI research assistant table of papers on {name}: claim columns, sample sizes, intervention/outcome extraction.'),
+    ('researchgate', 'www.researchgate.net',
+     '{name} — ResearchGate publications',
+     'https://www.researchgate.net/search/publication?q={slug}',
+     'ResearchGate publication records, author profiles, and citation counts for {name}.'),
+    ('academia_edu', 'www.academia.edu',
+     '{name} — Academia.edu papers',
+     'https://www.academia.edu/search?q={slug}',
+     'Academia.edu uploaded papers, drafts, and conference talks about {name}.'),
+    ('mendeley', 'www.mendeley.com',
+     '{name} — Mendeley catalog',
+     'https://www.mendeley.com/catalogue/search/?query={slug}',
+     'Mendeley reference manager catalog entries for {name}: DOI, journal, and reader counts.'),
+    ('lens_org', 'www.lens.org',
+     '{name} — Lens scholarly + patent search',
+     'https://www.lens.org/lens/search/scholar/list?q={slug}',
+     'The Lens unified scholarly and patent search records mentioning {name}.'),
+    ('dimensions_ai', 'app.dimensions.ai',
+     '{name} — Dimensions research database',
+     'https://app.dimensions.ai/discover/publication?search_text={slug}',
+     'Digital Science Dimensions linked research-grant, publication, and clinical-trial graph for {name}.'),
+    ('core_ac_uk', 'core.ac.uk',
+     '{name} — CORE open-access aggregator',
+     'https://core.ac.uk/search?q={slug}',
+     'CORE aggregator of 200M+ open-access papers from repositories worldwide touching on {name}.'),
+    ('base_search', 'www.base-search.net',
+     '{name} — BASE academic search engine',
+     'https://www.base-search.net/Search/Results?lookfor={slug}',
+     'Bielefeld Academic Search Engine (BASE) federated repository results for {name}.'),
+    ('paperpile', 'paperpile.com',
+     '{name} — Paperpile shared library',
+     'https://paperpile.com/shared/{slug}',
+     'Paperpile shared bibliography around {name}: PDFs, annotations, and tag taxonomy.'),
+    ('inciteful_xyz', 'inciteful.xyz',
+     '{name} — Inciteful citation explorer',
+     'https://inciteful.xyz/p/{slug}',
+     'Inciteful citation-graph explorer for {name}: similar papers, top sources, important citations.'),
+    ('litmaps', 'app.litmaps.com',
+     '{name} — Litmaps citation map',
+     'https://app.litmaps.com/explore?q={slug}',
+     'Litmaps visual citation network for {name}: seed papers and downstream literature.'),
+    ('dblp_r8', 'dblp.org',
+     '{name} — DBLP computer-science bibliography',
+     'https://dblp.org/search?q={slug}',
+     'DBLP computer-science bibliography records, venues, and author pages mentioning {name}.'),
+    ('acm_dl', 'dl.acm.org',
+     '{name} — ACM Digital Library',
+     'https://dl.acm.org/action/doSearch?AllField={slug}',
+     'ACM Digital Library proceedings and journal articles on {name}.'),
+    ('ieeexplore_r8', 'ieeexplore.ieee.org',
+     '{name} — IEEE Xplore digital library',
+     'https://ieeexplore.ieee.org/search/searchresult.jsp?queryText={slug}',
+     'IEEE Xplore conference, journal, and standards records for {name}.'),
+    ('sciencedirect_r8', 'www.sciencedirect.com',
+     '{name} — ScienceDirect (Elsevier)',
+     'https://www.sciencedirect.com/search?qs={slug}',
+     'Elsevier ScienceDirect peer-reviewed journal and book-chapter results for {name}.'),
+    ('springer_link', 'link.springer.com',
+     '{name} — SpringerLink',
+     'https://link.springer.com/search?query={slug}',
+     'SpringerLink books, chapters, and journal articles about {name}.'),
+    ('wiley_online', 'onlinelibrary.wiley.com',
+     '{name} — Wiley Online Library',
+     'https://onlinelibrary.wiley.com/action/doSearch?AllField={slug}',
+     'Wiley Online Library peer-reviewed journals and reference works covering {name}.'),
+    ('tandfonline', 'www.tandfonline.com',
+     '{name} — Taylor & Francis Online',
+     'https://www.tandfonline.com/action/doSearch?AllField={slug}',
+     'Taylor & Francis Online journal results for {name}.'),
+    ('sage_journals', 'journals.sagepub.com',
+     '{name} — SAGE Journals',
+     'https://journals.sagepub.com/action/doSearch?AllField={slug}',
+     'SAGE peer-reviewed journals and monographs about {name}.'),
+]
+
+
+_R8_KFACT_TEMPLATES = [
+    ('Indexed by Papers With Code', 'Yes — at least one leaderboard or benchmark linked'),
+    ('Connected Papers cluster', 'Has a similarity cluster on Connected Papers'),
+    ('OpenAlex citation percentile', 'Top quartile within its primary research field'),
+    ('Open-data availability', 'Datasets available on Zenodo, Figshare, or Dryad'),
+    ('Replication artifacts', 'Reproducible code or container available on GitHub or Code Ocean'),
+    ('Preprint coverage', 'Listed on arXiv, bioRxiv, or SSRN at least once'),
+    ('Survey article exists', 'A peer-reviewed survey article has been published'),
+    ('Cross-discipline citations', 'Cited across at least three top-level OpenAlex fields'),
+    ('Open peer review trail', 'PubPeer / OpenReview discussion threads available'),
+    ('Long-term archival', 'Archived in CLOCKSS, Portico, or Internet Archive Scholar'),
+    ('Public dataset DOI', 'At least one DataCite DOI registered for the underlying data'),
+    ('SaaS knowledge graph', 'Linked record exists on Dimensions, Lens, or Web of Science'),
+]
+
+
+def _seed_r8_enrichment(db, Topic, SearchResult, KnowledgeFact):
+    """R8: +15 deep results per topic at rank>=60 + 4 KFs per topic.
+
+    Idempotent — gated by sentinel KnowledgeFact ('__R8_SEEDED__'). RNG is
+    derived from _det_hash(slug + suffix) so re-runs are byte-identical.
+
+    See `.claude/skills/harden-env/gotchas.md` §2 — outer caller MUST also
+    run `normalize_seed_db_layout()` to re-sort CREATE INDEX statements.
+    """
+    sentinel_key = '__R8_SEEDED__'
+    if KnowledgeFact.query.filter_by(key=sentinel_key).first() is not None:
+        return
+
+    topics = Topic.query.order_by(Topic.id).all()
+    added_results = 0
+    added_kf = 0
+
+    for t in topics:
+        existing = list(t.results)
+        existing_domains = {r.display_url for r in existing}
+        existing_kf_keys = {kf.key for kf in t.knowledge_facts}
+
+        rng = random.Random(_det_hash(t.slug + '_r8_deep'))
+        pool = [p for p in _R8_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(15, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} — overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        # R4=10..14, R5>=20, R6>=30, R7>=40 (up to 50). R8 lives at >=60.
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        next_rank = max(next_rank, 60)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            added_results += 1
+
+        # +4 deterministic KFs per topic
+        rng_kf = random.Random(_det_hash(t.slug + '_r8_kf'))
+        kf_pool = list(_R8_KFACT_TEMPLATES)
+        rng_kf.shuffle(kf_pool)
+        kf_next_rank = max((k.rank for k in t.knowledge_facts), default=-1) + 1
+        for k, v in kf_pool[:4]:
+            if k in existing_kf_keys:
+                continue
+            db.session.add(KnowledgeFact(
+                topic_id=t.id, key=k, value=v, rank=kf_next_rank,
+            ))
+            kf_next_rank += 1
+            added_kf += 1
+
+    # Sentinel
+    first_topic = Topic.query.order_by(Topic.id).first()
+    if first_topic is not None:
+        db.session.add(KnowledgeFact(
+            topic_id=first_topic.id, key=sentinel_key,
+            value='r8', rank=9997,
+        ))
+
+    db.session.commit()
+    print(f"[seed] _seed_r8_enrichment added {added_results} results, "
+          f"{added_kf} KFs across {len(topics)} topics")
+
+
 def domain_for(provider):
     return {
         'wikipedia': 'en.wikipedia.org',
@@ -3202,7 +3399,7 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
             and TrendingTerm.query.count() >= len(TRENDING)
             and Doodle.query.count() >= len(DOODLES)
             and Topic.query.count() > 1200
-            and KnowledgeFact.query.filter_by(key='__R7_SEEDED__').first() is not None):
+            and KnowledgeFact.query.filter_by(key='__R8_SEEDED__').first() is not None):
         return  # fully seeded; do not even commit
     # Verticals
     for v in VERTICALS:
@@ -3451,6 +3648,10 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     # ---- R7: +11 deep results / +5 KFs per topic (rank >= 40).
     #          Brings search_result 31562 → 45000+, knowledge_fact 13621 → 20000+.
     _seed_r7_enrichment(db, Topic, SearchResult, KnowledgeFact)
+
+    # ---- R8: +15 deep results / +4 KFs per topic (rank >= 60).
+    #          Brings search_result 46115 → 65000+.
+    _seed_r8_enrichment(db, Topic, SearchResult, KnowledgeFact)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

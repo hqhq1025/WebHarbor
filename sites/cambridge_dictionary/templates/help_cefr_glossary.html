@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}CEFR levels glossary — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container help-cefr">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('help_page') }}">Help</a> &raquo;
+    <span>CEFR glossary</span>
+  </nav>
+  <h1>CEFR levels glossary</h1>
+  <p>The Common European Framework of Reference (CEFR) describes six
+     learner levels. Every dictionary entry is tagged with the CEFR level
+     a learner needs to use the word comfortably. Hover the
+     <span class="cefr cefr-c1">CEFR chip</span> on any entry to see the
+     same description; clicking a level below lists every word at that
+     level.</p>
+  <ul class="cefr-glossary">
+    {% for g in glossary %}
+      <li class="cefr-row" data-level="{{ g.code }}">
+        <a class="cefr cefr-{{ g.code|lower }} cefr-link"
+           href="/search?q={{ g.code|lower }}&type=dictionary&cefr={{ g.code }}">
+          {{ g.code }}
+        </a>
+        <strong>{{ g.label }}</strong>
+        <span class="cefr-descr">{{ g.descr }}</span>
+        <span class="cefr-count">{{ g.word_count }} words tagged</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <p class="release-tag">R8 release — glossary surfaced as a contextual
+     tooltip from every CEFR chip on the site.</p>
+  <p><a href="{{ url_for('help_shortcuts') }}">Keyboard shortcuts</a>
+     &middot; <a href="{{ url_for('r8_tour') }}">R8 tour</a>.</p>
+</div>
+{% endblock %}

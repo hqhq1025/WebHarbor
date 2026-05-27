@@ -1943,6 +1943,238 @@ def server_error(e):
     return render_template('500.html'), 500
 
 
+# ─── R8 observability + developer endpoints ──────────────────────────────────
+# Lightweight surfaces real Coursera exposes to platform engineers and learning-
+# tools integrators. All read-only or in-memory ack so the byte-identical seed
+# DB is never mutated by request traffic.
+
+# In-memory event sink — never persisted, reset on every gunicorn worker.
+_R8_EVENT_SINK = []
+
+
+@app.route('/healthz')
+@app.route('/health')
+@csrf.exempt
+def healthz():
+    """Kubernetes-style health endpoint. Returns the catalog size + a
+    deterministic build identifier so the agent can verify the mirror is up
+    and the catalog was seeded. Real Coursera exposes /healthz on every
+    backend pod for liveness probing."""
+    return jsonify({
+        'status': 'ok',
+        'service': 'coursera-mirror',
+        'build': 'r8-iter8-2026',
+        'courses': Course.query.count(),
+        'partners': Partner.query.count(),
+        'modules': CourseModule.query.count(),
+        'commit': 'r8-polish',
+    })
+
+
+@app.route('/api/uptime')
+@csrf.exempt
+def api_uptime():
+    """SLA / uptime status — deterministic figures used by the public
+    status-page widget. Returns 99.95% last-30-days, no open incidents."""
+    return jsonify({
+        'status': 'operational',
+        'uptime_30d_pct': 99.95,
+        'uptime_90d_pct': 99.93,
+        'last_incident': '2026-03-04T08:14:00Z',
+        'last_incident_summary': 'Brief search latency in EU-WEST (resolved in 9 min).',
+        'components': [
+            {'name': 'Catalog API',        'status': 'operational'},
+            {'name': 'Learner Web App',    'status': 'operational'},
+            {'name': 'Video Streaming',    'status': 'operational'},
+            {'name': 'Assignment Grading', 'status': 'operational'},
+            {'name': 'Certificate Issuer', 'status': 'operational'},
+            {'name': 'Mobile Sync',        'status': 'operational'},
+        ],
+    })
+
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@csrf.exempt
+def api_events():
+    """Telemetry beacon — accepts JSON or form POSTs with `event` + payload,
+    appends to an in-memory ring buffer (caps at 200), and serves the most
+    recent events on GET. Never persisted, so the seed DB invariant holds."""
+    if request.method == 'POST':
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+        else:
+            data = {k: v for k, v in request.form.items()}
+        evt = {
+            'event': str(data.get('event') or 'unknown')[:80],
+            'path': str(data.get('path') or request.path)[:200],
+            'ts_iso': '2026-05-26T12:00:00Z',  # frozen for byte-id determinism
+            'session': str(data.get('session') or 'anon')[:64],
+        }
+        # Bounded ring buffer
+        _R8_EVENT_SINK.append(evt)
+        if len(_R8_EVENT_SINK) > 200:
+            del _R8_EVENT_SINK[:len(_R8_EVENT_SINK) - 200]
+        return jsonify({'accepted': True, 'sink_size': len(_R8_EVENT_SINK)})
+    return jsonify({
+        'total_received': len(_R8_EVENT_SINK),
+        'recent': _R8_EVENT_SINK[-20:],
+        'documented_events': [
+            'lecture_video_played',
+            'lecture_video_paused',
+            'lecture_next_module_keystroke',
+            'command_palette_open',
+            'command_palette_jump',
+            'skill_glossary_hover',
+            'enrollment_completed',
+            'certificate_issued',
+        ],
+    })
+
+
+@app.route('/api/lti-callback', methods=['GET', 'POST'])
+@csrf.exempt
+def api_lti_callback():
+    """LTI 1.3 OIDC callback stub. Real LMS integrations land here after the
+    auth-redirect. We return a deterministic JWT-shaped payload so platform
+    tooling can verify the callback shape without a real signing key."""
+    iss = request.values.get('iss', 'https://coursera-mirror.local')
+    login_hint = request.values.get('login_hint', 'lti-learner-001')
+    target_uri = request.values.get('target_link_uri',
+                                    request.host_url.rstrip('/') + '/')
+    return jsonify({
+        'lti_version': '1.3.0',
+        'message_type': 'LtiResourceLinkRequest',
+        'iss': iss,
+        'aud': 'coursera-mirror-lti',
+        'sub': login_hint,
+        'target_link_uri': target_uri,
+        'deployment_id': 'coursera-r8-deployment',
+        'context': {
+            'id': 'r8-course-context',
+            'title': 'Coursera Mirror LTI Sandbox',
+        },
+        'resource_link': {
+            'id': 'r8-resource-link-001',
+            'title': 'Sample course resource link',
+        },
+        'callback_received': True,
+    })
+
+
+@app.route('/api/v2/graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def api_v2_graphql():
+    """GraphQL v2 stub — schema-introspection-light. Implements three
+    queries the public docs list: `courses(first:N)`, `partners(first:N)`,
+    `course(slug:"...")`. Anything else is rejected with the canonical
+    GraphQL `errors` envelope."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or {}
+        query = (body.get('query') or '').strip()
+    else:
+        query = (request.args.get('query') or '').strip()
+    if not query:
+        return jsonify({
+            'data': None,
+            'errors': [{'message': 'No query string supplied.'}],
+        }), 400
+    # Course-slug lookup
+    m = re.search(r'course\s*\(\s*slug\s*:\s*"([^"]+)"\s*\)', query)
+    if m:
+        c = Course.query.filter_by(slug=m.group(1)).first()
+        if not c:
+            return jsonify({'data': {'course': None}})
+        return jsonify({'data': {'course': {
+            'slug': c.slug, 'title': c.title,
+            'level': c.level, 'category': c.category,
+            'rating': c.rating, 'enrolled': c.enrolled_count,
+            'partner': c.partner.name if c.partner else None,
+        }}})
+    # First-N courses
+    m = re.search(r'courses\s*\(\s*first\s*:\s*(\d+)', query)
+    if m:
+        n = max(1, min(50, int(m.group(1))))
+        rows = Course.query.order_by(Course.enrolled_count.desc()).limit(n).all()
+        return jsonify({'data': {'courses': [
+            {'slug': c.slug, 'title': c.title, 'rating': c.rating}
+            for c in rows
+        ]}})
+    # First-N partners
+    m = re.search(r'partners\s*\(\s*first\s*:\s*(\d+)', query)
+    if m:
+        n = max(1, min(50, int(m.group(1))))
+        rows = Partner.query.order_by(Partner.slug).limit(n).all()
+        return jsonify({'data': {'partners': [
+            {'slug': p.slug, 'name': p.name, 'country': p.country,
+             'type': p.partner_type}
+            for p in rows
+        ]}})
+    return jsonify({
+        'data': None,
+        'errors': [{'message': 'Unsupported query. Try `courses(first:5){slug,title}`.'}],
+    }), 400
+
+
+@app.route('/webhook/enrollment', methods=['GET', 'POST'])
+@csrf.exempt
+def webhook_enrollment():
+    """Enrollment webhook receiver — for integrations that want to be
+    notified when a learner enrolls. POST is the canonical method; GET
+    returns the documented payload shape + signature header docs."""
+    if request.method == 'POST':
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+        else:
+            data = {k: v for k, v in request.form.items()}
+        # Deterministic ack id so tasks can assert exact text
+        course_slug = str(data.get('course_slug') or 'unknown')
+        learner_id  = str(data.get('learner_id') or '0')
+        digest = hashlib.md5(
+            f'{course_slug}|{learner_id}'.encode()
+        ).hexdigest()[:12].upper()
+        return jsonify({
+            'received': True,
+            'ack_id': f'WH-ENROLL-{digest}',
+            'course_slug': course_slug,
+            'learner_id': learner_id,
+            'signature_header': 'X-Coursera-Signature',
+            'signature_scheme': 'HMAC-SHA256',
+        })
+    return jsonify({
+        'webhook': 'enrollment',
+        'method': 'POST',
+        'content_type': 'application/json',
+        'signature_header': 'X-Coursera-Signature',
+        'signature_scheme': 'HMAC-SHA256',
+        'expected_payload': {
+            'course_slug': '<string>',
+            'learner_id': '<int>',
+            'enrolled_at': '<ISO8601>',
+            'track': 'audit | paid | plus',
+        },
+        'documented_events': [
+            'enrollment.created',
+            'enrollment.completed',
+            'enrollment.refunded',
+        ],
+    })
+
+
+@app.route('/developer/lti-integration')
+@app.route('/developer/lti')
+def developer_lti_integration():
+    """LTI 1.3 developer-docs landing page — onboarding instructions
+    for LMS admins (Canvas / Blackboard / Moodle) to wire Coursera as
+    an external tool. Tasks check this page exposes the LTI version
+    + the OIDC callback URL."""
+    return render_template('developer_lti.html',
+                           lti_version='1.3.0',
+                           oidc_callback_url='/api/lti-callback',
+                           keyset_url='/api/lti/.well-known/jwks.json',
+                           launch_url='/api/lti/launch',
+                           deep_link_url='/api/lti/deep-link')
+
+
 # ─── R6 edge-case routes ─────────────────────────────────────────────────────
 # Six common "failure / blocked" states a learner can hit on Coursera, each
 # rendered with a shared lightweight template so the agent can verify the
@@ -3870,6 +4102,20 @@ with app.app_context():
     # testimonials backfill covers v8 courses on the FIRST build.
     from seed_extras import seed_v8 as _seed_v8
     _seed_v8(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R8 polish (iter 8/10): K-12 + Lifelong-Learner + Professional-Development
+    # tracks — adds ~3360 deterministic courses across 16 audience-anchored
+    # domains and +10 publisher partners (Khan Academy, College Board, AARP,
+    # Toastmasters, LinkedIn Learning Pro, Harvard Extension, NatGeo Edu,
+    # PBS LearningMedia, AmeriCorps Senior Corps, Outschool). Must run BEFORE
+    # seed_testimonials_and_extras so the testimonials backfill covers v9
+    # courses on the FIRST build.
+    from seed_extras import seed_v9 as _seed_v9
+    _seed_v9(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

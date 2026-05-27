@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Advanced Widget Builder — WolframAlpha Developer{% endblock %}
+{% block body_class %}page-widget-builder-advanced{% endblock %}
+
+{% block content %}
+<section class="wa-widget-builder-advanced">
+  <h1>Advanced Widget Builder</h1>
+  <p class="wa-wb-intro">
+    Customize an embeddable WolframAlpha result widget. Theme, locale,
+    layout, and telemetry sampling are wired straight into the embed
+    snippet below.
+  </p>
+
+  <form method="get" action="/developer/widget-builder-advanced"
+        class="wa-wb-form" id="advWidgetForm">
+    <div class="wa-wb-row">
+      <label for="wb-expr">Expression</label>
+      <input id="wb-expr" name="expr" type="text" value="{{ expr }}"
+             class="wa-wb-input">
+    </div>
+
+    <div class="wa-wb-row">
+      <label for="wb-theme">Theme</label>
+      <select id="wb-theme" name="theme" class="wa-wb-select">
+        {% for t in themes %}
+        <option value="{{ t }}" {% if t == theme %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="wa-wb-row">
+      <label for="wb-locale">Locale</label>
+      <select id="wb-locale" name="locale" class="wa-wb-select">
+        {% for l in locales %}
+        <option value="{{ l }}" {% if l == locale %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="wa-wb-row">
+      <label for="wb-kind">Layout</label>
+      <select id="wb-kind" name="kind" class="wa-wb-select">
+        {% for k in kinds %}
+        <option value="{{ k }}" {% if k == kind %}selected{% endif %}>{{ k }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="wa-wb-row">
+      <label for="wb-telemetry">Telemetry</label>
+      <select id="wb-telemetry" name="telemetry" class="wa-wb-select">
+        {% for tt in telems %}
+        <option value="{{ tt }}" {% if tt == telemetry %}selected{% endif %}>{{ tt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="wa-wb-row">
+      <button type="submit" class="wa-wb-submit">Update preview</button>
+    </div>
+  </form>
+
+  <h2>Preview URL</h2>
+  <p><a href="{{ preview_url }}" class="wa-wb-preview-link">{{ preview_url }}</a></p>
+
+  <h2>Embed snippet</h2>
+  <pre class="wa-wb-snippet"><code>{{ embed_snippet }}</code></pre>
+
+  <h2>Telemetry</h2>
+  <p>
+    Telemetry is currently set to <strong>{{ telemetry }}</strong>. Embed
+    events appear on <a href="/api/events?event=widget.embed">/api/events?event=widget.embed</a>
+    once this widget is loaded.
+  </p>
+</section>
+{% endblock %}

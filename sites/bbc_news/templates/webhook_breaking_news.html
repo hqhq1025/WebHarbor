@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Breaking-news webhook - BBC News Developer{% endblock %}
+
+{% block content %}
+<div class="static-page" id="webhook-breaking-news">
+    <h1>Breaking-news webhook</h1>
+    <p class="lead">
+        Subscribe a webhook URL to receive breaking-news push notifications
+        from this BBC News mirror.
+    </p>
+
+    <section>
+        <h2>How to subscribe</h2>
+        <pre><code>POST /webhook/breaking-news
+Content-Type: application/json
+
+{
+  "url": "https://your-host.example.com/hooks/bbc",
+  "secret": "&lt;shared-secret&gt;",
+  "events": "breaking-news,live-update"
+}</code></pre>
+    </section>
+
+    <section>
+        <h2>Delivery contract</h2>
+        <ul>
+            <li>Topic: <code>{{ data.topic }}</code></li>
+            <li>Format: <code>{{ data.delivery.format }}</code></li>
+            <li>Retry policy: {{ data.delivery.retry_policy }}</li>
+            <li>Signature header:
+                <code>{{ data.delivery.signature_header }}</code></li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Confirm token</h2>
+        <p>
+            After a successful POST, respond <code>200</code> to a
+            <code>GET</code> with <code>?challenge=&lt;verify_token&gt;</code>
+            to complete handshake.
+        </p>
+    </section>
+
+    <p>
+        Reference date: <code>{{ data.reference_date }}</code>.
+        See also <a href="{{ url_for('developer_news_api') }}">Developer API</a>.
+    </p>
+</div>
+{% endblock %}

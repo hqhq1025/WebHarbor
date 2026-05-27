@@ -1,0 +1,308 @@
+table|airport_taxi|CREATE TABLE airport_taxi (
+	id INTEGER NOT NULL, 
+	airport_code VARCHAR(8), 
+	city_key VARCHAR(50), 
+	city_display VARCHAR(100), 
+	destination VARCHAR(160), 
+	distance_km INTEGER, 
+	vehicle VARCHAR(40), 
+	vehicle_desc VARCHAR(160), 
+	seats INTEGER, 
+	quote_usd FLOAT, 
+	free_cancellation BOOLEAN, 
+	meet_and_greet BOOLEAN, 
+	flight_tracking BOOLEAN, 
+	PRIMARY KEY (id)
+)
+table|attraction|CREATE TABLE attraction (
+	id INTEGER NOT NULL, 
+	city_key VARCHAR(50), 
+	city_display VARCHAR(100), 
+	category VARCHAR(40), 
+	name VARCHAR(200), 
+	description_short VARCHAR(400), 
+	price_usd FLOAT, 
+	duration_hours INTEGER, 
+	rating FLOAT, 
+	review_count INTEGER, 
+	instant_confirmation BOOLEAN, 
+	free_cancellation BOOLEAN, 
+	mobile_voucher BOOLEAN, 
+	PRIMARY KEY (id)
+)
+table|booking|CREATE TABLE booking (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	booking_number VARCHAR(30) NOT NULL, 
+	status VARCHAR(30), 
+	total FLOAT NOT NULL, 
+	nights INTEGER, 
+	guest_first_name VARCHAR(80), 
+	guest_last_name VARCHAR(80), 
+	guest_email VARCHAR(120), 
+	guest_phone VARCHAR(30), 
+	guest_country VARCHAR(80), 
+	special_requests TEXT, 
+	payment_method VARCHAR(50), 
+	card_last4 VARCHAR(4), 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	UNIQUE (booking_number)
+)
+table|booking_item|CREATE TABLE booking_item (
+	id INTEGER NOT NULL, 
+	booking_id INTEGER NOT NULL, 
+	property_id INTEGER NOT NULL, 
+	check_in DATE NOT NULL, 
+	check_out DATE NOT NULL, 
+	adults INTEGER, 
+	children INTEGER, 
+	rooms INTEGER, 
+	room_type VARCHAR(100), 
+	price_per_night FLOAT, 
+	subtotal FLOAT, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(booking_id) REFERENCES booking (id), 
+	FOREIGN KEY(property_id) REFERENCES property (id)
+)
+table|car_rental|CREATE TABLE car_rental (
+	id INTEGER NOT NULL, 
+	city_key VARCHAR(50), 
+	city_display VARCHAR(100), 
+	brand VARCHAR(80), 
+	vehicle_class VARCHAR(40), 
+	sample_model VARCHAR(100), 
+	daily_price_usd FLOAT, 
+	transmission VARCHAR(20), 
+	seats INTEGER, 
+	pickup_location VARCHAR(160), 
+	free_cancellation BOOLEAN, 
+	unlimited_mileage BOOLEAN, 
+	rating FLOAT, 
+	PRIMARY KEY (id)
+)
+table|cart_item|CREATE TABLE cart_item (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	property_id INTEGER NOT NULL, 
+	check_in DATE NOT NULL, 
+	check_out DATE NOT NULL, 
+	adults INTEGER, 
+	children INTEGER, 
+	rooms INTEGER, 
+	room_type VARCHAR(100), 
+	added_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	FOREIGN KEY(property_id) REFERENCES property (id)
+)
+table|city|CREATE TABLE city (
+	id INTEGER NOT NULL, 
+	"key" VARCHAR(50) NOT NULL, 
+	display VARCHAR(100) NOT NULL, 
+	slug VARCHAR(120) NOT NULL, 
+	country VARCHAR(100) NOT NULL, 
+	country_code VARCHAR(5), 
+	description TEXT, 
+	lat FLOAT, 
+	lng FLOAT, 
+	properties_count INTEGER, 
+	average_rating FLOAT, 
+	hero_image VARCHAR(300), 
+	gallery_json TEXT, 
+	nearest_beach_name VARCHAR(120), 
+	nearest_beach_lat FLOAT, 
+	nearest_beach_lng FLOAT, 
+	PRIMARY KEY (id), 
+	UNIQUE ("key")
+)
+table|dest_category|CREATE TABLE dest_category (
+	id INTEGER NOT NULL, 
+	slug VARCHAR(80) NOT NULL, 
+	name VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	icon VARCHAR(50), 
+	PRIMARY KEY (id)
+)
+table|flight|CREATE TABLE flight (
+	id INTEGER NOT NULL, 
+	flight_number VARCHAR(20), 
+	airline VARCHAR(80), 
+	origin_city_key VARCHAR(50), 
+	origin_display VARCHAR(100), 
+	dest_city_key VARCHAR(50), 
+	dest_display VARCHAR(100), 
+	depart_time VARCHAR(8), 
+	arrive_time VARCHAR(8), 
+	duration_minutes INTEGER, 
+	cabin_class VARCHAR(40), 
+	stops INTEGER, 
+	price_usd FLOAT, 
+	free_cancellation BOOLEAN, 
+	checked_bag_included BOOLEAN, 
+	PRIMARY KEY (id)
+)
+table|genius_reward|CREATE TABLE genius_reward (
+	id INTEGER NOT NULL, 
+	tier INTEGER, 
+	name VARCHAR(120), 
+	description VARCHAR(400), 
+	discount_pct INTEGER, 
+	icon VARCHAR(40), 
+	PRIMARY KEY (id)
+)
+index|ix_airport_taxi_airport_code|CREATE INDEX ix_airport_taxi_airport_code ON airport_taxi (airport_code)
+index|ix_airport_taxi_city_key|CREATE INDEX ix_airport_taxi_city_key ON airport_taxi (city_key)
+index|ix_attraction_category|CREATE INDEX ix_attraction_category ON attraction (category)
+index|ix_attraction_city_key|CREATE INDEX ix_attraction_city_key ON attraction (city_key)
+index|ix_car_rental_city_key|CREATE INDEX ix_car_rental_city_key ON car_rental (city_key)
+index|ix_city_slug|CREATE UNIQUE INDEX ix_city_slug ON city (slug)
+index|ix_dest_category_slug|CREATE UNIQUE INDEX ix_dest_category_slug ON dest_category (slug)
+index|ix_flight_airline|CREATE INDEX ix_flight_airline ON flight (airline)
+index|ix_flight_dest_city_key|CREATE INDEX ix_flight_dest_city_key ON flight (dest_city_key)
+index|ix_flight_flight_number|CREATE INDEX ix_flight_flight_number ON flight (flight_number)
+index|ix_flight_origin_city_key|CREATE INDEX ix_flight_origin_city_key ON flight (origin_city_key)
+index|ix_genius_reward_tier|CREATE INDEX ix_genius_reward_tier ON genius_reward (tier)
+index|ix_landmark_name|CREATE INDEX ix_landmark_name ON landmark (name)
+index|ix_landmark_slug|CREATE UNIQUE INDEX ix_landmark_slug ON landmark (slug)
+index|ix_property_city_id_price|CREATE INDEX ix_property_city_id_price ON property (city_id, price_per_night)
+index|ix_property_city_id_stars_desc|CREATE INDEX ix_property_city_id_stars_desc ON property (city_id, stars)
+index|ix_property_dest_category|CREATE INDEX ix_property_dest_category ON property (dest_category)
+index|ix_property_slug|CREATE UNIQUE INDEX ix_property_slug ON property (slug)
+index|ix_property_type_slug|CREATE UNIQUE INDEX ix_property_type_slug ON property_type (slug)
+index|ix_user_email|CREATE UNIQUE INDEX ix_user_email ON user (email)
+table|landmark|CREATE TABLE landmark (
+	id INTEGER NOT NULL, 
+	slug VARCHAR(160) NOT NULL, 
+	name VARCHAR(160) NOT NULL, 
+	aliases_json TEXT, 
+	city_id INTEGER, 
+	lat FLOAT NOT NULL, 
+	lng FLOAT NOT NULL, 
+	subway_access BOOLEAN, 
+	kind VARCHAR(40), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(city_id) REFERENCES city (id)
+)
+table|payment_methods|CREATE TABLE payment_methods (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	card_type VARCHAR(20) NOT NULL, 
+	last4 VARCHAR(4) NOT NULL, 
+	exp_month INTEGER NOT NULL, 
+	exp_year INTEGER NOT NULL, 
+	cardholder_name VARCHAR(120), 
+	is_default BOOLEAN, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id)
+)
+table|property|CREATE TABLE property (
+	id INTEGER NOT NULL, 
+	name VARCHAR(200) NOT NULL, 
+	slug VARCHAR(250) NOT NULL, 
+	property_type VARCHAR(50), 
+	stars INTEGER, 
+	neighborhood VARCHAR(120), 
+	city_id INTEGER NOT NULL, 
+	dest_category VARCHAR(50), 
+	address VARCHAR(250), 
+	description TEXT, 
+	short_desc VARCHAR(500), 
+	price_per_night FLOAT NOT NULL, 
+	currency VARCHAR(5), 
+	brand VARCHAR(60), 
+	rating FLOAT, 
+	review_count INTEGER, 
+	rating_label VARCHAR(30), 
+	image VARCHAR(300), 
+	gallery_json TEXT, 
+	amenities_json TEXT, 
+	room_types_json TEXT, 
+	review_scores_json TEXT, 
+	cancellation_policy TEXT, 
+	cancellation_label VARCHAR(60), 
+	is_featured BOOLEAN, 
+	is_genius_deal BOOLEAN, 
+	discount_percent INTEGER, 
+	free_cancellation BOOLEAN, 
+	breakfast_included BOOLEAN, 
+	distance_from_center FLOAT, 
+	has_wifi BOOLEAN, 
+	has_pool BOOLEAN, 
+	has_parking BOOLEAN, 
+	has_gym BOOLEAN, 
+	has_spa BOOLEAN, 
+	has_airport_shuttle BOOLEAN, 
+	has_pet_friendly BOOLEAN, 
+	has_air_conditioning BOOLEAN, 
+	has_bicycle_rental BOOLEAN, 
+	has_restaurant BOOLEAN, 
+	has_beach_access BOOLEAN, 
+	is_accessible BOOLEAN, 
+	is_eco_certified BOOLEAN, 
+	has_virtual_tour BOOLEAN, 
+	virtual_tour_url VARCHAR(300), 
+	sustainability_certification VARCHAR(80), 
+	payment_options_json TEXT, 
+	languages_json TEXT, 
+	neighborhood_summary TEXT, 
+	max_guests INTEGER, 
+	landmark_tags TEXT, 
+	lat FLOAT, 
+	lng FLOAT, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(city_id) REFERENCES city (id)
+)
+table|property_type|CREATE TABLE property_type (
+	id INTEGER NOT NULL, 
+	slug VARCHAR(80) NOT NULL, 
+	name VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	icon VARCHAR(50), 
+	PRIMARY KEY (id)
+)
+table|review|CREATE TABLE review (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	property_id INTEGER NOT NULL, 
+	rating FLOAT NOT NULL, 
+	title VARCHAR(150), 
+	body_positive TEXT, 
+	body_negative TEXT, 
+	traveller_type VARCHAR(40), 
+	stay_length INTEGER, 
+	created_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	FOREIGN KEY(property_id) REFERENCES property (id)
+)
+table|saved_property|CREATE TABLE saved_property (
+	id INTEGER NOT NULL, 
+	user_id INTEGER NOT NULL, 
+	property_id INTEGER NOT NULL, 
+	list_name VARCHAR(100), 
+	saved_at DATETIME, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES user (id), 
+	FOREIGN KEY(property_id) REFERENCES property (id)
+)
+index|sqlite_autoindex_booking_1|
+index|sqlite_autoindex_city_1|
+table|user|CREATE TABLE user (
+	id INTEGER NOT NULL, 
+	email VARCHAR(120) NOT NULL, 
+	password_hash VARCHAR(200) NOT NULL, 
+	first_name VARCHAR(80), 
+	last_name VARCHAR(80), 
+	phone VARCHAR(30), 
+	country VARCHAR(80), 
+	city VARCHAR(80), 
+	address VARCHAR(200), 
+	postal_code VARCHAR(20), 
+	genius_level INTEGER, 
+	created_at DATETIME, 
+	PRIMARY KEY (id)
+)

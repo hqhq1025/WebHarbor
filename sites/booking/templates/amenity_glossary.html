@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Amenity glossary — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Amenity glossary</h1>
+    <p class="page-subtitle">Plain-language definitions for every icon that appears on a Booking property page. Hover an icon anywhere on the site and the same definition will pop up as a tooltip.</p>
+
+    <div class="pd-section">
+        <p style="margin-bottom:16px;">
+            <a href="/api/amenity-glossary" class="btn btn-secondary">Fetch as JSON</a>
+            <a href="#sustainable" class="btn btn-link">Jump to sustainability tiers</a>
+            <a href="#accessibility" class="btn btn-link">Jump to accessibility</a>
+        </p>
+
+        <dl class="glossary-dl">
+            {% for term, definition in glossary.items() %}
+            <dt id="g-{{ term|lower|replace(' ', '-')|replace('&', 'and')|replace(',', '') }}">
+                {{ term }}
+            </dt>
+            <dd>{{ definition }}</dd>
+            {% endfor %}
+        </dl>
+
+        <h2 id="sustainable">Sustainability tiers (Travel Sustainable badges)</h2>
+        <p>Three certification tiers escalate environmental and social commitment. Level 3 is the highest and requires third-party audit. See the matching entries above for full text.</p>
+
+        <h2 id="accessibility">Accessibility</h2>
+        <p>Property accessibility claims are aligned with <strong>WCAG 2.1 Level AA</strong>. Full conformance details are in the <a href="{{ url_for('accessibility_statement') }}">accessibility statement</a>.</p>
+    </div>
+</div>
+{% endblock %}

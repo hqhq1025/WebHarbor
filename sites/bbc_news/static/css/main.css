@@ -2693,3 +2693,125 @@ body[data-darkmode="on"] .hover-preview-pop {
 }
 
 .more-from-reporter { border-top: 2px solid var(--bbc-red); padding-top: 8px; }
+
+/* ============================================================
+ * R8: keyboard shortcuts, command palette, region glossary,
+ *     local-region grid, developer portal
+ * ============================================================ */
+.kb-focused, .kb-focused a {
+    outline: 2px solid #bb1919 !important;
+    outline-offset: 2px;
+}
+
+.bbc-cmd-palette[hidden] { display: none; }
+.bbc-cmd-palette {
+    position: fixed; inset: 0; z-index: 9000;
+}
+.bbc-cmd-backdrop {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+}
+.bbc-cmd-panel {
+    position: relative;
+    max-width: 640px; margin: 12vh auto 0; background: #fff;
+    border-radius: 8px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+.bbc-cmd-panel #bbc-cmd-input {
+    width: 100%; padding: 14px 18px; font-size: 16px;
+    border: 0; border-bottom: 1px solid #ddd;
+}
+.bbc-cmd-panel #bbc-cmd-list {
+    list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow-y: auto;
+}
+.bbc-cmd-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 4px 14px;
+    padding: 8px 18px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+}
+.bbc-cmd-row.is-selected, .bbc-cmd-row:hover {
+    background: #fff3f3;
+}
+.bbc-cmd-kind {
+    grid-row: span 2; font-size: 11px; text-transform: uppercase;
+    color: #777; letter-spacing: 0.04em; align-self: start;
+}
+.bbc-cmd-label { font-weight: 600; font-size: 14px; }
+.bbc-cmd-hint  { color: #555; font-size: 12px; }
+.bbc-cmd-foot {
+    margin: 0; padding: 8px 18px; font-size: 12px;
+    background: #fafafa; color: #666; border-top: 1px solid #eee;
+}
+
+.bbc-kb-help[hidden] { display: none; }
+.bbc-kb-help {
+    position: fixed; inset: 0; z-index: 9100;
+}
+.bbc-kb-backdrop {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45);
+}
+.bbc-kb-panel {
+    position: relative; max-width: 520px;
+    margin: 14vh auto 0; background: #fff; padding: 22px 26px;
+    border-radius: 8px;
+}
+.bbc-kb-list { list-style: none; padding: 0; }
+.bbc-kb-list li {
+    display: flex; gap: 16px; align-items: baseline; padding: 4px 0;
+}
+.bbc-kb-list kbd {
+    display: inline-block; min-width: 80px;
+    padding: 2px 8px; border: 1px solid #888; border-radius: 4px;
+    background: #f5f5f5; font-family: monospace;
+}
+.bbc-kb-close {
+    margin-top: 14px; padding: 6px 14px; background: #bb1919;
+    color: #fff; border: 0; border-radius: 4px; cursor: pointer;
+}
+
+.bbc-region-glossary-pop {
+    position: absolute; z-index: 8500;
+    background: #fff; border: 1px solid #ccc; border-top: 3px solid #bb1919;
+    padding: 10px 14px; max-width: 340px; font-size: 13px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); border-radius: 4px;
+}
+.bbc-region-glossary-pop h4 { margin: 0 0 4px; font-size: 14px; }
+.bbc-region-glossary-pop p  { margin: 4px 0; }
+.bbc-rg-topics { color: #555; font-size: 12px; }
+.bbc-region-glossary-pop[hidden] { display: none; }
+
+.local-region-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px; margin: 18px 0;
+}
+.local-region-card {
+    display: block; padding: 14px 16px; border: 1px solid #eee;
+    border-left: 4px solid #bb1919; background: #fff; text-decoration: none;
+    color: inherit; border-radius: 4px;
+}
+.local-region-card:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); }
+.local-region-card h3 { margin: 0 0 4px; font-size: 16px; }
+.local-region-nation { margin: 0; color: #777; font-size: 12px; }
+
+.local-article-list { list-style: none; padding: 0; }
+.local-article-row {
+    border-bottom: 1px solid #eee; padding: 10px 0;
+}
+.local-article-row a { color: inherit; text-decoration: none; }
+.local-article-row h3 { margin: 0 0 4px; font-size: 17px; }
+.local-article-summary { margin: 0; color: #444; font-size: 14px; }
+.local-article-meta { margin: 4px 0 0; color: #888; font-size: 12px; }
+
+.dev-endpoint-table, .shortcut-table {
+    width: 100%; border-collapse: collapse; margin: 12px 0;
+}
+.dev-endpoint-table th, .dev-endpoint-table td,
+.shortcut-table th, .shortcut-table td {
+    border-bottom: 1px solid #eee; padding: 6px 10px; text-align: left;
+    vertical-align: top;
+}
+.dev-endpoint-table th, .shortcut-table th {
+    background: #fafafa; font-weight: 600;
+}

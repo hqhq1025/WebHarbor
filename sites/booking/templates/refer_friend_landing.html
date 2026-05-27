@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Welcome — referred by {{ code }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="pd-section" style="text-align:center;padding:48px 24px;">
+        <h1 class="page-title">You were invited by {{ code }}</h1>
+        <p class="page-subtitle">Sign up now and get <strong>${{ friend_discount_amount }} USD</strong> off your first qualifying stay (minimum total ${{ friend_min_stay_value }}).</p>
+        <p style="margin-top:24px;">
+            <a class="btn btn-primary" href="{{ url_for('register') }}?ref={{ code }}">Create my account</a>
+            <a class="btn btn-link" href="{{ url_for('index') }}">Browse stays first</a>
+        </p>
+        <p style="color:#666;margin-top:32px;font-size:13px;">Welcome banner shown on every referral landing page so the referred guest can verify their code.</p>
+    </div>
+</div>
+{% endblock %}

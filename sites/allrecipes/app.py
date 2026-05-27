@@ -2649,6 +2649,308 @@ def recipe_share_link(slug):
     )
 
 
+# ===========================================================================
+# R8 — keyboard-shortcut help / command-palette / observability / import-export
+# ===========================================================================
+
+R8_KEYBOARD_SHORTCUTS = [
+    ('/',          'Focus the global search box in the header.'),
+    ('?',          'Open the keyboard-shortcut help modal (this page).'),
+    ('Cmd+K',      'Open the command palette for navigating recipes, articles and collections (Ctrl+K on Windows/Linux).'),
+    ('g h',        'Go to the homepage.'),
+    ('g r',        'Go to All Recipes.'),
+    ('g m',        'Go to Meal Plan.'),
+    ('g b',        'Go to Recipe Box.'),
+    ('g s',        'Go to Shopping List.'),
+    ('g a',        'Go to Articles hub.'),
+    ('g c',        'Go to Collections hub.'),
+    ('g o',        'Go to Occasions hub.'),
+    ('g d',        'Go to Diets hub.'),
+    ('Esc',        'Close any open modal, popover, or command palette.'),
+    ('j / k',      'Move down / up through the recipe list on listing pages.'),
+    ('Enter',      'Open the highlighted recipe in the list.'),
+    ('s',          'Save the currently-viewed recipe to your Recipe Box (when logged in).'),
+    ('p',          'Open the print-friendly view of the current recipe.'),
+    ('. (period)', 'Toggle the contextual help popover for the current page section.'),
+]
+
+
+@app.route('/help/shortcuts')
+def help_shortcuts():
+    """Public help page that lists every keyboard shortcut. Linked from the
+    footer + opened by pressing '?' anywhere in the app."""
+    return render_template('help_shortcuts.html',
+                           shortcuts=R8_KEYBOARD_SHORTCUTS,
+                           page_title='Keyboard Shortcuts')
+
+
+@app.route('/help/popovers')
+def help_popovers():
+    """Public inventory of contextual help popovers — every UI surface that
+    carries a [?] tooltip is listed here so agents can discover them."""
+    popovers = [
+        ('header.nav-search', 'Type any recipe title or ingredient — press / to focus.'),
+        ('recipe.servings', 'Click the +/− buttons to scale the ingredient list up or down.'),
+        ('recipe.print', 'Hides ads, comments and reviews — leaves only the printable card.'),
+        ('recipe.rating', 'Hover any star to preview your rating, click to submit. Logged-in users only.'),
+        ('meal-plan.day', 'Drag a recipe from your Recipe Box into a day slot.'),
+        ('shopping-list.consolidate', 'Identical ingredients across recipes are summed automatically.'),
+        ('command-palette', 'Cmd+K opens fuzzy navigation across recipes, articles and collections.'),
+        ('telemetry.opt-out', 'Send no anonymous telemetry by posting opt_out=true to /telemetry.'),
+    ]
+    return render_template('help_popovers.html',
+                           popovers=popovers,
+                           page_title='Contextual Help Popovers')
+
+
+@app.route('/healthz')
+def healthz():
+    """Liveness probe for orchestrators. Returns JSON with site name + uptime."""
+    return jsonify(
+        status='ok',
+        service='allrecipes-mirror',
+        version='r8',
+        recipes=Recipe.query.count(),
+        categories=Category.query.count(),
+    )
+
+
+@app.route('/metrics')
+def metrics():
+    """Public metrics page — Prometheus-style text + HTML view. Agents read
+    metric values out of either rendering."""
+    recipe_count = Recipe.query.count()
+    category_count = Category.query.count()
+    review_count = Review.query.count()
+    article_count = Article.query.count()
+    collection_count = Collection.query.count()
+    user_count = User.query.count()
+    metric_lines = [
+        ('allrecipes_recipes_total',     recipe_count,     'Total recipes in the catalog.'),
+        ('allrecipes_categories_total',  category_count,   'Total distinct categories.'),
+        ('allrecipes_reviews_total',     review_count,     'Total reviews submitted across all recipes.'),
+        ('allrecipes_articles_total',    article_count,    'Total articles published.'),
+        ('allrecipes_collections_total', collection_count, 'Total curated collections.'),
+        ('allrecipes_users_total',       user_count,       'Total registered users.'),
+    ]
+    if request.args.get('format') == 'prom':
+        body = []
+        for name, val, help_txt in metric_lines:
+            body.append(f"# HELP {name} {help_txt}")
+            body.append(f"# TYPE {name} gauge")
+            body.append(f"{name} {val}")
+        return ('\n'.join(body) + '\n', 200, {'Content-Type': 'text/plain; version=0.0.4'})
+    return render_template('metrics.html',
+                           metric_lines=metric_lines,
+                           page_title='Mirror Metrics')
+
+
+# In-memory telemetry sink — wiped on /reset since the database file is
+# replaced atomically. Bounded to 256 entries so even adversarial agents
+# can't OOM the process.
+_TELEMETRY_SINK: list[dict] = []
+_TELEMETRY_MAX = 256
+
+
+@app.route('/telemetry', methods=['POST'])
+@csrf.exempt
+def telemetry_post():
+    """Receive a JSON-encoded telemetry event from the browser. Returns an
+    ack with the assigned event_id + receive timestamp. Idempotent in the
+    sense that a duplicate (same event_id) is silently overwritten."""
+    payload = request.get_json(silent=True) or {}
+    event_name = str(payload.get('event') or 'unnamed-event')[:80]
+    event_props = payload.get('props') or {}
+    if not isinstance(event_props, dict):
+        event_props = {'_raw': str(event_props)[:200]}
+    event_id = str(payload.get('event_id') or hashlib.md5(
+        (event_name + str(len(_TELEMETRY_SINK))).encode()
+    ).hexdigest()[:12])
+    received_at = datetime.utcnow().isoformat() + 'Z'
+    entry = {
+        'event_id': event_id,
+        'event': event_name,
+        'props': event_props,
+        'received_at': received_at,
+    }
+    # De-dupe by event_id
+    for i, e in enumerate(_TELEMETRY_SINK):
+        if e['event_id'] == event_id:
+            _TELEMETRY_SINK[i] = entry
+            return jsonify(ack=True, event_id=event_id, received_at=received_at,
+                           duplicate=True, sink_size=len(_TELEMETRY_SINK))
+    _TELEMETRY_SINK.append(entry)
+    if len(_TELEMETRY_SINK) > _TELEMETRY_MAX:
+        del _TELEMETRY_SINK[0:len(_TELEMETRY_SINK) - _TELEMETRY_MAX]
+    return jsonify(ack=True, event_id=event_id, received_at=received_at,
+                   duplicate=False, sink_size=len(_TELEMETRY_SINK))
+
+
+@app.route('/telemetry/events')
+def telemetry_events():
+    """Read the last N telemetry events. Lets agents validate that an event
+    they fired actually reached the sink."""
+    n = min(int(request.args.get('n') or 20), _TELEMETRY_MAX)
+    return jsonify(events=_TELEMETRY_SINK[-n:], sink_size=len(_TELEMETRY_SINK))
+
+
+@app.route('/api/command-palette/search')
+def command_palette_search():
+    """Cmd+K fuzzy search. Returns a unified list of recipes / categories /
+    collections / articles / static-pages with a short label + URL each."""
+    q = (request.args.get('q') or '').strip().lower()
+    limit = min(int(request.args.get('limit') or 12), 50)
+    static_pages = [
+        ('Home',           '/',                 'page'),
+        ('All Recipes',    url_for('all_recipes'),     'page'),
+        ('Meal Plan',      url_for('meal_plan') if 'meal_plan' in app.view_functions else '/meal-plan', 'page'),
+        ('Shopping List',  '/shopping-list',           'page'),
+        ('Recipe Box',     '/recipe-box',              'page'),
+        ('Collections',    '/collections',             'page'),
+        ('Articles',       '/articles',                'page'),
+        ('Authors',        '/authors',                 'page'),
+        ('Community',      '/community',               'page'),
+        ('Diets',          '/diets',                   'page'),
+        ('Occasions',      '/occasions',               'page'),
+        ('Cuisines',       '/cuisines',                'page'),
+        ('Keyboard Shortcuts', '/help/shortcuts',      'page'),
+        ('Metrics',        '/metrics',                 'page'),
+        ('Sitemap',        '/sitemap',                 'page'),
+        ('Newsletter',     '/newsletter',              'page'),
+    ]
+    results = []
+    if q:
+        # Recipes — title prefix / contains
+        rec_q = (Recipe.query
+                 .filter(Recipe.title.ilike(f"%{q}%"))
+                 .order_by(Recipe.review_count.desc())
+                 .limit(limit))
+        for r in rec_q:
+            results.append({
+                'label': r.title,
+                'url': f"/recipe/{r.slug}",
+                'kind': 'recipe',
+                'meta': f"{r.cuisine or 'recipe'} · {r.total_time or ''}",
+            })
+        # Categories
+        for c in Category.query.filter(Category.name.ilike(f"%{q}%")).limit(8):
+            results.append({
+                'label': c.name,
+                'url': f"/category/{c.slug}",
+                'kind': 'category',
+                'meta': 'Category',
+            })
+        # Collections
+        for col in Collection.query.filter(Collection.title.ilike(f"%{q}%")).limit(6):
+            results.append({
+                'label': col.title,
+                'url': f"/collection/{col.slug}",
+                'kind': 'collection',
+                'meta': 'Collection',
+            })
+        # Articles
+        for art in Article.query.filter(Article.title.ilike(f"%{q}%")).limit(6):
+            results.append({
+                'label': art.title,
+                'url': f"/article/{art.slug}",
+                'kind': 'article',
+                'meta': 'Article',
+            })
+        # Static pages
+        for label, url, kind in static_pages:
+            if q in label.lower():
+                results.append({
+                    'label': label, 'url': url, 'kind': kind, 'meta': 'Page',
+                })
+    else:
+        for label, url, kind in static_pages[:limit]:
+            results.append({'label': label, 'url': url, 'kind': kind, 'meta': 'Page'})
+
+    return jsonify(query=q, total=len(results), results=results[:limit])
+
+
+@app.route('/recipe/<slug>/import', methods=['GET', 'POST'])
+@csrf.exempt
+def recipe_import_ocr(slug):
+    """OCR-import stub. GET returns an HTML page describing the OCR pipeline
+    (so 'find the import endpoint' tasks can find it). POST accepts a JSON
+    body with an image_url + ocr_text and echoes back the parsed structure."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'GET':
+        return render_template('recipe_import.html',
+                               recipe=recipe,
+                               page_title=f'Import OCR — {recipe.title}')
+    payload = request.get_json(silent=True) or {}
+    ocr_text = str(payload.get('ocr_text') or '')[:2000]
+    # Naive line-based parse — splits on newlines, treats each non-empty line as either
+    # 'ingredient' (starts with a digit/measurement) or 'step' (everything else).
+    parsed_ings, parsed_steps = [], []
+    for line in ocr_text.split('\n'):
+        s = line.strip()
+        if not s:
+            continue
+        if re.match(r'^[\d¼½¾⅓⅔]', s) or 'cup' in s.lower() or 'tbsp' in s.lower():
+            parsed_ings.append(s)
+        else:
+            parsed_steps.append(s)
+    return jsonify(
+        slug=slug, title=recipe.title,
+        ocr_text_length=len(ocr_text),
+        ingredients=parsed_ings,
+        steps=parsed_steps,
+        confidence=round(min(1.0, len(parsed_ings) * 0.05 + len(parsed_steps) * 0.03), 2),
+    )
+
+
+@app.route('/recipe/<slug>/export.json')
+def recipe_export_mealie(slug):
+    """Mealie-compatible JSON export. Mirrors the Mealie /api/recipes/<slug>
+    JSON contract: name, slug, recipeIngredient[], recipeInstructions[].text,
+    prepTime, cookTime, performTime (ISO-8601 duration), yields, totalTime."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    ings = recipe.get_ingredients() or []
+    steps = recipe.get_instructions() or []
+    def to_iso(mins):
+        if not mins:
+            return 'PT0M'
+        h, m = divmod(int(mins), 60)
+        out = 'PT'
+        if h:
+            out += f"{h}H"
+        if m:
+            out += f"{m}M"
+        return out if out != 'PT' else 'PT0M'
+    payload = {
+        '@context': 'https://schema.org',
+        '@type': 'Recipe',
+        'format': 'mealie',
+        'schema_version': '1.5',
+        'name': recipe.title,
+        'slug': recipe.slug,
+        'description': recipe.description or '',
+        'image': recipe.image or '',
+        'recipeYield': recipe.servings or '',
+        'recipeCuisine': recipe.cuisine or '',
+        'recipeCategory': (recipe.category.name if recipe.category else ''),
+        'totalTime': to_iso(recipe.total_time_mins),
+        'prepTime': to_iso(recipe.prep_time_mins),
+        'cookTime': to_iso(recipe.cook_time_mins),
+        'performTime': to_iso(recipe.cook_time_mins),
+        'recipeIngredient': ings,
+        'recipeInstructions': [{'@type': 'HowToStep', 'text': s} for s in steps],
+        'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': recipe.avg_rating,
+            'reviewCount': recipe.review_count,
+        },
+        'author': {'@type': 'Person', 'name': recipe.author_name},
+        'tags': recipe.get_feature_tags(),
+        'dietaryTags': recipe.get_dietary_tags(),
+        'nutrition': recipe.get_nutrition(),
+    }
+    return jsonify(payload)
+
+
 # ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------

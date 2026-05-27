@@ -955,6 +955,16 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_r7(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_r7 failed: {e}") from e
+    # R8: push catalog past 39500 by adding cross-brand Amazon Fashion
+    # (luxury / streetwear / athleisure) + Beauty (clean / luxury /
+    # drugstore) templates, plus replaying prior pools with R8_SUFFIXES.
+    # Adds fit-type / skin-type / cruelty-free / vegan-formula /
+    # business-prime-eligible quality fields.
+    try:
+        from seed_r8 import seed_r8
+        seed_r8(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r8 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

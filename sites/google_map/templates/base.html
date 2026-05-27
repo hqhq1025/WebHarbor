@@ -109,6 +109,14 @@
 
     {% block body %}{% endblock %}
 
+    {# ---- R8: persistent shortcut hint + developer console link ---- #}
+    <div class="r8-shortcut-hint" aria-hidden="true"
+         style="position:fixed;bottom:12px;right:12px;font:12px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+                color:#5f6368;background:rgba(255,255,255,0.92);padding:6px 10px;border-radius:8px;
+                box-shadow:0 1px 4px rgba(0,0,0,0.12);pointer-events:none;z-index:50;">
+        Press <kbd>?</kbd> for shortcuts &middot; <kbd>Ctrl</kbd>+<kbd>K</kbd> to jump
+    </div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>

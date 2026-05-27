@@ -246,4 +246,277 @@
       });
     }
   }
+
+  /* ─── R8 polish: keyboard shortcuts, command palette, glossary ───── */
+
+  // The shortcut command-set powering both the command palette (Cmd+K)
+  // and the keyboard map (j/k/space/etc.). Static commands first; the
+  // catalogue surface (courses, partners, skills) is fetched once from
+  // /api/v1 endpoints on first palette open and cached on `window`.
+  var R8_STATIC_COMMANDS = [
+    { label: 'Home',                    href: '/',                                kind: 'page' },
+    { label: 'Search courses',          href: '/search',                          kind: 'page' },
+    { label: 'Browse: Computer Science',href: '/browse/computer-science',         kind: 'category' },
+    { label: 'Browse: Data Science',    href: '/browse/data-science',             kind: 'category' },
+    { label: 'Browse: Business',        href: '/browse/business',                 kind: 'category' },
+    { label: 'Browse: Information Technology', href: '/browse/information-technology', kind: 'category' },
+    { label: 'Browse: Language Learning', href: '/browse/language-learning',      kind: 'category' },
+    { label: 'Browse: Health',          href: '/browse/health',                   kind: 'category' },
+    { label: 'Browse: Personal Development', href: '/browse/personal-development', kind: 'category' },
+    { label: 'Degrees list',            href: '/degrees',                         kind: 'page' },
+    { label: 'Professional Certificates', href: '/professional-certificates',     kind: 'page' },
+    { label: 'Coursera Plus',           href: '/coursera-plus',                   kind: 'page' },
+    { label: 'Partners',                href: '/partners',                        kind: 'page' },
+    { label: 'Blog',                    href: '/blog',                            kind: 'page' },
+    { label: 'Help Center',             href: '/help',                            kind: 'page' },
+    { label: 'Careers',                 href: '/careers',                         kind: 'page' },
+    { label: 'Mobile app',              href: '/mobile',                          kind: 'page' },
+    { label: 'Accessibility statement', href: '/accessibility',                   kind: 'page' },
+    { label: 'Public API v1 docs',      href: '/api/v1/docs',                     kind: 'page' },
+    { label: 'Developer LTI integration', href: '/developer/lti-integration',     kind: 'page' },
+    { label: 'Health endpoint (healthz)', href: '/healthz',                       kind: 'api' },
+    { label: 'Uptime status',           href: '/api/uptime',                      kind: 'api' },
+    { label: 'GraphQL v2 endpoint',     href: '/api/v2/graphql?query={courses(first:5){slug,title}}', kind: 'api' },
+    { label: 'Enrollment webhook docs', href: '/webhook/enrollment',              kind: 'api' },
+    { label: 'Wishlist',                href: '/wishlist',                        kind: 'page' },
+    { label: 'My Account',              href: '/account',                         kind: 'page' },
+    { label: 'Log in',                  href: '/login',                           kind: 'page' },
+    { label: 'Open keyboard shortcut overlay', href: '#kbd',                      kind: 'shortcut' },
+  ];
+
+  // Skill glossary — used by tooltips and palette completion.
+  var R8_SKILL_GLOSSARY = {
+    'python':         'High-level, dynamically-typed programming language; the lingua franca of data science and machine learning.',
+    'sql':            'Structured Query Language; the standard for relational databases.',
+    'java':           'Strongly-typed, object-oriented language widely used in enterprise back-ends and Android.',
+    'javascript':     'The language of the web — runs in browsers and Node.js back-ends.',
+    'machine-learning':'A class of algorithms that learn patterns from data to make predictions or decisions.',
+    'deep-learning':  'A subset of machine learning built on multi-layer neural networks.',
+    'agentic-ai':     'Autonomous AI agents that plan, act with tools, and reflect to complete multi-step tasks.',
+    'multimodal-rag': 'Retrieval-augmented generation extended across text, image, audio and video modalities.',
+    'on-device-genai':'Generative AI inference that runs entirely on a phone, laptop or edge device with no server roundtrip.',
+    'cybersecurity':  'The practice of protecting systems, networks and data from digital attacks.',
+    'cloud-computing':'On-demand delivery of computing infrastructure and services over the internet.',
+    'project-management':'The discipline of planning, executing and closing projects to meet defined goals.',
+    'k-12-reading':   'Foundational reading instruction for kindergarten through twelfth grade learners.',
+    'k-12-sel':       'Social-emotional learning — the K-12 curriculum for self-awareness, empathy and decision making.',
+    'public-speaking':'The skill of preparing and delivering structured oral presentations to a live audience.',
+    'negotiation':    'The structured process of reaching agreement between two or more parties with different interests.',
+  };
+  // Expose for any inline scripts that want to consult the glossary.
+  window.R8_SKILL_GLOSSARY = R8_SKILL_GLOSSARY;
+
+  // ── Command palette wiring ────────────────────────────────────────
+  var palette = document.getElementById('r8-cmd-palette');
+  var paletteInput = document.getElementById('r8-cmd-input');
+  var paletteResults = document.getElementById('r8-cmd-results');
+  var kbdOverlay = document.getElementById('r8-kbd-overlay');
+  var kbdClose = kbdOverlay ? kbdOverlay.querySelector('.r8-kbd-close') : null;
+  var paletteSelectedIdx = 0;
+  var paletteItems = [];
+  var paletteDynamicCache = null;
+
+  function r8OpenPalette() {
+    if (!palette) return;
+    palette.hidden = false;
+    paletteInput.value = '';
+    paletteSelectedIdx = 0;
+    r8FillPalette('');
+    setTimeout(function() { paletteInput.focus(); }, 30);
+  }
+  function r8ClosePalette() { if (palette) palette.hidden = true; }
+  function r8OpenKbd()      { if (kbdOverlay) kbdOverlay.hidden = false; }
+  function r8CloseKbd()     { if (kbdOverlay) kbdOverlay.hidden = true; }
+
+  function r8FillPalette(q) {
+    if (!paletteResults) return;
+    var qN = (q || '').trim().toLowerCase();
+    // Augment static list with cached dynamic catalog rows on first open.
+    var all = R8_STATIC_COMMANDS.slice();
+    if (paletteDynamicCache) {
+      all = all.concat(paletteDynamicCache);
+    } else {
+      // Kick off async load (don't block first render).
+      paletteDynamicCache = []; // mark in-flight
+      fetch('/api/v1/partners').then(function(r) { return r.json(); })
+        .then(function(rows) {
+          if (!Array.isArray(rows)) return;
+          paletteDynamicCache = rows.map(function(p) {
+            return { label: 'Partner: ' + p.name, href: '/partner/' + p.slug, kind: 'partner' };
+          });
+          if (!palette.hidden) r8FillPalette(paletteInput.value);
+        })
+        .catch(function() {});
+    }
+    var matches = !qN ? all.slice(0, 20)
+        : all.filter(function(c) { return c.label.toLowerCase().indexOf(qN) !== -1; })
+             .slice(0, 25);
+    paletteItems = matches;
+    paletteResults.innerHTML = '';
+    matches.forEach(function(c, i) {
+      var li = document.createElement('li');
+      li.setAttribute('role', 'option');
+      li.dataset.idx = String(i);
+      li.className = 'r8-cmd-item' + (i === paletteSelectedIdx ? ' is-active' : '');
+      li.innerHTML = '<span class="r8-cmd-kind">' + c.kind + '</span><span class="r8-cmd-label">'
+        + c.label.replace(/</g, '&lt;') + '</span>';
+      li.addEventListener('click', function() { r8RunPalette(c); });
+      paletteResults.appendChild(li);
+    });
+    if (matches.length === 0) {
+      paletteResults.innerHTML = '<li class="r8-cmd-empty">No matches. Try "course", "partner", "category", or a skill name.</li>';
+    }
+  }
+  function r8RunPalette(cmd) {
+    if (!cmd) return;
+    if (cmd.href === '#kbd') { r8ClosePalette(); r8OpenKbd(); return; }
+    r8ClosePalette();
+    window.location = cmd.href;
+  }
+  if (paletteInput) {
+    paletteInput.addEventListener('input', function() {
+      paletteSelectedIdx = 0;
+      r8FillPalette(this.value);
+    });
+    paletteInput.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown') {
+        paletteSelectedIdx = Math.min(paletteSelectedIdx + 1, paletteItems.length - 1);
+        r8FillPalette(this.value); e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        paletteSelectedIdx = Math.max(paletteSelectedIdx - 1, 0);
+        r8FillPalette(this.value); e.preventDefault();
+      } else if (e.key === 'Enter') {
+        if (paletteItems[paletteSelectedIdx]) r8RunPalette(paletteItems[paletteSelectedIdx]);
+        e.preventDefault();
+      }
+    });
+  }
+  if (palette) {
+    palette.addEventListener('click', function(e) {
+      if (e.target.classList.contains('r8-cmd-backdrop')) r8ClosePalette();
+    });
+  }
+  if (kbdClose) kbdClose.addEventListener('click', r8CloseKbd);
+  if (kbdOverlay) {
+    kbdOverlay.addEventListener('click', function(e) {
+      if (e.target.classList.contains('r8-cmd-backdrop')) r8CloseKbd();
+    });
+  }
+
+  // ── Global key handler ────────────────────────────────────────────
+  var gChord = null, gChordTimer = null;
+  function r8InEditable(el) {
+    if (!el) return false;
+    var t = el.tagName;
+    return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || el.isContentEditable;
+  }
+  document.addEventListener('keydown', function(e) {
+    // Cmd/Ctrl + K — palette
+    if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      if (palette && !palette.hidden) { r8ClosePalette(); } else { r8OpenPalette(); }
+      return;
+    }
+    // Esc — close overlays
+    if (e.key === 'Escape') {
+      if (palette && !palette.hidden) { r8ClosePalette(); return; }
+      if (kbdOverlay && !kbdOverlay.hidden) { r8CloseKbd(); return; }
+    }
+    // Suppress single-key shortcuts when editing or when a modal is open
+    if (r8InEditable(e.target)) return;
+    if (palette && !palette.hidden) return;
+    if (kbdOverlay && !kbdOverlay.hidden) return;
+    // '/' — focus search
+    if (e.key === '/') {
+      var srch = document.querySelector('.nav-search input[type=text]');
+      if (srch) { srch.focus(); srch.select(); e.preventDefault(); return; }
+    }
+    // '?' — open kbd overlay (Shift+/)
+    if (e.key === '?') { r8OpenKbd(); e.preventDefault(); return; }
+    // Two-key chords: g h, g s
+    if (e.key === 'g' && !gChord) {
+      gChord = 'g';
+      if (gChordTimer) clearTimeout(gChordTimer);
+      gChordTimer = setTimeout(function() { gChord = null; }, 800);
+      return;
+    }
+    if (gChord === 'g') {
+      gChord = null;
+      if (gChordTimer) clearTimeout(gChordTimer);
+      if (e.key === 'h') { window.location = '/'; return; }
+      if (e.key === 's') { window.location = '/wishlist'; return; }
+    }
+    // Lecture-page navigation: j next, k prev
+    if (e.key === 'j' || e.key === 'k') {
+      // Detect lecture page by presence of week nav buttons in the cd-breadcrumb sibling nav
+      var nextLink = document.querySelector('.lecture-page nav a[href*="/lecture/"]:last-of-type');
+      var prevLinks = document.querySelectorAll('.lecture-page nav a[href*="/lecture/"]');
+      if (prevLinks.length) {
+        // Robust selection: first link whose label starts with '←' is prev, last with '→' is next
+        var prevLink = null, nextLinkX = null;
+        prevLinks.forEach(function(a) {
+          if (/&larr;|←/.test(a.innerHTML) || a.textContent.trim().charAt(0) === '←') prevLink = a;
+          else nextLinkX = a;
+        });
+        if (e.key === 'j' && nextLinkX) { window.location = nextLinkX.href; return; }
+        if (e.key === 'k' && prevLink) { window.location = prevLink.href; return; }
+      }
+    }
+    // Video mock-controls on lecture page
+    if (document.querySelector('.lecture-page')) {
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        // Toggle a body-level data attribute so the agent can verify the play/pause state.
+        var st = document.body.getAttribute('data-video-state') || 'paused';
+        document.body.setAttribute('data-video-state', st === 'paused' ? 'playing' : 'paused');
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        var ms = document.body.getAttribute('data-video-muted') === '1' ? '0' : '1';
+        document.body.setAttribute('data-video-muted', ms);
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        var pos = parseInt(document.body.getAttribute('data-video-pos') || '0', 10);
+        pos += (e.key === 'ArrowRight' ? 10 : -10);
+        if (pos < 0) pos = 0;
+        document.body.setAttribute('data-video-pos', String(pos));
+        return;
+      }
+    }
+  });
+
+  // ── Skill glossary tooltip ────────────────────────────────────────
+  var gloss = document.getElementById('r8-skill-glossary-tooltip');
+  // Auto-decorate any .pill / .skill-chip / [data-skill] element whose
+  // text matches a glossary key. Keeps the tooltip wired even on pages
+  // that don't explicitly add the .skill-glossary class.
+  function r8SlugifyText(t) {
+    return (t || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+  document.querySelectorAll('.skill-chip, .skill-pill, .pill, [data-skill]').forEach(function(el) {
+    var key = el.dataset.skill || r8SlugifyText(el.textContent);
+    if (R8_SKILL_GLOSSARY[key]) {
+      el.classList.add('skill-glossary');
+      el.dataset.skill = key;
+    }
+  });
+  document.addEventListener('mouseover', function(e) {
+    if (!gloss) return;
+    var t = e.target.closest && e.target.closest('.skill-glossary');
+    if (!t) return;
+    var key = t.dataset.skill;
+    var def = R8_SKILL_GLOSSARY[key];
+    if (!def) return;
+    gloss.textContent = def;
+    var r = t.getBoundingClientRect();
+    gloss.style.left = Math.max(8, r.left + window.scrollX) + 'px';
+    gloss.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    gloss.hidden = false;
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (!gloss) return;
+    if (e.target.closest && e.target.closest('.skill-glossary')) gloss.hidden = true;
+  });
+
 })();

@@ -2182,3 +2182,77 @@ code, kbd { font-family: var(--font-mono); }
 .pod-plot-btn:focus-visible {
   outline: 2px solid var(--color-orange); outline-offset: 2px;
 }
+
+/* ============================================================
+   R8: Command palette overlay, help modal, glossary page,
+   keyboard hint chips, advanced widget builder form.
+   ============================================================ */
+.r8-palette, .r8-help-modal {
+  position: fixed; inset: 0; background: rgba(20,20,20,0.55);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 10vh; z-index: 9999;
+}
+.r8-palette[hidden], .r8-help-modal[hidden] { display: none !important; }
+.r8-palette-card, .r8-help-card {
+  background: #fff; width: min(720px, 92vw);
+  border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  padding: 14px 16px; max-height: 70vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.r8-palette-input {
+  width: 100%; padding: 10px 12px; font-size: 16px;
+  border: 1px solid #ddd; border-radius: 6px; outline: none;
+}
+.r8-palette-input:focus { border-color: #f96302; }
+.r8-palette-list {
+  list-style: none; padding: 0; margin: 12px 0 0; overflow-y: auto;
+  max-height: 50vh;
+}
+.r8-palette-item {
+  padding: 8px 10px; display: grid;
+  grid-template-columns: 110px 1fr auto; gap: 10px;
+  align-items: baseline; cursor: pointer; border-radius: 4px;
+}
+.r8-palette-item:hover { background: #fff3e8; }
+.r8-palette-kind { font-size: 11px; text-transform: uppercase;
+  color: #888; letter-spacing: 0.04em; }
+.r8-palette-label { color: #222; font-weight: 500; }
+.r8-palette-url { color: #888; font-family: monospace; font-size: 12px; }
+.r8-palette-hint, .r8-help-hint {
+  margin: 12px 0 0; font-size: 12px; color: #666;
+}
+.r8-help-card h2 { margin-top: 0; }
+.r8-help-list { list-style: none; padding: 0; }
+.r8-help-list li { padding: 4px 0; font-size: 14px; }
+.r8-help-list code { background: #f5f5f5; padding: 1px 6px; border-radius: 3px; }
+kbd {
+  background: #f4f4f4; border: 1px solid #ccc; border-radius: 3px;
+  padding: 1px 5px; font-family: monospace; font-size: 12px;
+}
+
+/* Glossary page */
+.wa-help-symbols { max-width: 880px; margin: 24px auto; padding: 0 16px; }
+.wa-glossary-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+.wa-glossary-table th, .wa-glossary-table td {
+  text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee;
+}
+.wa-glossary-table th { background: #fafafa; font-weight: 600; }
+.wa-gl-sym code { background: #f5f5f5; padding: 1px 6px; border-radius: 3px; }
+
+/* Advanced widget builder */
+.wa-widget-builder-advanced { max-width: 880px; margin: 24px auto; padding: 0 16px; }
+.wa-wb-form { display: grid; gap: 10px; margin-bottom: 16px; }
+.wa-wb-row { display: grid; grid-template-columns: 140px 1fr;
+  gap: 12px; align-items: center; }
+.wa-wb-input, .wa-wb-select {
+  padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px;
+  font-size: 14px; width: 100%;
+}
+.wa-wb-submit {
+  padding: 8px 18px; background: #f96302; color: #fff;
+  border: 0; border-radius: 4px; cursor: pointer; font-weight: 600;
+}
+.wa-wb-snippet {
+  background: #1d1d1d; color: #f5f5f5; padding: 12px 14px;
+  border-radius: 6px; overflow-x: auto; font-size: 12px;
+}

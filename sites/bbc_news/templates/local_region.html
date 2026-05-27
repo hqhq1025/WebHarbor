@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}BBC Local - {{ region_name }} - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page" id="local-region-page">
+    <p class="breadcrumb">
+        <a href="{{ url_for('local_index') }}">BBC Local</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ region_name }}</span>
+    </p>
+    <h1>BBC Local - {{ region_name }}</h1>
+    <p class="lead">
+        Local news from <strong>{{ region_name }}</strong>, {{ nation }}.
+        Showing <strong>{{ articles|length }}</strong> latest stories.
+    </p>
+
+    <ul class="local-article-list">
+    {% for art in articles %}
+        <li class="local-article-row js-keyboard-navable" data-slug="{{ art.slug }}">
+            <a href="{{ url_for('article_detail', slug=art.slug) }}">
+                <h3>{{ art.headline }}</h3>
+                <p class="local-article-summary">{{ art.summary or art.subtitle }}</p>
+                <p class="local-article-meta">
+                    <time datetime="{{ art.published_at.isoformat() if art.published_at else '' }}">
+                        {{ art.published_date_str }}
+                    </time>
+                    {% if art.author %}<span aria-hidden="true">·</span> {{ art.author }}{% endif %}
+                </p>
+            </a>
+        </li>
+    {% else %}
+        <li>No local stories indexed yet for this region.</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endblock %}

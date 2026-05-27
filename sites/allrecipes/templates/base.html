@@ -176,6 +176,8 @@
                 <a href="{{ url_for('newsletter') }}">Newsletter</a>
                 <a href="{{ url_for('sitemap') }}">Sitemap</a>
                 <a href="{{ url_for('popular_1960s') }}">Popular 1960s Recipes</a>
+                <a href="/help/shortcuts">Keyboard Shortcuts</a>
+                <a href="/healthz">Status</a>
             </div>
         </div>
         <div class="footer-bottom">
@@ -186,5 +188,231 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
+
+    {# R8: keyboard-shortcut help modal — opened by pressing '?' anywhere #}
+    <div id="r8-help-modal" class="r8-modal" role="dialog" aria-modal="true" aria-labelledby="r8-help-title" hidden
+         style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;align-items:center;justify-content:center;display:none;">
+      <div class="r8-modal-card" style="background:#fff;max-width:540px;width:90%;border-radius:8px;padding:24px 28px;box-shadow:0 12px 48px rgba(0,0,0,0.25);font-family:inherit;">
+        <h2 id="r8-help-title" style="margin-top:0;">Keyboard Shortcuts</h2>
+        <p style="color:#555;margin:8px 0 16px;">Press <kbd>Esc</kbd> to close this modal. The full reference lives at
+          <a href="/help/shortcuts">/help/shortcuts</a>.</p>
+        <ul style="list-style:none;padding:0;margin:0;font-size:0.95rem;">
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>/</kbd> — Focus search</li>
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>?</kbd> — Open this help modal</li>
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>Cmd+K</kbd> / <kbd>Ctrl+K</kbd> — Command palette</li>
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>g h</kbd> — Home &nbsp; <kbd>g r</kbd> — Recipes &nbsp; <kbd>g b</kbd> — Recipe Box</li>
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>g m</kbd> — Meal Plan &nbsp; <kbd>g s</kbd> — Shopping List</li>
+          <li style="padding:6px 0;border-bottom:1px solid #eee;"><kbd>j</kbd> / <kbd>k</kbd> — Move through list &nbsp; <kbd>Enter</kbd> — Open</li>
+          <li style="padding:6px 0;"><kbd>Esc</kbd> — Close modal / popover / palette</li>
+        </ul>
+        <button type="button" class="r8-modal-close" aria-label="Close help" data-close-modal="r8-help-modal"
+                style="margin-top:18px;background:#c54;color:#fff;border:0;padding:8px 16px;border-radius:4px;cursor:pointer;">Close</button>
+      </div>
+    </div>
+
+    {# R8: command palette modal — opened by Cmd+K / Ctrl+K #}
+    <div id="r8-palette-modal" class="r8-modal" role="dialog" aria-modal="true" aria-labelledby="r8-palette-title" hidden
+         style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;align-items:flex-start;justify-content:center;display:none;padding-top:80px;">
+      <div class="r8-palette-card" style="background:#fff;max-width:560px;width:92%;border-radius:8px;padding:18px 18px 8px;box-shadow:0 12px 48px rgba(0,0,0,0.3);font-family:inherit;">
+        <h2 id="r8-palette-title" class="visually-hidden" style="position:absolute;left:-9999px;">Command Palette</h2>
+        <input id="r8-palette-input" type="text" autocomplete="off" placeholder="Type a recipe, category, collection, article…"
+               aria-label="Command palette search"
+               style="width:100%;padding:12px 14px;border:1px solid #ccc;border-radius:6px;font-size:1.04rem;outline:none;">
+        <ul id="r8-palette-results" role="listbox" aria-label="Command palette results"
+            style="list-style:none;padding:0;margin:14px 0 0;max-height:360px;overflow-y:auto;font-size:0.94rem;">
+          <li style="padding:8px 4px;color:#888;">Press <kbd>Enter</kbd> to jump. <kbd>Esc</kbd> to close.</li>
+        </ul>
+      </div>
+    </div>
+
+    {# R8: contextual help popover — anchored over the page-section header #}
+    <div id="r8-popover" class="r8-popover" role="tooltip" hidden
+         style="position:fixed;bottom:24px;right:24px;background:#262626;color:#f8f8f8;max-width:340px;padding:14px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);font-size:0.92rem;z-index:8500;display:none;">
+      <strong style="display:block;margin-bottom:6px;color:#ffd27a;">Contextual help</strong>
+      <span id="r8-popover-text">Press <kbd style="background:#444;color:#fff;padding:1px 6px;border-radius:3px;">.</kbd> on any page section to toggle a one-sentence help popover.</span>
+      <button type="button" aria-label="Close popover" data-close-popover
+              style="position:absolute;top:6px;right:8px;background:transparent;border:0;color:#bbb;font-size:1.2rem;cursor:pointer;">&times;</button>
+    </div>
+
+    <script>
+    // R8 keyboard shortcuts + command palette + telemetry firer
+    (function() {
+      var helpModal = document.getElementById('r8-help-modal');
+      var paletteModal = document.getElementById('r8-palette-modal');
+      var paletteInput = document.getElementById('r8-palette-input');
+      var paletteResults = document.getElementById('r8-palette-results');
+      var popover = document.getElementById('r8-popover');
+      var popoverText = document.getElementById('r8-popover-text');
+      var gPending = false;
+      var gTimer = null;
+
+      function fireTelemetry(eventName, props) {
+        try {
+          fetch('/telemetry', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({event: eventName, props: props || {}}),
+            keepalive: true,
+          });
+        } catch (e) { /* swallow — telemetry is best-effort */ }
+      }
+
+      function openModal(el) {
+        if (!el) return;
+        el.style.display = 'flex';
+        el.removeAttribute('hidden');
+        fireTelemetry('modal.open', {modal: el.id});
+        if (el === paletteModal && paletteInput) {
+          setTimeout(function() { paletteInput.focus(); }, 30);
+          if (!paletteInput.dataset.r8Bound) {
+            paletteInput.addEventListener('input', renderPalette);
+            paletteInput.dataset.r8Bound = '1';
+          }
+          renderPalette();
+        }
+      }
+
+      function closeModals() {
+        [helpModal, paletteModal].forEach(function(m) {
+          if (m) { m.style.display = 'none'; m.setAttribute('hidden', ''); }
+        });
+      }
+
+      function togglePopover() {
+        if (!popover) return;
+        var visible = popover.style.display === 'block';
+        if (visible) {
+          popover.style.display = 'none';
+          popover.setAttribute('hidden', '');
+        } else {
+          // Pick text from the focused section, or fall back to default.
+          var heading = document.querySelector('main h1, main h2, main section h2');
+          if (heading && popoverText) {
+            popoverText.textContent = 'Help for "' + heading.textContent.trim() + '" — every interactive control on this section is documented at /help/popovers.';
+          }
+          popover.style.display = 'block';
+          popover.removeAttribute('hidden');
+          fireTelemetry('popover.open', {anchor: heading ? heading.textContent.trim() : 'page'});
+        }
+      }
+
+      function focusSearch() {
+        var input = document.getElementById('nav-search-input');
+        if (input) { input.focus(); input.select(); fireTelemetry('shortcut.fire', {key: 'slash', target: 'nav-search'}); }
+      }
+
+      function renderPalette() {
+        if (!paletteInput || !paletteResults) return;
+        var q = paletteInput.value || '';
+        fetch('/api/command-palette/search?q=' + encodeURIComponent(q) + '&limit=12')
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            paletteResults.innerHTML = '';
+            if (!data.results || !data.results.length) {
+              paletteResults.innerHTML = '<li style="padding:8px 4px;color:#888;">No matches.</li>';
+              return;
+            }
+            data.results.forEach(function(r, i) {
+              var li = document.createElement('li');
+              li.setAttribute('role', 'option');
+              li.style.padding = '8px 10px';
+              li.style.borderBottom = '1px solid #f0f0f0';
+              li.style.cursor = 'pointer';
+              if (i === 0) li.style.background = '#fff7e6';
+              li.innerHTML = '<a href="' + r.url + '" style="text-decoration:none;color:#222;display:block;">' +
+                '<strong>' + r.label + '</strong> ' +
+                '<span style="color:#999;font-size:0.85rem;">— ' + (r.meta || r.kind) + '</span></a>';
+              li.addEventListener('click', function() {
+                fireTelemetry('palette.click', {label: r.label, kind: r.kind, query: q});
+                window.location.href = r.url;
+              });
+              paletteResults.appendChild(li);
+            });
+          })
+          .catch(function() {
+            paletteResults.innerHTML = '<li style="padding:8px 4px;color:#c54;">Search failed — try again.</li>';
+          });
+      }
+
+      document.addEventListener('keydown', function(ev) {
+        var tag = (ev.target && ev.target.tagName) || '';
+        var inField = tag === 'INPUT' || tag === 'TEXTAREA' || (ev.target && ev.target.isContentEditable);
+
+        // Cmd+K / Ctrl+K — open palette even from fields
+        if ((ev.metaKey || ev.ctrlKey) && (ev.key === 'k' || ev.key === 'K')) {
+          ev.preventDefault();
+          openModal(paletteModal);
+          fireTelemetry('shortcut.fire', {key: 'cmd-k'});
+          return;
+        }
+
+        // Esc — close any open modal/popover
+        if (ev.key === 'Escape') {
+          closeModals();
+          if (popover && popover.style.display === 'block') {
+            popover.style.display = 'none'; popover.setAttribute('hidden', '');
+          }
+          return;
+        }
+
+        if (inField) return;
+
+        if (ev.key === '/') {
+          ev.preventDefault(); focusSearch(); return;
+        }
+        if (ev.key === '?') {
+          ev.preventDefault(); openModal(helpModal);
+          fireTelemetry('shortcut.fire', {key: 'question'});
+          return;
+        }
+        if (ev.key === '.') {
+          ev.preventDefault(); togglePopover();
+          fireTelemetry('shortcut.fire', {key: 'period'});
+          return;
+        }
+
+        // g-prefixed nav shortcuts
+        if (ev.key === 'g') {
+          gPending = true;
+          if (gTimer) clearTimeout(gTimer);
+          gTimer = setTimeout(function() { gPending = false; }, 900);
+          return;
+        }
+        if (gPending) {
+          gPending = false;
+          var dest = null;
+          if (ev.key === 'h') dest = '/';
+          else if (ev.key === 'r') dest = '/recipes';
+          else if (ev.key === 'm') dest = '/meal-plan';
+          else if (ev.key === 'b') dest = '/recipe-box';
+          else if (ev.key === 's') dest = '/shopping-list';
+          else if (ev.key === 'a') dest = '/articles';
+          else if (ev.key === 'c') dest = '/collections';
+          else if (ev.key === 'o') dest = '/occasions';
+          else if (ev.key === 'd') dest = '/diets';
+          if (dest) {
+            fireTelemetry('shortcut.fire', {key: 'g-' + ev.key, dest: dest});
+            window.location.href = dest;
+          }
+        }
+      });
+
+      // Close handlers
+      document.addEventListener('click', function(ev) {
+        var t = ev.target;
+        if (t && t.dataset && t.dataset.closeModal) {
+          var m = document.getElementById(t.dataset.closeModal);
+          if (m) { m.style.display = 'none'; m.setAttribute('hidden', ''); }
+        }
+        if (t && t.dataset && t.dataset.closePopover !== undefined) {
+          if (popover) { popover.style.display = 'none'; popover.setAttribute('hidden', ''); }
+        }
+        // Click outside modal-card closes
+        [helpModal, paletteModal].forEach(function(m) {
+          if (m && t === m) { m.style.display = 'none'; m.setAttribute('hidden', ''); }
+        });
+      });
+    })();
+    </script>
 </body>
 </html>

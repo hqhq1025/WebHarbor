@@ -111,3 +111,9 @@ agent_demo/runs/.claude/ralph-loop.local.md
 .claude/ralph-loop.local.md
 sites/*/.claude/
 sites/*/download_pill_images.py
+sites/booking/db_a.db
+sites/booking/dump_a.sql
+sites/booking/*.db_backup
+sites/booking/dump_*.sql
+sites/booking/db_*.db
+sites/booking/dump_*.sql

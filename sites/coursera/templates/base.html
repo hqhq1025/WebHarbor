@@ -237,5 +237,49 @@
   </div>
 </footer>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+{# ─── R8 Command palette (Cmd+K) + keyboard-shortcut overlay ─── #}
+<div id="r8-cmd-palette" class="r8-cmd-palette" role="dialog" aria-modal="true" aria-label="Command palette" hidden>
+  <div class="r8-cmd-backdrop"></div>
+  <div class="r8-cmd-modal">
+    <div class="r8-cmd-header">
+      <span class="r8-cmd-prompt">&#9889;</span>
+      <input type="text" id="r8-cmd-input" placeholder="Type to jump to a course, partner, category, skill or page — try 'palette' or 'lti'." aria-label="Command palette search">
+      <kbd class="r8-cmd-kbd">Esc</kbd>
+    </div>
+    <ul id="r8-cmd-results" class="r8-cmd-results" role="listbox"></ul>
+    <div class="r8-cmd-footer">
+      <span><kbd>&#x2191;</kbd> <kbd>&#x2193;</kbd> navigate</span>
+      <span><kbd>Enter</kbd> select</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<div id="r8-kbd-overlay" class="r8-kbd-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" hidden>
+  <div class="r8-cmd-backdrop"></div>
+  <div class="r8-kbd-modal">
+    <h2>Keyboard shortcuts</h2>
+    <table>
+      <tr><th>Global</th><th></th></tr>
+      <tr><td><kbd>/</kbd></td><td>Focus the search box</td></tr>
+      <tr><td><kbd>?</kbd></td><td>Open this keyboard-shortcut overlay</td></tr>
+      <tr><td><kbd>Cmd</kbd> <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd></td><td>Open the command palette</td></tr>
+      <tr><td><kbd>g</kbd> <kbd>h</kbd></td><td>Go home</td></tr>
+      <tr><td><kbd>g</kbd> <kbd>s</kbd></td><td>Go to saved (wishlist)</td></tr>
+      <tr><th>Lecture page</th><th></th></tr>
+      <tr><td><kbd>j</kbd></td><td>Next module</td></tr>
+      <tr><td><kbd>k</kbd></td><td>Previous module</td></tr>
+      <tr><td><kbd>Space</kbd></td><td>Play / pause video</td></tr>
+      <tr><td><kbd>&#x2190;</kbd> <kbd>&#x2192;</kbd></td><td>Seek video 10 s</td></tr>
+      <tr><td><kbd>m</kbd></td><td>Mute / unmute</td></tr>
+      <tr><th>Skill glossary</th><th></th></tr>
+      <tr><td>Hover any <code>.skill-glossary</code> chip</td><td>See an inline definition</td></tr>
+    </table>
+    <button class="r8-kbd-close" type="button">Close</button>
+  </div>
+</div>
+
+<div id="r8-skill-glossary-tooltip" class="r8-skill-glossary-tooltip" role="tooltip" hidden></div>
 </body>
 </html>

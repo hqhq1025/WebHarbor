@@ -2955,6 +2955,554 @@ def voice_alexa_shopping():
     })
 
 
+# ----- R8 — Observability + ops endpoints -----
+
+# Deterministic build identifier for /healthz + /metrics responses. Reset to
+# bump on every R-round (R8 = 8.0.0). Pinned so /metrics output stays stable
+# across rebuilds.
+APP_BUILD = {'release': 'R8', 'version': '8.0.0', 'build_date': '2026-05-12'}
+
+
+@app.route('/healthz')
+def healthz():
+    """Liveness probe — fast, no DB query, just confirms process is up."""
+    return jsonify({
+        'status': 'ok',
+        'service': 'amazon-mirror',
+        'release': APP_BUILD['release'],
+        'version': APP_BUILD['version'],
+        'uptime_check': 'live',
+    })
+
+
+@app.route('/readyz')
+def readyz():
+    """Readiness probe — also confirms DB is reachable."""
+    try:
+        n = Product.query.count()
+    except Exception as e:
+        return jsonify({'status': 'unready', 'reason': str(e)}), 503
+    return jsonify({
+        'status': 'ready',
+        'service': 'amazon-mirror',
+        'release': APP_BUILD['release'],
+        'products': n,
+    })
+
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus-style text exposition.
+
+    Counters are derived deterministically from the seed DB so /metrics
+    output is identical across resets — agents can grep specific gauge
+    values without flakiness.
+    """
+    try:
+        n_products = Product.query.count()
+        n_categories = Category.query.count()
+        n_users = User.query.count()
+        n_orders = Order.query.count()
+        n_reviews = Review.query.count()
+        n_wishlist = WishlistItem.query.count()
+        n_oos = Product.query.filter_by(stock=0).count()
+        n_low_stock = Product.query.filter(Product.stock > 0, Product.stock < 5).count()
+    except Exception:
+        n_products = n_categories = n_users = n_orders = 0
+        n_reviews = n_wishlist = n_oos = n_low_stock = 0
+    lines = [
+        '# HELP amazon_products_total Total seeded products.',
+        '# TYPE amazon_products_total gauge',
+        f'amazon_products_total {n_products}',
+        '# HELP amazon_categories_total Total category surfaces.',
+        '# TYPE amazon_categories_total gauge',
+        f'amazon_categories_total {n_categories}',
+        '# HELP amazon_users_total Total seeded users.',
+        '# TYPE amazon_users_total gauge',
+        f'amazon_users_total {n_users}',
+        '# HELP amazon_orders_total Total seeded orders.',
+        '# TYPE amazon_orders_total gauge',
+        f'amazon_orders_total {n_orders}',
+        '# HELP amazon_reviews_total Total seeded reviews.',
+        '# TYPE amazon_reviews_total gauge',
+        f'amazon_reviews_total {n_reviews}',
+        '# HELP amazon_wishlist_items_total Total wishlist items across users.',
+        '# TYPE amazon_wishlist_items_total gauge',
+        f'amazon_wishlist_items_total {n_wishlist}',
+        '# HELP amazon_products_out_of_stock Products with stock=0.',
+        '# TYPE amazon_products_out_of_stock gauge',
+        f'amazon_products_out_of_stock {n_oos}',
+        '# HELP amazon_products_low_stock Products with 1<=stock<5.',
+        '# TYPE amazon_products_low_stock gauge',
+        f'amazon_products_low_stock {n_low_stock}',
+        f'# build_release="{APP_BUILD["release"]}" version="{APP_BUILD["version"]}"',
+    ]
+    resp = make_response('\n'.join(lines) + '\n')
+    resp.headers['Content-Type'] = 'text/plain; version=0.0.4; charset=utf-8'
+    return resp
+
+
+@csrf.exempt
+@app.route('/api/events', methods=['GET', 'POST'])
+def api_events():
+    """Telemetry event sink.
+
+    POST: accepts a JSON event ({type, name, payload}); returns an accepted=1
+    receipt with a deterministic event_id derived from the body hash so the
+    same body always returns the same id (lets tasks assert id stability).
+    GET: returns the supported event schema + sample.
+    """
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/events',
+            'method': 'POST application/json',
+            'supported_types': ['page_view', 'click', 'add_to_cart',
+                                'search_submit', 'purchase', 'login',
+                                'wishlist_add', 'video_play'],
+            'sample': {
+                'type': 'click',
+                'name': 'nav.todays_deals',
+                'payload': {'url': '/todays-deals'},
+            },
+            'limits': {'max_body_kb': 32, 'rate_limit_rpm': 600},
+        })
+    body = request.get_json(silent=True) or {}
+    etype = (body.get('type') or '').strip().lower()
+    name = (body.get('name') or '').strip()
+    if not etype or not name:
+        return jsonify({'accepted': 0,
+                        'errors': ['type and name are required'],
+                        'received': body}), 400
+    import hashlib
+    blob = json.dumps({'t': etype, 'n': name,
+                       'p': body.get('payload') or {}},
+                      sort_keys=True, separators=(',', ':'))
+    eid = 'evt_' + hashlib.sha1(blob.encode('utf-8')).hexdigest()[:16]
+    return jsonify({
+        'accepted': 1,
+        'event_id': eid,
+        'type': etype,
+        'name': name,
+        'echo': body.get('payload') or {},
+    })
+
+
+@csrf.exempt
+@app.route('/api/error-report', methods=['GET', 'POST'])
+def api_error_report():
+    """Client-side error report sink — pairs with browser onerror hooks."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/error-report',
+            'method': 'POST application/json',
+            'fields': ['message', 'stack', 'url', 'user_agent',
+                       'severity', 'release'],
+        })
+    body = request.get_json(silent=True) or {}
+    msg = (body.get('message') or '').strip()
+    if not msg:
+        return jsonify({'accepted': 0,
+                        'errors': ['message is required']}), 400
+    import hashlib
+    rid = 'err_' + hashlib.sha1(
+        (msg + '|' + (body.get('url') or '')).encode('utf-8')
+    ).hexdigest()[:16]
+    return jsonify({
+        'accepted': 1,
+        'report_id': rid,
+        'severity': body.get('severity') or 'error',
+        'release': APP_BUILD['release'],
+        'received_at': MIRROR_REFERENCE_DATE.isoformat(),
+    })
+
+
+# ----- R8 — keyboard / command palette API -----
+
+@app.route('/api/command-palette')
+def api_command_palette():
+    """Live product-name suggestions for the Cmd+K palette."""
+    q = (request.args.get('q') or '').strip()
+    items = []
+    if len(q) >= 2:
+        like = f'%{q}%'
+        rows = (Product.query
+                .filter(or_(Product.name.ilike(like), Product.brand.ilike(like)))
+                .order_by(Product.is_bestseller.desc(), Product.rating.desc())
+                .limit(8).all())
+        for p in rows:
+            items.append({
+                'label': p.name[:64],
+                'hint': f'{p.brand or "Amazon"} · ${p.price:.2f} · ★{p.rating}',
+                'url': f'/product/{p.slug}',
+                'keys': '',
+            })
+    return jsonify({'q': q, 'items': items})
+
+
+@app.route('/help/keyboard-shortcuts')
+def keyboard_shortcuts():
+    """Static help reference for the R8 keyboard shortcuts."""
+    return jsonify({
+        'bindings': [
+            {'keys': 'Cmd+K / Ctrl+K',  'action': 'Open command palette'},
+            {'keys': '/',               'action': 'Focus the site search input'},
+            {'keys': '?',               'action': 'Open the command palette in help mode'},
+            {'keys': 'Esc',             'action': 'Close any open palette / modal'},
+            {'keys': 'g h',             'action': 'Go to homepage'},
+            {'keys': 'g o',             'action': 'Go to your orders'},
+            {'keys': 'g w',             'action': 'Go to your wishlist'},
+            {'keys': 'g c',             'action': "Go to cart"},
+            {'keys': 'g d',             'action': "Go to today's deals"},
+            {'keys': 'g a',             'action': 'Go to your account'},
+            {'keys': 'g p',             'action': 'Go to Prime'},
+        ],
+        'chord_window_ms': 1200,
+        'help_url': '/help/keyboard-shortcuts',
+    })
+
+
+# ----- R8 — Two-step verification + WebAuthn -----
+
+@csrf.exempt
+@app.route('/signin/twostep', methods=['GET', 'POST'])
+def signin_twostep():
+    """Two-step verification (OTP) — preserves existing /signin login flow.
+
+    GET shows the verification UI (stubbed inline so no extra template).
+    POST validates a 6-digit code. The deterministic accept code for the
+    benchmark is '424242' (matches the rest of the test-fixture set).
+    """
+    if request.method == 'POST':
+        code = (request.values.get('code') or '').strip()
+        method = (request.values.get('method') or 'sms').strip().lower()
+        valid_methods = {'sms', 'authenticator', 'email', 'backup-code'}
+        if method not in valid_methods:
+            return jsonify({'ok': False, 'reason': 'unsupported_method',
+                            'supported': sorted(valid_methods)}), 400
+        if code == '424242':
+            session['twostep_passed'] = True
+            return jsonify({'ok': True, 'method': method,
+                            'next': '/account'})
+        return jsonify({'ok': False, 'reason': 'invalid_code',
+                        'attempts_remaining': 4}), 400
+    return jsonify({
+        'endpoint': '/signin/twostep',
+        'methods': ['sms', 'authenticator', 'email', 'backup-code', 'webauthn'],
+        'webauthn_url': '/signin/twostep/webauthn',
+        'help': 'POST { code, method } — test fixture accepts code=424242',
+        'mfa_enrolled': bool(session.get('twostep_passed')),
+    })
+
+
+@csrf.exempt
+@app.route('/signin/twostep/webauthn', methods=['GET', 'POST'])
+def signin_twostep_webauthn():
+    """WebAuthn passkey endpoint — stubbed register + assert flow.
+
+    GET ?action=challenge returns a deterministic challenge so retries
+    are byte-identical.  POST action=verify accepts a signature with the
+    fixed fixture value (b64 of 'test-passkey-fixture').
+    """
+    import hashlib, base64
+    action = (request.values.get('action') or '').strip().lower()
+    if request.method == 'GET' and not action:
+        return jsonify({
+            'endpoint': '/signin/twostep/webauthn',
+            'rp_id': request.host.split(':')[0],
+            'rp_name': 'Amazon.com Mirror',
+            'algorithms': ['ES256', 'RS256'],
+            'user_verification': 'preferred',
+            'authenticator_attachment': 'platform',
+            'help': "GET ?action=challenge → 32-byte b64 challenge. "
+                    "POST action=verify with credential_id + signature "
+                    "(fixture: b64('test-passkey-fixture')).",
+        })
+    if action == 'challenge':
+        seed = (current_user.email if current_user.is_authenticated else 'anon') + '|R8'
+        digest = hashlib.sha256(seed.encode('utf-8')).digest()
+        return jsonify({
+            'challenge': base64.urlsafe_b64encode(digest).decode('ascii').rstrip('='),
+            'rp_id': request.host.split(':')[0],
+            'timeout_ms': 60000,
+            'user_verification': 'preferred',
+        })
+    if action == 'verify' and request.method == 'POST':
+        body = request.get_json(silent=True) or request.values.to_dict()
+        sig = (body.get('signature') or '').strip()
+        cred_id = (body.get('credential_id') or 'fixture-passkey').strip()
+        expected = base64.b64encode(b'test-passkey-fixture').decode('ascii')
+        if sig == expected:
+            session['twostep_passed'] = True
+            session['webauthn_credential_id'] = cred_id
+            return jsonify({'ok': True, 'method': 'webauthn',
+                            'credential_id': cred_id, 'next': '/account'})
+        return jsonify({'ok': False, 'reason': 'invalid_signature',
+                        'expected_format': 'base64',
+                        'help': 'fixture signature = base64("test-passkey-fixture")'}), 400
+    if action == 'register' and request.method == 'POST':
+        body = request.get_json(silent=True) or request.values.to_dict()
+        nick = (body.get('nickname') or 'My Passkey').strip()
+        cred_id = 'cred_' + hashlib.sha1(
+            (nick + '|' + (current_user.email if current_user.is_authenticated else 'anon')).encode()
+        ).hexdigest()[:12]
+        return jsonify({'ok': True, 'credential_id': cred_id,
+                        'nickname': nick,
+                        'public_key_alg': 'ES256',
+                        'attestation': 'none'})
+    return jsonify({'ok': False, 'reason': 'unknown_action',
+                    'supported_actions': ['challenge', 'verify', 'register']}), 400
+
+
+# ----- R8 — Developer OAuth flow -----
+
+@csrf.exempt
+@app.route('/developer/oauth', methods=['GET'])
+def developer_oauth_index():
+    """Landing for the developer OAuth console — lists registered apps + scopes."""
+    return jsonify({
+        'console': '/developer/oauth',
+        'register': '/developer/oauth/register',
+        'authorize': '/developer/oauth/authorize',
+        'token': '/developer/oauth/token',
+        'userinfo': '/developer/oauth/userinfo',
+        'scopes': ['profile', 'orders:read', 'orders:write',
+                   'wishlist:read', 'wishlist:write',
+                   'cart:read', 'cart:write', 'reviews:write'],
+        'flows': ['authorization_code', 'client_credentials',
+                  'refresh_token'],
+        'note': 'Mirror-only stub — tokens are deterministic, no real auth.',
+    })
+
+
+@csrf.exempt
+@app.route('/developer/oauth/register', methods=['GET', 'POST'])
+def developer_oauth_register():
+    """Register a new OAuth client.  Deterministic IDs based on app name."""
+    if request.method == 'GET':
+        return jsonify({
+            'fields': ['app_name', 'redirect_uri', 'scopes'],
+            'help': 'POST creates client_id + client_secret pinned to the app_name hash.',
+        })
+    body = request.get_json(silent=True) or request.values.to_dict()
+    name = (body.get('app_name') or '').strip()
+    redirect_uri = (body.get('redirect_uri') or '').strip()
+    if not name or not redirect_uri:
+        return jsonify({'ok': False, 'errors': ['app_name and redirect_uri required']}), 400
+    import hashlib
+    client_id = 'amzn-app-' + hashlib.sha1(name.encode('utf-8')).hexdigest()[:12]
+    client_secret = 'amzn-secret-' + hashlib.sha256(
+        (name + '|R8|secret').encode('utf-8')).hexdigest()[:24]
+    return jsonify({
+        'ok': True,
+        'app_name': name,
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'redirect_uri': redirect_uri,
+        'scopes': body.get('scopes') or ['profile', 'orders:read'],
+        'authorize_url': '/developer/oauth/authorize?client_id=' + client_id,
+    })
+
+
+@csrf.exempt
+@app.route('/developer/oauth/authorize', methods=['GET', 'POST'])
+def developer_oauth_authorize():
+    """Authorization endpoint — issues a code paired to client_id."""
+    cid = (request.values.get('client_id') or '').strip()
+    redirect_uri = (request.values.get('redirect_uri') or '').strip()
+    scopes = (request.values.get('scope') or 'profile').strip()
+    state = (request.values.get('state') or '').strip()
+    if not cid:
+        return jsonify({'error': 'invalid_request',
+                        'reason': 'client_id required'}), 400
+    if request.method == 'POST':
+        import hashlib
+        code = 'auth_' + hashlib.sha1(
+            (cid + '|' + scopes).encode('utf-8')).hexdigest()[:16]
+        if redirect_uri:
+            sep = '&' if '?' in redirect_uri else '?'
+            target = f'{redirect_uri}{sep}code={code}'
+            if state:
+                target += f'&state={state}'
+            return jsonify({'ok': True, 'code': code,
+                            'redirect': target, 'scopes': scopes.split()})
+        return jsonify({'ok': True, 'code': code, 'scopes': scopes.split()})
+    # GET — show consent screen as JSON (no template needed for benchmark).
+    return jsonify({
+        'consent_screen': True,
+        'client_id': cid,
+        'requested_scopes': scopes.split(),
+        'redirect_uri': redirect_uri,
+        'state': state,
+        'help': 'POST to this URL with the same params to confirm consent.',
+    })
+
+
+@csrf.exempt
+@app.route('/developer/oauth/token', methods=['POST'])
+def developer_oauth_token():
+    """Token endpoint — issues access + refresh tokens."""
+    grant = (request.values.get('grant_type') or '').strip()
+    cid = (request.values.get('client_id') or '').strip()
+    code = (request.values.get('code') or '').strip()
+    refresh = (request.values.get('refresh_token') or '').strip()
+    if not grant or not cid:
+        return jsonify({'error': 'invalid_request',
+                        'reason': 'grant_type + client_id required'}), 400
+    valid_grants = {'authorization_code', 'client_credentials', 'refresh_token'}
+    if grant not in valid_grants:
+        return jsonify({'error': 'unsupported_grant_type',
+                        'supported': sorted(valid_grants)}), 400
+    if grant == 'authorization_code' and not code:
+        return jsonify({'error': 'invalid_request',
+                        'reason': 'code required for authorization_code'}), 400
+    if grant == 'refresh_token' and not refresh:
+        return jsonify({'error': 'invalid_request',
+                        'reason': 'refresh_token required'}), 400
+    import hashlib
+    seed = '|'.join([grant, cid, code or refresh or 'cc'])
+    access = 'access_' + hashlib.sha256(seed.encode('utf-8')).hexdigest()[:32]
+    refresh_tok = 'refresh_' + hashlib.sha256(
+        (seed + '|refresh').encode('utf-8')).hexdigest()[:32]
+    return jsonify({
+        'access_token': access,
+        'token_type': 'Bearer',
+        'expires_in': 3600,
+        'refresh_token': refresh_tok,
+        'scope': 'profile orders:read',
+    })
+
+
+@app.route('/developer/oauth/userinfo')
+def developer_oauth_userinfo():
+    """Userinfo endpoint — returns the bearer's profile."""
+    auth = request.headers.get('Authorization') or ''
+    if not auth.lower().startswith('bearer '):
+        return jsonify({'error': 'invalid_token',
+                        'reason': 'missing Bearer token'}), 401
+    if current_user.is_authenticated:
+        u = current_user
+        return jsonify({'sub': str(u.id), 'email': u.email,
+                        'name': u.name,
+                        'prime': bool(getattr(u, 'is_prime', False)),
+                        'locale': session.get('locale', 'en-US')})
+    # Bearer recognized but no session — return the demo user.
+    return jsonify({'sub': 'demo', 'email': 'demo@amazon.com',
+                    'name': 'Demo Customer', 'prime': False,
+                    'locale': session.get('locale', 'en-US')})
+
+
+# ----- R8 — Business Prime tier -----
+
+@app.route('/business-prime/tier', methods=['GET'])
+@app.route('/business-prime', methods=['GET'])
+def business_prime_tier():
+    """Business Prime B2B tier comparison — JSON-only landing surface.
+
+    Pinned tier table so tasks asserting price-breakpoints stay stable.
+    """
+    tiers = [
+        {'name': 'Essentials', 'slug': 'essentials',
+         'annual_price': 179.00, 'seats': 3,
+         'features': ['Free Two-Day Shipping', 'Spend Visibility',
+                      'Guided Buying', 'Business Analytics'],
+         'best_for': 'Up to 3 buyers'},
+        {'name': 'Small',      'slug': 'small',
+         'annual_price': 499.00, 'seats': 10,
+         'features': ['Free Two-Day Shipping', 'Spend Visibility',
+                      'Guided Buying', 'Business Analytics',
+                      'Free One-Day Shipping (eligible items)'],
+         'best_for': '4-10 buyers'},
+        {'name': 'Medium',     'slug': 'medium',
+         'annual_price': 1299.00, 'seats': 100,
+         'features': ['Free Two-Day + One-Day Shipping',
+                      'Spend Visibility', 'Guided Buying',
+                      'Business Analytics', 'Recurring Deliveries',
+                      'Tax-Exempt Purchasing Program'],
+         'best_for': '11-100 buyers'},
+        {'name': 'Enterprise', 'slug': 'enterprise',
+         'annual_price': 10099.00, 'seats': -1,
+         'features': ['All Medium features',
+                      'Free Same-Day Shipping (eligible)',
+                      'Dedicated Customer Advisor',
+                      'Punch-out / ERP integration',
+                      'Custom payment terms (NET 30)'],
+         'best_for': '100+ buyers'},
+    ]
+    eligible_count = 0
+    try:
+        eligible_count = Product.query.filter(
+            Product.feature_tags.like('%business-prime-eligible%')).count()
+    except Exception:
+        pass
+    return jsonify({
+        'service': 'Amazon Business Prime',
+        'release': APP_BUILD['release'],
+        'tiers': tiers,
+        'eligible_skus': eligible_count,
+        'eligible_tag': 'business-prime-eligible',
+        'help': 'Filter the catalog with feature_tag=business-prime-eligible to '
+                'see SKUs unlocked under this tier.',
+    })
+
+
+# ----- R8 — Abandoned-cart email stub (multi-step) -----
+
+@csrf.exempt
+@app.route('/api/abandoned-cart-email', methods=['GET', 'POST'])
+def api_abandoned_cart_email():
+    """Multi-step abandoned-cart recovery email pipeline.
+
+    GET  → schedule definition (3 reminder hops at 1h / 24h / 72h).
+    POST → simulate a send (returns the deterministic message body so
+    tasks can assert the recovery copy / discount).
+    """
+    schedule = [
+        {'step': 1, 'offset_hours': 1,  'subject': 'You left items in your cart',
+         'discount_pct': 0,  'cta': 'Resume checkout'},
+        {'step': 2, 'offset_hours': 24, 'subject': 'Still thinking it over? Here is 5% off',
+         'discount_pct': 5,  'cta': 'Apply 5% off — code BACK5'},
+        {'step': 3, 'offset_hours': 72, 'subject': 'Last chance — 10% off your cart',
+         'discount_pct': 10, 'cta': 'Apply 10% off — code SAVE10'},
+    ]
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/abandoned-cart-email',
+            'schedule': schedule,
+            'discount_codes': {'step2': 'BACK5', 'step3': 'SAVE10'},
+            'help': 'POST { step, email, cart_total } to render the email body.',
+        })
+    body = request.get_json(silent=True) or request.values.to_dict()
+    try:
+        step = int(body.get('step') or 1)
+    except (TypeError, ValueError):
+        step = 1
+    step = max(1, min(3, step))
+    email = (body.get('email') or 'demo@amazon.com').strip()
+    try:
+        total = float(body.get('cart_total') or 0)
+    except (TypeError, ValueError):
+        total = 0.0
+    cfg = schedule[step - 1]
+    discounted = round(total * (1 - cfg['discount_pct'] / 100.0), 2)
+    import hashlib
+    msg_id = 'msg_' + hashlib.sha1(
+        f"{email}|{step}|{total}".encode('utf-8')).hexdigest()[:16]
+    return jsonify({
+        'accepted': 1,
+        'message_id': msg_id,
+        'step': cfg['step'],
+        'subject': cfg['subject'],
+        'discount_pct': cfg['discount_pct'],
+        'discount_code': {1: None, 2: 'BACK5', 3: 'SAVE10'}[cfg['step']],
+        'cta': cfg['cta'],
+        'cart_total': total,
+        'cart_total_after_discount': discounted,
+        'to': email,
+        'queued_for': (MIRROR_REFERENCE_DATE +
+                       timedelta(hours=cfg['offset_hours'])).isoformat(),
+    })
+
+
 # ----- Error handlers -----
 
 @app.errorhandler(404)

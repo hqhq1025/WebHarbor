@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Keyboard shortcuts - Google Flights{% endblock %}
+{% block meta_description %}Complete list of keyboard shortcuts on Google Flights mirror — navigation, search, dates, and command palette bindings.{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Keyboard shortcuts</h1>
+    <p class="lead">
+      Every shortcut bound on this site. The catalog drives the
+      <code>Cmd+K</code> command palette and the contextual help overlay
+      (<code>?</code>).
+    </p>
+
+    <form method="GET" action="{{ url_for('keyboard_shortcuts') }}" class="kbs-search" style="margin: 16px 0;">
+      <label for="kbs-q" style="font-weight:500; margin-right:8px;">Filter shortcuts</label>
+      <input type="text" id="kbs-q" name="q" value="{{ q }}"
+             placeholder="e.g. palette, date, navigation"
+             style="padding:8px 12px;border:1px solid #dadce0;border-radius:6px;min-width:280px;"
+             autofocus>
+      <button type="submit" style="padding:8px 16px;background:#1a73e8;color:#fff;border:0;border-radius:6px;cursor:pointer;">Filter</button>
+      {% if q %}<a href="{{ url_for('keyboard_shortcuts') }}" style="margin-left:12px;">Clear</a>{% endif %}
+    </form>
+
+    {% if rows %}
+      {% set _categories = [] %}
+      {% for cat in categories %}
+        {% set cat_rows = rows|selectattr(2, 'equalto', cat)|list %}
+        {% if cat_rows %}
+          <h2 id="cat-{{ cat|lower|replace(' ', '-') }}">{{ cat }}</h2>
+          <table class="kbs-table" style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+            <thead>
+              <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+                <th style="padding:8px 12px;width:200px;">Shortcut</th>
+                <th style="padding:8px 12px;">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for key, desc, _cat in cat_rows %}
+                <tr style="border-bottom:1px solid #f1f3f4;">
+                  <td style="padding:8px 12px;">
+                    <kbd style="background:#f8f9fa;border:1px solid #dadce0;border-radius:4px;padding:2px 8px;font-family:monospace;font-size:13px;">{{ key }}</kbd>
+                  </td>
+                  <td style="padding:8px 12px;color:#3c4043;">{{ desc }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      {% endfor %}
+      <p style="color:#5f6368;font-size:13px;">
+        Showing <strong>{{ rows|length }}</strong> shortcut{{ 's' if rows|length != 1 else '' }}.
+        Looking for the JSON view? <a href="{{ url_for('keyboard_shortcuts_json') }}">/keyboard-shortcuts.json</a>
+      </p>
+    {% else %}
+      <p style="padding:24px;background:#fef7e0;border-radius:8px;color:#5f4101;">
+        No shortcuts match <code>{{ q }}</code>. Try a broader filter, or
+        <a href="{{ url_for('keyboard_shortcuts') }}">clear the filter</a>.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

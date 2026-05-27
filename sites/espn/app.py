@@ -1948,6 +1948,8 @@ def robots_txt():
         "Disallow: /login\n"
         "Disallow: /register\n"
         "Disallow: /logout\n"
+        "Disallow: /webhook/\n"
+        "Disallow: /api/telemetry\n"
         "Sitemap: /sitemap.xml\n"
     )
     return app.response_class(body, mimetype='text/plain')
@@ -1960,7 +1962,9 @@ def sitemap_xml():
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     # Home + key landing pages.
     for path in ['/', '/scores', '/bet', '/fantasy', '/podcasts',
-                 '/watch', '/espnplus', '/awards', '/espn-deportes/']:
+                 '/watch', '/espnplus', '/awards', '/espn-deportes/',
+                 '/stat-glossary', '/developer', '/help/keyboard',
+                 '/healthz']:
         parts.append(f'  <url><loc>{path}</loc></url>')
     # Sport landing pages.
     for sp in Sport.query.filter(Sport.is_active == True).order_by(Sport.nav_order).all():  # noqa: E712
@@ -2054,6 +2058,305 @@ def espn_deportes_sport(sport_slug):
                            es_by_sport={sport_slug: es_articles},
                            current_sport=sport,
                            locale='es')
+
+
+# ─── R8: Observability + Developer surface ───────────────────────────────────
+#
+# These endpoints are intentionally simple, deterministic, and side-effect
+# free so WebTau tasks can probe them without mutating real state. None of
+# them read or write the seeded DB outside of read-only counts.
+
+@app.route('/healthz')
+def healthz():
+    """Liveness probe — also accepts the legacy `/health` path."""
+    payload = {
+        'status': 'ok',
+        'service': 'espn-mirror',
+        'r8_marker_present': bool(Sport.query.filter_by(
+            slug='_r8_marker').first()),
+        'mirror_today': mirror_today().isoformat(),
+    }
+    return jsonify(payload)
+
+
+@app.route('/health')
+def health_alias():
+    return redirect(url_for('healthz'), code=301)
+
+
+@app.route('/api/uptime')
+def api_uptime():
+    """Mirror-clock-based uptime in seconds since R1 cutover."""
+    delta = (mirror_now() - datetime(2024, 4, 1, 0, 0, 0))
+    return jsonify({
+        'mirror_today': mirror_today().isoformat(),
+        'r1_cutover': '2024-04-01T00:00:00',
+        'seconds_since_cutover': int(delta.total_seconds()),
+        'human': f'{int(delta.total_seconds() // 86400)} days',
+    })
+
+
+@app.route('/api/events')
+def api_events():
+    """Recent observable events — read-only summary derived from the DB."""
+    limit = max(1, min(int(request.args.get('limit', 25)), 100))
+    arts = (Article.query.order_by(Article.id.desc()).limit(limit).all())
+    out = []
+    for a in arts:
+        out.append({
+            'type': 'article.published',
+            'id': a.id,
+            'slug': a.slug,
+            'title': a.title,
+            'sport_slug': a.sport_slug,
+            'published_date': a.published_date,
+        })
+    return jsonify({'events': out, 'count': len(out)})
+
+
+@app.route('/webhook/score-update', methods=['POST', 'GET'])
+@csrf.exempt
+def webhook_score_update():
+    """Score-update webhook — accepts JSON, echoes a deterministic ack.
+    Idempotent: same payload always produces the same ack id."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/webhook/score-update',
+            'methods': ['POST'],
+            'expects': {
+                'game_id': 'int',
+                'home_score': 'int',
+                'away_score': 'int',
+                'period': 'string (optional)',
+            },
+            'returns': {'ack_id': 'sha1-derived', 'received': 'bool'},
+        })
+    payload = request.get_json(silent=True) or request.form.to_dict()
+    seed = json.dumps(payload, sort_keys=True)
+    import hashlib
+    ack_id = hashlib.sha1(seed.encode()).hexdigest()[:16]
+    return jsonify({
+        'received': True,
+        'ack_id': ack_id,
+        'echo': payload,
+        'note': 'Mirror webhook — payload is not persisted.',
+    })
+
+
+@app.route('/api/v3-graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def api_v3_graphql():
+    """Tiny GraphQL-ish endpoint — supports two introspection queries
+    plus three named selections (game, article, team)."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/v3-graphql',
+            'version': 'v3',
+            'protocol': 'graphql-min',
+            'queries': ['__schema', 'game(id)', 'article(slug)',
+                        'team(slug)'],
+            'note': 'POST {"query": "..."} or use query string ?q=team(...)',
+        })
+    body = request.get_json(silent=True) or {}
+    q = (body.get('query') or request.args.get('q') or '').strip()
+    data, errors = {}, []
+    if not q:
+        errors.append('Missing query.')
+    elif q.startswith('__schema'):
+        data = {'__schema': {
+            'queryType': {'name': 'Query'},
+            'types': ['Game', 'Article', 'Team', 'Sport', 'Parlay']}}
+    elif q.startswith('game('):
+        try:
+            gid = int(q.split('(', 1)[1].split(')')[0])
+        except ValueError:
+            errors.append('Bad game id.')
+            gid = None
+        if gid is not None:
+            g = Game.query.get(gid)
+            data = {'game': None if not g else {
+                'id': g.id, 'sport_slug': g.sport_slug,
+                'home_score': g.home_score, 'away_score': g.away_score,
+                'status': g.status, 'venue': g.venue}}
+    elif q.startswith('article('):
+        slug = q.split('(', 1)[1].split(')')[0].strip('"\'')
+        a = Article.query.filter_by(slug=slug).first()
+        data = {'article': None if not a else {
+            'id': a.id, 'slug': a.slug, 'title': a.title,
+            'sport_slug': a.sport_slug, 'author': a.author}}
+    elif q.startswith('team('):
+        slug = q.split('(', 1)[1].split(')')[0].strip('"\'')
+        t = Team.query.filter_by(slug=slug).first()
+        data = {'team': None if not t else {
+            'id': t.id, 'slug': t.slug, 'full_name': t.full_name,
+            'sport_slug': t.sport_slug}}
+    else:
+        errors.append(f'Unknown query: {q[:40]}')
+    return jsonify({'data': data, 'errors': errors})
+
+
+@app.route('/api/telemetry', methods=['POST', 'GET'])
+@csrf.exempt
+def api_telemetry():
+    """Telemetry beacon endpoint. Mirror does not persist; returns a
+    deterministic ack so tasks can verify round-trip behaviour."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/telemetry',
+            'methods': ['POST'],
+            'persisted': False,
+            'fields': ['event', 'page', 'props'],
+        })
+    payload = request.get_json(silent=True) or request.form.to_dict()
+    import hashlib
+    bid = hashlib.sha1(json.dumps(payload, sort_keys=True).encode())\
+        .hexdigest()[:12]
+    return jsonify({'beacon_id': bid, 'ack': True, 'received': payload})
+
+
+@app.route('/developer')
+@app.route('/developer/')
+def developer_index():
+    return render_template('developer_index.html',
+                           endpoints=[
+                               '/api/v3-graphql',
+                               '/api/events',
+                               '/api/uptime',
+                               '/api/telemetry',
+                               '/webhook/score-update',
+                               '/developer/fantasy-app',
+                               '/healthz',
+                           ])
+
+
+@app.route('/developer/fantasy-app')
+@app.route('/developer/fantasy-app/')
+def developer_fantasy_app():
+    """Landing for the fantasy-app integration guide."""
+    teams = (Team.query.order_by(Team.id).limit(8).all())
+    return render_template('developer_fantasy_app.html', teams=teams)
+
+
+@app.route('/api/command-palette')
+def api_command_palette():
+    """JSON command list used by the Cmd+K palette in base.html."""
+    items = [
+        {'label': 'Home', 'href': '/'},
+        {'label': 'Scores (all sports)', 'href': '/scores'},
+        {'label': 'NBA', 'href': '/nba/'},
+        {'label': 'NFL', 'href': '/nfl/'},
+        {'label': 'MLB', 'href': '/mlb/'},
+        {'label': 'NHL', 'href': '/nhl/'},
+        {'label': 'Soccer', 'href': '/soccer/'},
+        {'label': 'NBA Scoreboard', 'href': '/nba/scoreboard'},
+        {'label': 'NBA Standings', 'href': '/nba/standings'},
+        {'label': 'NFL Scoreboard', 'href': '/nfl/scoreboard'},
+        {'label': 'NFL Standings', 'href': '/nfl/standings'},
+        {'label': 'Fantasy', 'href': '/fantasy'},
+        {'label': 'ESPN BET', 'href': '/bet'},
+        {'label': 'Podcasts', 'href': '/podcasts'},
+        {'label': 'Watch (ESPN+)', 'href': '/watch'},
+        {'label': 'Awards Hub', 'href': '/awards'},
+        {'label': 'Stat Glossary', 'href': '/stat-glossary'},
+        {'label': 'Developer Hub', 'href': '/developer'},
+        {'label': 'Help / Keyboard Shortcuts', 'href': '/help/keyboard'},
+        {'label': 'ESPN Deportes', 'href': '/espn-deportes/'},
+    ]
+    return jsonify({'commands': items, 'count': len(items)})
+
+
+# Stat glossary — backs the contextual-help-stat-glossary tooltip feature.
+STAT_GLOSSARY = [
+    ('PER', 'Player Efficiency Rating',
+     "John Hollinger's per-minute rating, league-averaged to 15.0. "
+     "Higher is better; anything above 25 is All-Star-tier."),
+    ('eFG%', 'Effective Field Goal Percentage',
+     'Adjusts shooting percentage to credit 3-pointers their proper '
+     'weight: (FGM + 0.5 * 3PM) / FGA.'),
+    ('TS%', 'True Shooting Percentage',
+     'Single-number shooting efficiency that accounts for 3-pointers '
+     'and free throws: PTS / (2 * (FGA + 0.44 * FTA)).'),
+    ('USG%', 'Usage Rate',
+     'An estimate of the percentage of team plays a player used while '
+     'on the floor. Stars often run 28-34%.'),
+    ('BPM', 'Box Plus-Minus',
+     "Box-score estimate of a player's per-100-possession contribution "
+     'above an average player.'),
+    ('VORP', 'Value Over Replacement Player',
+     'Cumulative per-team contribution above a replacement-level player, '
+     'expressed in points per 100 team possessions.'),
+    ('PFR', 'Pro Football Reference',
+     'NFL data source. ESPN uses overlapping advanced metrics like EPA '
+     'and DVOA from internal modeling.'),
+    ('EPA', 'Expected Points Added',
+     'Football: the change in expected next-score value from a single '
+     'play. Sums over a drive or game.'),
+    ('DVOA', 'Defense-adjusted Value Over Average',
+     'A per-play efficiency measure adjusting for opponent quality.'),
+    ('QBR', 'Total Quarterback Rating',
+     "ESPN's proprietary 0-100 quarterback rating that accounts for "
+     'pass, run, sack, and clutch context.'),
+    ('OPS', 'On-base Plus Slugging',
+     'Baseball: OBP + SLG. League average sits near .720; above .900 '
+     'is All-Star territory.'),
+    ('wRC+', 'Weighted Runs Created Plus',
+     "Park- and league-adjusted offensive value. 100 is league average; "
+     "150 is MVP-tier."),
+    ('FIP', 'Fielding-Independent Pitching',
+     'A pitching ERA estimator built from strikeouts, walks, and '
+     'home runs allowed.'),
+    ('Corsi', 'Corsi For Percentage',
+     'Hockey: share of shot attempts taken while the player is on the '
+     'ice. Anchors most modern NHL analytics.'),
+    ('xG', 'Expected Goals',
+     'The probability that a shot results in a goal, based on shot '
+     'location and game state. Sums into a per-team xG total.'),
+    ('PPG', 'Points Per Game',
+     'A simple scoring average — total points divided by games played.'),
+    ('RPG', 'Rebounds Per Game',
+     'Average rebounds per game — total rebounds divided by games '
+     'played.'),
+    ('APG', 'Assists Per Game',
+     'Average assists per game — total assists divided by games played.'),
+    ('SPG', 'Steals Per Game',
+     'Average steals per game — total steals divided by games played.'),
+    ('BPG', 'Blocks Per Game',
+     'Average blocks per game — total blocks divided by games played.'),
+]
+
+
+@app.route('/stat-glossary')
+@app.route('/stat-glossary/')
+def stat_glossary():
+    return render_template('stat_glossary.html', entries=STAT_GLOSSARY)
+
+
+@app.route('/api/stat/<key>')
+def api_stat(key):
+    key_norm = (key or '').strip().lower()
+    for k, name, defn in STAT_GLOSSARY:
+        if k.lower() == key_norm:
+            return jsonify({'key': k, 'name': name, 'definition': defn})
+    abort(404)
+
+
+@app.route('/help/keyboard')
+@app.route('/help/keyboard/')
+def help_keyboard():
+    shortcuts = [
+        ('j', 'Move focus to the next game card on a scoreboard.'),
+        ('k', 'Move focus to the previous game card on a scoreboard.'),
+        ('g h', 'Jump to home page.'),
+        ('g s', 'Jump to /scores.'),
+        ('g n', 'Jump to /nba/.'),
+        ('g f', 'Jump to /nfl/.'),
+        ('/', 'Focus the search box.'),
+        ('?', 'Open this keyboard help dialog.'),
+        ('Cmd+K', 'Open the global command palette.'),
+        ('Ctrl+K', 'Open the global command palette (Windows / Linux).'),
+        ('Esc', 'Close any open dialog or palette.'),
+    ]
+    return render_template('help_keyboard.html', shortcuts=shortcuts)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Keyboard shortcuts — Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container help-shortcuts">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &raquo;
+    <a href="{{ url_for('help_page') }}">Help</a> &raquo;
+    <span>Keyboard shortcuts</span>
+  </nav>
+  <h1>Keyboard shortcuts</h1>
+  <p>The Cambridge Dictionary supports the following keyboard shortcuts on
+     every page. Press <kbd>?</kbd> from any page to open this list as an
+     overlay. Press <kbd>Esc</kbd> to dismiss any open modal.</p>
+  <table class="shortcuts-table" id="shortcutsTable">
+    <thead><tr><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+    <tbody>
+      {% for s in shortcuts %}
+        <tr>
+          <td><kbd>{{ s.keys }}</kbd></td>
+          <td>{{ s.label }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="release-tag">R8 release — shortcuts wired in base.html.</p>
+  <p><a href="{{ url_for('help_cefr_glossary') }}">CEFR levels glossary</a>
+     &middot; <a href="{{ url_for('r8_tour') }}">R8 tour</a>
+     &middot; <a href="{{ url_for('settings_accessibility') }}">Accessibility settings</a>.</p>
+</div>
+{% endblock %}

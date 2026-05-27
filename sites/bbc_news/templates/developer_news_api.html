@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ data.title }} - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page" id="developer-news-api">
+    <h1>{{ data.title }}</h1>
+    <p class="lead">
+        Public, read-only endpoints exposed by this BBC News mirror.
+        Version <code>{{ data.version }}</code>. Reference date
+        <code>{{ data.reference_date }}</code>.
+    </p>
+
+    <section>
+        <h2>Rate limit</h2>
+        <ul>
+            <li><strong>{{ data.rate_limit.per_minute }}</strong> requests per minute</li>
+            <li><strong>{{ data.rate_limit.burst }}</strong> burst</li>
+            <li>Auth: <code>{{ data.auth }}</code></li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Endpoints</h2>
+        <table class="dev-endpoint-table" data-endpoint-count="{{ endpoints|length }}">
+            <thead>
+                <tr><th>Method</th><th>Path</th><th>Summary</th></tr>
+            </thead>
+            <tbody>
+                {% for e in endpoints %}
+                <tr>
+                    <td><code>{{ e.method }}</code></td>
+                    <td><code>{{ e.path }}</code></td>
+                    <td>{{ e.summary }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Schema link</h2>
+        <p>Per-article structured data: <code>{{ data.schema_url }}</code></p>
+        <p>For machine-readable output of this page itself, request with
+            <code>Accept: application/json</code> or append
+            <code>?format=json</code>.</p>
+    </section>
+
+    <section>
+        <h2>Webhook</h2>
+        <p>Subscribe to breaking-news pushes at
+            <a href="{{ url_for('webhook_breaking_news') }}">/webhook/breaking-news</a>.</p>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Webhook — booking.created — Booking partner API{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Webhook: booking.created</h1>
+    <p class="page-subtitle">Receive a signed callback whenever a new reservation is confirmed on the Booking platform.</p>
+
+    <div class="pd-section">
+        <h2>Event type</h2>
+        <p>The webhook fires with <code>event_type = booking.created</code>. A separate <code>booking.cancelled</code> event is documented elsewhere.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Sample payload</h2>
+        <pre><code>{
+  "event_type": "booking.created",
+  "event_id": "evt_8b1e7e9c4d3a4f0e",
+  "occurred_at": "2026-05-12T12:00:00Z",
+  "booking": {
+    "booking_number": "BKN-DEMO01",
+    "property_slug": "the-plaza-new-york-new-york",
+    "city_slug": "new-york",
+    "check_in": "2026-06-12",
+    "check_out": "2026-06-15",
+    "total": 1820.00,
+    "currency": "USD",
+    "guest": {
+      "first_name": "Sophie",
+      "last_name": "Martin",
+      "email": "sophie.m@test.com"
+    }
+  }
+}</code></pre>
+        <p>The property is identified by the <code>property_slug</code> field; the city by <code>city_slug</code>. Use both to disambiguate listings sharing a name across cities.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Signature</h2>
+        <p>Every POST carries the header <strong><code>X-Booking-Signature</code></strong>, computed as <code>HMAC-SHA256(secret, raw_body_bytes)</code> hex-lowercase. Partners must recompute and compare in constant time before trusting any payload.</p>
+        <p>The signature timestamp is provided in <code>X-Booking-Signature-Timestamp</code>. Reject requests older than 5 minutes.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Acknowledgement</h2>
+        <p>Respond with HTTP status <strong>200 OK</strong> within 5 seconds. Any other status (including 2xx variants other than 200) is treated as a delivery failure.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Retry policy</h2>
+        <p>Failed deliveries are retried up to <strong>5 times</strong>, with exponential backoff: 30s, 2m, 10m, 30m, 2h. After the final retry the event is moved to a dead-letter queue accessible via the partner dashboard.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Test the endpoint</h2>
+        <p>POST a JSON body to this same URL and the server echoes back the payload with an <code>ack_status</code> field, so partners can dry-run their handler.</p>
+    </div>
+</div>
+{% endblock %}

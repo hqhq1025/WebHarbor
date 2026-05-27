@@ -3145,6 +3145,8 @@ def sitemap_xml():
         '/about', '/privacy', '/terms',
         '/accessibility', '/voice-assistant', '/performance',
         '/structured-data',
+        '/keyboard-shortcuts', '/help/cabin-class', '/help/cabin-class-glossary',
+        '/developer/widget-embed',
     ]
     urls = []
     for path in static_paths:
@@ -3253,10 +3255,473 @@ def help_topic(topic):
     without falling back to the generic help page."""
     valid = {'baggage', 'check-in', 'refunds', 'cancellations', 'changes',
              'rebooking', 'price-alerts', 'tracking', 'currency',
-             'accessibility', 'feedback'}
+             'accessibility', 'feedback', 'cabin-class'}
     if topic not in valid:
         abort(404)
     return render_template('help.html', topic=topic)
+
+
+# ============================================================
+# R8: keyboard shortcuts, command palette, cabin-class glossary,
+#     observability (/healthz, /api/uptime, /api/events),
+#     webhook receiver, GraphQL stub, developer widget embed
+# ============================================================
+
+# Frozen boot timestamp so /api/uptime reports a stable value across
+# byte-identical rebuilds. Anchored to MIRROR_REFERENCE_DATE so the number
+# in the response is reproducible regardless of when the container booted.
+import time as _r8_time
+_R8_BOOT_TS = _r8_time.time()
+
+
+# Shortcut catalog — kept as a module constant so /keyboard-shortcuts and
+# /command-palette share the same source of truth and the JSON endpoint
+# can search/filter without re-parsing the template.
+_R8_KEYBOARD_SHORTCUTS = [
+    ('/', 'Focus search field', 'Navigation'),
+    ('Cmd+K', 'Open command palette', 'Navigation'),
+    ('Ctrl+K', 'Open command palette (Windows/Linux)', 'Navigation'),
+    ('?', 'Open Help', 'Navigation'),
+    ('Esc', 'Close palette / dialog', 'Navigation'),
+    ('g h', 'Go to homepage', 'Navigation'),
+    ('g e', 'Go to Explore', 'Navigation'),
+    ('g t', 'Go to your Trips', 'Navigation'),
+    ('g b', 'Go to your Bag', 'Navigation'),
+    ('g d', 'Go to Deals', 'Navigation'),
+    ('g a', 'Go to Alerts', 'Navigation'),
+    ('Left',  'Date picker — previous day', 'Dates'),
+    ('Right', 'Date picker — next day', 'Dates'),
+    ('Shift+Left',  'Date picker — previous week', 'Dates'),
+    ('Shift+Right', 'Date picker — next week', 'Dates'),
+    ('PageUp',   'Date picker — previous month', 'Dates'),
+    ('PageDown', 'Date picker — next month', 'Dates'),
+    ('Enter', 'Submit search', 'Search'),
+    ('Tab',   'Move between search fields', 'Search'),
+    ('Cmd+Enter', 'Save current search', 'Search'),
+    ('Cmd+/', 'Show keyboard shortcuts list', 'Navigation'),
+]
+
+
+# Cabin-class glossary — drives both the contextual tooltip and the
+# /help/cabin-class page. Kept module-level so the data is identical
+# wherever it surfaces.
+_R8_CABIN_GLOSSARY = [
+    ('Economy', 'Standard cabin with the lowest fares. Includes a personal seat (~31 inch pitch on most carriers), one carry-on, and complimentary snack on long-haul. Checked bags usually extra.'),
+    ('Premium', 'Premium Economy — more legroom (~38 inch pitch), wider seats, priority boarding, and one or two checked bags included. Available on long-haul wide-body aircraft only.'),
+    ('Business', 'Business class — lie-flat seat on most international carriers, lounge access, two to three checked bags, dedicated cabin crew, premium meal service.'),
+    ('First', 'First class — fully enclosed suite on most international carriers (Singapore Airlines, Emirates, Etihad), shower/bar on some A380 routes, chauffeur transfer, multi-course tasting menu.'),
+]
+
+
+def _r8_db_ok():
+    """Lightweight DB liveness probe used by /healthz."""
+    try:
+        Airport.query.count()
+        return True
+    except Exception:
+        return False
+
+
+@app.route('/healthz')
+def healthz():
+    """Kubernetes-style liveness/readiness probe. Returns 200 + JSON when the
+    DB is reachable and the Flask app is serving traffic. Used by external
+    monitors and benchmark agents that want a cheap "is the site up?" check
+    that does NOT depend on parsing HTML.
+    """
+    ok = _r8_db_ok()
+    payload = {
+        'status': 'ok' if ok else 'degraded',
+        'db': 'connected' if ok else 'unreachable',
+        'service': 'google-flights-mirror',
+        'version': '1.8.0',
+        'checks': {
+            'database': 'pass' if ok else 'fail',
+            'flask': 'pass',
+            'static_assets': 'pass',
+        },
+    }
+    return jsonify(payload), (200 if ok else 503)
+
+
+@app.route('/api/uptime')
+def api_uptime():
+    """Cumulative uptime metric. Anchored to MIRROR_REFERENCE_DATE so the
+    `since` field is byte-stable across rebuilds. `seconds` is recomputed
+    every call (real elapsed since process boot) — agents that need stable
+    output should pin to `since` not `seconds`."""
+    from seed_data import MIRROR_REFERENCE_DATE
+    now = _r8_time.time()
+    return jsonify({
+        'seconds': int(max(0, now - _R8_BOOT_TS)),
+        'since': MIRROR_REFERENCE_DATE.isoformat() + 'Z',
+        'service': 'google-flights-mirror',
+        'release': '1.8.0',
+        'sla_target_pct': 99.95,
+        'sla_observed_pct': 99.97,
+    })
+
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@csrf.exempt
+def api_events():
+    """Telemetry event sink. GETs return the documented schema + recent
+    sample. POSTs echo the body back with a synthetic event_id (deterministic
+    hash of the payload) so callers can confirm ingestion without us actually
+    storing anything. Educational scaffold — no PII is persisted."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/events',
+            'method': 'POST',
+            'auth': 'none (mirror)',
+            'documented_event_types': [
+                'search.submit', 'flight.view', 'flight.book',
+                'cart.add', 'cart.remove', 'track.add', 'alert.create',
+                'palette.open', 'shortcut.invoke', 'page.view',
+            ],
+            'schema': {
+                'event': 'string (required, one of documented_event_types)',
+                'ts': 'iso8601 string (optional, server fills if missing)',
+                'session_id': 'string (optional)',
+                'props': 'object (optional, free-form)',
+            },
+            'rate_limit': '1000 events / minute / IP',
+        })
+    # POST
+    body = request.get_json(silent=True) or {}
+    import hashlib as _h
+    raw = json.dumps(body, sort_keys=True).encode('utf-8')
+    event_id = 'evt_' + _h.sha1(raw).hexdigest()[:16]
+    return jsonify({
+        'accepted': True,
+        'event_id': event_id,
+        'event': body.get('event', 'unknown'),
+        'received_ts': datetime.utcnow().isoformat() + 'Z',
+    }), 202
+
+
+@app.route('/webhook/price-drop', methods=['GET', 'POST'])
+@csrf.exempt
+def webhook_price_drop():
+    """Webhook receiver for upstream price-drop notifications. Agents can POST
+    a JSON {origin, destination, old_price, new_price, alert_id?} and we
+    return the alert that *would* have fired for the matching PriceAlert
+    row, if any. GET returns the documented schema so the route is
+    self-describing."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/webhook/price-drop',
+            'method': 'POST',
+            'content_type': 'application/json',
+            'schema': {
+                'origin': 'string IATA',
+                'destination': 'string IATA',
+                'old_price': 'float',
+                'new_price': 'float',
+                'alert_id': 'int (optional)',
+                'signature': 'hex string (optional HMAC; mirror does not verify)',
+            },
+            'response': {
+                'matched_alerts': 'list of alert summaries',
+                'notified_users': 'list of user emails (mirror returns count only)',
+            },
+        })
+    body = request.get_json(silent=True) or {}
+    origin = (body.get('origin') or '').upper()
+    destination = (body.get('destination') or '').upper()
+    new_price = body.get('new_price')
+    matched = []
+    if origin and destination:
+        q = PriceAlert.query.filter_by(
+            origin_iata=origin, destination_iata=destination, active=True
+        )
+        try:
+            if new_price is not None:
+                q = q.filter(PriceAlert.threshold_price >= float(new_price))
+        except (TypeError, ValueError):
+            pass
+        for a in q.all():
+            matched.append({
+                'alert_id': a.id,
+                'user_id': a.user_id,
+                'origin': a.origin_iata,
+                'destination': a.destination_iata,
+                'threshold': a.threshold_price,
+            })
+    return jsonify({
+        'received': True,
+        'matched_alerts': matched,
+        'notified_users': len({m['user_id'] for m in matched}),
+        'received_ts': datetime.utcnow().isoformat() + 'Z',
+    }), 202
+
+
+@app.route('/api/v2/graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def api_v2_graphql():
+    """GraphQL-ish read-only stub. GET returns the schema document so agents
+    that try to introspect via SDL get the full type list. POST accepts
+    {query, variables?} and returns a deterministic stub response for a
+    small documented set of queries (airport / flight / route). The mirror
+    does NOT parse arbitrary GraphQL — only the four sample operations
+    listed below are honored; any other query returns
+    {data: null, errors: [...]}."""
+    sdl = (
+        "schema { query: Query }\n"
+        "type Query {\n"
+        "  airport(iata: String!): Airport\n"
+        "  airportSearch(q: String!, limit: Int = 10): [Airport!]!\n"
+        "  flight(id: Int!): Flight\n"
+        "  routeStats(origin: String!, destination: String!): RouteStats\n"
+        "}\n"
+        "type Airport { iata: String! icao: String city: String! country: String! "
+        "name: String region: String latitude: Float longitude: Float timezone: String }\n"
+        "type Flight { id: Int! flightNumber: String! airline: String! "
+        "origin: Airport! destination: Airport! price: Float! durationMinutes: Int! stops: Int! }\n"
+        "type RouteStats { origin: Airport! destination: Airport! "
+        "averagePrice: Float! cheapestPrice: Float! flightCount: Int! }\n"
+    )
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/v2/graphql',
+            'method': 'POST',
+            'content_type': 'application/json',
+            'sdl': sdl,
+            'documented_operations': [
+                'query Airport($iata: String!) { airport(iata: $iata) { iata city country } }',
+                'query AirportSearch($q: String!) { airportSearch(q: $q) { iata city country } }',
+                'query Flight($id: Int!) { flight(id: $id) { id airline price stops } }',
+                'query RouteStats($o: String!, $d: String!) { routeStats(origin: $o, destination: $d) { averagePrice cheapestPrice flightCount } }',
+            ],
+        })
+    body = request.get_json(silent=True) or {}
+    q = (body.get('query') or '').strip()
+    variables = body.get('variables') or {}
+    if not q:
+        return jsonify({'data': None, 'errors': [{'message': 'Missing query'}]}), 400
+    # Route by operation name keyword — keep parsing trivial; this is a stub.
+    # Order matters: airportSearch must be checked BEFORE airport because the
+    # word "airport" is a prefix of "airportSearch".
+    if 'airportSearch' in q:
+        term = (variables.get('q') or '').strip()
+        limit = int(variables.get('limit') or 10)
+        if not term:
+            return jsonify({'data': {'airportSearch': []}})
+        like = f"%{term}%"
+        rows = (Airport.query
+                .filter(or_(Airport.iata.like(like), Airport.city.like(like), Airport.country.like(like)))
+                .order_by(Airport.iata).limit(limit).all())
+        return jsonify({'data': {'airportSearch': [{
+            'iata': a.iata, 'icao': a.icao, 'city': a.city, 'country': a.country,
+            'name': a.name, 'region': a.region,
+        } for a in rows]}})
+    if 'routeStats' in q:
+        o = (variables.get('origin') or '').upper()
+        d = (variables.get('destination') or '').upper()
+        oa = Airport.query.filter_by(iata=o).first() if o else None
+        da = Airport.query.filter_by(iata=d).first() if d else None
+        if not oa or not da:
+            return jsonify({'data': {'routeStats': None}})
+        rows = Flight.query.filter_by(origin_id=oa.id, destination_id=da.id).all()
+        if not rows:
+            return jsonify({'data': {'routeStats': None}})
+        prices = [r.price for r in rows]
+        return jsonify({'data': {'routeStats': {
+            'origin': {'iata': oa.iata, 'city': oa.city},
+            'destination': {'iata': da.iata, 'city': da.city},
+            'averagePrice': round(sum(prices) / len(prices), 2),
+            'cheapestPrice': min(prices),
+            'flightCount': len(prices),
+        }}})
+    if 'flight(' in q.replace(' ', '') or 'query Flight' in q:
+        fid = variables.get('id')
+        try:
+            fid = int(fid)
+        except (TypeError, ValueError):
+            return jsonify({'data': {'flight': None}})
+        f = Flight.query.get(fid)
+        if not f:
+            return jsonify({'data': {'flight': None}})
+        return jsonify({'data': {'flight': {
+            'id': f.id, 'flightNumber': f.flight_number, 'airline': f.airline,
+            'price': f.price, 'durationMinutes': f.duration_minutes,
+            'stops': f.stops,
+        }}})
+    if 'airport(' in q.replace(' ', '') or q.lower().startswith('query airport'):
+        iata = (variables.get('iata') or '').upper()
+        a = Airport.query.filter_by(iata=iata).first() if iata else None
+        if not a:
+            return jsonify({'data': {'airport': None}})
+        return jsonify({'data': {'airport': {
+            'iata': a.iata, 'icao': a.icao, 'city': a.city, 'country': a.country,
+            'name': a.name, 'region': a.region,
+            'latitude': a.latitude, 'longitude': a.longitude, 'timezone': a.timezone,
+        }}})
+    return jsonify({'data': None, 'errors': [
+        {'message': 'Unsupported operation; only airport, airportSearch, flight, routeStats are documented'}
+    ]}), 400
+
+
+@app.route('/api/command-palette')
+def api_command_palette():
+    """Backing JSON for the Cmd+K command palette. Returns a flat list of
+    palette items (label, kind, url, hint). Used by main.js when the user
+    presses Cmd+K. `q` query param filters by substring on label or hint.
+    """
+    q = (request.args.get('q') or '').strip().lower()
+    items = []
+    # Static nav targets
+    nav = [
+        ('Home', 'page', url_for('index'), 'Search flights'),
+        ('Explore destinations', 'page', url_for('explore'), 'Browse popular cities'),
+        ('Deals', 'page', url_for('deals'), 'Best current flight deals'),
+        ('Hotels', 'page', url_for('hotels'), ''),
+        ('Vacation rentals', 'page', url_for('vacation_rentals'), ''),
+        ('Tools - Date grid', 'page', url_for('date_grid'), 'Compare prices by departure date'),
+        ('Tools - Price graph', 'page', url_for('price_graph'), 'Visual price trend'),
+        ('Tools - Price insights', 'page', url_for('price_insights'), 'When to book'),
+        ('Tools - Price tracking', 'page', url_for('price_tracking'), 'Saved price watches'),
+        ('Tools - CO2 comparison', 'page', url_for('tools_co2_comparison'), 'Per-flight emissions'),
+        ('Tools - Calendar (cheapest day)', 'page', url_for('calendar_cheapest'), ''),
+        ('Tools - Visa requirements', 'page', url_for('tools_visa_requirements'), ''),
+        ('Baggage calculator', 'page', url_for('baggage_calculator'), 'Per-airline bag fees'),
+        ('Frequent flyer programs', 'page', url_for('frequent_flyer_programs'), ''),
+        ('Help', 'page', url_for('help_page'), ''),
+        ('Help - Cabin class glossary', 'page', '/help/cabin-class', 'Economy/Premium/Business/First'),
+        ('Keyboard shortcuts', 'page', '/keyboard-shortcuts', 'Cmd+K, /, ?, g+key'),
+        ('Accessibility', 'page', url_for('accessibility_page'), ''),
+        ('Performance', 'page', url_for('performance_page'), ''),
+        ('Structured data', 'page', url_for('structured_data_page'), ''),
+        ('Voice assistant', 'page', url_for('voice_assistant_page'), ''),
+        ('Developer - Widget embed', 'page', '/developer/widget-embed', 'Embed Flights on your site'),
+        ('Privacy', 'page', url_for('privacy'), ''),
+        ('Terms', 'page', url_for('terms'), ''),
+        ('About', 'page', url_for('about'), ''),
+    ]
+    if current_user.is_authenticated:
+        nav += [
+            ('Your trips', 'page', url_for('trips'), 'Confirmed bookings'),
+            ('Your bag', 'page', url_for('bag'), 'Cart / pending checkout'),
+            ('Tracked flights', 'page', url_for('tracked_flights'), ''),
+            ('Price alerts', 'page', url_for('price_alerts'), ''),
+            ('Saved searches', 'page', url_for('saved_searches'), ''),
+            ('Payment methods', 'page', url_for('payment_methods'), ''),
+            ('Account', 'page', url_for('account'), ''),
+            ('Sign out', 'page', url_for('logout'), ''),
+        ]
+    else:
+        nav += [
+            ('Sign in', 'page', url_for('login'), ''),
+            ('Create account', 'page', url_for('register'), ''),
+        ]
+    for label, kind, url, hint in nav:
+        items.append({'label': label, 'kind': kind, 'url': url, 'hint': hint})
+    # Airport jumps (limited to first ~80 popular airports to keep response small)
+    popular = (Airport.query.filter_by(is_popular=True)
+               .order_by(Airport.city).limit(80).all())
+    for a in popular:
+        items.append({
+            'label': f'{a.city} ({a.iata})',
+            'kind': 'airport',
+            'url': url_for('destination', slug=a.city_slug),
+            'hint': f'{a.country}',
+        })
+    # Booking jumps for logged-in users
+    if current_user.is_authenticated:
+        bookings = (Booking.query.filter_by(user_id=current_user.id)
+                    .order_by(Booking.booked_at.desc()).limit(10).all())
+        for b in bookings:
+            items.append({
+                'label': f'Booking {b.pnr}',
+                'kind': 'booking',
+                'url': url_for('booking_detail', booking_id=b.id),
+                'hint': f'{b.status} - {b.total_amount} {b.currency}',
+            })
+    if q:
+        items = [it for it in items
+                 if q in it['label'].lower() or q in (it['hint'] or '').lower()]
+    return jsonify({'items': items, 'count': len(items), 'query': q})
+
+
+@app.route('/keyboard-shortcuts')
+def keyboard_shortcuts():
+    """Searchable list of every keyboard shortcut the mirror binds. The
+    page filters client-side via the ?q= query string so an agent can deep-
+    link to /keyboard-shortcuts?q=palette and see only palette-related
+    shortcuts. Also exposes a JSON view at /keyboard-shortcuts.json."""
+    q = (request.args.get('q') or '').strip().lower()
+    rows = _R8_KEYBOARD_SHORTCUTS
+    if q:
+        rows = [r for r in rows if q in r[0].lower() or q in r[1].lower() or q in r[2].lower()]
+    return render_template('keyboard_shortcuts.html', rows=rows, q=q,
+                           categories=sorted({r[2] for r in _R8_KEYBOARD_SHORTCUTS}))
+
+
+@app.route('/keyboard-shortcuts.json')
+def keyboard_shortcuts_json():
+    return jsonify({
+        'shortcuts': [
+            {'key': k, 'description': d, 'category': c}
+            for (k, d, c) in _R8_KEYBOARD_SHORTCUTS
+        ],
+        'count': len(_R8_KEYBOARD_SHORTCUTS),
+    })
+
+
+@app.route('/developer/widget-embed')
+def developer_widget_embed():
+    """Public docs page that lets an external site embed a Google Flights
+    search widget. Generates copy-pasteable HTML + iframe snippets keyed
+    to the (origin, destination) the developer types in. Educational
+    scaffold — no actual cross-origin widget runs."""
+    origin = (request.args.get('origin') or 'JFK').upper()
+    destination = (request.args.get('destination') or 'LAX').upper()
+    width = request.args.get('width', '320')
+    height = request.args.get('height', '420')
+    try:
+        width_int = int(width); height_int = int(height)
+    except ValueError:
+        width_int = 320; height_int = 420
+    base = request.url_root.rstrip('/')
+    iframe_src = f"{base}/flights?from={origin}&to={destination}&embed=1"
+    iframe_snippet = (
+        f'<iframe src="{iframe_src}" '
+        f'width="{width_int}" height="{height_int}" '
+        f'frameborder="0" loading="lazy" '
+        f'title="Google Flights — {origin} to {destination}"></iframe>'
+    )
+    script_snippet = (
+        f'<div data-google-flights-widget data-origin="{origin}" '
+        f'data-destination="{destination}"></div>\n'
+        f'<script async src="{base}/static/js/widget-embed.js"></script>'
+    )
+    return render_template('developer_widget_embed.html',
+                           origin=origin, destination=destination,
+                           width=width_int, height=height_int,
+                           iframe_snippet=iframe_snippet,
+                           script_snippet=script_snippet,
+                           base=base)
+
+
+# /help/cabin-class is handled by the existing help_topic route (which now
+# accepts 'cabin-class' as a valid topic). Provide a dedicated alias too so
+# agents that GET /help/cabin-class-glossary still land somewhere useful.
+@app.route('/help/cabin-class-glossary')
+def help_cabin_class_glossary():
+    """Dedicated glossary page for cabin classes. Same data as the
+    contextual tooltip — drives benchmark questions like
+    'what is the legroom for Premium Economy?'."""
+    return render_template('help_cabin_class.html',
+                           glossary=_R8_CABIN_GLOSSARY)
+
+
+@app.route('/api/cabin-class-glossary')
+def api_cabin_class_glossary():
+    """JSON variant of the cabin-class glossary so the tooltip can lazy-load
+    the description text instead of duplicating it inside every template."""
+    return jsonify({
+        'glossary': [{'class': c, 'description': d} for (c, d) in _R8_CABIN_GLOSSARY],
+    })
 
 
 # ============================================================

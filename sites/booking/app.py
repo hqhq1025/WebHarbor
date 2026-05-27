@@ -3046,6 +3046,367 @@ def genius_redeem():
 
 
 # =====================================================================
+# R8 — observability, partner API, webhooks, referral, trip-budget split,
+# amenity glossary, command-palette and keyboard-shortcut helpers.
+# Designed so /healthz, /api/events, /api/error-report, /metrics and the
+# command-palette suggestion endpoint never touch user-mutable state, so
+# tasks can be evaluated without authentication.
+# =====================================================================
+
+AMENITY_GLOSSARY = {
+    'Free WiFi': 'Wireless internet available in all rooms and common areas at no extra cost.',
+    'Swimming pool': 'On-site swimming pool. Indoor / outdoor / heated variants are listed separately.',
+    'Free parking': 'Self-parking on the property at no extra cost. Valet may carry a surcharge.',
+    'Spa & wellness': 'Dedicated wellness facility; usually includes treatment rooms, sauna and steam options. Some treatments incur a surcharge.',
+    'Fitness center': 'On-site gym with cardio and resistance equipment, accessible to all guests.',
+    'Restaurant': 'On-site dining; check meal hours on the property page.',
+    'Room service': 'Food and beverage delivered to your room. Hours and surcharges vary by property.',
+    'Airport shuttle': 'Transport between the property and the nearest airport. May be free or surcharged — check the room policy.',
+    'Bar': 'On-site bar or lounge. Opening hours vary.',
+    'Breakfast included': 'Breakfast is bundled into the nightly rate for all listed guests.',
+    'Pet-friendly': 'Pets are welcome. Check the property policy for size limits, fees, and whether they may be left unattended.',
+    'Air conditioning': 'Climate control in guest rooms.',
+    'Family rooms': 'Larger rooms with extra beds for parents and children sharing.',
+    '24-hour front desk': 'Reception staffed around the clock.',
+    'Non-smoking rooms': 'Designated rooms that have never been smoked in.',
+    'Beachfront': 'Property is directly on the beach. Distance to sand is zero.',
+    'Sea view': 'Rooms or common areas with an unobstructed view of the sea.',
+    'Kitchen': 'In-unit cooking facilities — typically hob, fridge, basic cookware.',
+    'Washing machine': 'In-unit or shared on-site laundry equipment.',
+    'Balcony': 'Private outdoor terrace attached to the room.',
+    'Free cancellation': 'You can cancel free of charge until the policy cut-off (often 24-48 hours before check-in). Check the rate plan for the exact cut-off.',
+    'Travel Sustainable Level 1': 'Booking.com sustainability badge — entry tier. Property has adopted basic practices like recycling and energy-saving lighting.',
+    'Travel Sustainable Level 2': 'Property has documented water, waste and energy programmes and works with local suppliers.',
+    'Travel Sustainable Level 3': 'Highest sustainability tier. Property has third-party audited environmental and social practices and demonstrably reduces its carbon footprint.',
+    'Concierge service': 'Staff available to assist with bookings, restaurants and transport.',
+    'Daily housekeeping': 'Rooms are cleaned every day of your stay unless you opt out.',
+    'Wheelchair accessible': 'Property has step-free access to the main entrance and accessible rooms or facilities. See the accessibility statement for full WCAG-AA conformance details.',
+}
+
+
+@app.route('/healthz')
+def healthz():
+    """Lightweight liveness probe. Returns counts only; no PII."""
+    try:
+        prop_count = Property.query.count()
+        city_count = City.query.count()
+        review_count = Review.query.count()
+    except Exception:
+        return jsonify({'status': 'degraded', 'db': 'unreachable'}), 503
+    # db_md5 is the post-seed canonical hash baked into instance_seed at
+    # build time; we re-hash on every request so a corrupted instance/ is
+    # immediately visible.
+    db_path = INSTANCE / 'booking.db'
+    md5 = ''
+    try:
+        if db_path.exists():
+            h = hashlib.md5()
+            with open(db_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(1 << 16), b''):
+                    h.update(chunk)
+            md5 = h.hexdigest()
+    except Exception:
+        md5 = ''
+    resp = jsonify({
+        'status': 'ok',
+        'service': 'booking-mirror',
+        'property_count': prop_count,
+        'city_count': city_count,
+        'review_count': review_count,
+        'db_md5': md5,
+        'reference_date': MIRROR_REFERENCE_DATE.isoformat(),
+    })
+    resp.headers['X-Request-ID'] = hashlib.sha1(
+        f"{request.path}|{prop_count}".encode()).hexdigest()[:16]
+    return resp
+
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@csrf.exempt
+def api_events():
+    """Client-side event capture endpoint. Records nothing; echoes the
+    submitted payload back so partners can verify their integration."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/events',
+            'accepts': 'application/json',
+            'methods': ['POST'],
+            'rate_limit_per_minute': 600,
+            'schema': {
+                'event_name': 'string (required)',
+                'session_id': 'string (optional)',
+                'properties': 'object (optional)',
+                'ts': 'iso8601 string (optional, server fills if absent)',
+            },
+            'sample': {
+                'event_name': 'view_property',
+                'session_id': 'sess_abc123',
+                'properties': {'property_slug': 'the-plaza-new-york-new-york'},
+            },
+        })
+    payload = request.get_json(silent=True) or {}
+    event_name = payload.get('event_name') or 'unknown'
+    return jsonify({
+        'received': True,
+        'event_name': event_name,
+        'echoed': payload,
+        'server_ts': MIRROR_REFERENCE_DATE.isoformat(),
+    })
+
+
+@app.route('/api/error-report', methods=['GET', 'POST'])
+@csrf.exempt
+def api_error_report():
+    """Front-end error reporting sink. Accepts an error name + stack and
+    returns an opaque report-id so the client can correlate."""
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/api/error-report',
+            'accepts': 'application/json',
+            'methods': ['POST'],
+            'sample': {
+                'error_name': 'TypeError',
+                'message': "Cannot read properties of undefined",
+                'stack': '...',
+                'url': '/property/the-plaza-new-york-new-york',
+                'user_agent': 'Mozilla/5.0 ...',
+            },
+        })
+    payload = request.get_json(silent=True) or {}
+    key = (payload.get('error_name') or '') + '|' + (payload.get('url') or '')
+    report_id = 'err_' + hashlib.sha1(key.encode()).hexdigest()[:12]
+    return jsonify({'received': True, 'report_id': report_id})
+
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus-style plain-text metrics."""
+    try:
+        prop_count = Property.query.count()
+        city_count = City.query.count()
+        review_count = Review.query.count()
+        booking_count = Booking.query.count()
+        user_count = User.query.count()
+    except Exception:
+        prop_count = city_count = review_count = booking_count = user_count = 0
+    lines = [
+        '# HELP booking_property_count Total properties indexed.',
+        '# TYPE booking_property_count gauge',
+        f'booking_property_count {prop_count}',
+        '# HELP booking_city_count Total destinations indexed.',
+        '# TYPE booking_city_count gauge',
+        f'booking_city_count {city_count}',
+        '# HELP booking_review_count Total guest reviews.',
+        '# TYPE booking_review_count gauge',
+        f'booking_review_count {review_count}',
+        '# HELP booking_user_count Total registered users.',
+        '# TYPE booking_user_count gauge',
+        f'booking_user_count {user_count}',
+        '# HELP booking_booking_count Total bookings placed.',
+        '# TYPE booking_booking_count gauge',
+        f'booking_booking_count {booking_count}',
+        '# HELP booking_build_info Build metadata as a constant gauge.',
+        '# TYPE booking_build_info gauge',
+        'booking_build_info{round="r8",service="booking-mirror"} 1',
+    ]
+    body = '\n'.join(lines) + '\n'
+    from flask import Response
+    return Response(body, mimetype='text/plain; version=0.0.4')
+
+
+@app.route('/partner/api/v3')
+@app.route('/partner/api/v3/')
+def partner_api_v3_docs():
+    return render_template('partner_api_v3.html')
+
+
+@app.route('/partner/api/v3/oauth/authorize', methods=['GET', 'POST'])
+@csrf.exempt
+def partner_oauth_authorize():
+    client_id = request.values.get('client_id') or 'demo'
+    redirect_uri = request.values.get('redirect_uri') or 'https://example.com/callback'
+    code = 'auth_' + hashlib.sha1(f"{client_id}|{redirect_uri}".encode()).hexdigest()[:16]
+    return jsonify({
+        'authorize_url': f'/partner/api/v3/oauth/authorize?client_id={client_id}',
+        'response_type_supported': ['code', 'token'],
+        'code': code,
+        'redirect_uri': redirect_uri,
+        'scope': 'partner.read partner.bookings.write',
+    })
+
+
+@app.route('/partner/api/v3/oauth/token', methods=['GET', 'POST'])
+@csrf.exempt
+def partner_oauth_token():
+    if request.method == 'GET':
+        return jsonify({
+            'endpoint': '/partner/api/v3/oauth/token',
+            'methods': ['POST'],
+            'grant_types_supported': ['client_credentials', 'authorization_code', 'refresh_token'],
+            'token_type': 'Bearer',
+        })
+    client_id = (request.values.get('client_id') or 'demo')
+    grant_type = (request.values.get('grant_type') or 'client_credentials')
+    token = 'bkp_v3_' + hashlib.sha1(f"{client_id}|{grant_type}".encode()).hexdigest()[:24]
+    return jsonify({
+        'access_token': token,
+        'token_type': 'Bearer',
+        'expires_in': 3600,
+        'scope': 'partner.read partner.bookings.write',
+        'grant_type': grant_type,
+    })
+
+
+@app.route('/webhook/new-booking', methods=['GET', 'POST'])
+@csrf.exempt
+def webhook_new_booking():
+    if request.method == 'GET':
+        return render_template('webhook_new_booking.html')
+    payload = request.get_json(silent=True) or {}
+    return jsonify({
+        'received': True,
+        'event_type': 'booking.created',
+        'echoed': payload,
+        'ack_status': 200,
+    })
+
+
+@app.route('/amenity-glossary')
+@app.route('/amenities/glossary')
+def amenity_glossary():
+    fmt = (request.args.get('format') or '').lower()
+    if fmt == 'json':
+        return jsonify(AMENITY_GLOSSARY)
+    return render_template('amenity_glossary.html', glossary=AMENITY_GLOSSARY)
+
+
+@app.route('/api/amenity-glossary')
+def api_amenity_glossary():
+    return jsonify(AMENITY_GLOSSARY)
+
+
+@app.route('/refer-friend')
+@app.route('/refer-a-friend')
+@app.route('/referral')
+def refer_friend():
+    if current_user.is_authenticated:
+        code = (current_user.first_name or current_user.email.split('@')[0]).upper()
+        code = ''.join(ch for ch in code if ch.isalnum()) or 'GUEST'
+    else:
+        code = 'GUEST'
+    return render_template('refer_friend.html', code=code,
+                           bonus_amount=25, bonus_currency='USD',
+                           friend_discount_amount=15,
+                           friend_min_stay_value=150,
+                           friend_min_nights=2,
+                           genius3_yearly_slots=20)
+
+
+@app.route('/refer-friend/code/<code>')
+def refer_friend_landing(code):
+    return render_template('refer_friend_landing.html', code=code,
+                           friend_discount_amount=15,
+                           friend_min_stay_value=150)
+
+
+@app.route('/trip/split', methods=['GET', 'POST'])
+@app.route('/group-trip/split-budget', methods=['GET', 'POST'])
+@csrf.exempt
+def trip_budget_split():
+    travellers = max(2, min(int(request.values.get('travellers') or 4), 20))
+    total = float(request.values.get('total') or 1200)
+    currency = (request.values.get('currency') or 'USD').upper()
+    if currency not in CURRENCY_RATES:
+        currency = 'USD'
+    shared_meals = float(request.values.get('shared_meals') or 0)
+    mode = request.values.get('mode') or 'even'
+    sub_total = total + shared_meals
+    per_person = round(sub_total / travellers, 2) if travellers else 0
+    return render_template('trip_split.html',
+                           travellers=travellers, total=total,
+                           shared_meals=shared_meals,
+                           sub_total=round(sub_total, 2),
+                           per_person=per_person,
+                           currency=currency,
+                           mode=mode,
+                           max_travellers=20,
+                           currencies=list(CURRENCY_RATES.keys())[:10])
+
+
+@app.route('/keyboard-shortcuts')
+@app.route('/shortcuts')
+def keyboard_shortcuts():
+    return render_template('keyboard_shortcuts.html')
+
+
+@app.route('/api/palette/suggest')
+def palette_suggest():
+    """Command-palette suggestion endpoint. Returns up to 20 hits
+    bucketed under City / Property / Saved / Trip categories."""
+    q = (request.args.get('q') or '').strip().lower()
+    out = {'query': q, 'sections': []}
+    if not q:
+        # Surface a default jump-list when the palette opens empty.
+        defaults = [
+            {'label': 'Trip budget split', 'category': 'Trip', 'href': '/trip/split'},
+            {'label': 'Saved properties', 'category': 'Saved', 'href': '/saved'},
+            {'label': 'My bookings', 'category': 'Trip', 'href': '/account/bookings'},
+            {'label': 'Help center', 'category': 'Help', 'href': '/help'},
+            {'label': 'Keyboard shortcuts', 'category': 'Help', 'href': '/keyboard-shortcuts'},
+        ]
+        out['sections'].append({'name': 'Quick jumps', 'items': defaults})
+        return jsonify(out)
+    city_hits = City.query.filter(
+        or_(City.display.ilike(f'%{q}%'), City.slug.ilike(f'%{q}%'))
+    ).order_by(City.display.asc()).limit(6).all()
+    if city_hits:
+        out['sections'].append({
+            'name': 'Cities',
+            'items': [{'label': c.display, 'category': 'City',
+                       'href': url_for('city_page', slug=c.slug)}
+                      for c in city_hits],
+        })
+    prop_hits = Property.query.filter(
+        Property.name.ilike(f'%{q}%')
+    ).order_by(Property.rating.desc()).limit(6).all()
+    if prop_hits:
+        out['sections'].append({
+            'name': 'Properties',
+            'items': [{'label': p.name, 'category': 'Property',
+                       'href': url_for('property_detail', slug=p.slug)}
+                      for p in prop_hits],
+        })
+    static_jumps = []
+    for label, href in [
+        ('Saved properties', '/saved'),
+        ('My bookings', '/account/bookings'),
+        ('Trip budget split', '/trip/split'),
+        ('Refer a friend', '/refer-friend'),
+        ('Amenity glossary', '/amenity-glossary'),
+        ('Keyboard shortcuts', '/keyboard-shortcuts'),
+    ]:
+        if q in label.lower():
+            static_jumps.append({'label': label, 'category': 'Saved' if 'saved' in label.lower()
+                                                 else ('Trip' if 'trip' in label.lower() or 'booking' in label.lower()
+                                                       else 'Help'),
+                                 'href': href})
+    if static_jumps:
+        out['sections'].append({'name': 'Tools', 'items': static_jumps})
+    return jsonify(out)
+
+
+@app.after_request
+def _r8_add_request_id(resp):
+    """Stamp a deterministic X-Request-ID on every response so tasks that
+    correlate health checks with subsequent navigation have something
+    stable to grep for."""
+    if 'X-Request-ID' not in resp.headers:
+        rid_src = f"{request.path}|{request.method}"
+        resp.headers['X-Request-ID'] = hashlib.sha1(rid_src.encode()).hexdigest()[:16]
+    return resp
+
+
+# =====================================================================
 # ERROR HANDLERS
 # =====================================================================
 
@@ -4590,6 +4951,12 @@ if __name__ == '__main__':
         _migrate_schema()
         seed_database()
         seed_benchmark_users()
+        # R8 — final normalize so two fresh builds produce byte-identical
+        # SQLite files. Earlier rounds normalized inside seed_database() only,
+        # but seed_benchmark_users / _seed_landmarks / _seed_beaches write
+        # additional rows after that, re-fragmenting pages. The last call
+        # below re-emits indexes in alpha order and re-VACUUMs.
+        _normalize_seed_db_layout()
     port = int(os.environ.get('PORT', 28844))
     app.run(host='0.0.0.0', port=port, debug=False)
 else:
@@ -4599,3 +4966,4 @@ else:
         _migrate_schema()
         seed_database()
         seed_benchmark_users()
+        _normalize_seed_db_layout()

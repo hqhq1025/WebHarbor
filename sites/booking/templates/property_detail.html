@@ -152,7 +152,7 @@
                 <h2>Most popular facilities</h2>
                 <ul class="amenity-list">
                     {% for amenity in property.get_amenities() %}
-                    <li><span class="check">&#10003;</span> {{ amenity }}</li>
+                    <li data-amenity="{{ amenity }}" title="Hover for definition"><span class="check">&#10003;</span> {{ amenity }} <a href="{{ url_for('amenity_glossary') }}#g-{{ amenity|lower|replace(' ', '-')|replace('&', 'and')|replace(',', '') }}" style="font-size:11px;color:#888;text-decoration:none;">&#9432;</a></li>
                     {% endfor %}
                 </ul>
                 {% if property.is_eco_certified or property.is_accessible or property.has_virtual_tour %}

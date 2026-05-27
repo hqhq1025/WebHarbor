@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}LTI 1.3 Integration | Coursera Developer{% endblock %}
+{% block content %}
+<div class="developer-lti-page" id="main-content" style="max-width:980px;margin:32px auto;padding:0 24px;">
+  <header>
+    <div style="display:inline-block;background:#7C3AED;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">LTI {{ lti_version }} &middot; LMS INTEGRATION</div>
+    <h1 style="font-size:34px;letter-spacing:-.5px;margin:14px 0 6px;">Learning Tools Interoperability (LTI) Integration</h1>
+    <p style="color:#5B6780;font-size:16px;margin:0 0 16px;max-width:720px;">Embed Coursera courses inside Canvas, Blackboard, Moodle, D2L and other LMS platforms using the IMS Global <strong>LTI {{ lti_version }}</strong> Advantage standard. This page documents the OIDC handshake, deep linking, and grade passback flow.</p>
+  </header>
+
+  <section style="background:#F2F5FA;border-radius:12px;padding:18px;margin:18px 0;">
+    <h2 style="font-size:16px;margin:0 0 8px;">Quick facts</h2>
+    <ul style="margin:0;padding-left:20px;color:#374151;line-height:1.7;font-size:14px;">
+      <li>LTI version: <strong>{{ lti_version }}</strong> (Advantage)</li>
+      <li>OIDC callback URL: <code>{{ oidc_callback_url }}</code></li>
+      <li>Tool launch URL: <code>{{ launch_url }}</code></li>
+      <li>Deep linking endpoint: <code>{{ deep_link_url }}</code></li>
+      <li>Public JWKS endpoint: <code>{{ keyset_url }}</code></li>
+      <li>Issuer (iss): <code>https://coursera-mirror.local</code></li>
+      <li>Supported message types: <code>LtiResourceLinkRequest</code>, <code>LtiDeepLinkingRequest</code></li>
+    </ul>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;margin-bottom:18px;">
+    <h2 style="font-size:18px;margin:0 0 12px;">Step 1 &mdash; Register the tool</h2>
+    <p style="color:#374151;line-height:1.6;">In your LMS admin console, register Coursera as an external tool with the values above. Canvas calls this "Developer Keys", Blackboard calls it "Manage LTI Tool Providers".</p>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;margin-bottom:18px;">
+    <h2 style="font-size:18px;margin:0 0 12px;">Step 2 &mdash; OIDC handshake</h2>
+    <p style="color:#374151;line-height:1.6;margin-bottom:10px;">The LMS will POST to the OIDC callback URL with <code>iss</code>, <code>login_hint</code>, and <code>target_link_uri</code>. Coursera responds with a JWT-shaped resource link payload.</p>
+    <pre style="background:#0F1114;color:#E5E7EB;padding:14px;border-radius:8px;overflow-x:auto;font-size:13px;">$ curl -X POST {{ request.host_url.rstrip('/') }}{{ oidc_callback_url }} \
+    -d "iss=https://canvas.instructure.com" \
+    -d "login_hint=lti-learner-42" \
+    -d "target_link_uri={{ request.host_url.rstrip('/') }}/learn/some-slug"
+{
+  "lti_version": "{{ lti_version }}",
+  "message_type": "LtiResourceLinkRequest",
+  "callback_received": true
+}</pre>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;margin-bottom:18px;">
+    <h2 style="font-size:18px;margin:0 0 12px;">Step 3 &mdash; Deep linking + grade passback</h2>
+    <p style="color:#374151;line-height:1.6;">After launch, instructors can use Coursera's deep-linking picker to embed a specific course / module. Grades flow back via the LTI Assignment and Grade Services 2.0 spec to the LMS gradebook.</p>
+  </section>
+
+  <section style="background:#F8FAFD;border-radius:12px;padding:18px;">
+    <h2 style="font-size:16px;margin:0 0 6px;">Status</h2>
+    <p style="color:#374151;line-height:1.6;margin:0;">LTI {{ lti_version }} integrations are certified against IMS Global's reference test suite. Production traffic is monitored on the <a href="{{ url_for('api_uptime') }}" style="color:#0056D2;">uptime</a> and <a href="{{ url_for('healthz') }}" style="color:#0056D2;">healthz</a> endpoints.</p>
+  </section>
+</div>
+{% endblock %}

@@ -3955,6 +3955,488 @@ def r7_api_multi_step():
 
 
 # ---------------------------------------------------------------------------
+# R8 — Observability + Spotlight + Passkey + Help + Developer surface
+# ---------------------------------------------------------------------------
+
+@app.route('/healthz')
+def r8_healthz():
+    """Lightweight health probe — no DB hit, no auth. Returns 200 JSON.
+    Wired so external uptime monitors and the WebHarbor dashboard can poll
+    without polluting the visit/search/cart counters."""
+    return jsonify({
+        'status': 'ok',
+        'service': 'apple-store-mirror',
+        'version': 'r8',
+        'time_ref': MIRROR_REFERENCE_DATE.isoformat(),
+    })
+
+
+# Telemetry ring buffer (in-process, cleared on reset). Capped to keep the
+# bytes deterministic across runs that don't push any events.
+R8_TELEMETRY_EVENTS = []
+R8_TELEMETRY_ERRORS = []
+R8_TELEMETRY_PERF = []
+R8_TELEMETRY_MAX = 200
+
+
+@app.route('/api/events', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_events():
+    """Accept arbitrary product-analytics events. Pure stub — does not write
+    to the DB so it stays byte-identical-reset-safe. POST {name, props?}
+    appends to the in-memory ring; GET returns the most recent N events."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        name = (body.get('name') or '').strip()
+        if not name:
+            return jsonify({'ok': False, 'error': 'missing_name'}), 400
+        props = body.get('props')
+        try:
+            props = json.loads(props) if isinstance(props, str) else (props or {})
+        except Exception:
+            props = {}
+        evt = {
+            'name': name,
+            'props': props if isinstance(props, dict) else {},
+            'received_at': MIRROR_REFERENCE_DATE.isoformat(),
+            'session_id': session.get('_id', 'anon'),
+        }
+        R8_TELEMETRY_EVENTS.append(evt)
+        if len(R8_TELEMETRY_EVENTS) > R8_TELEMETRY_MAX:
+            R8_TELEMETRY_EVENTS.pop(0)
+        return jsonify({'ok': True, 'accepted': True,
+                        'event_name': name,
+                        'buffer_size': len(R8_TELEMETRY_EVENTS)})
+    # GET — return recent events
+    limit = max(1, min(int(request.args.get('limit') or 20), R8_TELEMETRY_MAX))
+    return jsonify({
+        'total': len(R8_TELEMETRY_EVENTS),
+        'limit': limit,
+        'events': R8_TELEMETRY_EVENTS[-limit:],
+    })
+
+
+@app.route('/api/error-report', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_error_report():
+    """Crash/exception reporter. POST {error, stack?, url?, ua?}; GET returns
+    aggregate summary by url-prefix so observability tasks can assert counts."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        err = (body.get('error') or '').strip()
+        if not err:
+            return jsonify({'ok': False, 'error': 'missing_error'}), 400
+        rec = {
+            'error': err,
+            'stack': (body.get('stack') or '')[:2000],
+            'url': (body.get('url') or '')[:500],
+            'ua': (body.get('ua') or request.headers.get('User-Agent', ''))[:300],
+            'received_at': MIRROR_REFERENCE_DATE.isoformat(),
+        }
+        R8_TELEMETRY_ERRORS.append(rec)
+        if len(R8_TELEMETRY_ERRORS) > R8_TELEMETRY_MAX:
+            R8_TELEMETRY_ERRORS.pop(0)
+        return jsonify({'ok': True, 'reported': True,
+                        'issue_id': f'AP-{len(R8_TELEMETRY_ERRORS):05d}'})
+    # GET aggregate
+    by_url = {}
+    for e in R8_TELEMETRY_ERRORS:
+        key = (e.get('url') or '/').split('?')[0]
+        by_url[key] = by_url.get(key, 0) + 1
+    return jsonify({
+        'total': len(R8_TELEMETRY_ERRORS),
+        'by_url': by_url,
+        'recent': R8_TELEMETRY_ERRORS[-10:],
+    })
+
+
+@app.route('/api/perf', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_perf():
+    """Perf-metric ingest + summary. POST {path, lcp_ms?, cls?, inp_ms?,
+    ttfb_ms?}; GET returns rollup stats. Pure in-memory stub."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        path = (body.get('path') or '/').strip()
+        rec = {
+            'path': path,
+            'lcp_ms': int(body.get('lcp_ms') or 0),
+            'cls': float(body.get('cls') or 0.0),
+            'inp_ms': int(body.get('inp_ms') or 0),
+            'ttfb_ms': int(body.get('ttfb_ms') or 0),
+            'received_at': MIRROR_REFERENCE_DATE.isoformat(),
+        }
+        R8_TELEMETRY_PERF.append(rec)
+        if len(R8_TELEMETRY_PERF) > R8_TELEMETRY_MAX:
+            R8_TELEMETRY_PERF.pop(0)
+        return jsonify({'ok': True, 'sampled': True,
+                        'sample_id': f'P-{len(R8_TELEMETRY_PERF):05d}',
+                        'good_lcp_threshold_ms': 2500,
+                        'good_cls_threshold': 0.10,
+                        'good_inp_threshold_ms': 200})
+    # GET — summary by path
+    rollup = {}
+    for r in R8_TELEMETRY_PERF:
+        rollup.setdefault(r['path'], []).append(r)
+    summary = []
+    for path, rs in rollup.items():
+        n = len(rs)
+        summary.append({
+            'path': path,
+            'samples': n,
+            'avg_lcp_ms': sum(x['lcp_ms'] for x in rs) // max(n, 1),
+            'avg_cls':    round(sum(x['cls']    for x in rs) / max(n, 1), 3),
+            'avg_inp_ms': sum(x['inp_ms'] for x in rs) // max(n, 1),
+        })
+    return jsonify({'total': len(R8_TELEMETRY_PERF),
+                    'by_path': summary,
+                    'good_lcp_threshold_ms': 2500,
+                    'good_cls_threshold': 0.10,
+                    'good_inp_threshold_ms': 200})
+
+
+# Spotlight (Cmd+K) — returns a deterministic top-N across products + support.
+@app.route('/api/spotlight', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_spotlight():
+    body = request.get_json(silent=True) or request.form
+    q = (body.get('q') or request.args.get('q') or '').strip().lower()
+    if not q:
+        # Suggestions for empty query — top jumps
+        return jsonify({
+            'query': '', 'total': 8,
+            'results': [
+                {'kind': 'jump',    'label': 'Shop',                 'url': '/shop'},
+                {'kind': 'jump',    'label': 'iPhone',               'url': '/iphone'},
+                {'kind': 'jump',    'label': 'Mac',                  'url': '/mac'},
+                {'kind': 'jump',    'label': 'iPad',                 'url': '/ipad'},
+                {'kind': 'jump',    'label': 'Apple Watch',          'url': '/watch'},
+                {'kind': 'jump',    'label': 'AirPods',              'url': '/airpods'},
+                {'kind': 'jump',    'label': 'Support',              'url': '/support'},
+                {'kind': 'jump',    'label': 'Your bag',             'url': '/bag'},
+            ],
+            'shortcut': 'Cmd+K',
+        })
+    limit = max(1, min(int(request.args.get('limit') or 10), 25))
+    results = []
+    # Product hits
+    prods = (Product.query
+             .filter(db.or_(Product.name.ilike(f'%{q}%'),
+                            Product.slug.ilike(f'%{q}%')))
+             .order_by(Product.is_featured.desc(), Product.price.desc())
+             .limit(limit).all())
+    for p in prods:
+        results.append({
+            'kind': 'product', 'label': p.name,
+            'url': f'/product/{p.slug}',
+            'spec_url': f'/product/{p.slug}#specs',
+            'price': p.price,
+        })
+    # Support article hits
+    if len(results) < limit:
+        arts = (SupportArticle.query
+                .filter(db.or_(SupportArticle.title.ilike(f'%{q}%'),
+                               SupportArticle.slug.ilike(f'%{q}%')))
+                .limit(limit - len(results)).all())
+        for a in arts:
+            results.append({
+                'kind': 'support', 'label': a.title,
+                'url': f'/support/article/{a.slug}',
+            })
+    # Static jumps
+    JUMPS = [
+        ('shop', '/shop'), ('iphone', '/iphone'), ('mac', '/mac'),
+        ('ipad', '/ipad'), ('watch', '/watch'), ('airpods', '/airpods'),
+        ('accessories', '/accessories'), ('vision', '/vision-pro'),
+        ('support', '/support'), ('trade in', '/trade-in'),
+        ('store pickup', '/store/pickup'), ('bag', '/bag'),
+        ('wishlist', '/wishlist'), ('account', '/account'),
+        ('refurbished', '/shop/refurbished'),
+    ]
+    if len(results) < limit:
+        for label, url in JUMPS:
+            if q in label and len(results) < limit:
+                results.append({'kind': 'jump', 'label': label.title(), 'url': url})
+    return jsonify({
+        'query': q, 'total': len(results),
+        'limit': limit, 'results': results,
+        'shortcut': 'Cmd+K',
+    })
+
+
+# Quick-buy via command palette — single-call buy-now bridge.
+@app.route('/api/command-palette/quick-buy', methods=['POST'])
+@csrf.exempt
+def r8_api_quick_buy():
+    body = request.get_json(silent=True) or request.form
+    slug = (body.get('slug') or '').strip()
+    if not slug:
+        return jsonify({'ok': False, 'error': 'missing_slug'}), 400
+    p = Product.query.filter_by(slug=slug).first()
+    if not p:
+        return jsonify({'ok': False, 'error': 'unknown_slug', 'slug': slug}), 404
+    qty = max(1, min(int(body.get('quantity') or 1), 10))
+    color = body.get('color') or (p.get_colors()[0] if p.get_colors() else '')
+    storage = body.get('storage') or (p.get_storage()[0] if p.get_storage() else '')
+    return jsonify({
+        'ok': True,
+        'slug': slug,
+        'name': p.name,
+        'unit_price': p.price,
+        'quantity': qty,
+        'color': color,
+        'storage': storage,
+        'subtotal': round(p.price * qty, 2),
+        'next_step_url': '/checkout',
+        'add_url': f'/cart/add/{p.id}',
+        'shortcut': 'Cmd+Enter',
+    })
+
+
+# Passkey sign-in flow — stub that returns deterministic challenge/response.
+R8_PASSKEY_CHALLENGE = 'AAQECAwQFBgcICQoLDA0ODw'  # base64url; pinned for reset
+R8_PASSKEY_REGISTERED = {
+    'alice.j@test.com':  'cred_ap_alice_01',
+    'bob.c@test.com':    'cred_ap_bob_02',
+    'carol.d@test.com':  'cred_ap_carol_03',
+    'david.k@test.com':  'cred_ap_david_04',
+}
+
+
+@app.route('/sign-in-passkey', methods=['GET', 'POST'])
+@app.route('/sign-in-passkey-flow', methods=['GET', 'POST'])
+@app.route('/auth/passkey', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_sign_in_passkey():
+    """Passkey sign-in landing + WebAuthn-style challenge stub."""
+    if request.method == 'GET':
+        return jsonify({
+            'flow': 'passkey-sign-in',
+            'rp_id': 'apple.com',
+            'rp_name': 'Apple ID',
+            'challenge': R8_PASSKEY_CHALLENGE,
+            'algorithms': ['ES256', 'RS256'],
+            'user_verification': 'preferred',
+            'timeout_ms': 60000,
+            'registered_emails': sorted(R8_PASSKEY_REGISTERED.keys()),
+            'fallback_url': '/login',
+            'docs_url': '/support/article/passkey-sign-in',
+        })
+    body = request.get_json(silent=True) or request.form
+    email = (body.get('email') or '').strip().lower()
+    cred = (body.get('credential_id') or '').strip()
+    if not email or email not in R8_PASSKEY_REGISTERED:
+        return jsonify({'ok': False, 'error': 'unknown_email',
+                        'registered_emails': sorted(R8_PASSKEY_REGISTERED.keys())}), 404
+    expected = R8_PASSKEY_REGISTERED[email]
+    if cred and cred != expected:
+        return jsonify({'ok': False, 'error': 'credential_mismatch',
+                        'expected_credential_id': expected}), 401
+    # Auto-login bridge (deterministic — does not require password)
+    u = User.query.filter_by(email=email).first()
+    if u:
+        login_user(u)
+    return jsonify({
+        'ok': True,
+        'authenticated': True,
+        'email': email,
+        'credential_id': expected,
+        'redirect_url': '/account',
+        'session_kind': 'passkey',
+    })
+
+
+# /developer/swift-package-stub — code-snippet generator (read only).
+R8_SWIFT_PACKAGES = {
+    'apple-music-kit':       {'product': 'MusicKit',         'min_ios': '15.0', 'min_macos': '12.0'},
+    'apple-pay-kit':         {'product': 'PassKit',          'min_ios': '13.0', 'min_macos': '11.0'},
+    'apple-storekit-2':      {'product': 'StoreKit',         'min_ios': '15.0', 'min_macos': '12.0'},
+    'apple-healthkit':       {'product': 'HealthKit',        'min_ios': '13.0', 'min_macos': '13.0'},
+    'apple-arkit':           {'product': 'ARKit',            'min_ios': '14.0', 'min_macos': '13.0'},
+    'apple-realitykit':      {'product': 'RealityKit',       'min_ios': '15.0', 'min_macos': '12.0'},
+    'apple-corelocation':    {'product': 'CoreLocation',     'min_ios': '14.0', 'min_macos': '11.0'},
+    'apple-corebluetooth':   {'product': 'CoreBluetooth',    'min_ios': '14.0', 'min_macos': '11.0'},
+    'apple-swiftui':         {'product': 'SwiftUI',          'min_ios': '14.0', 'min_macos': '11.0'},
+    'apple-combine':         {'product': 'Combine',          'min_ios': '13.0', 'min_macos': '10.15'},
+    'apple-cloudkit':        {'product': 'CloudKit',         'min_ios': '13.0', 'min_macos': '10.15'},
+    'apple-vision-os-kit':   {'product': 'visionOSKit',      'min_ios': '17.0', 'min_macos': '14.0'},
+    'apple-applewatchkit':   {'product': 'WatchKit',         'min_ios': '13.0', 'min_macos': '13.0'},
+    'apple-applesilicon-mlx': {'product': 'MLX',             'min_ios': '17.0', 'min_macos': '14.0'},
+    'apple-coremotion':      {'product': 'CoreMotion',       'min_ios': '13.0', 'min_macos': '13.0'},
+    'apple-corehaptics':     {'product': 'CoreHaptics',      'min_ios': '13.0', 'min_macos': '13.0'},
+    'apple-avkit':           {'product': 'AVKit',            'min_ios': '13.0', 'min_macos': '11.0'},
+    'apple-network':         {'product': 'Network',          'min_ios': '13.0', 'min_macos': '10.15'},
+    'apple-foundation':      {'product': 'Foundation',       'min_ios': '13.0', 'min_macos': '10.15'},
+    'apple-uikit':           {'product': 'UIKit',            'min_ios': '13.0', 'min_macos': '13.0'},
+}
+
+
+@app.route('/developer/swift-package-stub', methods=['GET'])
+@app.route('/developer/swift-package-stub/<pkg_slug>', methods=['GET'])
+def r8_developer_swift_package_stub(pkg_slug=''):
+    if not pkg_slug:
+        # Index — list all known stubs.
+        return jsonify({
+            'total': len(R8_SWIFT_PACKAGES),
+            'packages': [
+                {'slug': k, 'product': v['product'],
+                 'url': f'/developer/swift-package-stub/{k}'}
+                for k, v in sorted(R8_SWIFT_PACKAGES.items())
+            ],
+            'docs_url': '/support/article/swift-package-manager',
+        })
+    pkg = R8_SWIFT_PACKAGES.get(pkg_slug)
+    if pkg is None:
+        return jsonify({'ok': False, 'error': 'unknown_package',
+                        'available': sorted(R8_SWIFT_PACKAGES.keys())}), 404
+    snippet = (
+        '// swift-tools-version: 5.9\n'
+        'import PackageDescription\n\n'
+        'let package = Package(\n'
+        f'    name: "{pkg["product"]}Demo",\n'
+        '    platforms: [\n'
+        f'        .iOS("{pkg["min_ios"]}"),\n'
+        f'        .macOS("{pkg["min_macos"]}")\n'
+        '    ],\n'
+        '    products: [\n'
+        f'        .library(name: "{pkg["product"]}Demo", targets: ["{pkg["product"]}Demo"])\n'
+        '    ],\n'
+        '    targets: [\n'
+        f'        .target(name: "{pkg["product"]}Demo")\n'
+        '    ]\n'
+        ')\n'
+    )
+    return jsonify({
+        'ok': True,
+        'slug': pkg_slug,
+        'product': pkg['product'],
+        'min_ios': pkg['min_ios'],
+        'min_macos': pkg['min_macos'],
+        'package_swift': snippet,
+        'register_url': '/developer/registration',
+        'docs_url': f'/support/article/{pkg_slug}',
+    })
+
+
+# Contextual help — keyed by spec row id (chip / battery / display / camera / ...).
+R8_SPEC_HELP = {
+    'chip':         {'title': 'About the chip',         'body': 'The chip is the system-on-a-chip that runs apps, AI tasks and the display. Apple Silicon chips integrate CPU, GPU, Neural Engine and memory in one package for power efficiency.'},
+    'battery':      {'title': 'About battery life',     'body': 'Battery life is rated in mixed-use hours. Real life varies with brightness, cellular signal, and active workloads. Use Low Power Mode to extend runtime by ~30%.'},
+    'display':      {'title': 'About the display',     'body': 'Super Retina XDR displays use OLED with True Tone and ProMotion (120Hz). Liquid Retina is LCD-based — bright, color-accurate, lower refresh rate.'},
+    'camera':       {'title': 'About the camera',     'body': 'Megapixel count is one factor — sensor size, pixel binning and the Photonic Engine combine to set low-light performance. ProRAW preserves the most editing headroom.'},
+    'storage':      {'title': 'About storage',         'body': 'Storage is non-expandable. 128GB suits light use; 256GB+ recommended for ProRAW photos or 4K ProRes video. iCloud+ offers offload, not replacement.'},
+    'connectivity': {'title': 'About connectivity',   'body': 'Wi-Fi 6E adds the 6 GHz band for lower latency. 5G includes both sub-6 (broad reach) and mmWave (peak speed, short range). Thread is for HomePod, Apple TV and HomeKit accessories.'},
+    'ram':          {'title': 'About memory',         'body': 'Unified memory is shared between CPU, GPU and Neural Engine — no copy-cost. 8GB suits browsing/Office; 16-32GB suits Lightroom, Logic; 64GB+ for video / ML.'},
+    'gpu':          {'title': 'About the GPU',        'body': 'More GPU cores accelerate 3D, AI inference and ProRes encoding. Hardware-accelerated ray tracing improves Cinema 4D and game rendering.'},
+    'weight':       {'title': 'About weight',         'body': 'Weight is for the base configuration without straps/sleeves. Cellular variants add ~5g for the eSIM module.'},
+    'charge':       {'title': 'About charging',       'body': 'Fast charging is up to 30W for iPhone Pro Max via MagSafe / USB-C PD; sustained throughput depends on the cable rating and ambient temperature.'},
+    'find-my':      {'title': 'About Find My',        'body': 'Find My uses the offline Apple network of nearby Apple devices to locate items even when the device is offline. Precision Finding requires U2 chip.'},
+    'water':        {'title': 'About water resistance', 'body': 'IP68 rating means up to 6m depth for 30 minutes per IEC 60529. Water resistance is not permanent and may diminish over time — liquid damage is not covered by warranty.'},
+    'environment':  {'title': 'Environment report',   'body': 'Apple ships its products carbon-neutral starting with select Watch, AirPods and Mac configurations. Mining is reduced via recycled cobalt, tin, rare earth and gold.'},
+    'accessibility':{'title': 'Accessibility features','body': 'Every Apple product ships with VoiceOver, Zoom, Voice Control, Switch Control, Live Captions, Dynamic Type and AssistiveTouch enabled out of the box.'},
+}
+
+
+@app.route('/api/help/spec/<spec_key>', methods=['GET'])
+@app.route('/help/spec/<spec_key>', methods=['GET'])
+def r8_api_spec_help(spec_key):
+    spec_key = (spec_key or '').lower().strip()
+    rec = R8_SPEC_HELP.get(spec_key)
+    if rec is None:
+        return jsonify({'ok': False, 'error': 'unknown_spec_key',
+                        'available': sorted(R8_SPEC_HELP.keys())}), 404
+    return jsonify({
+        'ok': True,
+        'spec_key': spec_key,
+        'title': rec['title'],
+        'body': rec['body'],
+        'shortcut': '?',
+        'support_url': f'/support/article/spec-{spec_key}',
+    })
+
+
+# Help / keyboard-shortcuts catalog
+R8_KEYBOARD_SHORTCUTS = [
+    {'chord': 'Cmd+K',  'label': 'Open Spotlight (jump to product, spec, store, or support)'},
+    {'chord': '?',      'label': 'Open the help / keyboard-shortcut overlay'},
+    {'chord': 'g s',    'label': 'Go to Shop'},
+    {'chord': 'g i',    'label': 'Go to iPhone'},
+    {'chord': 'g m',    'label': 'Go to Mac'},
+    {'chord': 'g p',    'label': 'Go to iPad'},
+    {'chord': 'g w',    'label': 'Go to Apple Watch'},
+    {'chord': 'g a',    'label': 'Go to AirPods'},
+    {'chord': 'g b',    'label': 'Go to your shopping Bag'},
+    {'chord': 'g u',    'label': 'Go to support'},
+    {'chord': '/',      'label': 'Focus the global search'},
+    {'chord': 'Esc',    'label': 'Dismiss any overlay'},
+    {'chord': 'Cmd+Enter', 'label': 'Confirm quick-buy in the command palette'},
+    {'chord': '. ?',    'label': 'Show contextual help for the focused spec row'},
+]
+
+
+@app.route('/help/keyboard-shortcuts', methods=['GET'])
+@app.route('/api/help/keyboard-shortcuts', methods=['GET'])
+def r8_help_keyboard_shortcuts():
+    return jsonify({
+        'total': len(R8_KEYBOARD_SHORTCUTS),
+        'shortcuts': R8_KEYBOARD_SHORTCUTS,
+        'open_overlay_with': '?',
+        'docs_url': '/support/article/keyboard-shortcuts',
+    })
+
+
+# Live regional shipping ETA — keyed by ZIP prefix (3-digit zone).
+R8_REGIONAL_ETA = {
+    '94': ('San Francisco Bay Area',  1, 2),   # Cupertino / SFO — fastest
+    '95': ('San Jose / South Bay',    1, 2),
+    '90': ('Los Angeles',             2, 3),
+    '10': ('New York metro',          2, 3),
+    '11': ('Long Island / Queens',    2, 3),
+    '02': ('Boston metro',            2, 4),
+    '60': ('Chicago',                 2, 4),
+    '75': ('Dallas / Fort Worth',     2, 4),
+    '77': ('Houston',                 3, 4),
+    '98': ('Seattle',                 2, 3),
+    '30': ('Atlanta',                 3, 4),
+    '33': ('Miami',                   3, 5),
+    '80': ('Denver',                  3, 5),
+    '85': ('Phoenix',                 3, 4),
+    '20': ('Washington DC',           2, 4),
+}
+
+
+@app.route('/api/shipping/regional-eta', methods=['GET', 'POST'])
+@csrf.exempt
+def r8_api_regional_eta():
+    body = request.get_json(silent=True) or request.form
+    zip_code = (body.get('zip') or request.args.get('zip') or '').strip()
+    method = (body.get('method') or request.args.get('method') or 'standard').strip()
+    if not zip_code or not zip_code[:5].isdigit() or len(zip_code) < 5:
+        return jsonify({'ok': False, 'error': 'invalid_zip',
+                        'known_prefixes': sorted(R8_REGIONAL_ETA.keys())}), 400
+    prefix = zip_code[:2]
+    region = R8_REGIONAL_ETA.get(prefix, ('Other US region', 4, 6))
+    label, lo, hi = region
+    if method == 'express':
+        lo, hi = max(1, lo - 1), max(2, hi - 2)
+    elif method == 'overnight':
+        lo, hi = 1, 1
+    return jsonify({
+        'ok': True,
+        'zip': zip_code,
+        'method': method,
+        'region': label,
+        'arrives_in_days_min': lo,
+        'arrives_in_days_max': hi,
+        'delivery_window_label': (
+            f'Arrives in {lo} business day' if lo == hi == 1 else
+            f'Arrives in {lo}-{hi} business days'
+        ),
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -9447,11 +9929,545 @@ def _extend_r7():
 EXTRA_PRODUCTS_R7 = _extend_r7()
 
 
+# ---------------------------------------------------------------------------
+# R8 expansion — MFi-certified third-party accessories, AirTag application
+# bundles, deeper business-volume bundles. ~850 new SKUs, no overlap with
+# R1..R7 slugs.
+# ---------------------------------------------------------------------------
+
+def _r8_specs(kind, **extra):
+    out = {
+        'r8_kind': kind,
+        'environment_report': (
+            'Recycled aluminum enclosure, fiber-only packaging, carbon-neutral shipping. '
+            'Compatible with Apple Self Service Repair manuals where applicable.'),
+        'accessibility_features': ['Tactile labels', 'High contrast option', 'Voice Control'],
+        'in_box_contents': ['Accessory', 'USB-C Cable (1m)', 'Documentation'],
+        'mfi_certified': True,
+    }
+    out.update(extra)
+    return out
+
+
+def _extend_r8():
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. MFi-certified third-party charging accessories
+    #    Brands × wattage × color matrix. Each combination = one SKU.
+    # ------------------------------------------------------------------
+    mfi_chargers = [
+        # (brand, brand_slug)
+        ('Anker',         'anker'),
+        ('Belkin',        'belkin'),
+        ('Mophie',        'mophie'),
+        ('Twelve South',  'twelve-south'),
+        ('Otterbox',      'otterbox'),
+        ('Spigen',        'spigen'),
+        ('Logitech',      'logitech'),
+        ('Native Union',  'native-union'),
+        ('Nimble',        'nimble'),
+        ('Satechi',       'satechi'),
+    ]
+    wattages = [
+        ('20W',   20,  29.95),
+        ('30W',   30,  39.95),
+        ('45W',   45,  54.95),
+        ('65W',   65,  69.95),
+        ('100W', 100,  99.95),
+        ('140W', 140, 129.95),
+    ]
+    charger_colors = ['White', 'Black', 'Midnight', 'Starlight', 'Navy']
+    for brand, brand_slug in mfi_chargers:
+        for wlabel, watts, base_price in wattages:
+            for color in charger_colors[:3]:  # first 3 colors per (brand, watts) → 10×6×3 = 180
+                # Price adjustment per brand tier
+                tier_adj = {
+                    'anker': 0, 'belkin': 5, 'mophie': 10,
+                    'twelve-south': 15, 'otterbox': 5, 'spigen': -5,
+                    'logitech': 5, 'native-union': 10, 'nimble': 8, 'satechi': 5,
+                }[brand_slug]
+                price = round(base_price + tier_adj, 2)
+                name = f'{brand} {wlabel} USB-C Power Adapter — {color}'
+                slug = f'mfi-{brand_slug}-{watts}w-usbc-adapter-{color.lower()}'
+                extra.append((name, slug, 'accessories', 'mfi-power-adapter',
+                              f'MFi-certified {watts}W USB-C wall adapter by {brand}.',
+                              f'Made for iPhone, iPad, and Mac. {brand}-engineered GaN power adapter delivers up to '
+                              f'{watts}W of fast charging via USB-C Power Delivery. Compact dual-prong design folds '
+                              f'for travel. Independently MFi-certified and compatible with iPhone 17 / iPhone 17 Pro '
+                              f'/ iPad Pro M5 / MacBook Air M3.',
+                              price, None, [color, 'White'], [],
+                              _r8_specs('mfi-power-adapter',
+                                        brand=brand, watts=watts, color=color,
+                                        ports=['USB-C'], usb_c_pd=True, gan_iii=True,
+                                        cable_included=False, foldable_prongs=True,
+                                        compat=['iPhone 17', 'iPhone 17 Pro', 'iPhone Air',
+                                                'iPad Pro M5', 'MacBook Air M3', 'MacBook Pro M4'],
+                                        whats_new='R8 — MFi-certified third-party power adapter row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # B. MFi-certified third-party charging cables
+    #    USB-C ↔ Lightning, USB-C ↔ USB-C, MagSafe-style discs.
+    # ------------------------------------------------------------------
+    cable_specs = [
+        # (label_part, slug_part, conn_in, conn_out, lengths, base_price)
+        ('USB-C to Lightning',     'usbc-lightning',  'USB-C',    'Lightning', [(1.0, 19.95), (2.0, 29.95)]),
+        ('USB-C to USB-C',         'usbc-usbc',       'USB-C',    'USB-C',     [(1.0, 19.95), (2.0, 29.95), (3.0, 39.95)]),
+        ('Thunderbolt 4 Pro',      'thunderbolt-4',   'TB4',      'TB4',       [(0.8, 49.95), (1.8, 89.95)]),
+        ('MagSafe Compatible Disc','magsafe-disc',    'MagSafe',  'USB-C',     [(1.0, 24.95), (2.0, 34.95)]),
+        ('Braided USB-C 240W',     'braided-usbc-240w','USB-C',   'USB-C',     [(1.0, 24.95), (2.0, 34.95)]),
+    ]
+    cable_colors = ['White', 'Black', 'Midnight']
+    for brand, brand_slug in mfi_chargers[:7]:
+        for label, slug_p, conn_in, conn_out, lengths in cable_specs:
+            for length_m, base_price in lengths:
+                for color in cable_colors[:2]:  # 7×5×~2×2 ≈ 140
+                    name = f'{brand} {label} Cable ({length_m:g} m) — {color}'
+                    slug = f'mfi-{brand_slug}-{slug_p}-{int(length_m*10)}dm-{color.lower()}'
+                    extra.append((name, slug, 'accessories', 'mfi-cable',
+                                  f'MFi-certified {label.lower()} cable by {brand}.',
+                                  f'{brand} braided {label.lower()} cable, {length_m:g}-meter length. Reinforced strain-relief, '
+                                  f'10,000-bend rating, supports up to 100W power delivery and USB 2.0 data on USB-C variants. '
+                                  f'Officially MFi-certified — pairs cleanly with iPhone, iPad, MacBook and Apple Watch charging pucks.',
+                                  base_price, None, [color], [],
+                                  _r8_specs('mfi-cable',
+                                            brand=brand, length_m=length_m,
+                                            connector_in=conn_in, connector_out=conn_out,
+                                            color=color, braided=True, bend_rating=10000,
+                                            max_watts=100 if 'USB-C' in conn_in else 60,
+                                            compat=['iPhone 17 series', 'iPad Pro M5', 'MacBook Air M3'],
+                                            whats_new='R8 — MFi cable expansion row.'),
+                                  2025, ''))
+
+    # ------------------------------------------------------------------
+    # C. MFi-certified iPhone cases for the iPhone 17 / Air series
+    # ------------------------------------------------------------------
+    case_brands = [
+        ('Otterbox',  'otterbox',   'Defender',    59.95),
+        ('Otterbox',  'otterbox',   'Symmetry',    49.95),
+        ('Otterbox',  'otterbox',   'Commuter',    44.95),
+        ('Spigen',    'spigen',     'Tough Armor', 24.95),
+        ('Spigen',    'spigen',     'Ultra Hybrid',19.95),
+        ('Speck',     'speck',      'Presidio',    39.95),
+        ('Pelican',   'pelican',    'Shield',      49.95),
+        ('Mophie',    'mophie',     'Juice Pack',  99.95),
+        ('Twelve South','twelve-south','BookBook', 79.95),
+        ('Native Union','native-union','Re-Classic',54.95),
+    ]
+    iphone17_models = [
+        ('iPhone 17',          'iphone-17'),
+        ('iPhone 17 Plus',     'iphone-17-plus'),
+        ('iPhone 17 Pro',      'iphone-17-pro'),
+        ('iPhone 17 Pro Max',  'iphone-17-pro-max'),
+        ('iPhone Air',         'iphone-air'),
+    ]
+    case_colors = ['Black', 'Clear', 'Stone', 'Cypress', 'Cobalt']
+    for brand, brand_slug, model_kind, base_price in case_brands:
+        for ip_name, ip_slug in iphone17_models:
+            for color in case_colors[:3]:  # 10×5×3 = 150
+                name = f'{brand} {model_kind} Case for {ip_name} — {color}'
+                slug = f'mfi-case-{brand_slug}-{model_kind.lower().replace(" ", "-")}-{ip_slug}-{color.lower()}'
+                price = round(base_price + (0.0 if color != 'Cobalt' else 5.0), 2)
+                extra.append((name, slug, 'accessories', 'mfi-case',
+                              f'MFi-certified {brand} {model_kind} case for {ip_name}.',
+                              f'{brand} {model_kind} case engineered specifically for {ip_name}. Drop tested to military spec '
+                              f'(MIL-STD-810G), MagSafe-compatible, raised camera bezel protects the camera ring. '
+                              f'Independently MFi-certified, with cutouts matched to Apple Pencil pencil-holster and Wallet integrations.',
+                              price, None, [color, 'Black'], [],
+                              _r8_specs('mfi-case',
+                                        brand=brand, model_kind=model_kind,
+                                        for_iphone=ip_name, color=color,
+                                        magsafe_compatible=True, drop_test_meters=4.6,
+                                        raised_bezel_mm=1.2,
+                                        compat=[ip_name],
+                                        whats_new=f'R8 — {ip_name} case expansion row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # D. MFi-certified bluetooth keyboards + mice + trackpads.
+    # ------------------------------------------------------------------
+    desk_devices = [
+        ('Logitech',  'logitech', 'MX Mechanical Mini for Mac',         'kbd', 149.99),
+        ('Logitech',  'logitech', 'MX Keys S for Mac',                  'kbd', 119.99),
+        ('Logitech',  'logitech', 'MX Master 3S for Mac',               'mouse', 99.99),
+        ('Logitech',  'logitech', 'MX Anywhere 3S for Mac',             'mouse', 79.99),
+        ('Logitech',  'logitech', 'Pebble 2 M350s Mac',                 'mouse', 29.99),
+        ('Keychron',  'keychron', 'K3 Pro Low Profile Mechanical',      'kbd', 99.99),
+        ('Keychron',  'keychron', 'Q1 Pro QMK/VIA Wireless',            'kbd', 199.99),
+        ('Keychron',  'keychron', 'K6 Hot-Swap Mac',                    'kbd', 89.99),
+        ('Keychron',  'keychron', 'K8 Pro Hot-Swap Mac',                'kbd', 109.99),
+        ('Satechi',   'satechi',  'X3 Slim Mechanical Backlit for Mac', 'kbd', 119.99),
+        ('Satechi',   'satechi',  'M1 Wireless Mouse for Mac',          'mouse', 39.99),
+        ('Razer',     'razer',    'Pro Click Mini for Mac',             'mouse', 79.99),
+        ('Microsoft', 'microsoft','Sculpt Comfort for Mac',             'mouse', 59.99),
+        ('Brydge',    'brydge',   'W-Type Wireless Mac Keyboard',       'kbd', 149.99),
+    ]
+    desk_colors = ['Space Gray', 'Silver', 'Pale Gray']
+    for brand, brand_slug, model, kind, price in desk_devices:
+        for color in desk_colors:  # 14×3 = 42
+            name = f'{brand} {model} — {color}'
+            slug = ('mfi-' + brand_slug + '-' + model.lower()
+                    .replace('/', '-').replace(' ', '-').replace('—', '-')
+                    + '-' + color.lower().replace(' ', '-'))
+            while '--' in slug:
+                slug = slug.replace('--', '-')
+            extra.append((name, slug, 'accessories', f'mfi-{kind}',
+                          f'{brand} {model} certified for Mac.',
+                          f'{brand} ships {model} pre-paired for macOS Sequoia and iPadOS 18. '
+                          f'Multi-device Bluetooth pairing, USB-C charging, Touch ID compatibility on supported Macs. '
+                          f'Tested with Magic Keyboard layout and Magic Mouse gestures.',
+                          price, None, [color, 'Space Gray'], [],
+                          _r8_specs(f'mfi-{kind}',
+                                    brand=brand, model=model, color=color,
+                                    layout='US English', bluetooth='5.3',
+                                    usb_c_charging=True, multi_device_pairing=3,
+                                    compat=['MacBook Pro M4', 'MacBook Air M3', 'iMac M4', 'Mac mini M4'],
+                                    whats_new='R8 — MFi desk peripheral expansion row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # E. MFi car-mount and travel kits (chargers + cables bundled).
+    # ------------------------------------------------------------------
+    travel_kits = [
+        ('Belkin',    'belkin',    'Travel Kit Pro',          'travel-kit',  79.95),
+        ('Anker',     'anker',     '4-in-1 USB-C Travel Hub', 'travel-kit',  99.95),
+        ('Otterbox',  'otterbox',  'MagSafe Car Vent Mount',  'car-mount',   44.95),
+        ('Belkin',    'belkin',    'BoostCharge Car Charger', 'car-charger', 49.95),
+        ('Mophie',    'mophie',    'Snap+ Juice Pack Mini',   'magsafe-pack', 79.95),
+        ('Twelve South','twelve-south','PlugBug Duo World Charger', 'world-charger', 64.95),
+        ('Native Union','native-union','Smart Charger Hub',   'desk-hub',    99.95),
+        ('Spigen',    'spigen',    'OneTap Pro Car Vent',     'car-mount',   39.95),
+        ('Nomad',     'nomad',     'Base Station Pro',        'desk-hub',    229.95),
+        ('Nimble',    'nimble',    'WALLY Mini Wireless',     'wireless-pad', 49.95),
+    ]
+    travel_colors = ['Black', 'Midnight', 'White']
+    for brand, brand_slug, model, kind, price in travel_kits:
+        for color in travel_colors:  # 10×3 = 30
+            name = f'{brand} {model} — {color}'
+            slug = ('mfi-' + brand_slug + '-' + model.lower()
+                    .replace('+', '-plus')
+                    .replace(' ', '-') + '-' + color.lower())
+            while '--' in slug:
+                slug = slug.replace('--', '-')
+            extra.append((name, slug, 'accessories', f'mfi-{kind}',
+                          f'MFi-certified {brand} {model}.',
+                          f'{brand} {model} packs USB-C PD fast charging, MagSafe-compatible alignment, and travel-grade '
+                          f'cable management into a single accessory. Apple-tested for iPhone 17, iPad Pro M5 and MacBook Air M3.',
+                          price, None, [color], [],
+                          _r8_specs(f'mfi-{kind}',
+                                    brand=brand, model=model, color=color,
+                                    ports=['USB-C', 'USB-A'], magsafe_compatible=(kind in ('magsafe-pack', 'car-mount', 'wireless-pad')),
+                                    compat=['iPhone 17', 'iPad Pro M5', 'MacBook Air M3', 'AirPods Pro 3'],
+                                    whats_new='R8 — MFi travel/desk-kit expansion row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # F. AirTag application case kits — luggage, pet, bike, wallet, key.
+    # ------------------------------------------------------------------
+    airtag_cases = [
+        # (use_case, slug_use, brand, brand_slug, base_price)
+        ('Luggage Tag Holder',     'luggage-tag-holder',  'Belkin',     'belkin',      29.95),
+        ('Luggage Tag Holder',     'luggage-tag-holder',  'Spigen',     'spigen',      19.95),
+        ('Luggage Tag Holder',     'luggage-tag-holder',  'Nomad',      'nomad',       34.95),
+        ('Pet Collar Mount',       'pet-collar-mount',    'Belkin',     'belkin',      19.95),
+        ('Pet Collar Mount',       'pet-collar-mount',    'Spigen',     'spigen',      14.95),
+        ('Pet Collar Mount',       'pet-collar-mount',    'Nomad',      'nomad',       29.95),
+        ('Key Ring Fob',           'key-ring-fob',        'Belkin',     'belkin',      14.95),
+        ('Key Ring Fob',           'key-ring-fob',        'Nomad',      'nomad',       29.95),
+        ('Key Ring Fob',           'key-ring-fob',        'Spigen',     'spigen',       9.95),
+        ('Wallet Card Insert',     'wallet-card-insert',  'Spigen',     'spigen',      19.95),
+        ('Wallet Card Insert',     'wallet-card-insert',  'Bellroy',    'bellroy',     49.95),
+        ('Bike Frame Mount',       'bike-frame-mount',    'Spigen',     'spigen',      24.95),
+        ('Bike Frame Mount',       'bike-frame-mount',    'Quad Lock',  'quad-lock',   34.95),
+        ('Bike Seat Post Mount',   'bike-seat-post',      'Spigen',     'spigen',      24.95),
+        ('Car Glovebox Mount',     'car-glovebox-mount',  'Belkin',     'belkin',      19.95),
+        ('Backpack Strap Tag',     'backpack-strap-tag',  'Spigen',     'spigen',      17.95),
+        ('Stroller Mount',         'stroller-mount',      'Spigen',     'spigen',      17.95),
+        ('Camera Bag Insert',      'camera-bag-insert',   'Peak Design','peak-design', 29.95),
+        ('Skateboard Mount',       'skateboard-mount',    'Spigen',     'spigen',      19.95),
+        ('Drone Case Mount',       'drone-case-mount',    'Belkin',     'belkin',      24.95),
+        ('Ski Pole Strap',         'ski-pole-strap',      'Spigen',     'spigen',      17.95),
+        ('Surfboard Leash Tag',    'surfboard-leash',     'Nomad',      'nomad',       29.95),
+        ('Cat Halter Mount',       'cat-halter-mount',    'Belkin',     'belkin',      19.95),
+        ('Bird-Safe Cage Tag',     'bird-cage-tag',       'Spigen',     'spigen',      14.95),
+        ('Garage Tool Cabinet',    'tool-cabinet-tag',    'Spigen',     'spigen',      14.95),
+    ]
+    airtag_colors = ['Black', 'Navy', 'Saddle Brown', 'Forest Green']
+    for use, slug_u, brand, brand_slug, price in airtag_cases:
+        for color in airtag_colors[:2]:  # 25×2 = 50
+            name = f'{brand} {use} for AirTag — {color}'
+            slug = f'airtag-app-{slug_u}-{brand_slug}-{color.lower().replace(" ", "-")}'
+            extra.append((name, slug, 'accessories', 'airtag-application',
+                          f'{brand} {use} accessory for Apple AirTag.',
+                          f'{brand} crafted {use.lower()} for AirTag. Holds one AirTag securely with replaceable battery '
+                          f'access; tested for outdoor exposure, washable for hygiene where applicable. Pairs with the '
+                          f'Find My network for precision locating with U1-equipped iPhones.',
+                          price, None, [color], [],
+                          _r8_specs('airtag-application',
+                                    brand=brand, use_case=use, color=color,
+                                    airtag_capacity=1, battery_access=True,
+                                    waterproof_rating='IPX4', uv_resistant=True,
+                                    compat=['AirTag', 'AirTag 4-pack'],
+                                    whats_new='R8 — AirTag application kit expansion row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # G. Business volume tier — 5/10/25/50/100-pack bundles.
+    # ------------------------------------------------------------------
+    biz_skus = [
+        ('iPhone 17',           'iphone-17',          799.0,  'iphone'),
+        ('iPhone 17 Pro',       'iphone-17-pro',     1099.0,  'iphone'),
+        ('iPad Pro M5',         'ipad-pro-m5',        999.0,  'ipad'),
+        ('iPad Air M4',         'ipad-air-m4',        599.0,  'ipad'),
+        ('iPad 10',             'ipad-10',            349.0,  'ipad'),
+        ('MacBook Air M3 13',   'macbook-air-13',    1099.0,  'mac'),
+        ('MacBook Air M3 15',   'macbook-air-15',    1299.0,  'mac'),
+        ('MacBook Pro 14',      'macbook-pro-14',    1799.0,  'mac'),
+        ('Mac mini M4',         'mac-mini-m4',        599.0,  'mac'),
+        ('Apple Watch SE 2',    'apple-watch-se-2',   249.0,  'watch'),
+        ('Apple Watch Series 11','apple-watch-series-11', 399.0, 'watch'),
+        ('AirPods 4',           'airpods-4',          129.0,  'airpods'),
+        ('AirPods Pro 3',       'airpods-pro-3',      249.0,  'airpods'),
+        ('AirTag 4-pack',       'airtag-4-pack',       99.0,  'accessories'),
+        ('Studio Display',      'studio-display',    1599.0,  'accessories'),
+    ]
+    biz_packs = [
+        (5,  0.97),    # 3% off
+        (10, 0.95),    # 5% off
+        (25, 0.93),    # 7% off
+        (50, 0.91),    # 9% off
+        (100, 0.88),   # 12% off
+    ]
+    for base_name, base_slug, base_price, cat in biz_skus:
+        for qty, mult in biz_packs:  # 15×5 = 75
+            unit_price = round(base_price * mult, 2)
+            total_price = round(unit_price * qty, 2)
+            name = f'{base_name} — Business {qty}-Pack'
+            slug = f'biz-volume-{base_slug}-{qty}pack'
+            specs = _r8_specs('business-volume-bundle',
+                              base_slug=base_slug, quantity=qty,
+                              unit_price_usd=unit_price,
+                              volume_discount_pct=int(round((1 - mult) * 100)),
+                              tax_exempt_eligible=True,
+                              dep_managed_enrollment=True,
+                              dedicated_account_manager=(qty >= 25),
+                              compat=[base_name],
+                              whats_new='R8 — business volume tier expansion row.')
+            extra.append((name, slug, cat, 'business-volume',
+                          f'{qty}-unit Business pack of {base_name} with volume pricing.',
+                          f'Order {qty} units of {base_name} for your team. Eligible for Apple Business Manager DEP '
+                          f'enrollment, sales-tax exemption with valid resale certificate, and a dedicated account manager '
+                          f'for accounts of 25+ units. Volume discount of '
+                          f'{int(round((1 - mult) * 100))}% from the standard list price.',
+                          total_price, None, [], [],
+                          specs, 2025, ''))
+
+    # ------------------------------------------------------------------
+    # H. Additional MFi-certified specialty (audio, video, kids).
+    # ------------------------------------------------------------------
+    specialty = [
+        ('JBL Tune Buds for Apple',           'jbl', 'tune-buds-apple',           69.95,  'mfi-earbuds'),
+        ('Bose QuietComfort Mac Edition',     'bose','quietcomfort-mac',         329.95, 'mfi-headphones'),
+        ('Sony WH-1000XM6 Apple Edition',     'sony','wh-1000xm6-apple',         449.95, 'mfi-headphones'),
+        ('Sennheiser Momentum 4 for Mac',     'sennheiser','momentum-4-mac',     349.95, 'mfi-headphones'),
+        ('Sonos Era 100 AirPlay Edition',     'sonos','era-100-airplay',         249.99, 'mfi-speaker'),
+        ('Sonos Era 300 AirPlay Edition',     'sonos','era-300-airplay',         449.99, 'mfi-speaker'),
+        ('Bose SoundLink Flex AirPlay',       'bose', 'soundlink-flex-airplay',  149.95, 'mfi-speaker'),
+        ('Marshall Acton III for Mac',        'marshall','acton-iii-mac',        279.95, 'mfi-speaker'),
+        ('Brydge MaxPlus for iPad Pro',       'brydge','maxplus-ipad-pro',       299.95, 'mfi-keyboard-case'),
+        ('Logitech Crayon for iPad',          'logitech','crayon-ipad',           69.95, 'mfi-stylus'),
+        ('Adonit Note+ Stylus for iPad',      'adonit', 'note-plus-stylus',       79.95, 'mfi-stylus'),
+        ('Lego Star Wars Tatooine for iPad',  'lego',   'star-wars-tatooine',     49.95, 'mfi-kids'),
+        ('Osmo Coding Family Kit',            'osmo',   'coding-family-kit',     199.95, 'mfi-kids'),
+        ('Sphero Bolt+ for Swift Playgrounds','sphero', 'bolt-plus-swift',       199.95, 'mfi-kids'),
+        ('GoPro Hero 13 Black AirPlay',       'gopro',  'hero-13-airplay',       449.95, 'mfi-camera'),
+        ('Insta360 X4 Apple Edition',         'insta360','x4-apple',             499.95, 'mfi-camera'),
+        ('DJI Osmo Pocket 3 Apple Edition',   'dji',    'osmo-pocket-3-apple',   519.95, 'mfi-camera'),
+        ('Eve MotionBlinds for HomeKit',      'eve',    'motionblinds-homekit',  129.95, 'mfi-homekit'),
+        ('Nanoleaf Lines Smarter Kit',        'nanoleaf','lines-smarter-kit',    199.95, 'mfi-homekit'),
+        ('Aqara Camera Hub G3 for HomeKit',   'aqara',  'camera-hub-g3-homekit', 109.95, 'mfi-homekit'),
+        ('iRobot Roomba j9+ HomeKit',         'irobot', 'roomba-j9-homekit',     899.95, 'mfi-homekit'),
+        ('Eufy SoloCam S340 HomeKit',         'eufy',   'solocam-s340-homekit',  219.95, 'mfi-homekit'),
+        ('Aqara M3 Smart Home Hub',           'aqara',  'm3-smart-home-hub',     169.95, 'mfi-homekit'),
+        ('Arlo Pro 5S HomeKit',               'arlo',   'pro-5s-homekit',        249.95, 'mfi-homekit'),
+        ('Tuo Find My Wallet Card',           'tuo',    'find-my-wallet-card',    39.95, 'mfi-findmy'),
+        ('Pebblebee Find My Clip',            'pebblebee','find-my-clip',         34.95, 'mfi-findmy'),
+        ('Chipolo Find My Card',              'chipolo','find-my-card',           39.95, 'mfi-findmy'),
+        ('Eve Find My Door Sensor',           'eve',    'find-my-door-sensor',    49.95, 'mfi-findmy'),
+        ('Eve Find My Weather Sensor',        'eve',    'find-my-weather-sensor', 89.95, 'mfi-findmy'),
+        ('Pebblebee Tag for Universal Find',  'pebblebee','tag-universal-find',   29.95, 'mfi-findmy'),
+    ]
+    specialty_colors = ['Black', 'Silver', 'Navy', 'Olive']
+    for label, brand_slug, slug_p, price, kind in specialty:
+        for color in specialty_colors[:2]:  # 30×2 = 60
+            name = f'{label} — {color}'
+            slug = f'mfi-{brand_slug}-{slug_p}-{color.lower()}'
+            extra.append((name, slug, 'accessories', kind,
+                          f'MFi-certified {label}.',
+                          f'{label} ships pre-paired for iOS / iPadOS / macOS via the Apple-tested MFi pairing flow. '
+                          f'Find My network integration where applicable, Siri Shortcuts ready, and supports rapid pairing '
+                          f'via Bluetooth 5.3 or AirPlay 2.',
+                          price, None, [color], [],
+                          _r8_specs(kind,
+                                    brand=brand_slug, model=label, color=color,
+                                    pairing='MFi rapid pairing',
+                                    bluetooth='5.3',
+                                    airplay_compatible=True,
+                                    find_my_integration=('mfi-findmy' == kind),
+                                    homekit_integration=('mfi-homekit' == kind),
+                                    compat=['iPhone 17', 'iPad Pro M5', 'MacBook Air M3'],
+                                    whats_new=f'R8 — {kind} expansion row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # I. Apple TV+ original soundtrack album SKUs (vinyl + digital).
+    # ------------------------------------------------------------------
+    soundtracks = [
+        'Ted Lasso', 'Severance', 'The Morning Show', 'Foundation', 'Slow Horses',
+        'Silo', 'Pachinko', 'For All Mankind', 'Lessons in Chemistry', 'Shrinking',
+        'Bad Sisters', 'Loot', 'Masters of the Air', 'Sugar', 'Palm Royale',
+        'Dark Matter', 'Land of Women', 'Presumed Innocent', 'Time Bandits',
+        'Lady in the Lake', 'Disclaimer', 'The Changeling', 'Drops of Light',
+        'Echo 3', 'Constellation', 'Hijack', 'Black Bird', 'Servant',
+        'Defending Jacob', 'Mythic Quest',
+    ]
+    formats = [
+        ('Vinyl LP',     'vinyl',   29.99),
+        ('Digital Album','digital',  9.99),
+        ('CD Edition',   'cd',      14.99),
+    ]
+    for show in soundtracks:
+        for fmt_label, fmt_slug, price in formats:  # 30×3 = 90
+            name = f'{show} — Original Soundtrack ({fmt_label})'
+            slug = ('atv-soundtrack-' + show.lower()
+                    .replace('!', '').replace(',', '').replace(':', '')
+                    .replace("'", '').replace(' ', '-') + '-' + fmt_slug)
+            while '--' in slug:
+                slug = slug.replace('--', '-')
+            extra.append((name, slug, 'accessories', 'atv-soundtrack',
+                          f'Original soundtrack album for Apple TV+ "{show}".',
+                          f'Composer-curated original score from the Apple TV+ series "{show}". {fmt_label} edition; '
+                          f'lossless and Spatial Audio with Dolby Atmos available in Apple Music. '
+                          f'A perfect companion for fans of the show.',
+                          price, None, [fmt_label], [],
+                          _r8_specs('atv-soundtrack',
+                                    show=show, format=fmt_label,
+                                    spatial_audio=True, lossless=True,
+                                    available_on=['Apple Music', 'Apple TV', 'iTunes Store'],
+                                    whats_new='R8 — Apple TV+ original soundtrack row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # J. AirPods accessories & ear-tip variants.
+    # ------------------------------------------------------------------
+    airpod_acc = [
+        ('AirPods Pro 3 Ear Tips Replacement (XS)',  'airpods-pro-3-tips-xs',    8.95, 'White'),
+        ('AirPods Pro 3 Ear Tips Replacement (S)',   'airpods-pro-3-tips-s',     8.95, 'White'),
+        ('AirPods Pro 3 Ear Tips Replacement (M)',   'airpods-pro-3-tips-m',     8.95, 'White'),
+        ('AirPods Pro 3 Ear Tips Replacement (L)',   'airpods-pro-3-tips-l',     8.95, 'White'),
+        ('AirPods Pro 3 Ear Tips Replacement (XL)',  'airpods-pro-3-tips-xl',    8.95, 'White'),
+        ('AirPods Pro 3 Memory Foam Tips Pack',      'airpods-pro-3-foam-pack', 19.95, 'Black'),
+        ('AirPods Pro 3 Sport Wings Pack',           'airpods-pro-3-wings',     14.95, 'Black'),
+        ('AirPods Max 2 Ear Cushions Pacific Blue',  'airpods-max-2-cushion-blue',     69.95, 'Pacific Blue'),
+        ('AirPods Max 2 Ear Cushions Pink Sand',     'airpods-max-2-cushion-pink',     69.95, 'Pink Sand'),
+        ('AirPods Max 2 Ear Cushions Green',         'airpods-max-2-cushion-green',    69.95, 'Green'),
+        ('AirPods Max 2 Ear Cushions Silver',        'airpods-max-2-cushion-silver',   69.95, 'Silver'),
+        ('AirPods Max 2 Smart Case Lake Green',      'airpods-max-2-case-lake-green',  59.95, 'Lake Green'),
+        ('AirPods Max 2 Smart Case Cypress',         'airpods-max-2-case-cypress',     59.95, 'Cypress'),
+        ('AirPods Max 2 Smart Case Cobalt',          'airpods-max-2-case-cobalt',      59.95, 'Cobalt'),
+        ('AirPods Max 2 Lightning Adapter',          'airpods-max-2-lightning',        12.95, 'White'),
+        ('AirPods Charging Case Wireless Lightning', 'airpods-charging-case-lightning',79.95, 'White'),
+        ('AirPods Pro 3 MagSafe Case Replacement',   'airpods-pro-3-magsafe-case',     99.95, 'White'),
+        ('AirPods Cleaning Kit',                     'airpods-cleaning-kit',           19.95, 'White'),
+        ('AirPods Lanyard Clip',                     'airpods-lanyard-clip',            9.95, 'Black'),
+        ('AirPods Skin Sticker Pack',                'airpods-skin-sticker-pack',       9.95, 'Black'),
+    ]
+    for name, slug_p, price, color in airpod_acc:  # 20
+        slug = f'r8-{slug_p}'
+        extra.append((name, slug, 'accessories', 'airpods-accessory',
+                      name + ' — Apple-original spare part.',
+                      'Apple-original spare part for AirPods. Hygiene-rated for skin contact, '
+                      'engineered for the exact fit of the model it ships against. Genuine Apple part.',
+                      price, None, [color], [],
+                      _r8_specs('airpods-accessory',
+                                model=name, color=color,
+                                whats_new='R8 — AirPods accessory expansion row.'),
+                      2025, ''))
+
+    # ------------------------------------------------------------------
+    # K. Apple Vision Pro accessories deeper.
+    # ------------------------------------------------------------------
+    vision_acc = [
+        ('ZEISS Optical Insert (Prescription)',  'zeiss-prescription',  149.0),
+        ('ZEISS Optical Insert (Reader)',        'zeiss-reader',         99.0),
+        ('Vision Pro Travel Case Black',         'travel-case-black',    199.0),
+        ('Vision Pro Travel Case Olive',         'travel-case-olive',    199.0),
+        ('Vision Pro Light Seal Cushion',        'light-seal-cushion',    29.0),
+        ('Vision Pro Solo Knit Band Stone',      'solo-knit-stone',       99.0),
+        ('Vision Pro Solo Knit Band Lake Green', 'solo-knit-lake',        99.0),
+        ('Vision Pro Dual Loop Band',            'dual-loop-band',        99.0),
+        ('Vision Pro Belkin Battery Holder',     'belkin-battery-holder', 49.95),
+        ('Vision Pro Twelve South Stand',        'twelve-south-stand',    79.95),
+        ('Vision Pro Spatial Camera Adapter',    'spatial-camera-adapter',99.0),
+        ('Vision Pro Microfiber Pouch Lake',     'microfiber-pouch-lake', 29.0),
+    ]
+    vision_colors = ['Black', 'Olive', 'Stone']
+    for name, slug_p, price in vision_acc:
+        for color in vision_colors[:2]:  # 12×2 = 24
+            full_name = f'{name} — {color}'
+            slug = f'r8-vision-pro-{slug_p}-{color.lower()}'
+            extra.append((full_name, slug, 'vision', 'vision-pro-accessory',
+                          name + ' for Apple Vision Pro.',
+                          'Apple-authorized accessory for Apple Vision Pro. Engineered specifically for the Vision Pro '
+                          'with precision-machined fit. Compatible with all current visionOS versions and integrates with '
+                          'the Vision Pro setup flow.',
+                          price, None, [color], [],
+                          _r8_specs('vision-pro-accessory',
+                                    model=name, color=color,
+                                    fit_for='Apple Vision Pro',
+                                    visionos_min='2.0',
+                                    whats_new='R8 — Vision Pro accessory expansion row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # L. Apple Pencil + iPad stylus extras.
+    # ------------------------------------------------------------------
+    pencil_extras = [
+        ('Apple Pencil Pro Tip Replacement 4-Pack',     'pencil-pro-tips-4pk',  19.0,  'White'),
+        ('Apple Pencil USB-C Tip Replacement 4-Pack',   'pencil-usbc-tips-4pk', 19.0,  'White'),
+        ('Apple Pencil 2 Tip Replacement 4-Pack',       'pencil-2-tips-4pk',    19.0,  'White'),
+        ('Apple Pencil Pro Charging Sleeve',            'pencil-pro-sleeve',    29.0,  'White'),
+        ('Apple Pencil Pro Magnetic Holder',            'pencil-pro-holder',    19.0,  'Cypress'),
+        ('Apple Pencil Pro Grip Saddle Brown',          'pencil-pro-grip-saddle', 24.0, 'Saddle Brown'),
+        ('Apple Pencil Pro Grip Lake Green',            'pencil-pro-grip-lake', 24.0, 'Lake Green'),
+        ('Apple Pencil Pro Grip Cobalt',                'pencil-pro-grip-cobalt', 24.0, 'Cobalt'),
+        ('Apple Pencil Pro Engraving Service',          'pencil-pro-engrave',    0.0,  'White'),
+        ('Apple Pencil USB-C Engraving Service',        'pencil-usbc-engrave',   0.0,  'White'),
+    ]
+    for name, slug_p, price, color in pencil_extras:  # 10
+        slug = f'r8-{slug_p}'
+        extra.append((name, slug, 'accessories', 'pencil-accessory',
+                      name + ' — Apple-original spare part.',
+                      'Apple-original Apple Pencil accessory. Precision-machined and tested for the '
+                      'exact Apple Pencil generation it ships against. Genuine Apple part.',
+                      price, None, [color], [],
+                      _r8_specs('pencil-accessory',
+                                model=name, color=color,
+                                whats_new='R8 — Apple Pencil accessory expansion row.'),
+                      2025, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R8 = _extend_r8()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R7 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R8 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7 + EXTRA_PRODUCTS_R8):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

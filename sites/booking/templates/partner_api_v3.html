@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Partner API v3 — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Partner API v3 — Developer Documentation</h1>
+    <p class="page-subtitle">Build integrations against the Booking platform. v3 supports OAuth 2.0 client-credentials and authorization-code grants, signed webhooks, and JSON-RPC bookings calls.</p>
+
+    <div class="pd-section">
+        <h2 id="oauth">OAuth 2.0</h2>
+        <p>The base path for OAuth is <code>/partner/api/v3/oauth</code>. Both <code>authorize</code> and <code>token</code> endpoints accept form-encoded and JSON bodies.</p>
+
+        <h3>Authorize</h3>
+        <pre><code>GET /partner/api/v3/oauth/authorize?client_id=demo&amp;redirect_uri=https://example.com/callback</code></pre>
+        <p>Returns a JSON object with <code>authorize_url</code>, <code>response_type_supported</code>, <code>code</code>, <code>redirect_uri</code>, and <code>scope</code>.</p>
+
+        <h3>Token</h3>
+        <pre><code>POST /partner/api/v3/oauth/token
+client_id=demo&amp;client_secret=demo&amp;grant_type=client_credentials</code></pre>
+        <p>Returns a JSON object with <code>access_token</code> (prefix <code>bkp_v3_</code>), <code>token_type</code> = <strong>Bearer</strong>, <code>expires_in</code> = <strong>3600</strong>, and the granted <code>scope</code>.</p>
+
+        <h3>Supported grant types</h3>
+        <ul>
+            <li><code>client_credentials</code></li>
+            <li><code>authorization_code</code></li>
+            <li><code>refresh_token</code></li>
+        </ul>
+
+        <h3>Supported response types</h3>
+        <ul>
+            <li><code>code</code></li>
+            <li><code>token</code></li>
+        </ul>
+    </div>
+
+    <div class="pd-section">
+        <h2 id="webhooks">Webhooks</h2>
+        <p>See <a href="{{ url_for('webhook_new_booking') }}">/webhook/new-booking</a> for the documented event-type, retry policy, and signature scheme.</p>
+    </div>
+
+    <div class="pd-section">
+        <h2 id="rate-limits">Rate limits</h2>
+        <p>Default partner quota: <strong>600 requests / minute / token</strong>. Burst capacity: <strong>1000 requests</strong>. Contact partner support to raise.</p>
+    </div>
+</div>
+{% endblock %}

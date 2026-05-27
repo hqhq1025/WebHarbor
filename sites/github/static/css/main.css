@@ -2050,3 +2050,79 @@ pre[role="region"]:focus-visible,
 /* ─── R7: info_page.html — clean reading layout ─── */
 .r7-info-section table th { background: rgba(177, 186, 196, 0.08); }
 .r7-info-section pre code { white-space: pre; }
+
+/* ─── R8: command palette / file finder / help modal ─── */
+.r8-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(1, 4, 9, 0.72);
+  z-index: 9990;
+}
+.r8-modal-backdrop[hidden] { display: none; }
+.r8-modal {
+  position: fixed; top: 10vh; left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, 92vw);
+  max-height: 70vh;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.r8-modal[hidden] { display: none; }
+.r8-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid #21262d;
+}
+.r8-modal-head h2 { margin: 0; font-size: 15px; color: #f0f6fc; font-weight: 600; }
+.r8-modal-kbd {
+  margin-left: 10px; font-size: 11px; color: #7d8590;
+  border: 1px solid #30363d; border-radius: 4px; padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.r8-modal-close {
+  background: transparent; border: 1px solid #30363d; color: #c9d1d9;
+  border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+}
+.r8-modal-close:hover { background: #161b22; }
+.r8-modal-body { padding: 14px 18px; overflow-y: auto; }
+.r8-modal-input {
+  width: 100%; box-sizing: border-box;
+  background: #010409; border: 1px solid #30363d; border-radius: 6px;
+  color: #c9d1d9; padding: 8px 12px; font-size: 14px;
+  margin-bottom: 12px;
+}
+.r8-modal-input:focus { border-color: #1f6feb; outline: 0; }
+.r8-modal-list {
+  list-style: none; margin: 0; padding: 0; max-height: 40vh; overflow-y: auto;
+}
+.r8-modal-list li {
+  padding: 8px 10px; border-radius: 6px; color: #c9d1d9; cursor: pointer;
+  font-size: 13px;
+}
+.r8-modal-list li:hover,
+.r8-modal-list li.r8-active { background: #161b22; color: #f0f6fc; }
+.r8-modal-list li .r8-mk-meta { color: #7d8590; font-size: 11px; margin-left: 6px; }
+.r8-modal-hint {
+  color: #7d8590; font-size: 12px; margin: 10px 0 0;
+}
+.r8-modal-kbtable {
+  width: 100%; border-collapse: collapse; color: #c9d1d9; font-size: 13px;
+}
+.r8-modal-kbtable th, .r8-modal-kbtable td {
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid #21262d;
+}
+.r8-modal-kbtable kbd {
+  background: #161b22; border: 1px solid #30363d; border-bottom-width: 2px;
+  border-radius: 4px; padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px;
+  color: #c9d1d9;
+}
+
+/* Contextual-help inline tooltips. We render permission / API terms with a
+ * dotted underline; native `title=` provides the one-line definition. */
+.r8-help-term {
+  border-bottom: 1px dotted #7d8590; cursor: help;
+}

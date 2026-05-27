@@ -22,11 +22,13 @@ import random
 import re
 import string
 import secrets
+import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from flask import (Flask, render_template, request, redirect, url_for,
+from flask import (Flask, render_template, render_template_string, request,
+                   redirect, url_for,
                    flash, jsonify, abort, session, send_from_directory)
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
@@ -3610,6 +3612,576 @@ business_claim = csrf.exempt(business_claim)
 
 
 # --------------------------------------------------------------------------
+#  R8 — Observability, developer console, webhooks, command palette,
+#  keyboard-shortcut + symbol-glossary endpoints.
+# --------------------------------------------------------------------------
+
+# Pinned "boot" moment used by uptime/event endpoints.  Drifting wall-clock
+# would break byte-identical reset AND make /api/uptime non-deterministic.
+R8_BOOT_MOMENT = MIRROR_REFERENCE_DATETIME
+R8_BUILD_SHA = "r8-google-map-2026-05-22"
+R8_API_VERSION = "v2.8.0"
+
+# Keyboard-shortcut registry.  Keep this JSON-stable for `/help/keyboard-shortcuts`
+# and the in-app help modal; new shortcuts must be appended (not reordered).
+R8_KEYBOARD_SHORTCUTS = [
+    {"keys": ["+"], "action": "zoom_in",
+     "label": "Zoom in",
+     "description": "Increase map zoom by one level (Vim-style)."},
+    {"keys": ["-"], "action": "zoom_out",
+     "label": "Zoom out",
+     "description": "Decrease map zoom by one level (Vim-style)."},
+    {"keys": ["="], "action": "zoom_reset",
+     "label": "Reset zoom",
+     "description": "Reset zoom to the default level for the active view."},
+    {"keys": ["/"], "action": "focus_search",
+     "label": "Focus search",
+     "description": "Move focus to the global search input."},
+    {"keys": ["Ctrl+K", "Cmd+K"], "action": "command_palette",
+     "label": "Open command palette",
+     "description": "Open the quick-jump command palette to navigate to a place, category, or saved list."},
+    {"keys": ["?"], "action": "open_help",
+     "label": "Show keyboard help",
+     "description": "Open the keyboard-shortcut + symbol-glossary help modal."},
+    {"keys": ["g", "h"], "action": "go_home",
+     "label": "Go home",
+     "description": "Chord shortcut: press g, then h to jump to the homepage."},
+    {"keys": ["g", "l"], "action": "go_lists",
+     "label": "Go to lists",
+     "description": "Chord shortcut: press g, then l to jump to your saved lists."},
+    {"keys": ["g", "t"], "action": "go_trips",
+     "label": "Go to trips",
+     "description": "Chord shortcut: press g, then t to jump to your trips."},
+    {"keys": ["g", "e"], "action": "go_explore",
+     "label": "Go to explore",
+     "description": "Chord shortcut: press g, then e to jump to Explore nearby."},
+    {"keys": ["t"], "action": "toggle_traffic",
+     "label": "Toggle traffic layer",
+     "description": "Toggle the traffic layer on the active map canvas."},
+    {"keys": ["s"], "action": "toggle_satellite",
+     "label": "Toggle satellite",
+     "description": "Toggle satellite imagery on the active map canvas."},
+    {"keys": ["b"], "action": "toggle_bicycling",
+     "label": "Toggle bicycling layer",
+     "description": "Toggle the bicycle-route layer on the active map canvas."},
+    {"keys": ["Esc"], "action": "close_modal",
+     "label": "Close modal",
+     "description": "Close the command palette, help modal, or active dialog."},
+]
+
+# Symbol glossary — used by the in-app tooltip + accessibility probes.
+R8_SYMBOL_GLOSSARY = [
+    {"glyph": "P", "icon": "local_parking",
+     "label": "Parking", "category": "amenity",
+     "description": "Public or paid parking lot.  Capacity, hourly rate, and EV stalls are listed on the place card when available."},
+    {"glyph": "T", "icon": "directions_transit",
+     "label": "Transit stop", "category": "transit",
+     "description": "Bus, light-rail, or subway stop.  Click for real-time arrivals if the agency publishes a GTFS-Realtime feed."},
+    {"glyph": "EV", "icon": "ev_station",
+     "label": "EV charging", "category": "amenity",
+     "description": "Public EV charging station.  Connector type (CCS, CHAdeMO, Tesla NACS) and peak kW are listed on the place card."},
+    {"glyph": "GAS", "icon": "local_gas_station",
+     "label": "Gas / fuel", "category": "amenity",
+     "description": "Fueling station.  Look for the regular/premium/diesel breakdown on the place card."},
+    {"glyph": "WC", "icon": "wc",
+     "label": "Restroom", "category": "amenity",
+     "description": "Public restroom.  Wheelchair accessibility is noted in the accessibility panel."},
+    {"glyph": "H", "icon": "local_hospital",
+     "label": "Hospital", "category": "health",
+     "description": "Hospital or 24-hour urgent-care facility.  ER hours and trauma level are shown when available."},
+    {"glyph": "$", "icon": "attach_money",
+     "label": "ATM", "category": "finance",
+     "description": "Cash machine.  Network compatibility is shown on the place card to help avoid surcharges."},
+    {"glyph": "i", "icon": "info",
+     "label": "Information", "category": "service",
+     "description": "Visitor information point (kiosk, ranger station, or staffed info booth)."},
+    {"glyph": "WiFi", "icon": "wifi",
+     "label": "Public Wi-Fi", "category": "amenity",
+     "description": "Free public Wi-Fi available.  SSID and password are listed on the place card when published."},
+    {"glyph": "BIKE", "icon": "directions_bike",
+     "label": "Bike share", "category": "transit",
+     "description": "Bike share station or e-scooter corral.  Dock count and electric-assist availability are listed on the card."},
+    {"glyph": "ELEV", "icon": "elevator",
+     "label": "Elevator access", "category": "accessibility",
+     "description": "Step-free elevator access is available to the marked floor or platform."},
+    {"glyph": "DOG", "icon": "pets",
+     "label": "Dog-friendly", "category": "amenity",
+     "description": "Off-leash dog park or marker for dog-friendly seating/water bowls."},
+]
+
+
+@app.route("/healthz")
+def healthz():
+    """Lightweight health probe.  Returns 200 + JSON status for liveness."""
+    return jsonify({
+        "status": "ok",
+        "service": "google-maps-mirror",
+        "build_sha": R8_BUILD_SHA,
+        "api_version": R8_API_VERSION,
+        "boot_at": R8_BOOT_MOMENT.isoformat() + "Z",
+    })
+
+
+@app.route("/api/uptime")
+def api_uptime():
+    """Deterministic uptime + DB-row snapshot.  Numbers are derived from
+    MIRROR_REFERENCE_DATETIME so the response is byte-identical across
+    rebuilds (no wall-clock leakage)."""
+    boot = R8_BOOT_MOMENT
+    # Deterministic "current" moment: 7 days + 6h after boot for the demo.
+    fake_now = boot + timedelta(days=7, hours=6, minutes=12)
+    delta = fake_now - boot
+    return jsonify({
+        "build_sha": R8_BUILD_SHA,
+        "api_version": R8_API_VERSION,
+        "boot_at": boot.isoformat() + "Z",
+        "snapshot_at": fake_now.isoformat() + "Z",
+        "uptime_seconds": int(delta.total_seconds()),
+        "uptime_human": f"{delta.days}d {delta.seconds // 3600}h {(delta.seconds // 60) % 60}m",
+        "rows": {
+            "places": Place.query.count(),
+            "cities": City.query.count(),
+            "categories": Category.query.count(),
+            "transit_lines": TransitLine.query.count(),
+        },
+        "regions": ["us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1"],
+        "status": "healthy",
+    })
+
+
+@app.route("/api/events")
+def api_events():
+    """Synthetic event feed used by `?` help modal + observability probes.
+    Deterministic: events derived from MIRROR_REFERENCE_DATETIME ± offsets
+    and from the highest-id rows in the catalog."""
+    boot = R8_BOOT_MOMENT
+    cursor = request.args.get("cursor", "")
+    limit = max(1, min(int(request.args.get("limit", 20) or 20), 50))
+
+    # Build deterministic events: recent saves, recent reviews, recent places.
+    events = []
+    recent_places = (Place.query
+                     .order_by(Place.id.desc())
+                     .limit(limit).all())
+    for i, p in enumerate(recent_places):
+        events.append({
+            "id": f"evt-place-{p.id}",
+            "type": "place.indexed",
+            "at": (boot + timedelta(minutes=i)).isoformat() + "Z",
+            "place_slug": p.slug,
+            "place_name": p.name,
+            "category": p.category.slug if p.category else "",
+            "city_slug": p.city.slug if p.city else "",
+        })
+    return jsonify({
+        "events": events,
+        "next_cursor": cursor + ("+%d" % len(events)),
+        "build_sha": R8_BUILD_SHA,
+        "snapshot_at": (boot + timedelta(days=7, hours=6)).isoformat() + "Z",
+    })
+
+
+@app.route("/api/v2/places/graphql", methods=["GET", "POST"])
+@app.route("/api/v2-places-graphql", methods=["GET", "POST"])
+def api_v2_places_graphql():
+    """GraphQL-style POST endpoint for the v2 places API.
+
+    Accepts {"query": "...", "variables": {...}} JSON.  Supports the
+    `places(filter:..., limit:...)` root field and a `place(slug:...)`
+    lookup, both returning a fixed shape so downstream agents can rely on
+    it.  GET shows a schema-IDL preview so the URL is discoverable from
+    the developer console (`/developer/maps-embed-code`)."""
+    if request.method == "GET":
+        schema = (
+            "# Google Maps Mirror — v2 GraphQL preview\n"
+            "schema { query: Query }\n"
+            "type Query {\n"
+            "  places(filter: PlaceFilter, limit: Int = 10): [Place!]!\n"
+            "  place(slug: String!): Place\n"
+            "  cities(limit: Int = 10): [City!]!\n"
+            "  categories: [Category!]!\n"
+            "  health: HealthStatus!\n"
+            "}\n"
+            "input PlaceFilter { city: String, category: String, minRating: Float, query: String }\n"
+            "type Place {\n"
+            "  id: ID!  slug: String!  name: String!\n"
+            "  category: String  city: String\n"
+            "  rating: Float  reviewCount: Int  priceLevel: String\n"
+            "  lat: Float  lng: Float  address: String\n"
+            "  evCharging: Boolean  has24h: Boolean\n"
+            "}\n"
+            "type City { slug: String!  displayName: String!  country: String  lat: Float  lng: Float }\n"
+            "type Category { slug: String!  name: String! }\n"
+            "type HealthStatus { status: String!  buildSha: String!  apiVersion: String! }\n"
+        )
+        return jsonify({
+            "endpoint": "/api/v2/places/graphql",
+            "method": "POST",
+            "api_version": R8_API_VERSION,
+            "schema": schema,
+            "example_query": "{ places(filter:{city:\"new-york\", minRating:4.5}, limit:3) { slug name rating } }",
+        })
+
+    payload = request.get_json(silent=True) or {}
+    q = (payload.get("query") or "").strip()
+    variables = payload.get("variables") or {}
+
+    def _serialize_place(p):
+        return {
+            "id": p.id,
+            "slug": p.slug,
+            "name": p.name,
+            "category": p.category.slug if p.category else None,
+            "city": p.city.slug if p.city else None,
+            "rating": p.rating,
+            "reviewCount": p.review_count,
+            "priceLevel": p.price_level,
+            "lat": p.lat,
+            "lng": p.lng,
+            "address": p.address,
+            "evCharging": bool(p.ev_charging),
+            "has24h": bool(p.is_24h),
+        }
+
+    data = {}
+
+    # `place(slug:"...")`: prioritise specific lookups.
+    m_place = re.search(r"\bplace\s*\(\s*slug\s*:\s*\"([^\"]+)\"", q)
+    if m_place:
+        p = Place.query.filter_by(slug=m_place.group(1)).first()
+        data["place"] = _serialize_place(p) if p else None
+
+    # `places(filter:{...}, limit:N)`: filter by city/category/minRating/query
+    m_places = re.search(r"\bplaces\s*\(([^)]*)\)", q)
+    if m_places or q == "":
+        args_blob = m_places.group(1) if m_places else ""
+        f_city = variables.get("city") or _gql_kv(args_blob, "city")
+        f_cat = variables.get("category") or _gql_kv(args_blob, "category")
+        f_q = variables.get("query") or _gql_kv(args_blob, "query")
+        f_min = variables.get("minRating") or _gql_kv_num(args_blob, "minRating")
+        try:
+            limit = int(variables.get("limit") or _gql_kv_num(args_blob, "limit") or 10)
+        except (TypeError, ValueError):
+            limit = 10
+        limit = max(1, min(limit, 50))
+        query = Place.query
+        if f_city:
+            city = City.query.filter_by(slug=f_city).first()
+            if city:
+                query = query.filter_by(city_id=city.id)
+        if f_cat:
+            cat = Category.query.filter_by(slug=f_cat).first()
+            if cat:
+                query = query.filter_by(category_id=cat.id)
+        if f_q:
+            pattern = f"%{f_q}%"
+            query = query.filter(Place.name.ilike(pattern))
+        if f_min is not None:
+            try:
+                query = query.filter(Place.rating >= float(f_min))
+            except (TypeError, ValueError):
+                pass
+        rows = query.order_by(Place.rating.desc(), Place.id.asc()).limit(limit).all()
+        data["places"] = [_serialize_place(p) for p in rows]
+
+    if "health" in q:
+        data["health"] = {
+            "status": "ok",
+            "buildSha": R8_BUILD_SHA,
+            "apiVersion": R8_API_VERSION,
+        }
+    if "categories" in q and "category(" not in q:
+        cats = Category.query.order_by(Category.id).all()
+        data["categories"] = [{"slug": c.slug, "name": c.name} for c in cats]
+    if re.search(r"\bcities\b", q):
+        # Optional limit parsing for cities root field.
+        m_cities = re.search(r"\bcities\s*\(([^)]*)\)", q)
+        c_blob = m_cities.group(1) if m_cities else ""
+        try:
+            c_limit = int(_gql_kv_num(c_blob, "limit") or 10)
+        except (TypeError, ValueError):
+            c_limit = 10
+        c_limit = max(1, min(c_limit, 50))
+        rows = City.query.order_by(City.id).limit(c_limit).all()
+        data["cities"] = [{
+            "slug": c.slug, "displayName": c.display_name,
+            "country": c.country, "lat": c.lat, "lng": c.lng,
+        } for c in rows]
+
+    return jsonify({"data": data, "errors": [],
+                    "apiVersion": R8_API_VERSION,
+                    "buildSha": R8_BUILD_SHA})
+
+
+api_v2_places_graphql = csrf.exempt(api_v2_places_graphql)
+
+
+def _gql_kv(blob, key):
+    """Pluck a string value (quoted) from a GraphQL argument blob."""
+    m = re.search(r'\b' + re.escape(key) + r'\s*:\s*"([^"]*)"', blob)
+    return m.group(1) if m else None
+
+
+def _gql_kv_num(blob, key):
+    """Pluck a numeric value from a GraphQL argument blob."""
+    m = re.search(r'\b' + re.escape(key) + r'\s*:\s*([0-9]+(?:\.[0-9]+)?)', blob)
+    return m.group(1) if m else None
+
+
+@app.route("/webhook/place-update", methods=["GET", "POST"])
+def webhook_place_update():
+    """Inbound webhook for partner place updates.
+
+    GET shows a usage doc + signing-secret rotation policy so the URL is
+    discoverable from the developer console.  POST accepts a JSON
+    envelope with `event` + `place_slug` + `delta` fields and returns an
+    acknowledgement — does NOT mutate the seed DB (keeps reset
+    byte-identical).  Real production deploys would verify the
+    `X-Maps-Signature` HMAC header before queuing for processing."""
+    if request.method == "GET":
+        return jsonify({
+            "endpoint": "/webhook/place-update",
+            "method": "POST",
+            "content_type": "application/json",
+            "auth": "X-Maps-Signature: sha256=<hmac>",
+            "secret_rotation": "Rotated every 90 days; previous secret accepted for 24h overlap.",
+            "envelope": {
+                "event": "place.upsert | place.delete | place.metadata",
+                "place_slug": "<string>",
+                "delta": {"name": "<string?>", "hours": "<string?>",
+                          "phone": "<string?>", "website": "<string?>"},
+                "received_at": "<ISO-8601>",
+            },
+            "retry": "exponential-backoff up to 5 attempts, 24h max wait",
+        })
+
+    payload = request.get_json(silent=True) or {}
+    event = (payload.get("event") or "").strip()
+    place_slug = (payload.get("place_slug") or "").strip()
+    delta = payload.get("delta") or {}
+
+    allowed_events = {"place.upsert", "place.delete", "place.metadata"}
+    if event not in allowed_events:
+        return jsonify({
+            "accepted": False,
+            "error": f"unsupported event '{event}'",
+            "allowed": sorted(allowed_events),
+        }), 400
+
+    # Look up the place to confirm slug exists; reject 404s explicitly.
+    place_exists = bool(Place.query.filter_by(slug=place_slug).first()) if place_slug else False
+
+    # Deterministic ack-id from the payload (no wall-clock).
+    ack_id = hashlib.sha256(
+        json.dumps({"event": event, "slug": place_slug, "delta": delta},
+                   sort_keys=True).encode()
+    ).hexdigest()[:16]
+
+    return jsonify({
+        "accepted": True,
+        "ack_id": ack_id,
+        "event": event,
+        "place_slug": place_slug,
+        "place_exists": place_exists,
+        "delta_fields": sorted(delta.keys()),
+        "queued_at": (R8_BOOT_MOMENT + timedelta(days=7, hours=6)).isoformat() + "Z",
+        "note": "Accepted for async processing.  No DB write performed in mirror.",
+    })
+
+
+webhook_place_update = csrf.exempt(webhook_place_update)
+
+
+@app.route("/developer/maps-embed-code")
+def developer_maps_embed_code():
+    """Developer console: returns ready-to-paste embed snippets +
+    discovery of the v2 GraphQL / webhook / health endpoints."""
+    base = request.url_root.rstrip("/")
+    sample_slug = (Place.query.order_by(Place.id).first() or _NullPlace()).slug if Place.query.count() else "central-park"
+
+    iframe_snippet = (
+        '<iframe width="600" height="450" frameborder="0"\n'
+        '    style="border:0" loading="lazy" allowfullscreen\n'
+        '    src="' + base + '/maps/embed?place=' + sample_slug + '"></iframe>'
+    )
+    static_snippet = (
+        base + "/maps/staticmap?center=40.7589,-73.9851&zoom=12&size=600x300"
+        "&markers=color:red%7Clabel:A%7C" + sample_slug
+    )
+    js_snippet = (
+        '<script async\n'
+        '    src="' + base + '/maps/js?key=PUBLIC_DEMO_KEY&libraries=places"></script>'
+    )
+    body = render_template_string(_R8_DEVELOPER_TPL,
+                                  base=base,
+                                  iframe_snippet=iframe_snippet,
+                                  static_snippet=static_snippet,
+                                  js_snippet=js_snippet,
+                                  sample_slug=sample_slug,
+                                  api_version=R8_API_VERSION,
+                                  shortcuts=R8_KEYBOARD_SHORTCUTS,
+                                  glossary=R8_SYMBOL_GLOSSARY)
+    return app.response_class(body, mimetype="text/html")
+
+
+class _NullPlace:
+    slug = "central-park"
+
+
+_R8_DEVELOPER_TPL = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>Developer Console — Maps Embed Code</title>
+<link rel="stylesheet" href="/static/css/main.css">
+</head><body>
+<main class="container" style="max-width:980px;margin:24px auto;padding:0 16px;">
+<h1>Developer Console</h1>
+<p>API version: <code>{{ api_version }}</code> &middot;
+<a href="/healthz">/healthz</a> &middot;
+<a href="/api/uptime">/api/uptime</a> &middot;
+<a href="/api/events">/api/events</a></p>
+
+<h2 id="embed-iframe">Embed iframe</h2>
+<pre data-snippet="iframe">{{ iframe_snippet }}</pre>
+
+<h2 id="embed-static">Static map URL</h2>
+<pre data-snippet="static">{{ static_snippet }}</pre>
+
+<h2 id="embed-js">Maps JS bootstrap</h2>
+<pre data-snippet="js">{{ js_snippet }}</pre>
+
+<h2 id="graphql">v2 places GraphQL</h2>
+<p>POST <code>{{ base }}/api/v2/places/graphql</code> with a JSON body:</p>
+<pre data-snippet="graphql">curl -X POST {{ base }}/api/v2/places/graphql \\
+  -H 'Content-Type: application/json' \\
+  -d '{"query":"{ places(filter:{city:\\"new-york\\", minRating:4.6}, limit:5){ slug name rating } }"}'</pre>
+<p>GET the same URL for the schema preview.</p>
+
+<h2 id="webhook">Inbound webhook</h2>
+<p>POST <code>{{ base }}/webhook/place-update</code> with
+<code>X-Maps-Signature</code> + JSON envelope.  GET for the spec.</p>
+<pre data-snippet="webhook">curl -X POST {{ base }}/webhook/place-update \\
+  -H 'Content-Type: application/json' \\
+  -H 'X-Maps-Signature: sha256=&lt;hmac&gt;' \\
+  -d '{"event":"place.metadata","place_slug":"{{ sample_slug }}",
+       "delta":{"hours":"Mon-Sun: 8:00 AM - 10:00 PM"}}'</pre>
+
+<h2 id="shortcuts">Keyboard shortcuts</h2>
+<table class="kb-shortcuts" style="border-collapse:collapse;width:100%">
+<thead><tr><th align="left">Keys</th><th align="left">Action</th><th align="left">Description</th></tr></thead>
+<tbody>
+{% for s in shortcuts %}
+  <tr>
+    <td><code>{{ s['keys']|join(' / ') }}</code></td>
+    <td>{{ s.label }}</td>
+    <td>{{ s.description }}</td>
+  </tr>
+{% endfor %}
+</tbody></table>
+
+<h2 id="glossary">Symbol glossary</h2>
+<table class="symbol-glossary" style="border-collapse:collapse;width:100%">
+<thead><tr><th>Glyph</th><th>Label</th><th>Category</th><th>Description</th></tr></thead>
+<tbody>
+{% for g in glossary %}
+  <tr>
+    <td><code>{{ g.glyph }}</code></td>
+    <td>{{ g.label }}</td>
+    <td>{{ g.category }}</td>
+    <td>{{ g.description }}</td>
+  </tr>
+{% endfor %}
+</tbody></table>
+
+<p><a href="/">&laquo; Back to map</a></p>
+</main>
+</body></html>
+"""
+
+
+@app.route("/help/keyboard-shortcuts")
+def help_keyboard_shortcuts():
+    """JSON shortcut registry used by the `?` help modal."""
+    return jsonify({
+        "shortcuts": R8_KEYBOARD_SHORTCUTS,
+        "version": R8_API_VERSION,
+        "doc_url": "/developer/maps-embed-code#shortcuts",
+    })
+
+
+@app.route("/help/symbol-glossary")
+def help_symbol_glossary():
+    """JSON symbol-glossary registry used by tooltips + A11Y probes."""
+    return jsonify({
+        "glyphs": R8_SYMBOL_GLOSSARY,
+        "version": R8_API_VERSION,
+        "doc_url": "/developer/maps-embed-code#glossary",
+    })
+
+
+@app.route("/api/command-palette")
+def api_command_palette():
+    """Backing data for the Cmd+K command palette: top categories, top
+    cities, top places, and static page links.  Deterministic ordering."""
+    q = (request.args.get("q") or "").strip()
+    limit = max(1, min(int(request.args.get("limit", 20) or 20), 50))
+    pattern = f"%{q}%" if q else None
+
+    pages = [
+        {"label": "Home", "kind": "page", "href": "/", "keys": ["g", "h"]},
+        {"label": "Explore nearby", "kind": "page", "href": "/explore", "keys": ["g", "e"]},
+        {"label": "Saved lists", "kind": "page", "href": "/lists", "keys": ["g", "l"]},
+        {"label": "Trips", "kind": "page", "href": "/trips", "keys": ["g", "t"]},
+        {"label": "Your places", "kind": "page", "href": "/your-places", "keys": []},
+        {"label": "Timeline", "kind": "page", "href": "/timeline", "keys": []},
+        {"label": "Settings", "kind": "page", "href": "/settings", "keys": []},
+        {"label": "Developer console", "kind": "page",
+         "href": "/developer/maps-embed-code", "keys": []},
+        {"label": "Keyboard shortcuts", "kind": "page",
+         "href": "/help#keyboard", "keys": ["?"]},
+    ]
+    if q:
+        pages = [p for p in pages if q.lower() in p["label"].lower()]
+
+    cats_q = Category.query
+    if pattern:
+        cats_q = cats_q.filter(or_(Category.name.ilike(pattern),
+                                   Category.slug.ilike(pattern)))
+    cats = [{"label": c.name, "kind": "category",
+             "href": f"/category/{c.slug}", "slug": c.slug}
+            for c in cats_q.order_by(Category.id).limit(limit).all()]
+
+    cities_q = City.query
+    if pattern:
+        cities_q = cities_q.filter(City.display_name.ilike(pattern))
+    cities = [{"label": c.display_name, "kind": "city",
+               "href": f"/city/{c.slug}", "slug": c.slug}
+              for c in cities_q.order_by(City.id).limit(limit).all()]
+
+    places_q = Place.query
+    if pattern:
+        places_q = places_q.filter(Place.name.ilike(pattern))
+        places_q = places_q.order_by(Place.rating.desc(), Place.id.asc())
+    else:
+        places_q = places_q.order_by(Place.rating.desc(), Place.id.asc())
+    places = [{"label": p.name, "kind": "place",
+               "href": f"/place/{p.slug}", "slug": p.slug,
+               "subtitle": p.address or ""}
+              for p in places_q.limit(limit).all()]
+
+    return jsonify({
+        "query": q,
+        "results": {
+            "pages": pages,
+            "categories": cats,
+            "cities": cities,
+            "places": places,
+        },
+        "total": len(pages) + len(cats) + len(cities) + len(places),
+        "version": R8_API_VERSION,
+    })
+
+
+# --------------------------------------------------------------------------
 #  Error handlers
 # --------------------------------------------------------------------------
 @app.errorhandler(404)
@@ -3634,7 +4206,8 @@ def seed_database():
                            backfill_transit_delays,
                            expand_places_r6, backfill_place_edges_r6,
                            backfill_transit_no_service_r6,
-                           expand_places_r7)
+                           expand_places_r7,
+                           expand_places_r8)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -3667,6 +4240,10 @@ def seed_database():
     # --- R7: SEO/locale density.  Adds another ~110k venues so the place
     # table tops 400k; idempotent (no-op once Place.count >= 380000).
     expand_places_r7(db, Place, Category, City)
+    # --- R8: new chains + service verticals (urgent care, coliving, EV V4,
+    # smart parking, podcast studios, …).  Adds ~150k more venues so the
+    # place table tops 550k; idempotent (no-op once Place.count >= 540000).
+    expand_places_r8(db, Place, Category, City)
 
 
 # --------------------------------------------------------------------------

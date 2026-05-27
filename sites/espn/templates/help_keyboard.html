@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Keyboard Shortcuts{% endblock %}
+
+{% block content %}
+<div class="container" data-r8-page="help-keyboard">
+  <header class="page-header">
+    <h1>Keyboard Shortcuts</h1>
+    <p class="page-header__sub">Speed up navigation on ESPN with the keyboard. Open this dialog any time with <kbd>?</kbd>.</p>
+  </header>
+
+  <table class="data-table" id="r8-keyboard-shortcuts">
+    <thead>
+      <tr><th scope="col">Key</th><th scope="col">Action</th></tr>
+    </thead>
+    <tbody>
+      {% for key, action in shortcuts %}
+      <tr><td><kbd class="r8-kbd">{{ key }}</kbd></td><td>{{ action }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <section class="r8-help-tip">
+    <h2>Tip: command palette</h2>
+    <p>Press <kbd>Cmd</kbd>+<kbd>K</kbd> (macOS) or <kbd>Ctrl</kbd>+<kbd>K</kbd> (Windows / Linux) to open the global command palette. Start typing to fuzzy-match any sport, league, scoreboard, or hub.</p>
+  </section>
+</div>
+{% endblock %}

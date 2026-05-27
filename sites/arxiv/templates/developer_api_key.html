@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Developer API Key — arXiv{% endblock %}
+{% block content %}
+
+<h1>API Key</h1>
+<p class="muted">
+    Personal Bearer token for the arXiv read-only API. Build
+    <code>{{ build_date }}</code>.
+</p>
+
+<form method="POST" action="{{ url_for('developer_api_key') }}" class="dash-card">
+    <label for="dev_email">Account email</label>
+    <input type="email" id="dev_email" name="email" value="{{ email }}"
+           placeholder="you@institution.edu" required>
+    <button type="submit">Generate token</button>
+</form>
+
+{% if token %}
+<div class="dash-card">
+    <h2>Your token</h2>
+    <p>
+        <code id="api-token" style="user-select:all;background:#f4f4f4;padding:4px 8px;border-radius:3px;">{{ token }}</code>
+    </p>
+    <p class="muted">
+        Treat this like a password. The mirror deterministically derives
+        tokens from your email; revoke by changing the email on file.
+    </p>
+    <h3>Sample request</h3>
+    <pre><code>{{ sample_curl }}</code></pre>
+</div>
+{% else %}
+<p class="muted">Enter an email above to receive a token.</p>
+{% endif %}
+
+<p class="muted">
+    See the <a href="{{ url_for('developer_index') }}">developer hub</a>
+    for the full endpoint list.
+</p>
+
+{% endblock %}

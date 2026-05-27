@@ -6792,6 +6792,777 @@ def bake_r7(con: sqlite3.Connection) -> dict[str, int]:
     return stats
 
 
+# =======================================================================
+# R8: BBC Radio sub-stations + BBC Local 40 regions
+# =======================================================================
+#
+# Goal: push the article corpus from 14347 (R7 end) to 19000+ by adding
+#   * 7 BBC Radio sub-stations (Radio 1, Radio 2, Radio 3, Radio 4 Extra,
+#     6 Music, BBC World Service, Asian Network) × ~12 shows × ~20 eps
+#     = ~1680 podcast/transcript articles
+#   * 40 BBC Local regions × ~75 stories = ~3000 local-news articles
+#
+# All inserts are sentinel-gated so re-running the baker is a no-op.
+
+R8_SENTINEL_BODY = "<<R8-baked>>"
+R8_RNG = random.Random(20260815)
+
+
+R8_NEW_CATEGORIES: list[tuple[str, str, str, str, int, str]] = [
+    # slug, name, color, parent, sort_order, description
+    ("radio1",        "BBC Radio 1",        "#bb1919", "audio", 213,
+     "New music, live sessions and the UK's biggest pop hits from BBC Radio 1"),
+    ("radio2",        "BBC Radio 2",        "#bb1919", "audio", 214,
+     "The biggest entertainment, music and comedy from BBC Radio 2"),
+    ("radio3",        "BBC Radio 3",        "#bb1919", "audio", 215,
+     "Classical music, jazz, world and the arts from BBC Radio 3"),
+    ("radio4_extra",  "BBC Radio 4 Extra",  "#bb1919", "audio", 216,
+     "Comedy, drama and archive entertainment from BBC Radio 4 Extra"),
+    ("six_music",     "BBC Radio 6 Music",  "#bb1919", "audio", 217,
+     "Alternative music, gigs and sessions from BBC Radio 6 Music"),
+    ("world_service", "BBC World Service",  "#bb1919", "audio", 218,
+     "Trusted international news, in English and 40+ other languages"),
+    ("asian_network", "BBC Asian Network",  "#bb1919", "audio", 219,
+     "Music, news and conversation reflecting British Asian life"),
+    # Top-level BBC Local parent.
+    ("bbc_local",     "BBC Local",          "#bb1919", "uk",    180,
+     "Local news, sport and weather from across the UK"),
+]
+
+
+# (station_slug, station_name, show_name, blurb)
+R8_RADIO_SHOWS: list[tuple[str, str, str, str]] = [
+    # Radio 1 — 12 shows
+    ("radio1", "Radio 1", "Radio 1 Breakfast",      "Wake-up music and big-name guests."),
+    ("radio1", "Radio 1", "Radio 1 Lunchtime",      "The biggest tracks of the lunchtime hour."),
+    ("radio1", "Radio 1", "Radio 1 Drivetime",      "Top 40 hits and exclusive interviews to drive home to."),
+    ("radio1", "Radio 1", "Radio 1's Greatest Hits","Pop, dance and classic hits."),
+    ("radio1", "Radio 1", "Radio 1's Dance Anthems","The biggest dance tracks of the moment."),
+    ("radio1", "Radio 1", "Radio 1's Future Sounds","Tomorrow's hits, today."),
+    ("radio1", "Radio 1", "Radio 1's Indie Show",   "The best of indie, alternative and rock."),
+    ("radio1", "Radio 1", "Radio 1's Rap Show",     "UK and US rap with sessions and exclusives."),
+    ("radio1", "Radio 1", "Live Lounge",            "Cover versions and exclusive sessions in the Live Lounge."),
+    ("radio1", "Radio 1", "Radio 1's Chillest Show","Quiet beats for the late evening."),
+    ("radio1", "Radio 1", "Radio 1's Power Down",   "Wind-down music for the end of the day."),
+    ("radio1", "Radio 1", "Radio 1's Essential Mix","Two-hour dance mix from a world-class DJ."),
+    # Radio 2 — 12 shows
+    ("radio2", "Radio 2", "Radio 2 Breakfast",      "The UK's favourite breakfast show."),
+    ("radio2", "Radio 2", "Mid-Morning Show",       "Music, stories and listener calls."),
+    ("radio2", "Radio 2", "The Zoe Ball Show",      "Music, chat and the morning's biggest stories."),
+    ("radio2", "Radio 2", "Jeremy Vine",            "Topical debate, big stories and live music."),
+    ("radio2", "Radio 2", "Pick of the Pops",       "A look back at the chart from two memorable years."),
+    ("radio2", "Radio 2", "Pop Master",             "The pop quiz on Radio 2."),
+    ("radio2", "Radio 2", "The Folk Show",          "Traditional and contemporary folk music."),
+    ("radio2", "Radio 2", "The Soul Show",          "Soul classics and current releases."),
+    ("radio2", "Radio 2", "Friday Night is Music Night","Live orchestral music and song."),
+    ("radio2", "Radio 2", "Sounds of the 60s",      "The story of the 1960s in music."),
+    ("radio2", "Radio 2", "Sounds of the 70s",      "The decade that gave us glam, disco and punk."),
+    ("radio2", "Radio 2", "The Country Show",       "American country music, old and new."),
+    # Radio 3 — 12 shows
+    ("radio3", "Radio 3", "Breakfast",              "Classical music to start the day."),
+    ("radio3", "Radio 3", "Essential Classics",     "Three hours of classical music and discussion."),
+    ("radio3", "Radio 3", "Composer of the Week",   "Five 60-minute portraits of a single composer."),
+    ("radio3", "Radio 3", "Afternoon Concert",      "Recordings from leading orchestras."),
+    ("radio3", "Radio 3", "In Tune",                "Live music and conversation with classical guests."),
+    ("radio3", "Radio 3", "Radio 3 in Concert",     "Tonight's BBC orchestra concert."),
+    ("radio3", "Radio 3", "Free Thinking",          "Ideas, culture and the arts."),
+    ("radio3", "Radio 3", "Late Junction",          "Genre-defying music from around the world."),
+    ("radio3", "Radio 3", "Jazz Record Requests",   "Listener-chosen jazz classics."),
+    ("radio3", "Radio 3", "Record Review",          "New classical releases reviewed by critics."),
+    ("radio3", "Radio 3", "Music Matters",          "Conversations from the world of classical music."),
+    ("radio3", "Radio 3", "The Listening Service",  "How music works and why it moves us."),
+    # Radio 4 Extra — 12 shows
+    ("radio4_extra", "Radio 4 Extra", "The Comedy Club",        "Stand-up and sketch comedy from the BBC archive."),
+    ("radio4_extra", "Radio 4 Extra", "Classic Drama",          "Acclaimed full-length radio drama."),
+    ("radio4_extra", "Radio 4 Extra", "Hancock's Half Hour",    "The Tony Hancock comedy archive."),
+    ("radio4_extra", "Radio 4 Extra", "Just a Classic Minute",  "Vintage editions of Just a Minute."),
+    ("radio4_extra", "Radio 4 Extra", "Saturday Drama Repeat",  "Saturday's Radio 4 drama, repeated."),
+    ("radio4_extra", "Radio 4 Extra", "Round the Horne",        "The vintage 60s sketch show."),
+    ("radio4_extra", "Radio 4 Extra", "The Goon Show",          "Spike Milligan's anarchic comedy."),
+    ("radio4_extra", "Radio 4 Extra", "Dad's Army",             "The home-guard sitcom radio adaptation."),
+    ("radio4_extra", "Radio 4 Extra", "I'm Sorry I Haven't a Clue","The radio panel game."),
+    ("radio4_extra", "Radio 4 Extra", "The News Huddlines",     "Topical comedy from the archive."),
+    ("radio4_extra", "Radio 4 Extra", "Sherlock Holmes",        "Classic Holmes adaptations on radio."),
+    ("radio4_extra", "Radio 4 Extra", "Audiobook of the Week",  "A new featured audiobook each week."),
+    # 6 Music — 12 shows
+    ("six_music", "6 Music", "6 Music Breakfast",          "Alternative music to wake up to."),
+    ("six_music", "6 Music", "Lauren Laverne",             "Mid-morning music and conversation."),
+    ("six_music", "6 Music", "Steve Lamacq",               "New music and indie classics."),
+    ("six_music", "6 Music", "Mary Anne Hobbs",            "Boundary-pushing music."),
+    ("six_music", "6 Music", "Iggy Pop's Confidential",    "The godfather of punk on his music heroes."),
+    ("six_music", "6 Music", "Cerys Matthews",             "Sunday morning music for the soul."),
+    ("six_music", "6 Music", "Gilles Peterson",            "Worldwide music with a jazz inflection."),
+    ("six_music", "6 Music", "6 Music Recommends",         "New artists and rising sounds."),
+    ("six_music", "6 Music", "The Craig Charles Funk and Soul Show","Funk and soul deep cuts."),
+    ("six_music", "6 Music", "Tom Ravenscroft",            "Music for the curious."),
+    ("six_music", "6 Music", "Guy Garvey's Finest Hour",   "Music chosen by the Elbow frontman."),
+    ("six_music", "6 Music", "6 Music Live Lounge",        "Live sessions from 6 Music's favourite acts."),
+    # World Service — 12 shows
+    ("world_service", "World Service", "Newshour",              "The world's news and analysis."),
+    ("world_service", "World Service", "Newsday",               "The morning briefing on the world's stories."),
+    ("world_service", "World Service", "OS",                    "Outside Source — the day's biggest story."),
+    ("world_service", "World Service", "BBC OS Conversations",  "Listeners around the world join a single conversation."),
+    ("world_service", "World Service", "Global News Podcast",   "Twice-daily round-up of world news."),
+    ("world_service", "World Service", "Business Daily",        "Economics, finance and business stories."),
+    ("world_service", "World Service", "Outlook",               "Personal stories from around the world."),
+    ("world_service", "World Service", "The Documentary",       "Long-form documentaries from the BBC."),
+    ("world_service", "World Service", "Witness History",       "First-hand accounts of historic events."),
+    ("world_service", "World Service", "HardTalk",               "In-depth interviews with newsmakers."),
+    ("world_service", "World Service", "Sportshour",             "The week in international sport."),
+    ("world_service", "World Service", "The Forum",              "A panel of experts on a single idea."),
+    # Asian Network — 12 shows
+    ("asian_network", "Asian Network", "Asian Network Breakfast",   "British Asian breakfast with music and chat."),
+    ("asian_network", "Asian Network", "The Big Asian Mid-Morning", "Live music and conversation."),
+    ("asian_network", "Asian Network", "Bobby Friction",            "New Asian underground music."),
+    ("asian_network", "Asian Network", "Asian Network Documentaries","Long-form documentaries on British Asian life."),
+    ("asian_network", "Asian Network", "Bollywood Top 40",          "The biggest Bollywood tracks of the week."),
+    ("asian_network", "Asian Network", "Bhangra Beats",             "Punjabi music, old and new."),
+    ("asian_network", "Asian Network", "Desi Drive",                "Drivetime music and headlines."),
+    ("asian_network", "Asian Network", "Tamil Top 10",              "The biggest hits from Tamil cinema."),
+    ("asian_network", "Asian Network", "Pakistani Drive",           "Music and chat with a Pakistani flavour."),
+    ("asian_network", "Asian Network", "Sangeeta Kumari",           "Mid-morning music and conversation."),
+    ("asian_network", "Asian Network", "Faith Friday",              "Discussion of faith in British Asian life."),
+    ("asian_network", "Asian Network", "Asian Network Comedy",      "Stand-up and sketch comedy from British Asian voices."),
+]
+
+# Per-show recurring topics (cycle deterministically with episode index).
+R8_RADIO_TOPICS: list[str] = [
+    "weekend playlists", "new album releases", "festival line-ups",
+    "tour announcements", "studio sessions", "BBC Sound poll",
+    "cover versions", "side projects", "musical influences",
+    "production credits", "vinyl reissues", "live recordings",
+    "songwriting craft", "career retrospectives", "label debuts",
+    "international collaborations", "session musicians", "first gigs",
+    "instrument choice", "engineering choices", "stage design",
+    "audience interaction", "rehearsal rooms", "encore selection",
+    "soundcheck rituals", "the album cycle", "the streaming economy",
+    "fan communities", "music journalism", "industry awards",
+]
+
+
+def _r8_radio_body(station: str, show: str, topic: str, ep_n: int) -> str:
+    return (
+        f"[Studio. Episode {ep_n} of {show} on BBC {station}.]\n\n"
+        f"The {ep_n} edition of {show} on BBC {station} centres on {topic}. "
+        f"Producers booked two studio guests and three short pre-recorded "
+        f"inserts; the running order keeps live music in the second half.\n\n"
+        f"Opening segment: a short on-air panel walks through the week's "
+        f"context for {topic}. We hear what listeners flagged on the inbox "
+        f"and a clip from last week's archive on a closely-related subject.\n\n"
+        f"Middle of the show: the first studio session. A new track is "
+        f"introduced with a thirty-second framing about why it belongs in "
+        f"this episode's {topic} thread. The session band plays one cover "
+        f"and one original before the host takes calls.\n\n"
+        f"Listener segment: three messages on {topic} are read out, with "
+        f"short follow-up audio. The producer notes that the {topic} "
+        f"thread will return next week with a guest who could not make this "
+        f"recording.\n\n"
+        f"Closing: a final track, a trail for the next episode of {show} on "
+        f"BBC {station}, and the standing sign-off line. Total runtime as "
+        f"broadcast: 58 minutes."
+    )
+
+
+def synth_r8_radio_episodes(con, hero_pool: list[str]) -> list[dict]:
+    """7 stations × 12 shows × 20 episodes = 1680 articles."""
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for si, (station_slug, station_name, show, blurb) in enumerate(R8_RADIO_SHOWS):
+        cid = _cat_id(con, station_slug) or _cat_id(con, "audio") or 1
+        for ei in range(20):
+            topic = R8_RADIO_TOPICS[(si * 3 + ei * 7) % len(R8_RADIO_TOPICS)]
+            ep_n = ei + 1
+            headline = f"{show}: episode {ep_n} - {topic}"
+            lead = (
+                f"Episode {ep_n} of {show} on BBC {station_name}. {blurb} "
+                f"This week's running order leans on {topic}, with one "
+                f"in-studio session and one pre-recorded insert."
+            )
+            slug = _det_slug("r8-rad", f"{station_slug}|{show}|{ei}")
+            hero = hero_pool[(_det_int(slug) + si * 7 + ei * 5) % len(hero_pool)] if hero_pool else ""
+            body = _r8_radio_body(station_name, show, topic, ep_n)
+            ts = base - timedelta(
+                days=(si * 5 + ei * 3) % 240 + 1,
+                hours=(_det_int(slug) // 11) % 24,
+                minutes=(_det_int(slug) // 5) % 60,
+            )
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=station_slug,
+                subsection=show, region_label="UK", ts=ts,
+                view_count=250 + (_det_int(slug) % 9000),
+                country="UK", hero=hero, author=show,
+                topics=[show, f"BBC {station_name}", topic, "Radio"],
+                feature_tags=["r8-radio", station_slug,
+                              show.lower().replace(" ", "-").replace("'", ""),
+                              "radio-episode"],
+                content_type="podcast",
+                is_featured=1 if (si + ei) % 19 == 0 else 0,
+            ))
+    return out
+
+
+# BBC Local regions — 40 UK local-news editions.
+R8_LOCAL_REGIONS: list[tuple[str, str, str]] = [
+    # (region_slug, region_name, country/nation)
+    ("london",            "London",                "England"),
+    ("manchester",        "Manchester",            "England"),
+    ("birmingham",        "Birmingham",            "England"),
+    ("leeds",             "Leeds",                 "England"),
+    ("liverpool",         "Liverpool",             "England"),
+    ("newcastle",         "Newcastle",             "England"),
+    ("sheffield",         "Sheffield",             "England"),
+    ("bristol",           "Bristol",               "England"),
+    ("nottingham",        "Nottingham",            "England"),
+    ("leicester",         "Leicester",             "England"),
+    ("coventry",          "Coventry & Warwickshire","England"),
+    ("derby",             "Derby",                 "England"),
+    ("stoke",             "Stoke & Staffordshire", "England"),
+    ("hull",              "Humberside",            "England"),
+    ("york",              "York & North Yorkshire","England"),
+    ("lancashire",        "Lancashire",            "England"),
+    ("cumbria",           "Cumbria",               "England"),
+    ("merseyside",        "Merseyside",            "England"),
+    ("tees",              "Tees",                  "England"),
+    ("oxford",            "Oxford",                "England"),
+    ("cambridgeshire",    "Cambridgeshire",        "England"),
+    ("norfolk",           "Norfolk",               "England"),
+    ("suffolk",           "Suffolk",               "England"),
+    ("essex",             "Essex",                 "England"),
+    ("kent",              "Kent",                  "England"),
+    ("sussex",            "Sussex",                "England"),
+    ("hampshire",         "Hampshire & Isle of Wight","England"),
+    ("dorset",            "Dorset",                "England"),
+    ("devon",             "Devon",                 "England"),
+    ("cornwall",          "Cornwall",              "England"),
+    ("somerset",          "Somerset",              "England"),
+    ("gloucestershire",   "Gloucestershire",       "England"),
+    ("wiltshire",         "Wiltshire",             "England"),
+    ("hereford_worcester","Hereford & Worcester",  "England"),
+    ("shropshire",        "Shropshire",            "England"),
+    ("glasgow_west",      "Glasgow & West",        "Scotland"),
+    ("edinburgh_east",    "Edinburgh, Fife & East","Scotland"),
+    ("highlands_islands", "Highlands & Islands",   "Scotland"),
+    ("cardiff_se_wales",  "Cardiff & South East Wales","Wales"),
+    ("foyle_west",        "Foyle & West",          "Northern Ireland"),
+]
+
+# Local-news angles cycled deterministically per region.
+R8_LOCAL_ANGLES: list[tuple[str, str]] = [
+    ("{region} council approves new transport plan for next decade",
+     "{region} council has signed off a ten-year transport blueprint."),
+    ("{region} hospitals report longest A&E waits since 2024",
+     "Emergency waiting times in {region} have reached their highest "
+     "level since the 2024 winter pressures."),
+    ("Schools in {region} adopt new attendance reporting tool",
+     "{region} headteachers are trialling a new attendance dashboard."),
+    ("{region} police announce additional patrols on weekend nightlife strip",
+     "Officers in {region} will be visible on the city's late-night "
+     "weekend nightlife strip from next month."),
+    ("Floodwater recedes from {region} after weekend storms",
+     "Communities in {region} are starting to clear up after the weekend's storms."),
+    ("New community hub opens in {region} after 18-month build",
+     "A long-awaited community hub has opened to the public in {region}."),
+    ("{region} mayor announces consultation on town-centre pedestrianisation",
+     "The mayor of {region} has opened a public consultation on pedestrianising the town centre."),
+    ("Cycle lane network in {region} adds two new protected routes",
+     "{region} highways have added two new protected cycle routes to the network."),
+    ("{region} library service expands evening opening hours",
+     "Libraries across {region} will keep their doors open later from this month."),
+    ("Local businesses in {region} report mixed half-year results",
+     "Independent businesses in {region} say the first half of the year has been mixed."),
+    ("Heritage building in {region} reopens after restoration",
+     "A landmark heritage building in {region} is reopening after a multi-year restoration."),
+    ("{region} air quality figures published for first quarter",
+     "Air quality monitoring data for {region} has been published for the first quarter."),
+    ("{region} bus operators trial contactless tap-to-pay",
+     "Bus operators across {region} are trialling a tap-to-pay contactless fare system."),
+    ("Volunteers tidy {region} riverbank in annual clean-up",
+     "Hundreds of volunteers turned out for the annual {region} riverbank clean-up."),
+    ("Charity in {region} marks 50th anniversary of community kitchen",
+     "A long-standing {region} charity is marking 50 years of running a community kitchen."),
+    ("{region} football clubs welcome new community funding tranche",
+     "Grassroots football clubs in {region} have welcomed a new tranche of community funding."),
+    ("Allotments in {region} oversubscribed as waiting list grows",
+     "Demand for allotment plots in {region} continues to grow, with multi-year waiting lists reported."),
+    ("{region} GP surgeries trial new online appointment booking",
+     "Primary care services in {region} are trialling a new online appointment booking platform."),
+    ("Children's services in {region} rated 'good' in latest inspection",
+     "{region}'s children's services have been rated 'good' in the latest inspection."),
+    ("New cycle hire scheme launches across {region}",
+     "A new dock-based cycle hire scheme has launched in {region}."),
+    ("{region} planning committee turns down proposed retail park",
+     "Planners in {region} have turned down a proposed out-of-town retail park."),
+    ("Concert venue in {region} sets out summer programme",
+     "A leading {region} concert venue has confirmed its summer programme."),
+    ("{region} farmers welcome rainfall after dry spring",
+     "Farmers across {region} have welcomed late spring rainfall after a dry start to the season."),
+    ("Train operator publishes new {region} timetable for autumn",
+     "The train operator serving {region} has published its autumn timetable."),
+    ("{region} skate park reopens after community-led refurbishment",
+     "A community-led refurbishment of the {region} skate park has been completed."),
+    ("Theatre in {region} appoints new artistic director",
+     "A leading theatre in {region} has appointed a new artistic director."),
+    ("{region} marathon organisers confirm 2026 race route",
+     "The 2026 {region} marathon will follow a confirmed new race route."),
+    ("Local recycling rates in {region} climb above national average",
+     "Recycling rates in {region} have moved above the national average for the first time."),
+    ("{region} fire service responds to large industrial blaze",
+     "The {region} fire service has responded to a large industrial blaze on an industrial estate."),
+    ("{region} students collect record A-level results",
+     "{region} students collected record A-level results this summer."),
+    ("Annual {region} food festival draws record crowds",
+     "The annual {region} food festival has drawn record crowds this year."),
+    ("{region} air ambulance reports busiest quarter on record",
+     "The {region} air ambulance has reported its busiest quarter since launch."),
+    ("Wildlife trust in {region} reports good breeding season for waders",
+     "The {region} wildlife trust says it has been a good breeding season for wading birds."),
+    ("{region} bus station undergoes major refurbishment",
+     "Refurbishment of the main {region} bus station is now under way."),
+    ("Independent bookshop in {region} marks 25 years of trading",
+     "An independent bookshop in {region} is marking 25 years of trading."),
+    ("{region} canal towpath upgrade nears completion",
+     "An upgrade of the {region} canal towpath is approaching completion."),
+    ("{region} fire chief outlines summer preparedness plan",
+     "The {region} chief fire officer has outlined a summer preparedness plan ahead of dry weather."),
+    ("{region} GPs encourage uptake of routine vaccinations",
+     "GP surgeries across {region} are encouraging residents to keep up with routine vaccinations."),
+    ("Pothole repairs in {region} accelerate after extra funding",
+     "Pothole repair crews in {region} are accelerating their schedule after extra funding."),
+    ("Community choir in {region} prepares for cathedral concert",
+     "A long-running community choir in {region} is preparing for a cathedral concert."),
+    ("Local museum in {region} acquires rare 19th-century manuscript",
+     "A local museum in {region} has acquired a rare 19th-century manuscript."),
+    ("{region} taxi drivers ask council for review of fare structure",
+     "Taxi drivers in {region} have asked the council to review the fare structure."),
+    ("{region} schools to receive new science equipment funding",
+     "Schools across {region} are to receive a new round of science equipment funding."),
+    ("{region} food banks report year-on-year rise in demand",
+     "Food banks across {region} report a year-on-year rise in demand."),
+    ("Cathedral in {region} appoints new dean",
+     "The cathedral in {region} has appointed a new dean."),
+    ("Heritage railway in {region} resumes regular timetable",
+     "The heritage railway serving {region} has resumed its regular timetable."),
+    ("{region} fire station refurbishment to start in autumn",
+     "Refurbishment of the central {region} fire station is to begin in autumn."),
+    ("{region} sustainability strategy published for consultation",
+     "A draft sustainability strategy for {region} has been published for public consultation."),
+    ("New {region} bike share scheme adds e-bikes to fleet",
+     "The {region} bike share scheme has added e-bikes to its fleet."),
+    ("{region} water company sets out leak reduction plan",
+     "The {region} water company has set out a plan to reduce leakage by a fifth."),
+    ("{region} farmers' market expands to second monthly date",
+     "{region} farmers' market has expanded to run on a second monthly date."),
+    ("{region} council looks at four-day school week pilot",
+     "{region} council is looking at a pilot of a shortened four-day school week."),
+    ("Local heritage walk in {region} marks anniversary of mining closure",
+     "A local heritage walk in {region} is marking the anniversary of the mine closure."),
+    ("{region} digital skills hub trains 2000 residents in first year",
+     "A new digital skills hub in {region} has trained 2,000 residents in its first year."),
+    ("{region} rough sleeping count published for January",
+     "The {region} rough sleeping count for January has been published."),
+    ("{region} swimming pool reopens after boiler replacement",
+     "A {region} swimming pool has reopened after a major boiler replacement."),
+    ("{region} arts council awards round announced",
+     "The latest {region} arts council awards round has been announced."),
+    ("Charity walk through {region} raises £20k for hospice",
+     "A charity walk through {region} has raised £20,000 for the local hospice."),
+    ("{region} mountain rescue team reports busy spring",
+     "The {region} mountain rescue team reports a busy spring season."),
+    ("{region} secondary school wins national debating award",
+     "A {region} secondary school has won a national debating award."),
+    ("Local heritage railway in {region} reopens line after landslip",
+     "The local heritage railway in {region} has reopened a line that was closed after a landslip."),
+    ("{region} skatepark host first inter-club competition",
+     "The {region} skatepark has hosted its first inter-club competition."),
+    ("{region} food market launches online ordering",
+     "{region}'s indoor food market has launched online ordering."),
+    ("Wildlife crossing opens on {region} bypass",
+     "A new wildlife crossing has opened on the {region} bypass."),
+    ("{region} archaeological dig uncovers Roman pottery",
+     "An archaeological dig near {region} has uncovered Roman pottery."),
+    ("Community Wi-Fi reaches third {region} village hall",
+     "Community Wi-Fi has been extended to a third {region} village hall."),
+    ("{region} council updates winter gritting routes",
+     "{region} council has updated its winter gritting route list."),
+    ("Local theatre in {region} adds relaxed performances to season",
+     "A local theatre in {region} has added relaxed performances to its season."),
+    ("Public art commission in {region} unveiled at riverside",
+     "A new public art commission has been unveiled at the {region} riverside."),
+    ("{region} community garden harvest weighs in heavier than 2025",
+     "The {region} community garden harvest has come in heavier than 2025's."),
+    ("{region} library lending figures published for the year",
+     "{region}'s library lending figures for the year have been published."),
+    ("{region} climate forum opens registration for autumn meet",
+     "Registration is open for the autumn {region} climate forum."),
+    ("Independent cinema in {region} marks decade of operation",
+     "An independent cinema in {region} is marking ten years of operation."),
+    ("{region} parkrun celebrates 500th event",
+     "The local parkrun in {region} has held its 500th event."),
+    ("{region} bus user group publishes service review",
+     "The {region} bus user group has published its annual service review."),
+    ("Allotment association in {region} elects new chair",
+     "The {region} allotment association has elected a new chair."),
+]
+
+
+def _r8_local_body(region_name: str, headline: str, lead: str, nation: str) -> str:
+    return (
+        f"{lead}\n\n"
+        f"BBC News {region_name} reporters spoke to several voices on the "
+        f"story this week. The pattern picked up by listeners across "
+        f"{nation} matches what we are seeing in nearby local-news desks: "
+        f"local services adjusting to slower revenue growth and rising "
+        f"demand on the same staff.\n\n"
+        f"Reaction in {region_name} has been mixed. Community groups "
+        f"welcomed the announcement but flagged the pace of the rollout. "
+        f"Council officers we spoke to said the timetable was set with the "
+        f"available budget in mind.\n\n"
+        f"Members of the public stopping by the BBC's {region_name} desk "
+        f"this week said they wanted clearer numbers in future updates. "
+        f"They also said they wanted a clearer route to provide feedback "
+        f"into the formal consultation.\n\n"
+        f"The story is part of an ongoing BBC News {region_name} series "
+        f"tracking changes to local services across {nation}. We will "
+        f"return to it on the BBC Local {region_name} page when the next "
+        f"set of figures is published."
+    )
+
+
+def synth_r8_local_stories(con, hero_pool: list[str]) -> list[dict]:
+    """40 regions × 75 angles = 3000 local-news articles."""
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    # Parent category for /section/bbc_local listing.
+    local_root_cid = _cat_id(con, "bbc_local")
+    for ri, (slug_root, region_name, nation) in enumerate(R8_LOCAL_REGIONS):
+        # Each region uses bbc_local as primary category; section_slug is
+        # the region slug so /section/<region> resolves below if the slug
+        # matches a category (we don't add 40 categories — region pages
+        # render via section_page fallback to bbc_local listing).
+        cid = local_root_cid or _cat_id(con, "uk") or 1
+        for ai in range(75):
+            angle_hl, angle_lead = R8_LOCAL_ANGLES[ai % len(R8_LOCAL_ANGLES)]
+            headline = angle_hl.format(region=region_name)
+            lead = angle_lead.format(region=region_name)
+            slug = _det_slug("r8-loc", f"{slug_root}|{ai}")
+            hero = hero_pool[(_det_int(slug) + ri * 3 + ai * 11) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(
+                days=(ri * 2 + ai * 5) % 200 + 1,
+                hours=(_det_int(slug) // 13) % 24,
+                minutes=(_det_int(slug) // 7) % 60,
+            )
+            body = _r8_local_body(region_name, headline, lead, nation)
+            topics = [region_name, nation, "BBC Local", "Local news"]
+            feature_tags = ["r8-local", "bbc-local",
+                            "local-" + slug_root.replace("_", "-"),
+                            "local-news"]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_local",
+                subsection=region_name, region_label=nation, ts=ts,
+                view_count=80 + (_det_int(slug) % 6000),
+                country=nation, hero=hero,
+                author=f"BBC News {region_name}",
+                topics=topics, feature_tags=feature_tags,
+                content_type="article",
+                is_featured=1 if (ri + ai) % 41 == 0 else 0,
+            ))
+    return out
+
+
+def ensure_r8_categories(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM categories")}
+    added = 0
+    for slug, name, color, parent, order, desc in R8_NEW_CATEGORIES:
+        if slug in existing:
+            continue
+        cur.execute(
+            "INSERT INTO categories (slug, name, color, icon, parent_slug, "
+            "sort_order, description, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, color, "", parent, order, desc, desc[:250]),
+        )
+        added += 1
+    return added
+
+
+def insert_r8_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+R8_COMMENT_TOP: list[str] = [
+    "The Radio 2 episode page finally has a transcript link - thank you.",
+    "BBC Local for my region had the bus timetable update before the council website did.",
+    "Useful to have World Service episodes browsable by show on the mirror.",
+    "Cmd+K jump to section is a real productivity bump, glad it ships site-wide.",
+    "The keyboard shortcut J/K to move between articles is something I missed from old readers.",
+    "Region glossary popover on country names is a small thing that helps a lot.",
+    "Found the /developer/news-api page exactly where I'd expect it.",
+    "Breaking-news webhook subscription via /webhook/breaking-news worked first time.",
+]
+
+R8_COMMENT_REPLIES: list[str] = [
+    "Agreed - the Cmd+K palette is the best UX change of the year.",
+    "Same here on the regional desk - clear improvement.",
+    "Subscribed to my region via the keyboard shortcut overlay - took 4 keys.",
+    "The /healthz endpoint helped my self-hosted monitor pick this mirror up.",
+    "Bookmarked the /developer/news-api page; the schema link is what I needed.",
+]
+
+
+def insert_r8_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+
+    pool: list[tuple[int, str]] = []
+    for tag in ("r8-radio", "r8-local"):
+        rows = cur.execute(
+            "SELECT id, headline FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 80",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))][:160]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, _hl) in enumerate(pool):
+        n_top = 1 + (idx % 3)
+        for j in range(n_top):
+            uid = user_ids[(idx * 13 + j * 11) % len(user_ids)]
+            body = R8_COMMENT_TOP[(idx * 3 + j * 5) % len(R8_COMMENT_TOP)]
+            offset_h = (idx * 17 + j * 29) % (24 * 32)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(j + idx * 5) % 60)
+            like = (idx * j + 11) % 32
+            top_rows.append((uid, art_id, None, body, like, 0,
+                             ts.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    inserted = len(top_rows)
+
+    fresh = list(cur.execute(
+        "SELECT id, article_id, user_id, created_at FROM comments "
+        "WHERE parent_id IS NULL ORDER BY id DESC LIMIT ?",
+        (inserted,),
+    ))
+    fresh.reverse()
+    extra = 0
+    for i, (cid, art_id, parent_uid, parent_created) in enumerate(fresh):
+        if i % 7 != 0:
+            continue
+        ruid = user_ids[(parent_uid + i + 3) % len(user_ids)]
+        if ruid == parent_uid:
+            ruid = user_ids[(parent_uid + i + 4) % len(user_ids)]
+        body = R8_COMMENT_REPLIES[i % len(R8_COMMENT_REPLIES)]
+        ts_parent = datetime.strptime(parent_created, "%Y-%m-%d %H:%M:%S")
+        ts_parent = ts_parent + timedelta(hours=3, minutes=(i * 11) % 60)
+        cur.execute(
+            "INSERT INTO comments (user_id, article_id, parent_id, body, "
+            "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (ruid, art_id, cid, body, (i * 5) % 18, 0,
+             ts_parent.strftime("%Y-%m-%d %H:%M:%S")),
+        )
+        extra += 1
+    return inserted + extra
+
+
+def insert_r8_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    art_ids: list[int] = []
+    for tag in ("r8-radio", "r8-local"):
+        rows = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY view_count DESC LIMIT 60",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        art_ids.extend(r[0] for r in rows)
+    art_ids = list(dict.fromkeys(art_ids))[:120]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    rows: list[tuple] = []
+    for i, aid in enumerate(art_ids):
+        uid = user_ids[(i * 3) % len(user_ids)]
+        ts = base_ts - timedelta(hours=(i * 7) % (24 * 21),
+                                 minutes=(i * 13) % 60)
+        rows.append((uid, aid, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r8_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    existing_pairs = {
+        (uid, aid) for uid, aid in cur.execute(
+            "SELECT user_id, article_id FROM bookmarks")
+    }
+    art_ids: list[int] = []
+    for tag in ("r8-radio", "r8-local"):
+        rows = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY view_count DESC LIMIT 40",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        art_ids.extend(r[0] for r in rows)
+    art_ids = list(dict.fromkeys(art_ids))[:80]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    rows: list[tuple] = []
+    for i, aid in enumerate(art_ids):
+        uid = user_ids[(i * 7 + 1) % len(user_ids)]
+        if (uid, aid) in existing_pairs:
+            continue
+        ts = base_ts - timedelta(hours=(i * 11) % (24 * 14),
+                                 minutes=(i * 19) % 60)
+        rows.append((uid, aid, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r8_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    existing = {
+        (uid, topic) for uid, topic in cur.execute(
+            "SELECT user_id, topic FROM topic_subscriptions")
+    }
+    base_ts = MIRROR_REFERENCE_DATE
+    rows: list[tuple] = []
+    # Radio station subscriptions for a few users.
+    stations = [s for s, _n, _c, _p, _o, _d in R8_NEW_CATEGORIES
+                if s != "bbc_local"]
+    for i, station in enumerate(stations):
+        uid = user_ids[i % len(user_ids)]
+        topic = f"station:{station}"
+        if (uid, topic) in existing:
+            continue
+        ts = base_ts - timedelta(days=i + 3)
+        rows.append((uid, station, topic, "daily", 1,
+                     ts.strftime("%Y-%m-%d %H:%M:%S")))
+    # Local region subscriptions.
+    for i, (slug_root, _rn, _nation) in enumerate(R8_LOCAL_REGIONS[:24]):
+        uid = user_ids[(i + 1) % len(user_ids)]
+        topic = f"local:{slug_root}"
+        if (uid, topic) in existing:
+            continue
+        ts = base_ts - timedelta(days=i + 8)
+        rows.append((uid, "bbc_local", topic, "weekly", 1,
+                     ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO topic_subscriptions (user_id, category_slug, topic, "
+        "frequency, active, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def plant_r8_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE ? "
+        "ORDER BY id LIMIT 1",
+        ('%"r8-radio"%',),
+    ).fetchone()
+    if not (uid_row and art_row):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid_row[0], art_row[0], None, R8_SENTINEL_BODY, 0, 1,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+def bake_r8(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R8 additions. Idempotent (sentinel-gated)."""
+    stats: dict[str, int] = {}
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R8_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    stats["new_categories"] = ensure_r8_categories(con)
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_r8_radio_episodes(con, hero_pool),
+        synth_r8_local_stories(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r8_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r8_comments(con)
+    stats["new_reading_history"] = insert_r8_reading_history(con)
+    stats["new_bookmarks"] = insert_r8_bookmarks(con)
+    stats["new_subscriptions"] = insert_r8_subscriptions(con)
+
+    plant_r8_sentinel(con)
+    return stats
+
+
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -6820,6 +7591,7 @@ def main() -> None:
         r5_stats = bake_r5(con)
         r6_stats = bake_r6(con)
         r7_stats = bake_r7(con)
+        r8_stats = bake_r8(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -6850,8 +7622,12 @@ def main() -> None:
         v for k, v in r7_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r8_total_inserts = sum(
+        v for k, v in r8_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts + r8_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -6870,6 +7646,7 @@ def main() -> None:
     print(f"[bake] R5 stats: {r5_stats}")
     print(f"[bake] R6 stats: {r6_stats}")
     print(f"[bake] R7 stats: {r7_stats}")
+    print(f"[bake] R8 stats: {r8_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

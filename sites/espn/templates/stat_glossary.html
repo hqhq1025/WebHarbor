@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Stat Glossary{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="Plain-English definitions for the advanced stats used across ESPN: PER, eFG%, TS%, USG%, BPM, VORP, EPA, DVOA, QBR, OPS, wRC+, FIP, Corsi, xG, and more.">
+{% endblock %}
+
+{% block content %}
+<div class="container" data-r8-page="stat-glossary">
+  <header class="page-header">
+    <h1>Stat Glossary</h1>
+    <p class="page-header__sub">Hover the helper icon next to any advanced stat on the site to see this definition in a tooltip. Anything you can read here is also available as JSON at <code>/api/stat/&lt;KEY&gt;</code>.</p>
+  </header>
+
+  <dl class="stat-glossary" id="r8-stat-glossary-list">
+    {% for key, name, defn in entries %}
+    <div class="stat-glossary__row" data-stat-key="{{ key }}">
+      <dt><strong>{{ key }}</strong> &mdash; {{ name }}</dt>
+      <dd>{{ defn }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+
+  <section class="stat-glossary__api-note">
+    <h2>API access</h2>
+    <p>Each entry is fetchable individually:</p>
+    <pre><code>GET /api/stat/PER
+→ {"key": "PER", "name": "Player Efficiency Rating", "definition": "..."}</code></pre>
+  </section>
+</div>
+{% endblock %}

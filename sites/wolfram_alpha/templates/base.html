@@ -170,6 +170,159 @@
 </footer>
 
 <script src="/static/js/main.js"></script>
+
+<!-- R8: command palette overlay (hidden by default; Cmd+K toggles) -->
+<div id="r8Palette" class="r8-palette" hidden role="dialog"
+     aria-modal="true" aria-label="Command palette">
+  <div class="r8-palette-card">
+    <input id="r8PaletteInput" class="r8-palette-input"
+           type="text" placeholder="Type to filter (Cmd+K to toggle, Esc to close)"
+           autocomplete="off" spellcheck="false">
+    <ul id="r8PaletteList" class="r8-palette-list" role="listbox"></ul>
+    <p class="r8-palette-hint">
+      Cmd+K / Ctrl+K toggle &middot; '/' focuses search &middot; '?' opens
+      <a href="/help/symbols">math symbol glossary</a> &middot; Cmd+Enter
+      submits the main form.
+    </p>
+  </div>
+</div>
+
+<!-- R8: help/glossary modal (?) -->
+<div id="r8HelpModal" class="r8-help-modal" hidden role="dialog"
+     aria-modal="true" aria-label="Math symbol glossary">
+  <div class="r8-help-card">
+    <h2>Math symbol glossary</h2>
+    <p>Press <kbd>?</kbd> to toggle this panel. Full reference at
+       <a href="/help/symbols">/help/symbols</a>.</p>
+    <ul class="r8-help-list">
+      <li><code>∇</code> nabla -- gradient operator</li>
+      <li><code>∂</code> partial -- partial derivative</li>
+      <li><code>∫</code> integral -- definite/indefinite integral</li>
+      <li><code>∑</code> sum -- summation</li>
+      <li><code>∏</code> product -- product</li>
+      <li><code>√</code> sqrt -- square root</li>
+      <li><code>π</code> pi -- the constant pi</li>
+      <li><code>e</code> e -- Euler number</li>
+    </ul>
+    <p class="r8-help-hint">Press <kbd>Esc</kbd> to close.</p>
+  </div>
+</div>
+
+<script>
+// ---- R8 keyboard shortcuts & command palette ----
+(function() {
+  const palette = document.getElementById('r8Palette');
+  const paletteInput = document.getElementById('r8PaletteInput');
+  const paletteList = document.getElementById('r8PaletteList');
+  const helpModal = document.getElementById('r8HelpModal');
+  let paletteItems = [];
+
+  function isEditable(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+           el.isContentEditable;
+  }
+
+  function openPalette() {
+    palette.hidden = false;
+    paletteInput.value = '';
+    renderPalette('');
+    setTimeout(() => paletteInput.focus(), 0);
+    if (!paletteItems.length) loadPalette();
+  }
+  function closePalette() { palette.hidden = true; }
+  function togglePalette() { palette.hidden ? openPalette() : closePalette(); }
+
+  function loadPalette() {
+    fetch('/api/command-palette')
+      .then(r => r.json())
+      .then(d => { paletteItems = d.items || []; renderPalette(paletteInput.value); })
+      .catch(() => { paletteItems = []; });
+  }
+
+  function renderPalette(q) {
+    const ql = (q || '').toLowerCase();
+    const filtered = !ql ? paletteItems.slice(0, 30)
+      : paletteItems.filter(it => (it.label||'').toLowerCase().indexOf(ql) >= 0
+                              || (it.url||'').toLowerCase().indexOf(ql) >= 0)
+        .slice(0, 30);
+    paletteList.innerHTML = filtered.map(it => (
+      `<li class="r8-palette-item" role="option" data-url="${it.url||''}">
+         <span class="r8-palette-kind">${it.kind||''}</span>
+         <span class="r8-palette-label">${(it.label||'').replace(/</g,'&lt;')}</span>
+         <span class="r8-palette-url">${(it.url||'').replace(/</g,'&lt;')}</span>
+       </li>`)).join('');
+  }
+
+  paletteInput && paletteInput.addEventListener('input', () => renderPalette(paletteInput.value));
+  paletteList && paletteList.addEventListener('click', (e) => {
+    const li = e.target.closest('.r8-palette-item');
+    if (li && li.dataset.url) window.location.href = li.dataset.url;
+  });
+
+  function openHelp() { helpModal.hidden = false; }
+  function closeHelp() { helpModal.hidden = true; }
+
+  document.addEventListener('keydown', (e) => {
+    // Cmd+K / Ctrl+K -> palette toggle
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      togglePalette();
+      return;
+    }
+    // Cmd+Enter / Ctrl+Enter -> submit main search if it exists
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'Enter')) {
+      const form = document.getElementById('mainSearchForm');
+      if (form) { e.preventDefault(); form.submit(); return; }
+    }
+    // Esc -> close palette/help if open
+    if (e.key === 'Escape') {
+      if (!palette.hidden) { e.preventDefault(); closePalette(); return; }
+      if (!helpModal.hidden) { e.preventDefault(); closeHelp(); return; }
+    }
+    // '/' -> focus main input (only when not already in an editable)
+    if (e.key === '/' && !isEditable(document.activeElement)) {
+      const inp = document.getElementById('mainSearchInput');
+      if (inp) { e.preventDefault(); inp.focus(); return; }
+    }
+    // '?' -> open help modal
+    if (e.key === '?' && !isEditable(document.activeElement)) {
+      e.preventDefault(); openHelp(); return;
+    }
+  });
+
+  // Click-outside closes overlays
+  palette && palette.addEventListener('click', (e) => {
+    if (e.target === palette) closePalette();
+  });
+  helpModal && helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) closeHelp();
+  });
+})();
+
+// ---- R8 math symbol hover tooltip ----
+(function() {
+  const SYMS = {
+    'nabla':'∇ -- gradient (vector differential operator)',
+    'partial':'∂ -- partial derivative operator',
+    'integral':'∫ -- definite/indefinite integral',
+    'sum':'∑ -- summation operator',
+    'product':'∏ -- product operator',
+    'sqrt':'√ -- principal square root',
+    'pi':'π -- the constant pi (~3.14159...)',
+    'sin':'sin -- circular sine function',
+    'cos':'cos -- circular cosine function',
+    'tan':'tan -- circular tangent function',
+    'limit':'lim -- limit operator',
+    'matrix':'matrix -- rectangular array of expressions',
+  };
+  document.querySelectorAll('[data-math-symbol]').forEach(el => {
+    const key = (el.getAttribute('data-math-symbol') || '').toLowerCase();
+    if (SYMS[key]) el.setAttribute('title', SYMS[key]);
+  });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

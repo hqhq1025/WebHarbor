@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}new-paper webhook — arXiv{% endblock %}
+{% block content %}
+
+<h1>Webhook: new-paper</h1>
+<p class="muted">
+    Subscribe an endpoint to receive a POST on every new submission. Payloads
+    are signed with HMAC-SHA256 using your signing secret.
+</p>
+
+<form method="POST" action="{{ url_for('webhook_new_paper') }}" class="dash-card">
+    <label for="wh_email">Account email</label>
+    <input type="email" id="wh_email" name="email" value="{{ email }}"
+           placeholder="you@institution.edu" required>
+    <button type="submit">Show signing secret</button>
+</form>
+
+{% if signing_secret %}
+<div class="dash-card">
+    <h2>Signing secret</h2>
+    <p><code id="wh-secret" style="user-select:all;background:#f4f4f4;padding:4px 8px;border-radius:3px;">{{ signing_secret }}</code></p>
+    <p class="muted">
+        Verify each delivery by computing
+        <code>HMAC-SHA256(signing_secret, body)</code> and comparing against
+        the <code>X-Arxiv-Signature</code> header.
+    </p>
+</div>
+{% endif %}
+
+<div class="dash-card">
+    <h2>Last delivery payload</h2>
+    {% if latest %}
+        <p class="muted">Most recent paper in the corpus —
+            <a href="{{ url_for('paper_detail', arxiv_id=latest.arxiv_id) }}">{{ latest.arxiv_id }}</a>.</p>
+    {% endif %}
+    <pre><code>{{ sample_payload }}</code></pre>
+</div>
+
+<div class="dash-card">
+    <h2>Event types</h2>
+    <table class="data">
+        <tr><th>Event</th><th>Trigger</th></tr>
+        <tr><td><code>new-paper</code></td><td>Every accepted submission</td></tr>
+        <tr><td><code>paper-replaced</code></td><td>A new version (v2+) is announced</td></tr>
+        <tr><td><code>paper-withdrawn</code></td><td>Author withdraws an existing paper</td></tr>
+        <tr><td><code>cross-listed</code></td><td>Moderation adds a new cross-list</td></tr>
+    </table>
+</div>
+
+<p class="muted">
+    See the <a href="{{ url_for('developer_index') }}">developer hub</a> for
+    related endpoints.
+</p>
+
+{% endblock %}

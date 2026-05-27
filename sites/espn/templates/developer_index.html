@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Developer Hub{% endblock %}
+
+{% block content %}
+<div class="container" data-r8-page="developer-index">
+  <header class="page-header">
+    <h1>ESPN Developer Hub</h1>
+    <p class="page-header__sub">Mirror-friendly endpoints exposed for automated agents, fantasy apps, and observability probes. All endpoints are read-only or side-effect-free.</p>
+  </header>
+
+  <section class="developer-endpoints">
+    <h2>Available endpoints</h2>
+    <table class="data-table" id="r8-endpoints-table">
+      <thead>
+        <tr><th scope="col">Path</th><th scope="col">Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for path in endpoints %}
+        <tr>
+          <td><a href="{{ path }}" data-r8-endpoint="{{ path }}"><code>{{ path }}</code></a></td>
+          <td>
+            {% if path == '/healthz' %}Liveness probe (JSON).
+            {% elif path == '/api/uptime' %}Mirror-clock uptime in seconds.
+            {% elif path == '/api/events' %}Recent article-published events.
+            {% elif path == '/api/telemetry' %}Telemetry beacon (POST).
+            {% elif path == '/api/v3-graphql' %}GraphQL-min v3 query endpoint.
+            {% elif path == '/webhook/score-update' %}Score-update webhook (POST).
+            {% elif path == '/developer/fantasy-app' %}Fantasy-app integration guide.
+            {% else %}Reference endpoint.{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="developer-graphql">
+    <h2>GraphQL-min v3 example</h2>
+    <pre><code class="lang-json" id="r8-graphql-sample">POST /api/v3-graphql
+Content-Type: application/json
+
+{"query": "team(boston-celtics)"}
+
+→ {"data": {"team": {"id": ..., "slug": "boston-celtics", "full_name": "Boston Celtics", "sport_slug": "nba"}}, "errors": []}
+</code></pre>
+  </section>
+</div>
+{% endblock %}

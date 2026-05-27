@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Group trip budget split — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Group trip — budget split</h1>
+    <p class="page-subtitle">Plan how a multi-traveller group will split the cost of a stay (and any shared extras). Supports up to {{ max_travellers }} travellers in a single calculation.</p>
+
+    <form method="GET" action="{{ url_for('trip_budget_split') }}" class="pd-section">
+        <div class="form-row">
+            <label>Travellers
+                <input type="number" name="travellers" min="2" max="{{ max_travellers }}" value="{{ travellers }}">
+            </label>
+            <label>Total stay cost
+                <input type="number" name="total" min="0" step="0.01" value="{{ total }}">
+            </label>
+            <label>Shared meals
+                <input type="number" name="shared_meals" min="0" step="0.01" value="{{ shared_meals }}">
+            </label>
+            <label>Currency
+                <select name="currency">
+                    {% for c in currencies %}
+                    <option value="{{ c }}" {% if currency == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Mode
+                <select name="mode">
+                    <option value="even" {% if mode == 'even' %}selected{% endif %}>Even split</option>
+                    <option value="even_with_meals" {% if mode == 'even_with_meals' %}selected{% endif %}>Even split with shared meals</option>
+                    <option value="weighted_income" {% if mode == 'weighted_income' %}selected{% endif %}>Weighted by income</option>
+                </select>
+            </label>
+            <button class="btn btn-primary" type="submit">Recalculate</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Result</h2>
+        <p>Subtotal (stay + shared lines): <strong>{{ sub_total }} {{ currency }}</strong></p>
+        <p>Per-person split (<em>{{ mode }}</em>): <strong style="font-size:24px;color:#003580;">{{ per_person }} {{ currency }}</strong></p>
+        {% if mode == 'weighted_income' %}
+        <p style="color:#666;">Weighted-by-income mode requires per-traveller annual income inputs (added below) so heavier earners contribute proportionally.</p>
+        <div class="form-row">
+            {% for i in range(travellers) %}
+            <label>Traveller {{ i+1 }} income
+                <input type="number" name="income_{{ i+1 }}" min="0" step="1000" value="50000">
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <p style="margin-top:18px;">
+            <a class="btn btn-secondary" href="{{ url_for('search') }}">Book this stay</a>
+            <a class="btn btn-link" href="{{ url_for('keyboard_shortcuts') }}">Keyboard shortcuts</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

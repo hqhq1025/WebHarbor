@@ -118,4 +118,15 @@
     <div class="sr-only" aria-live="polite" id="map-keyboard-hint">
         Use arrow keys to pan, + and − to zoom, T for traffic, S for satellite.
     </div>
+
+    {# ---- R8: symbol legend so `data-glyph` hover-tooltips have anchors. ---- #}
+    <div class="map-legend" aria-label="Symbol legend"
+         style="position:absolute;bottom:12px;left:12px;display:flex;gap:8px;background:rgba(255,255,255,0.92);padding:6px 10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.12);font:12px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+        <span data-glyph="P">P</span>
+        <span data-glyph="T">T</span>
+        <span data-glyph="EV">EV</span>
+        <span data-glyph="GAS">GAS</span>
+        <span data-glyph="H">H</span>
+        <span data-glyph="WiFi">WiFi</span>
+    </div>
 </section>

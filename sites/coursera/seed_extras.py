@@ -4856,3 +4856,224 @@ def seed_v8(db, models):
     print(f"  + seed_v8: added {created} courses (R7 2026), "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ─── R8 — 2026 polish iter 8/10 (K-12 + Lifelong + Professional Development) ──
+# Goal: extend catalog beyond 13k by adding three audience segments that the
+# real Coursera prioritises in 2026 (K-12 educator track, Lifelong-Learner
+# track, Professional-Development track).
+# Adds 10 new publisher partners (Khan Academy, College Board, AARP,
+# Toastmasters, LinkedIn Learning Pro, Harvard Extension, National Geographic
+# Education, PBS LearningMedia, AmeriCorps Senior Corps, Outschool) plus an
+# anchor for idempotency. Each audience track ships ~5-6 domains × 6 subtopics
+# × 5 partners × 7 variants → 3,360 new courses total.
+
+R8_NEW_PARTNERS = [
+    ('Khan Academy',                'khan-academy-r8',     'United States', 'institution', 'Khan Academy'),
+    ('The College Board',           'collegeboard-r8',     'United States', 'institution', 'College Board'),
+    ('AARP Education',              'aarp-r8',             'United States', 'institution', 'AARP Ed'),
+    ('Toastmasters International',  'toastmasters-r8',     'United States', 'institution', 'Toastmasters'),
+    ('LinkedIn Learning Pro',       'linkedin-learning-r8','United States', 'company',     'LiL Pro'),
+    ('Harvard Extension School',    'harvardx-ext-r8',     'United States', 'university',  'Harvard Ext'),
+    ('National Geographic Education','natgeo-ed-r8',       'United States', 'institution', 'NatGeo Edu'),
+    ('PBS LearningMedia',           'pbs-learningmedia-r8','United States', 'institution', 'PBS LM'),
+    ('AmeriCorps Senior Corps',     'americorps-senior-r8','United States', 'institution', 'AmeriCorps'),
+    ('Outschool',                   'outschool-r8',        'United States', 'company',     'Outschool'),
+    ('R8 2026 Anchor',              'r8-2026-anchor',      'United States', 'institution', 'R8 Anchor'),
+]
+
+R8_DOMAINS = [
+    # ── K-12 educator track ────────────────────────────────────────────────
+    ('K-12 Early Reading Coaches',     'K-12 Reading',     'Personal Development',
+     ['khan-academy-r8', 'collegeboard-r8', 'pbs-learningmedia-r8', 'outschool-r8', 'natgeo-ed-r8']),
+    ('Middle School Math Foundations', 'K-12 Math',        'Math and Logic',
+     ['khan-academy-r8', 'collegeboard-r8', 'umich', 'outschool-r8', 'gatech']),
+    ('AP Computer Science Prep',       'AP CS',            'Computer Science',
+     ['collegeboard-r8', 'khan-academy-r8', 'cmu', 'google', 'outschool-r8']),
+    ('K-12 Biology Lab Notebooks',     'K-12 Biology',     'Health',
+     ['natgeo-ed-r8', 'pbs-learningmedia-r8', 'khan-academy-r8', 'jhu', 'outschool-r8']),
+    ('K-12 Career Exploration',        'K-12 Careers',     'Personal Development',
+     ['collegeboard-r8', 'aarp-r8', 'pbs-learningmedia-r8', 'linkedin-learning-r8', 'outschool-r8']),
+    ('Social-Emotional Learning K-12', 'K-12 SEL',         'Social Sciences',
+     ['pbs-learningmedia-r8', 'khan-academy-r8', 'yale', 'outschool-r8', 'natgeo-ed-r8']),
+    ('Family STEAM Projects',          'Family STEAM',     'Arts and Humanities',
+     ['natgeo-ed-r8', 'pbs-learningmedia-r8', 'outschool-r8', 'khan-academy-r8', 'moma']),
+    # ── Lifelong-Learner track ─────────────────────────────────────────────
+    ('Encore Career Pathways',         'Encore Careers',   'Personal Development',
+     ['aarp-r8', 'americorps-senior-r8', 'linkedin-learning-r8', 'harvardx-ext-r8', 'collegeboard-r8']),
+    ('Senior Digital Literacy 2026',   'Digital Literacy', 'Personal Development',
+     ['aarp-r8', 'americorps-senior-r8', 'khan-academy-r8', 'google', 'microsoft']),
+    ('Hobby Photography Mastery',      'Hobby Photography','Arts and Humanities',
+     ['natgeo-ed-r8', 'pbs-learningmedia-r8', 'aarp-r8', 'moma', 'harvardx-ext-r8']),
+    ('Mindfulness for Adults 2026',    'Adult Mindfulness','Personal Development',
+     ['aarp-r8', 'yale', 'umich', 'harvardx-ext-r8', 'americorps-senior-r8']),
+    ('Personal Finance for Retirees',  'Retirement Finance','Business',
+     ['aarp-r8', 'umich', 'harvardx-ext-r8', 'linkedin-learning-r8', 'americorps-senior-r8']),
+    # ── Professional-Development track ─────────────────────────────────────
+    ('Manager Coaching Mastery',       'Manager Coaching', 'Personal Development',
+     ['linkedin-learning-r8', 'harvardx-ext-r8', 'umich', 'toastmasters-r8', 'collegeboard-r8']),
+    ('Public Speaking 2026',           'Public Speaking',  'Personal Development',
+     ['toastmasters-r8', 'linkedin-learning-r8', 'harvardx-ext-r8', 'yale', 'umich']),
+    ('Executive Presence 2026',        'Executive Presence','Business',
+     ['linkedin-learning-r8', 'harvardx-ext-r8', 'columbia', 'toastmasters-r8', 'wharton']),
+    ('Negotiation Mastery 2026',       'Negotiation',      'Business',
+     ['harvardx-ext-r8', 'linkedin-learning-r8', 'columbia', 'wharton', 'toastmasters-r8']),
+]
+
+R8_SUBTOPICS = [
+    'Foundations',
+    'Classroom-Ready Activities',
+    'Assessment and Outcomes',
+    'Inclusion and Accessibility',
+    'Family and Community Engagement',
+    'Career Pathways',
+]
+
+
+def seed_v9(db, models):
+    """R8 catalog polish (iter 8/10) — adds ~3360 deterministic 2026 courses
+    across 16 K-12 / lifelong-learning / professional-development domains
+    × 6 subtopics × 5 partners × 7 variants, plus +10 partners. Backfills
+    R5 columns on any new rows. Idempotent — gated on partner slug
+    `r8-2026-anchor`."""
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='r8-2026-anchor').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in R8_NEW_PARTNERS:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} — 2026 Audience Landscape'
+                md = (f'Orientation: 2026 audience profiles for {primary}, '
+                      f'mental model, baseline workflow.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Deliver a {primary} Programme'
+                md = (f'Capstone: deliver a portfolio-grade {primary} '
+                      f'programme with a 5-minute reflection.')
+            else:
+                mt = f'Week {w}: Practitioner {primary}'
+                md = (f'Hands-on lab + graded assignment exercising {primary} '
+                      f'on a realistic 2026 learner cohort.')
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked example for {primary}',
+                f'Lesson {w}.3: Practice drill ({course_title})',
+                f'Lesson {w}.4: 2026 audience trends to watch',
+                f'Lesson {w}.5: Captions: en, es, zh, ja, ar, fr, de, pt, ko, hi, ru',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    for d_idx, (domain, primary, category, partners) in enumerate(R8_DOMAINS):
+        for s_idx, subtopic in enumerate(R8_SUBTOPICS):
+            topic_title = f'{domain} {subtopic}'
+            for p_idx, partner_slug in enumerate(partners):
+                partner_eff = (partner_slug if pid.get(partner_slug)
+                               else 'r8-2026-anchor')
+                for v_idx, variant in enumerate(R5_VARIANTS):
+                    idx = (d_idx * 1000 + s_idx * 100
+                           + p_idx * 10 + v_idx)
+                    spec = _v6_make_course(
+                        R5_VARIANT=variant, topic=topic_title,
+                        primary=primary, category=category,
+                        partner_eff=partner_eff, pid=pid,
+                        idx=idx, anchor_tag='r8-2026',
+                        prefix_slug='r8-2026')
+                    spec['is_new'] = True
+                    spec['sort_date'] = (SEED_REF_DATE - timedelta(
+                        days=(d_idx * 5 + s_idx * 2 + v_idx) % 75
+                    )).strftime('%Y-%m-%d')
+                    if Course.query.filter_by(slug=spec['slug']).first():
+                        continue
+                    _persist(spec)
+                    created += 1
+        db.session.commit()
+
+    # Backfill R5 columns on any rows still missing them (safety net) ──────
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+    finally:
+        conn.close()
+
+    print(f"  + seed_v9: added {created} courses (R8 2026 K-12/lifelong/prof-dev), "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

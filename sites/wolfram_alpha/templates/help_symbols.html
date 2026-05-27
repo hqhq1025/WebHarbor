@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Math Symbol Glossary — WolframAlpha{% endblock %}
+{% block body_class %}page-help-symbols{% endblock %}
+
+{% block content %}
+<section class="wa-help-symbols">
+  <h1>Math Symbol Glossary</h1>
+  <p class="wa-help-intro">
+    R8 power-user shortcut hint: press <kbd>?</kbd> from any page to open
+    this glossary. Press <kbd>/</kbd> to focus the search input. Press
+    <kbd>Cmd</kbd>+<kbd>Enter</kbd> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>)
+    to submit. Press <kbd>Cmd</kbd>+<kbd>K</kbd> to open the command palette.
+  </p>
+  <table class="wa-glossary-table">
+    <thead>
+      <tr><th>Symbol</th><th>Name</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      {% for sym, name, desc in glossary %}
+      <tr id="sym-{{ name }}" class="wa-glossary-row">
+        <td class="wa-gl-sym"><code>{{ sym }}</code></td>
+        <td class="wa-gl-name">{{ name }}</td>
+        <td class="wa-gl-desc">{{ desc }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="wa-help-footer">
+    See also: <a href="/api/command-palette">/api/command-palette</a>
+    &middot; <a href="/api/v3-graphql">/api/v3-graphql</a>
+    &middot; <a href="/api/uptime">/api/uptime</a>
+    &middot; <a href="/healthz">/healthz</a>.
+  </p>
+</section>
+{% endblock %}

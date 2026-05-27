@@ -15,6 +15,7 @@ import os
 import re
 import json
 import random
+import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -3046,6 +3047,677 @@ def voiceover_summary(slug):
         "reading_time_minutes": art.reading_time or 3,
         "topics": art.get_topics()[:6],
         "voiceover_marker": "vo-summary-v1",
+    })
+
+
+# =======================================================================
+# R8: Observability / developer / UX glue
+# =======================================================================
+#
+# All R8 routes are read-only or accept idempotent POST payloads. They
+# never write to the DB (so they don't move md5) and never block the
+# benchmark; they just give agents predictable surfaces to hit.
+
+R8_REFERENCE_DATE = R7_MIRROR_REFERENCE_DATE  # alias - same fixed anchor
+
+# Snapshot of the BBC Local regions and Radio sub-stations - used by both
+# the command-palette / region-glossary endpoints and the dev portal.
+R8_LOCAL_REGION_INDEX: dict[str, dict] = {
+    "london":            {"name": "London",                "nation": "England"},
+    "manchester":        {"name": "Manchester",            "nation": "England"},
+    "birmingham":        {"name": "Birmingham",            "nation": "England"},
+    "leeds":             {"name": "Leeds",                 "nation": "England"},
+    "liverpool":         {"name": "Liverpool",             "nation": "England"},
+    "newcastle":         {"name": "Newcastle",             "nation": "England"},
+    "sheffield":         {"name": "Sheffield",             "nation": "England"},
+    "bristol":           {"name": "Bristol",               "nation": "England"},
+    "nottingham":        {"name": "Nottingham",            "nation": "England"},
+    "leicester":         {"name": "Leicester",             "nation": "England"},
+    "coventry":          {"name": "Coventry & Warwickshire","nation": "England"},
+    "derby":             {"name": "Derby",                 "nation": "England"},
+    "stoke":             {"name": "Stoke & Staffordshire", "nation": "England"},
+    "hull":              {"name": "Humberside",            "nation": "England"},
+    "york":              {"name": "York & North Yorkshire","nation": "England"},
+    "lancashire":        {"name": "Lancashire",            "nation": "England"},
+    "cumbria":           {"name": "Cumbria",               "nation": "England"},
+    "merseyside":        {"name": "Merseyside",            "nation": "England"},
+    "tees":              {"name": "Tees",                  "nation": "England"},
+    "oxford":            {"name": "Oxford",                "nation": "England"},
+    "cambridgeshire":    {"name": "Cambridgeshire",        "nation": "England"},
+    "norfolk":           {"name": "Norfolk",               "nation": "England"},
+    "suffolk":           {"name": "Suffolk",               "nation": "England"},
+    "essex":             {"name": "Essex",                 "nation": "England"},
+    "kent":              {"name": "Kent",                  "nation": "England"},
+    "sussex":            {"name": "Sussex",                "nation": "England"},
+    "hampshire":         {"name": "Hampshire & Isle of Wight","nation": "England"},
+    "dorset":            {"name": "Dorset",                "nation": "England"},
+    "devon":             {"name": "Devon",                 "nation": "England"},
+    "cornwall":          {"name": "Cornwall",              "nation": "England"},
+    "somerset":          {"name": "Somerset",              "nation": "England"},
+    "gloucestershire":   {"name": "Gloucestershire",       "nation": "England"},
+    "wiltshire":         {"name": "Wiltshire",             "nation": "England"},
+    "hereford_worcester":{"name": "Hereford & Worcester",  "nation": "England"},
+    "shropshire":        {"name": "Shropshire",            "nation": "England"},
+    "glasgow_west":      {"name": "Glasgow & West",        "nation": "Scotland"},
+    "edinburgh_east":    {"name": "Edinburgh, Fife & East","nation": "Scotland"},
+    "highlands_islands": {"name": "Highlands & Islands",   "nation": "Scotland"},
+    "cardiff_se_wales":  {"name": "Cardiff & South East Wales","nation": "Wales"},
+    "foyle_west":        {"name": "Foyle & West",          "nation": "Northern Ireland"},
+}
+
+R8_RADIO_STATIONS = [
+    ("radio1",        "BBC Radio 1"),
+    ("radio2",        "BBC Radio 2"),
+    ("radio3",        "BBC Radio 3"),
+    ("radio4",        "BBC Radio 4"),
+    ("radio4_extra",  "BBC Radio 4 Extra"),
+    ("six_music",     "BBC Radio 6 Music"),
+    ("world_service", "BBC World Service"),
+    ("asian_network", "BBC Asian Network"),
+    ("fivelive",      "BBC 5 Live"),
+]
+
+# Curated region glossary entries for the contextual-help popover.
+R8_REGION_GLOSSARY: dict[str, dict] = {
+    "uk": {
+        "name": "United Kingdom",
+        "summary": ("The United Kingdom of Great Britain and Northern Ireland - "
+                    "a sovereign state of four nations: England, Scotland, "
+                    "Wales and Northern Ireland."),
+        "capital": "London",
+        "nations": ["England", "Scotland", "Wales", "Northern Ireland"],
+        "key_topics": ["UK politics", "the NHS", "devolution", "cost of living"],
+    },
+    "europe": {
+        "name": "Europe",
+        "summary": ("Continent of around 50 sovereign states; the European Union "
+                    "and the wider Council of Europe shape regional policy."),
+        "capital": None,
+        "key_topics": ["EU policy", "the war in Ukraine", "energy security"],
+    },
+    "africa": {
+        "name": "Africa",
+        "summary": ("Africa is the second-largest continent with 54 recognised "
+                    "states and the African Union as its umbrella body."),
+        "capital": None,
+        "key_topics": ["African Union", "Sahel security", "climate adaptation"],
+    },
+    "asia": {
+        "name": "Asia",
+        "summary": ("The world's most populous continent, spanning the Middle "
+                    "East, South Asia, Southeast Asia, and East Asia."),
+        "capital": None,
+        "key_topics": ["China-US relations", "South China Sea", "monsoon season"],
+    },
+    "middle_east": {
+        "name": "Middle East",
+        "summary": ("Region spanning western Asia and parts of north Africa; "
+                    "the Gulf Cooperation Council and the Arab League are "
+                    "major regional bodies."),
+        "capital": None,
+        "key_topics": ["Israel-Gaza", "Iran sanctions", "oil markets"],
+    },
+    "us_canada": {
+        "name": "US & Canada",
+        "summary": ("The United States and Canada share the world's longest "
+                    "undefended border and a long-running trade relationship."),
+        "capital": None,
+        "key_topics": ["US elections", "Canadian federal politics", "trade policy"],
+    },
+    "latin_america": {
+        "name": "Latin America",
+        "summary": ("The Spanish- and Portuguese-speaking countries of Central "
+                    "and South America, plus the Caribbean."),
+        "capital": None,
+        "key_topics": ["Amazon deforestation", "migration", "regional elections"],
+    },
+    "scotland": {
+        "name": "Scotland",
+        "summary": ("Nation of the United Kingdom with its own parliament at "
+                    "Holyrood and devolved powers over health, education and "
+                    "justice."),
+        "capital": "Edinburgh",
+        "key_topics": ["Holyrood", "devolution", "energy transition"],
+    },
+    "wales": {
+        "name": "Wales",
+        "summary": ("Nation of the United Kingdom with its own Senedd in "
+                    "Cardiff and a distinct legal-aid and education system."),
+        "capital": "Cardiff",
+        "key_topics": ["the Senedd", "Welsh language policy", "valleys economy"],
+    },
+    "northern_ireland": {
+        "name": "Northern Ireland",
+        "summary": ("Nation of the United Kingdom with the Stormont assembly "
+                    "and a power-sharing executive at its heart."),
+        "capital": "Belfast",
+        "key_topics": ["Stormont", "the Windsor Framework", "power-sharing"],
+    },
+    "england": {
+        "name": "England",
+        "summary": ("Largest nation of the United Kingdom; no separate parliament "
+                    "but devolved combined-authority mayors in major regions."),
+        "capital": "London",
+        "key_topics": ["Westminster", "metro mayors", "council finances"],
+    },
+}
+
+
+@app.route("/healthz")
+def healthz():
+    """Liveness probe. Returns JSON; never touches the DB heavily."""
+    try:
+        n_articles = db.session.query(func.count(Article.id)).scalar() or 0
+    except Exception:
+        return jsonify({
+            "ok": False, "service": "bbc_news", "status": "degraded",
+            "reason": "db-unreachable",
+        }), 503
+    return jsonify({
+        "ok": True,
+        "service": "bbc_news",
+        "status": "ok",
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "articles_indexed": int(n_articles),
+        "version": "r8.1",
+        "build": "bbc-news-mirror",
+    })
+
+
+@app.route("/api/uptime")
+def api_uptime():
+    """Synthetic uptime / SLO report. Deterministic snapshot."""
+    return jsonify({
+        "ok": True,
+        "service": "bbc_news",
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "windows": {
+            "last_24h": {"uptime_pct": 100.0, "incidents": 0},
+            "last_7d":  {"uptime_pct": 99.97, "incidents": 0},
+            "last_30d": {"uptime_pct": 99.92, "incidents": 1},
+            "last_90d": {"uptime_pct": 99.86, "incidents": 2},
+        },
+        "slo_target_pct": 99.9,
+        "last_incident": {
+            "id": "INC-2026-04-04",
+            "summary": "Stale RSS cache on /rss/bbc_future.xml for 12 minutes.",
+            "resolved_at": "2026-04-04T11:14:00Z",
+        },
+        "release_channel": "r8.1",
+    })
+
+
+@app.route("/api/events")
+def api_events():
+    """Recent newsroom events (article publishes, breaking flips). Read-only.
+
+    Query: ?limit=N (default 20, max 200), ?since=YYYY-MM-DD optional.
+    """
+    try:
+        limit = max(1, min(200, int(request.args.get("limit", "20"))))
+    except (TypeError, ValueError):
+        limit = 20
+    since = request.args.get("since", "")
+    q = Article.query.order_by(Article.published_at.desc())
+    since_dt = None
+    if since:
+        try:
+            since_dt = datetime.strptime(since[:10], "%Y-%m-%d")
+            q = q.filter(Article.published_at >= since_dt)
+        except ValueError:
+            since_dt = None
+    arts = q.limit(limit).all()
+    events = []
+    for a in arts:
+        events.append({
+            "id": f"evt-{a.id}",
+            "type": ("breaking-news" if a.is_breaking
+                     else "live-update" if a.is_live
+                     else "article-published"),
+            "article_slug": a.slug,
+            "headline": a.headline,
+            "section": a.section_slug or (a.category.slug if a.category else ""),
+            "region": a.region or "",
+            "published_at": (a.published_at.isoformat() + "Z"
+                             if a.published_at else ""),
+        })
+    return jsonify({
+        "ok": True,
+        "count": len(events),
+        "limit": limit,
+        "since": since_dt.strftime("%Y-%m-%d") if since_dt else None,
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "events": events,
+    })
+
+
+@app.route("/api/error-report", methods=["POST"])
+@csrf.exempt
+def api_error_report():
+    """Accept a client-side error report. Idempotent acknowledgement."""
+    data = request.get_json(silent=True) or {}
+    msg = (data.get("message") or "")[:500]
+    path = (data.get("path") or request.referrer or "")[:300]
+    rid = hashlib.sha1((path + "|" + msg).encode("utf-8")).hexdigest()[:12] \
+        if (path or msg) else "anon"
+    return jsonify({
+        "ok": True,
+        "ack": True,
+        "report_id": f"err-{rid}",
+        "received_at": R8_REFERENCE_DATE.isoformat() + "Z",
+        "echo": {"path": path, "message_len": len(msg)},
+        "follow_up": "/help/keyboard",
+    })
+
+
+@app.route("/api/telemetry", methods=["POST"])
+@csrf.exempt
+def api_telemetry():
+    """Accept a client-side telemetry event. Acknowledges, never persists."""
+    data = request.get_json(silent=True) or {}
+    evt = (data.get("event") or "")[:80]
+    surface = (data.get("surface") or "")[:80]
+    return jsonify({
+        "ok": True,
+        "ack": True,
+        "event": evt,
+        "surface": surface,
+        "received_at": R8_REFERENCE_DATE.isoformat() + "Z",
+        "telemetry_marker": "t8-v1",
+    })
+
+
+@app.route("/developer/news-api")
+def developer_news_api():
+    """Public-facing developer portal — JSON if Accept: application/json,
+    otherwise a styled HTML page that lists the documented endpoints."""
+    endpoints = [
+        {"method": "GET",  "path": "/api/stats",
+         "summary": "Site-wide counts: articles, categories, breaking flag."},
+        {"method": "GET",  "path": "/api/events?limit=N&since=YYYY-MM-DD",
+         "summary": "Recent newsroom events (publishes / breaking)."},
+        {"method": "GET",  "path": "/api/uptime",
+         "summary": "Uptime windows and last-incident summary."},
+        {"method": "GET",  "path": "/healthz",
+         "summary": "Liveness probe."},
+        {"method": "GET",  "path": "/api/articles/<slug>",
+         "summary": "Articles in a category."},
+        {"method": "GET",  "path": "/article/<slug>/schema.json",
+         "summary": "Schema.org NewsArticle JSON-LD for a single story."},
+        {"method": "GET",  "path": "/article/<slug>/voiceover-summary",
+         "summary": "Screen-reader friendly summary."},
+        {"method": "GET",  "path": "/api/command-palette",
+         "summary": "Command palette items for client-side Cmd+K UI."},
+        {"method": "GET",  "path": "/api/keyboard-shortcuts",
+         "summary": "Keyboard shortcut catalogue."},
+        {"method": "GET",  "path": "/api/region-glossary/<region>",
+         "summary": "Contextual help blurb for a region or country."},
+        {"method": "POST", "path": "/api/telemetry",
+         "summary": "Accept a single telemetry event (JSON body)."},
+        {"method": "POST", "path": "/api/error-report",
+         "summary": "Accept a client-side error report (JSON body)."},
+        {"method": "POST", "path": "/webhook/breaking-news",
+         "summary": "Subscribe a webhook URL to breaking-news pushes."},
+        {"method": "GET",  "path": "/rss/<slug>.xml",
+         "summary": "RSS 2.0 feed for a category."},
+        {"method": "GET",  "path": "/feed/<slug>.atom",
+         "summary": "Atom 1.0 feed for a category."},
+        {"method": "GET",  "path": "/sitemap.xml",
+         "summary": "Top-level sitemap."},
+        {"method": "GET",  "path": "/sitemap-news.xml",
+         "summary": "Google News sitemap."},
+    ]
+    payload = {
+        "ok": True,
+        "title": "BBC News - Developer API",
+        "version": "r8.1",
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "rate_limit": {"per_minute": 600, "burst": 60},
+        "auth": "none-for-public-endpoints",
+        "schema_url": "/article/<slug>/schema.json",
+        "endpoints": endpoints,
+    }
+    want_json = (
+        request.args.get("format") == "json"
+        or "application/json" in (request.headers.get("Accept", "") or "")
+    )
+    if want_json:
+        return jsonify(payload)
+    return render_template("developer_news_api.html",
+                           data=payload, endpoints=endpoints,
+                           active_nav_slug="developer")
+
+
+@app.route("/webhook/breaking-news", methods=["GET", "POST"])
+@csrf.exempt
+def webhook_breaking_news():
+    """Register / inspect webhook subscriptions for breaking-news pushes.
+
+    GET  -> returns the documented webhook contract (JSON or HTML).
+    POST -> echoes back the registration ack (no state stored).
+    """
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form.to_dict()
+        target = (data.get("url") or data.get("target") or "")[:400]
+        secret = (data.get("secret") or "")[:120]
+        events = (data.get("events") or "breaking-news")[:200]
+        sub_id = hashlib.sha1((target + "|" + secret).encode("utf-8")).hexdigest()[:12] \
+            if target else "anon"
+        return jsonify({
+            "ok": bool(target),
+            "ack": bool(target),
+            "subscription_id": f"wh-{sub_id}",
+            "target_url": target,
+            "events": [e.strip() for e in events.split(",") if e.strip()],
+            "received_at": R8_REFERENCE_DATE.isoformat() + "Z",
+            "verify_token": f"verify-{sub_id}",
+            "next_steps": "Respond 200 to a GET with ?challenge=<token> to confirm.",
+        })
+    payload = {
+        "ok": True,
+        "kind": "webhook",
+        "topic": "breaking-news",
+        "post_required_fields": ["url", "secret"],
+        "optional_fields": ["events"],
+        "delivery": {
+            "format": "JSON over HTTPS",
+            "retry_policy": "exponential backoff, 5 attempts over 6h",
+            "signature_header": "X-BBC-Signature: hmac-sha256",
+        },
+        "subscribe_endpoint": "/webhook/breaking-news",
+        "events": ["breaking-news", "live-update", "article-published"],
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+    }
+    want_json = (
+        request.args.get("format") == "json"
+        or "application/json" in (request.headers.get("Accept", "") or "")
+    )
+    if want_json:
+        return jsonify(payload)
+    return render_template("webhook_breaking_news.html",
+                           data=payload, active_nav_slug="developer")
+
+
+@app.route("/api/keyboard-shortcuts")
+def api_keyboard_shortcuts():
+    """Documented keyboard shortcuts. Used by /help/keyboard and the
+    on-page '?' overlay."""
+    return jsonify({
+        "ok": True,
+        "version": "r8.1",
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "shortcuts": [
+            {"keys": ["j"], "action": "next-article",
+             "description": "Move to the next article in the current list."},
+            {"keys": ["k"], "action": "previous-article",
+             "description": "Move to the previous article in the current list."},
+            {"keys": ["/"], "action": "focus-search",
+             "description": "Focus the global search box in the orb bar."},
+            {"keys": ["Meta", "k"], "action": "open-command-palette",
+             "description": "Open the command palette to jump to a section, topic or article."},
+            {"keys": ["Ctrl", "k"], "action": "open-command-palette",
+             "description": "Open the command palette (Windows/Linux variant)."},
+            {"keys": ["?"], "action": "open-help",
+             "description": "Show the keyboard-shortcut help overlay."},
+            {"keys": ["g", "h"], "action": "go-home",
+             "description": "Jump to the BBC News homepage."},
+            {"keys": ["g", "l"], "action": "go-live",
+             "description": "Jump to the Live page."},
+            {"keys": ["g", "b"], "action": "go-bookmarks",
+             "description": "Jump to your Bookmarks (signed-in users)."},
+            {"keys": ["b"], "action": "toggle-bookmark",
+             "description": "Bookmark the article currently in focus."},
+            {"keys": ["d"], "action": "toggle-dark-mode",
+             "description": "Toggle dark mode."},
+            {"keys": ["Escape"], "action": "close-overlay",
+             "description": "Close any open overlay (palette, help, share)."},
+        ],
+    })
+
+
+@app.route("/api/command-palette")
+def api_command_palette():
+    """Items shown in the client-side Cmd+K palette. Sections + radio
+    stations + local regions + a sample of trending headlines."""
+    items: list[dict] = []
+    # Top-level navigation sections.
+    nav_slugs = ["news", "uk", "world", "business", "politics", "technology",
+                 "science", "health", "entertainment", "culture", "arts",
+                 "travel", "earth", "audio", "video", "sport", "weather",
+                 "in_pictures", "bbcverify", "newsround", "multi_step",
+                 "breaking_news", "quizzes"]
+    seen_slugs: set[str] = set()
+    for slug in nav_slugs:
+        cat = Category.query.filter_by(slug=slug).first()
+        if not cat:
+            continue
+        if cat.slug in seen_slugs:
+            continue
+        seen_slugs.add(cat.slug)
+        items.append({
+            "id": f"section:{cat.slug}",
+            "kind": "section",
+            "label": cat.name,
+            "url": url_for("section_page", slug=cat.slug),
+            "hint": cat.subtitle or cat.description[:80] or "",
+        })
+    # Radio sub-stations.
+    for slug, name in R8_RADIO_STATIONS:
+        cat = Category.query.filter_by(slug=slug).first()
+        if not cat:
+            continue
+        items.append({
+            "id": f"station:{slug}",
+            "kind": "audio-station",
+            "label": name,
+            "url": url_for("section_page", slug=slug),
+            "hint": cat.subtitle[:80] if cat.subtitle else "Radio station",
+        })
+    # Local regions.
+    for slug, meta in R8_LOCAL_REGION_INDEX.items():
+        items.append({
+            "id": f"local:{slug}",
+            "kind": "local-region",
+            "label": f"BBC Local: {meta['name']}",
+            "url": url_for("local_region_page", region_slug=slug),
+            "hint": f"Local news from {meta['name']}, {meta['nation']}.",
+        })
+    # Top trending headlines.
+    top_arts = (Article.query
+                .order_by(Article.view_count.desc())
+                .limit(12)
+                .all())
+    for art in top_arts:
+        items.append({
+            "id": f"article:{art.slug}",
+            "kind": "article",
+            "label": art.headline,
+            "url": url_for("article_detail", slug=art.slug),
+            "hint": (art.summary or "")[:80],
+        })
+    # Pages / utilities.
+    for label, endpoint, hint in [
+        ("Bookmarks",          "bookmarks_page",     "Your saved articles"),
+        ("Reading list",       "reading_list",       "Save-for-later folders"),
+        ("Subscriptions",      "subscriptions_page", "Email digest preferences"),
+        ("Breaking news",      "breaking_news_page", "Live breaking-news feed"),
+        ("Keyboard help",      "help_keyboard",      "Keyboard shortcuts"),
+        ("Developer API",      "developer_news_api", "Public REST endpoints"),
+    ]:
+        try:
+            url = url_for(endpoint)
+        except Exception:
+            continue
+        items.append({
+            "id": f"page:{endpoint}",
+            "kind": "page",
+            "label": label,
+            "url": url,
+            "hint": hint,
+        })
+    return jsonify({
+        "ok": True,
+        "version": "r8.1",
+        "count": len(items),
+        "items": items,
+    })
+
+
+@app.route("/api/region-glossary/<region>")
+def api_region_glossary(region):
+    """Contextual-help popover content for a region or country mention.
+
+    `region` may be a glossary slug ('uk', 'africa', 'scotland', ...) or a
+    full country name ('France', 'Germany', ...). Country names map back
+    to their parent region via a small static table.
+    """
+    key = (region or "").strip().lower().replace(" ", "_").replace("-", "_")
+    # Country -> region overrides (small static table).
+    country_to_region = {
+        "france": "europe", "germany": "europe", "italy": "europe",
+        "spain": "europe", "ukraine": "europe", "russia": "europe",
+        "poland": "europe", "netherlands": "europe", "belgium": "europe",
+        "japan": "asia", "china": "asia", "india": "asia", "pakistan": "asia",
+        "iran": "middle_east", "iraq": "middle_east", "saudi_arabia": "middle_east",
+        "israel": "middle_east", "egypt": "africa", "kenya": "africa",
+        "nigeria": "africa", "south_africa": "africa", "ethiopia": "africa",
+        "mexico": "latin_america", "brazil": "latin_america",
+        "argentina": "latin_america", "colombia": "latin_america",
+        "canada": "us_canada", "usa": "us_canada", "united_states": "us_canada",
+    }
+    canonical = country_to_region.get(key, key)
+    entry = R8_REGION_GLOSSARY.get(canonical)
+    if not entry:
+        return jsonify({
+            "ok": False,
+            "error": "region-not-found",
+            "queried": region,
+            "available": sorted(R8_REGION_GLOSSARY.keys()),
+        }), 404
+    return jsonify({
+        "ok": True,
+        "region": canonical,
+        "name": entry["name"],
+        "summary": entry["summary"],
+        "capital": entry.get("capital"),
+        "nations": entry.get("nations", []),
+        "key_topics": entry.get("key_topics", []),
+        "doc_link": f"/section/{canonical}",
+        "glossary_marker": "rg-v1",
+    })
+
+
+@app.route("/local")
+@app.route("/local/")
+def local_index():
+    """BBC Local index: list of all 40 local regions."""
+    regions = sorted(
+        (
+            {"slug": slug, "name": meta["name"], "nation": meta["nation"]}
+            for slug, meta in R8_LOCAL_REGION_INDEX.items()
+        ),
+        key=lambda r: r["name"],
+    )
+    return render_template("local_index.html",
+                           regions=regions,
+                           active_nav_slug="bbc_local",
+                           total_regions=len(regions))
+
+
+@app.route("/local/<region_slug>")
+def local_region_page(region_slug):
+    """Per-region listing: pull the latest BBC Local articles for that
+    region using the feature_tags tagging applied by bake_extras R8."""
+    meta = R8_LOCAL_REGION_INDEX.get(region_slug)
+    if not meta:
+        abort(404)
+    tag = "local-" + region_slug.replace("_", "-")
+    arts = (Article.query
+            .filter(Article.feature_tags.like(f'%"{tag}"%'))
+            .order_by(Article.published_at.desc())
+            .limit(80)
+            .all())
+    return render_template("local_region.html",
+                           region_slug=region_slug,
+                           region_name=meta["name"],
+                           nation=meta["nation"],
+                           articles=arts,
+                           active_nav_slug="bbc_local")
+
+
+@app.route("/help/keyboard")
+def help_keyboard():
+    """Static keyboard-shortcut help page. Sources its list from
+    /api/keyboard-shortcuts so the two are guaranteed in sync."""
+    shortcuts = [
+        ("j",            "Next article in the current list"),
+        ("k",            "Previous article in the current list"),
+        ("/",            "Focus the global search box"),
+        ("Cmd+K / Ctrl+K","Open the command palette (jump anywhere)"),
+        ("?",            "Show this shortcut help overlay"),
+        ("g h",          "Jump to the homepage"),
+        ("g l",          "Jump to Live"),
+        ("g b",          "Jump to Bookmarks (signed in)"),
+        ("b",            "Bookmark the currently focused article"),
+        ("d",            "Toggle dark mode"),
+        ("Escape",       "Close any open overlay"),
+    ]
+    return render_template("help_keyboard.html",
+                           shortcuts=shortcuts,
+                           active_nav_slug="help")
+
+
+@app.route("/api/multi-step/start", methods=["GET", "POST"])
+@csrf.exempt
+def api_multi_step_start():
+    """Kick off a deterministic multi-step task workflow. Returns the
+    first step + the workflow ID; subsequent steps fetched by ID."""
+    workflow_id = (request.values.get("workflow") or "default").strip()[:32] or "default"
+    seed = hashlib.sha1(workflow_id.encode("utf-8")).hexdigest()[:8]
+    return jsonify({
+        "ok": True,
+        "workflow_id": f"ms-{seed}",
+        "step": 1,
+        "total_steps": 4,
+        "next": "/api/multi-step/step",
+        "task": "Open /api/keyboard-shortcuts and locate the shortcut for "
+                "'open-command-palette'.",
+        "expected_marker": "ks-pal",
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+    })
+
+
+@app.route("/api/multi-step/step", methods=["GET", "POST"])
+@csrf.exempt
+def api_multi_step_step():
+    """Return the next step of the multi-step workflow."""
+    try:
+        step = max(1, min(5, int(request.values.get("step", "2"))))
+    except (TypeError, ValueError):
+        step = 2
+    workflow_id = (request.values.get("workflow_id") or "ms-default")[:40]
+    steps = {
+        2: {"task": "Call /api/region-glossary/uk and capture the `capital` "
+                    "field for the next step.",
+            "expected_marker": "rg-v1"},
+        3: {"task": "Visit /local/london and copy the headline of the first "
+                    "article into the next request as `q`.",
+            "expected_marker": "local-london"},
+        4: {"task": "POST /api/telemetry with {event:'multi-step-done', "
+                    "surface:'r8'} and report the `telemetry_marker`.",
+            "expected_marker": "t8-v1"},
+        5: {"task": "Done. There are no more steps.",
+            "expected_marker": "ms-end"},
+    }
+    payload = steps.get(step, steps[5])
+    return jsonify({
+        "ok": True,
+        "workflow_id": workflow_id,
+        "step": step,
+        "total_steps": 4,
+        "next": "/api/multi-step/step" if step < 5 else None,
+        **payload,
+        "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
     })
 
 

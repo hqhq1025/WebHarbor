@@ -4844,6 +4844,410 @@ def feed_trending_rss():
     return resp
 
 
+# ============================================================================
+# R8 — Observability + Developer experience
+#   * /healthz           — liveness probe
+#   * /api/uptime        — boot time + uptime (seconds) under the mirror clock
+#   * /api/events        — recent webhook events as JSON
+#   * /webhook/model-deploy — POST receiver that appends to the in-memory log
+#   * /api/v3/graphql    — minimal POST endpoint returning repo+author shape
+#   * /developer/inference-API-curl-builder — interactive curl-builder page
+#   * /help/pipeline-tags — pipeline-tag glossary (contextual help)
+#   * /api/command-palette — JSON feed for the Cmd+K palette
+# ============================================================================
+import hashlib as _r8_hashlib
+import time as _r8_time
+from collections import deque as _r8_deque
+
+# Pinned "boot time" — anchored to the mirror clock minus a deterministic
+# offset so /api/uptime never reveals real wall clock and rebuilds stay
+# byte-stable across container restarts.
+_R8_BOOT_TS = MIRROR_REFERENCE_DATE - timedelta(hours=37, minutes=12)
+# Synthetic uptime counter (incremented per /api/uptime request so a tester
+# can observe monotonic growth without depending on wall clock).
+_R8_UPTIME_HITS = [0]
+
+# Webhook event log — capped deque so the page never grows unbounded.
+# Seeded with deterministic boot-time events derived from top trending
+# repos so it has content even before a tester POSTs.
+_R8_EVENT_LOG = _r8_deque(maxlen=200)
+
+
+def _r8_seed_events():
+    """Populate the event log with one deterministic event per top-12
+    trending model. Runs once per boot; subsequent calls are no-ops."""
+    if _R8_EVENT_LOG:
+        return
+    rows = (Repository.query
+            .filter(Repository.repo_type == "model")
+            .order_by(Repository.trending_score.desc(),
+                      Repository.likes_count.desc(),
+                      Repository.id.asc())
+            .limit(12).all())
+    for i, r in enumerate(rows):
+        h = int(_r8_hashlib.md5(r.slug.encode("utf-8")).hexdigest(), 16)
+        ts = MIRROR_REFERENCE_DATE - timedelta(hours=(i * 3) + (h % 17))
+        _R8_EVENT_LOG.append({
+            "id": f"evt_{i:04d}_{h & 0xffff:04x}",
+            "type": ("model.deploy", "model.update", "model.like", "model.endpoint.scale")[i % 4],
+            "repo_id": r.id,
+            "slug": r.slug,
+            "hardware": ("cpu-basic", "t4-small", "l4x1", "a100-large", "zero-gpu")[h % 5],
+            "endpoint_id": f"ep-{(h >> 8) & 0xffffff:06x}",
+            "actor": ("alice_j", "bob_c", "carol_d", "david_k", "demo")[h % 5],
+            "ts": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        })
+
+
+@app.route("/healthz")
+def healthz():
+    """Simple liveness probe. Returns 200 + JSON status when DB is reachable.
+
+    Deterministic db_md5_short is the head-16 of an md5 over the count tuple
+    so the value is stable rebuild-to-rebuild but changes if any of the
+    headline counts drift."""
+    from flask import Response
+    try:
+        repos_n = db.session.query(Repository.id).count()
+        authors_n = db.session.query(Author.id).count()
+        tasks_n = db.session.query(Task.id).count()
+        users_n = db.session.query(User.id).count()
+    except Exception:
+        return Response('{"status":"degraded"}', mimetype="application/json", status=503)
+    sig = _r8_hashlib.md5(
+        f"{repos_n}:{authors_n}:{tasks_n}:{users_n}".encode("utf-8")
+    ).hexdigest()[:16]
+    payload = {
+        "status": "ok",
+        "service": "huggingface-mirror",
+        "version": "r8",
+        "repos": repos_n,
+        "authors": authors_n,
+        "tasks": tasks_n,
+        "users": users_n,
+        "db_signature": sig,
+    }
+    return Response(json.dumps(payload), mimetype="application/json")
+
+
+@app.route("/api/uptime")
+def api_uptime():
+    """Boot time + synthetic uptime under the mirror clock. The uptime
+    counter advances by request count so the value is monotonic without
+    leaking real wall clock."""
+    from flask import Response
+    _R8_UPTIME_HITS[0] += 1
+    boot_iso = _R8_BOOT_TS.strftime("%Y-%m-%dT%H:%M:%SZ")
+    seconds = int((mirror_now() - _R8_BOOT_TS).total_seconds()) + _R8_UPTIME_HITS[0]
+    payload = {
+        "boot_time": boot_iso,
+        "uptime_seconds": seconds,
+        "uptime_human": f"{seconds // 86400}d {(seconds % 86400) // 3600}h {(seconds % 3600) // 60}m",
+        "hits": _R8_UPTIME_HITS[0],
+    }
+    return Response(json.dumps(payload), mimetype="application/json")
+
+
+@app.route("/api/events")
+def api_events():
+    """Return the most recent webhook events (newest first)."""
+    from flask import Response
+    _r8_seed_events()
+    limit = max(1, min(200, int(request.args.get("limit", 50) or 50)))
+    kind = (request.args.get("type") or "").strip().lower()
+    items = list(_R8_EVENT_LOG)
+    items.reverse()
+    if kind:
+        items = [e for e in items if e.get("type", "").lower() == kind]
+    items = items[:limit]
+    payload = {"count": len(items), "events": items}
+    return Response(json.dumps(payload), mimetype="application/json")
+
+
+@csrf.exempt
+@app.route("/webhook/model-deploy", methods=["POST", "GET"])
+def webhook_model_deploy():
+    """Accept a deploy-event webhook. GET returns the schema + recent
+    payloads so a tester can inspect without POSTing first."""
+    from flask import Response
+    _r8_seed_events()
+    if request.method == "GET":
+        payload = {
+            "accepts": "application/json",
+            "schema": {
+                "slug": "string (required)",
+                "hardware": "string (default: t4-small)",
+                "actor": "string (default: anonymous)",
+                "endpoint_id": "string (auto-generated when absent)",
+            },
+            "recent": list(_R8_EVENT_LOG)[-10:],
+        }
+        return Response(json.dumps(payload), mimetype="application/json")
+    # POST path — accept JSON or form
+    body = {}
+    try:
+        body = request.get_json(silent=True) or {}
+    except Exception:
+        body = {}
+    if not body:
+        body = request.form.to_dict() or {}
+    slug = (body.get("slug") or "").strip()
+    if not slug or "/" not in slug:
+        return Response('{"error":"slug is required (author/name)"}',
+                        mimetype="application/json", status=400)
+    hw = (body.get("hardware") or "t4-small").strip()
+    actor = (body.get("actor") or "anonymous").strip()
+    h = int(_r8_hashlib.md5(f"{slug}:{hw}:{actor}".encode("utf-8")).hexdigest(), 16)
+    endpoint_id = body.get("endpoint_id") or f"ep-{(h & 0xffffff):06x}"
+    event = {
+        "id": f"evt_{int(_r8_time.time())}_{h & 0xffff:04x}",
+        "type": "model.deploy",
+        "slug": slug,
+        "hardware": hw,
+        "actor": actor,
+        "endpoint_id": endpoint_id,
+        "ts": mirror_now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "accepted": True,
+    }
+    _R8_EVENT_LOG.append(event)
+    return Response(json.dumps({"ok": True, "event": event}),
+                    mimetype="application/json", status=202)
+
+
+@csrf.exempt
+@app.route("/api/v3/graphql", methods=["GET", "POST"])
+def api_v3_graphql():
+    """Minimal GraphQL-style endpoint. Recognises three top-level fields:
+       * repo(slug: "author/name", type: "model")
+       * author(username: "...")
+       * trending(type: "model", limit: 10)
+
+    GET introspection returns the schema; POST executes the query JSON
+    `{ "query": "..." }` parsed by a tiny regex matcher."""
+    from flask import Response
+    import re as _re_r8
+
+    SCHEMA = {
+        "version": "v3",
+        "queries": {
+            "repo": {"args": {"slug": "ID!", "type": "String"},
+                     "returns": ["slug", "repo_type", "task", "library",
+                                 "license", "downloads", "likes", "params_b"]},
+            "author": {"args": {"username": "ID!"},
+                       "returns": ["username", "display_name", "kind",
+                                   "followers_count", "is_verified"]},
+            "trending": {"args": {"type": "String", "limit": "Int"},
+                         "returns": ["slug", "task", "downloads", "likes",
+                                     "trending_score"]},
+        },
+    }
+    if request.method == "GET":
+        return Response(json.dumps(SCHEMA, indent=2),
+                        mimetype="application/json")
+    body = request.get_json(silent=True) or {}
+    query = (body.get("query") or "").strip()
+    if not query:
+        return Response(json.dumps({"errors": ["empty query"]}),
+                        mimetype="application/json", status=400)
+    data = {}
+    errors = []
+    # repo(slug: "...", type: "...")
+    m = _re_r8.search(r'repo\s*\(\s*slug\s*:\s*"([^"]+)"(?:\s*,\s*type\s*:\s*"([^"]+)")?\s*\)', query)
+    if m:
+        slug = m.group(1)
+        rt = (m.group(2) or "model").lower()
+        repo = Repository.query.filter_by(slug=slug, repo_type=rt).first()
+        if repo:
+            data["repo"] = {
+                "slug": repo.slug,
+                "repo_type": repo.repo_type,
+                "task": repo.task_slug,
+                "library": repo.library or "",
+                "license": repo.license or "",
+                "downloads": repo.downloads or 0,
+                "likes": repo.likes_count or 0,
+                "params_b": float(repo.params_b or 0),
+            }
+        else:
+            data["repo"] = None
+            errors.append(f"repo not found: {slug} ({rt})")
+    # author(username: "...")
+    m = _re_r8.search(r'author\s*\(\s*username\s*:\s*"([^"]+)"\s*\)', query)
+    if m:
+        a = Author.query.filter_by(username=m.group(1)).first()
+        if a:
+            data["author"] = {
+                "username": a.username,
+                "display_name": a.display_name,
+                "kind": a.kind,
+                "followers_count": a.followers_count or 0,
+                "is_verified": bool(a.is_verified),
+            }
+        else:
+            data["author"] = None
+            errors.append(f"author not found: {m.group(1)}")
+    # trending(type: "...", limit: N)
+    m = _re_r8.search(r'trending\s*\(\s*(?:type\s*:\s*"([^"]+)"\s*,?\s*)?(?:limit\s*:\s*(\d+))?\s*\)', query)
+    if m:
+        rt = (m.group(1) or "model").lower()
+        if rt not in ("model", "dataset", "space"):
+            rt = "model"
+        n = int(m.group(2) or 10)
+        if not TRENDING_CACHE.get(rt):
+            _refresh_trending_cache(limit=50)
+        data["trending"] = TRENDING_CACHE[rt][:n]
+    out = {"data": data}
+    if errors:
+        out["errors"] = errors
+    return Response(json.dumps(out), mimetype="application/json")
+
+
+@app.route("/developer/inference-API-curl-builder")
+@app.route("/developer/inference-api-curl-builder")
+def developer_curl_builder():
+    """Interactive page that renders a runnable `curl` command for the
+    selected model. The submitted form regenerates the snippet without
+    hitting the inference backend so the page is fully offline."""
+    slug = (request.args.get("slug") or "meta-llama/Llama-3.3-70B-Instruct").strip()
+    provider = (request.args.get("provider") or "HF Inference").strip()
+    payload_kind = (request.args.get("payload") or "text").strip().lower()
+    repo = Repository.query.filter_by(slug=slug, repo_type="model").first()
+    base = _site_origin()
+    body_examples = {
+        "text": '{"inputs":"Write a haiku about transformers."}',
+        "chat": '{"messages":[{"role":"user","content":"Hi there!"}],"max_tokens":256}',
+        "image": '{"inputs":"a cinematic photo of an astronaut on a giraffe","parameters":{"width":1024,"height":1024}}',
+        "embed": '{"inputs":"sentence to embed"}',
+    }
+    body = body_examples.get(payload_kind, body_examples["text"])
+    curl_cmd = (
+        f'curl -X POST "{base}/api/inference" \\\n'
+        f'  -H "Authorization: Bearer $HF_TOKEN" \\\n'
+        f'  -H "Content-Type: application/json" \\\n'
+        f'  -H "X-Inference-Provider: {provider}" \\\n'
+        f'  -d \'{{"model":"{slug}","payload":{body}}}\''
+    )
+    suggested = (Repository.query
+                 .filter(Repository.repo_type == "model")
+                 .order_by(Repository.downloads.desc())
+                 .limit(20).all())
+    return render_template(
+        "developer_curl_builder.html",
+        slug=slug, repo=repo, provider=provider,
+        payload_kind=payload_kind, body=body, curl_cmd=curl_cmd,
+        suggested=suggested,
+        providers=INFERENCE_PROVIDERS,
+        payload_kinds=("text", "chat", "image", "embed"),
+        page_title="Inference API · curl builder",
+    )
+
+
+# Pipeline-tag glossary (contextual help)
+PIPELINE_TAG_GLOSSARY = [
+    ("text-generation", "Autoregressive language modeling. Models predict the next token given a prompt."),
+    ("text-to-image", "Generates an image from a text caption using a diffusion or autoregressive image model."),
+    ("automatic-speech-recognition", "Speech-to-text — converts audio waveforms to written transcripts."),
+    ("text-to-speech", "Synthesizes spoken audio from input text. Supports voice conditioning in newer models."),
+    ("image-classification", "Assigns a single label to an entire image from a fixed taxonomy."),
+    ("object-detection", "Locates and labels objects with bounding boxes inside an image."),
+    ("image-segmentation", "Predicts a class label for every pixel — semantic, instance, or panoptic."),
+    ("depth-estimation", "Predicts per-pixel depth from a monocular RGB image."),
+    ("translation", "Maps a sentence from one natural language to another."),
+    ("summarization", "Condenses long documents into shorter, faithful summaries."),
+    ("feature-extraction", "Produces fixed-size embeddings for downstream retrieval or similarity."),
+    ("token-classification", "Per-token labels — NER, POS tagging, chunking."),
+    ("text-classification", "One label per sentence — sentiment, intent, topic, etc."),
+    ("question-answering", "Extracts or generates an answer from a context passage."),
+    ("zero-shot-classification", "Classifies text against arbitrary labels without task-specific training."),
+    ("image-text-to-text", "Multimodal — accepts interleaved image and text; outputs text. Document QA, VQA."),
+    ("text-to-video", "Synthesizes short video clips from text prompts."),
+    ("image-to-video", "Animates a still image into a short video clip."),
+    ("text-to-3d", "Generates a 3D mesh or NeRF from a text prompt."),
+    ("image-to-3d", "Lifts a single image into a textured 3D mesh."),
+    ("reinforcement-learning", "Agents that learn behavior from environmental rewards."),
+    ("tabular-classification", "Classifies rows of structured tabular data."),
+    ("tabular-regression", "Predicts continuous targets from tabular features."),
+    ("sentence-similarity", "Scores semantic similarity between two pieces of text."),
+    ("audio-classification", "Sound-event, speaker, or genre classification on audio clips."),
+    ("audio-to-audio", "Audio-in / audio-out — enhancement, separation, voice conversion."),
+    ("fill-mask", "Masked-language modeling — predict missing tokens in a sentence."),
+    ("table-question-answering", "Question answering grounded in a tabular schema."),
+    ("text-ranking", "Reranks candidate passages by relevance to a query."),
+]
+
+
+@app.route("/help/pipeline-tags")
+@app.route("/developer/pipeline-tags")
+def help_pipeline_tags():
+    """Glossary of pipeline-tag definitions used across model cards."""
+    q = (request.args.get("q") or "").strip().lower()
+    entries = PIPELINE_TAG_GLOSSARY
+    if q:
+        entries = [(k, v) for k, v in entries if q in k.lower() or q in v.lower()]
+    return render_template(
+        "pipeline_tag_glossary.html",
+        entries=entries, q=q,
+        page_title="Pipeline-tag glossary",
+    )
+
+
+@app.route("/api/command-palette")
+def api_command_palette():
+    """JSON feed used by the Cmd+K palette.  Pull a deterministic top slice
+    so the palette is snappy without scanning the full 200k-row pool."""
+    from flask import Response
+    q = (request.args.get("q") or "").strip().lower()
+    limit = max(1, min(40, int(request.args.get("limit", 20) or 20)))
+    items = []
+    # Static nav
+    nav = [
+        ("Models", "/models", "page"),
+        ("Datasets", "/datasets", "page"),
+        ("Spaces", "/spaces", "page"),
+        ("Papers", "/papers", "page"),
+        ("Posts", "/posts", "page"),
+        ("Leaderboards", "/leaderboards", "page"),
+        ("Docs", "/docs", "page"),
+        ("Enterprise", "/enterprise", "page"),
+        ("Pricing", "/pricing", "page"),
+        ("Pipeline-tag glossary", "/help/pipeline-tags", "page"),
+        ("Inference API · curl builder", "/developer/inference-API-curl-builder", "page"),
+        ("Trending RSS", "/feed/trending.rss", "page"),
+        ("Robots.txt", "/robots.txt", "page"),
+        ("Sitemap", "/sitemap.xml", "page"),
+        ("Healthz", "/healthz", "page"),
+        ("Uptime", "/api/uptime", "page"),
+        ("Events", "/api/events", "page"),
+    ]
+    for label, url, kind in nav:
+        if not q or q in label.lower() or q in url.lower():
+            items.append({"label": label, "url": url, "kind": kind})
+    # Top trending models / datasets / spaces
+    if q:
+        rows = (Repository.query
+                .filter(Repository.slug.ilike(f"%{q}%"))
+                .order_by(Repository.likes_count.desc())
+                .limit(limit).all())
+    else:
+        rows = []
+        for rt in ("model", "dataset", "space"):
+            rows.extend(Repository.query
+                        .filter(Repository.repo_type == rt)
+                        .order_by(Repository.likes_count.desc(),
+                                  Repository.id.asc())
+                        .limit(4).all())
+    for r in rows[:limit]:
+        items.append({
+            "label": r.slug,
+            "url": _repo_canonical_path(r),
+            "kind": r.repo_type,
+            "likes": r.likes_count or 0,
+            "downloads": r.downloads or 0,
+        })
+    payload = {"count": len(items), "items": items[:40]}
+    return Response(json.dumps(payload), mimetype="application/json")
+
+
 with app.app_context():
     fresh = not (ROOT / "instance" / "hf.db").exists() or Repository.query.count() == 0
     db.create_all()
@@ -4855,6 +5259,12 @@ with app.app_context():
     # deterministic functions of the seed DB so this is safe to do once.
     try:
         _refresh_trending_cache(limit=50)
+    except Exception:
+        pass
+    # R8: prime the webhook event log so /api/events has content before
+    # any tester POSTs. Deterministic — derived from top trending models.
+    try:
+        _r8_seed_events()
     except Exception:
         pass
 

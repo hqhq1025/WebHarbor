@@ -12,7 +12,7 @@
             <span>{{ repo.slug.split('/')[1] }}</span>
         </div>
         <div class="repo-card-meta">
-            {% if repo.task_display %}<span>{{ repo.task_display }}</span>{% endif %}
+            {% if repo.task_display %}<span data-pipeline-tag="{{ repo.task_slug }}">{{ repo.task_display }}</span>{% endif %}
             {% if repo.size_badge %}<span>• {{ repo.size_badge }}</span>{% endif %}
             {% if repo.repo_type == 'dataset' and repo.rows_display != '0' %}<span>• {{ repo.rows_display }} rows</span>{% endif %}
             <span>• Updated {{ repo.updated_display }}</span>

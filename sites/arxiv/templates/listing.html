@@ -27,11 +27,11 @@
 {% if grouped %}
     {% for g in grouped %}
     <h3 class="announce-day">{{ g.label }} ({{ g.count }} entries)</h3>
-    <dl>
+    <dl data-kbd-nav data-kbd-nav-group="grouped">
         {% for p in g.papers %}
         {% set idx.n = idx.n + 1 %}
-        <dt>
-            <span class="entry-id">[{{ idx.n }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        <dt data-kbd-nav-row data-arxiv-id="{{ p.arxiv_id }}">
+            <span class="entry-id">[{{ idx.n }}]&nbsp;<a data-kbd-nav-link href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
             [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
             <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
             <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
@@ -52,10 +52,10 @@
     </dl>
     {% endfor %}
 {% else %}
-<dl>
+<dl data-kbd-nav data-kbd-nav-group="flat">
     {% for p in papers %}
-    <dt>
-        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+    <dt data-kbd-nav-row data-arxiv-id="{{ p.arxiv_id }}">
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a data-kbd-nav-link href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
         [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
         <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
         <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Custom search engine builder — Google Search developers{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 6px;">Custom search engine builder</h1>
+  <p class="muted">
+    Configure a Programmable Search Engine restricted to a list of sites,
+    pinned to a vertical, with a fixed safe-search policy. The resulting
+    <code>cx</code> id deterministically derives from your inputs so two
+    identical configs always produce the same id.
+  </p>
+
+  <form method="post" style="margin-top: 18px; display: grid; gap: 12px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label>
+      <span style="font-size: 13px;">Engine name</span>
+      <input name="name" value="{{ saved.name if saved else 'My Custom Engine' }}"
+             style="width: 100%; padding: 8px 12px; border: 1px solid #dadce0; border-radius: 6px;"
+             aria-label="Engine name">
+    </label>
+
+    <label>
+      <span style="font-size: 13px;">Restrict to these sites (comma-separated)</span>
+      <input name="sites" value="{{ ','.join(saved.sites) if saved else 'nytimes.com,bbc.com,nature.com' }}"
+             style="width: 100%; padding: 8px 12px; border: 1px solid #dadce0; border-radius: 6px;"
+             aria-label="Allowed sites">
+    </label>
+
+    <label>
+      <span style="font-size: 13px;">Default vertical</span>
+      <select name="vertical"
+              style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 6px;"
+              aria-label="Default vertical">
+        {% for v in verts %}
+        <option value="{{ v }}" {% if saved and saved.vertical == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      <span style="font-size: 13px;">SafeSearch policy</span>
+      <select name="safe_search"
+              style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 6px;"
+              aria-label="SafeSearch">
+        {% for s in ['off', 'moderate', 'strict'] %}
+        <option value="{{ s }}" {% if saved and saved.safe_search == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit"
+            style="padding: 10px 16px; background: #1a73e8; color: white;
+                   border: 0; border-radius: 6px; cursor: pointer;">
+      Generate cx id
+    </button>
+  </form>
+
+  {% if saved %}
+  <section style="margin-top: 22px; padding: 14px 16px;
+                  border: 1px solid #c8e6c9; border-radius: 12px; background: #f0fff4;">
+    <h2 style="font-size: 18px; margin: 0 0 8px 0;">Engine ready</h2>
+    <p style="margin: 4px 0;"><strong>Name:</strong> {{ saved.name }}</p>
+    <p style="margin: 4px 0;"><strong>cx id:</strong> <code>{{ saved.cse_id }}</code></p>
+    <p style="margin: 4px 0;"><strong>Sites:</strong> {{ ', '.join(saved.sites) or '(any)' }}</p>
+    <p style="margin: 4px 0;"><strong>Vertical:</strong> {{ saved.vertical }}</p>
+    <p style="margin: 4px 0;"><strong>SafeSearch:</strong> {{ saved.safe_search }}</p>
+    <p style="margin: 4px 0;"><strong>Embed snippet:</strong></p>
+    <pre style="background: #fff; padding: 8px 10px; border-radius: 6px;
+                 border: 1px solid #dadce0; overflow-x: auto;">{{ saved.embed_snippet }}</pre>
+    <p style="margin: 4px 0;"><strong>GraphQL endpoint:</strong>
+      <a href="{{ saved.endpoint }}"><code>{{ saved.endpoint }}</code></a></p>
+  </section>
+  {% endif %}
+
+  <p class="muted" style="margin-top: 16px; font-size: 13px;">
+    See also <a href="/api/v3/graphql">GraphQL endpoint</a>,
+    <a href="/webhook/serp-change-alert">SERP-change webhook</a>, and the
+    <a href="/command-palette">Command palette</a>.
+  </p>
+</div>
+{% endblock %}

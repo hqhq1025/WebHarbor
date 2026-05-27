@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Keyboard shortcuts - BBC News Help{% endblock %}
+
+{% block content %}
+<div class="static-page" id="help-keyboard">
+    <h1>Keyboard shortcuts</h1>
+    <p class="lead">
+        BBC News supports keyboard shortcuts for navigation, search and
+        actions. Press <kbd>?</kbd> anywhere on the site to open the
+        same list as an overlay.
+    </p>
+
+    <table class="shortcut-table" data-shortcut-count="{{ shortcuts|length }}">
+        <thead>
+            <tr><th>Keys</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+        {% for keys, action in shortcuts %}
+            <tr>
+                <td><kbd>{{ keys }}</kbd></td>
+                <td>{{ action }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <p>
+        The machine-readable shortcut catalogue lives at
+        <code><a href="{{ url_for('api_keyboard_shortcuts') }}">/api/keyboard-shortcuts</a></code>.
+    </p>
+</div>
+{% endblock %}

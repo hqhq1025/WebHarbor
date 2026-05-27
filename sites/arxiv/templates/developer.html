@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}arXiv Developer Hub{% endblock %}
+{% block content %}
+
+<h1>arXiv Developer Hub</h1>
+<p class="muted">
+    Public read-only endpoints for programmatic access to the mirror.
+    SDK version <code>{{ sdk_version }}</code> &middot; build
+    <code>{{ build_date }}</code>.
+</p>
+
+<div class="dash-card">
+    <h2>Endpoints</h2>
+    <table class="data">
+        <thead>
+            <tr><th>Endpoint</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+        {% for path, desc in endpoints %}
+            <tr><td><code>{{ path }}</code></td><td>{{ desc }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="dash-card">
+    <h2>Get an API key</h2>
+    <p>
+        Visit <a href="{{ url_for('developer_api_key') }}">/developer/api-key</a>
+        to generate a personal token.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Webhooks</h2>
+    <p>
+        Subscribe to <code>new-paper</code> events at
+        <a href="{{ url_for('webhook_new_paper') }}">/webhook/new-paper</a>.
+        Payloads are signed with HMAC-SHA256 (header
+        <code>X-Arxiv-Signature</code>).
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Rate limits</h2>
+    <table class="data">
+        <tr><th>Endpoint family</th><th>Anonymous</th><th>With API key</th></tr>
+        <tr><td>/api/papers/*</td><td>60 req/min</td><td>600 req/min</td></tr>
+        <tr><td>/api/log, /api/events</td><td>30 req/min</td><td>120 req/min</td></tr>
+        <tr><td>/cite/batch</td><td>10 req/min</td><td>60 req/min</td></tr>
+        <tr><td>/oai-pmh</td><td>1 req / 3.2s (arXiv-wide)</td><td>same (shared pool)</td></tr>
+    </table>
+</div>
+
+{% endblock %}

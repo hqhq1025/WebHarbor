@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}Every contextual help popover on Allrecipes — what each [?] badge explains and how to open it from the keyboard.{% endblock %}
+
+{% block content %}
+<section class="container help-popovers" style="max-width:880px;margin:32px auto;padding:0 16px;">
+  <h1>Contextual Help Popovers</h1>
+  <p class="lede" style="color:#555;font-size:1.05rem;">
+    Small <strong>[?]</strong> badges sit next to interactive controls
+    across the site. Click any badge — or press <kbd>.</kbd> (period)
+    while focused on the surrounding section — to open a popover with
+    a one-sentence explanation. Below is the full inventory.
+  </p>
+
+  <table class="popover-table" style="width:100%;margin-top:24px;border-collapse:collapse;font-size:0.97rem;">
+    <thead>
+      <tr style="background:#f6efe7;text-align:left;">
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;width:280px;">Anchor (CSS selector / route)</th>
+        <th style="padding:10px;border-bottom:2px solid #d8c9b4;">Popover text</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for anchor, text in popovers %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #eee;font-family:monospace;color:#1a5;">{{ anchor }}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;color:#333;">{{ text }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top:24px;">
+    All popovers fire a <code>popover.open</code> event to
+    <a href="/telemetry"><code>POST /telemetry</code></a> with the anchor
+    selector as the <code>anchor</code> prop, so we can measure which
+    help text actually gets read.
+  </p>
+</section>
+{% endblock %}

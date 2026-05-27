@@ -1652,6 +1652,19 @@ def seed_extended_catalog():
         print(f"[seed_extended] R7 polish FAILED: {exc!r}")
         raise
 
+    # ----- R8: 5 baking sub-category variant passes (Cookies / Cakes / Pies /
+    # Breads / Pastries) + Chef Pierre Beaumont (French patisserie). Adds
+    # ~5200 baking recipes so the catalog crosses 23000 with deep baking
+    # coverage. Also seeds 5 new baking sub-categories.
+    try:
+        from r8_seed import run_r8_polish
+        r8_counts = run_r8_polish(cat_by_slug)
+        if not r8_counts.get('skipped'):
+            print(f"[seed_extended] R8 polish: {r8_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R8 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

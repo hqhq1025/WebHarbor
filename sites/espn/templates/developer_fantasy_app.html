@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Build a Fantasy App with ESPN{% endblock %}
+
+{% block content %}
+<div class="container" data-r8-page="developer-fantasy-app">
+  <header class="page-header">
+    <h1>Build a Fantasy App with ESPN</h1>
+    <p class="page-header__sub">Integration guide for the ESPN mirror's fantasy-app surface. Covers polling cadences, the GraphQL-min v3 query patterns, and the webhook contract used by the live-scores ticker.</p>
+  </header>
+
+  <section class="developer-quickstart">
+    <h2>Quickstart</h2>
+    <ol class="developer-steps">
+      <li>Fetch a team's basics via <code>/api/v3-graphql</code> with <code>{"query":"team(slug)"}</code>.</li>
+      <li>Subscribe (mirror-style) to score events by polling <code>/api/events?limit=50</code> every 60 seconds.</li>
+      <li>For test-driven flows, POST mock payloads to <code>/webhook/score-update</code>; the ack id is deterministic.</li>
+      <li>Send your own telemetry to <code>/api/telemetry</code>; nothing is persisted, but the response is deterministic and signed.</li>
+    </ol>
+  </section>
+
+  <section class="developer-sample-teams">
+    <h2>Sample roster lookup</h2>
+    <p>The first eight teams in the mirror — feed these slugs into your GraphQL queries:</p>
+    <ul id="r8-sample-teams">
+      {% for t in teams %}
+      <li><a href="/team/{{ t.sport_slug }}/{{ t.slug }}" data-r8-team-slug="{{ t.slug }}"><code>{{ t.slug }}</code></a> — {{ t.full_name }} ({{ t.sport_slug|upper }})</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="developer-webhook">
+    <h2>Webhook contract</h2>
+    <pre><code id="r8-webhook-contract">POST /webhook/score-update
+Content-Type: application/json
+
+{"game_id": 1234, "home_score": 92, "away_score": 88, "period": "Q4 02:14"}
+
+→ {"received": true, "ack_id": "&lt;sha1[:16]&gt;", "echo": {...}}
+</code></pre>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Refer a friend — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Refer a friend and earn ${{ bonus_amount }} {{ bonus_currency }}</h1>
+    <p class="page-subtitle">Share your referral code. When a friend completes a qualifying stay, you both get rewarded.</p>
+
+    <div class="card-grid cards-2">
+        <div class="pd-section">
+            <h2>Your referral code</h2>
+            <p class="referral-code-display" style="font-size:28px;font-weight:bold;color:#003580;letter-spacing:2px;">{{ code }}</p>
+            <p>Share link:</p>
+            <p><code id="share-link">https://booking.example/refer-friend/code/{{ code }}</code></p>
+            <button class="btn btn-primary" type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('share-link').textContent); this.textContent='Copied'">Copy link</button>
+            <p style="margin-top:18px;color:#666;font-size:13px;">Genius level 3 members can have up to <strong>{{ genius3_yearly_slots }}</strong> active referral slots per calendar year.</p>
+        </div>
+
+        <div class="pd-section">
+            <h2>What your friend gets</h2>
+            <p>A welcome discount of <strong>${{ friend_discount_amount }} {{ bonus_currency }}</strong> on their first booking.</p>
+            <h3>Eligibility for both rewards</h3>
+            <ul>
+                <li>Friend's first booking must be at least <strong>${{ friend_min_stay_value }} {{ bonus_currency }}</strong> in total stay value.</li>
+                <li>Booking must be for at least <strong>{{ friend_min_nights }} consecutive nights</strong>.</li>
+                <li>Stay must be completed (check-out reached) before either reward unlocks.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="pd-section mt-3">
+        <h2>How it works</h2>
+        <ol>
+            <li>Share your code or link.</li>
+            <li>Your friend signs up and books their first stay.</li>
+            <li>Once the stay completes, your reward is credited to your Booking wallet within 7 days.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

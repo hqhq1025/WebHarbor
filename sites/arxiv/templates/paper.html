@@ -84,7 +84,7 @@
         {% if _affil_entries %}
         <div class="paper-author-affil-sticky" aria-label="Authors and affiliations">
             {% for e in _affil_entries[:5] %}
-                <b>{{ e.name }}</b>{% if e.affiliation %} <span class="affil">({{ e.affiliation }})</span>{% endif %}{% if not loop.last %}; {% endif %}
+                <b>{{ e.name }}</b>{% if e.affiliation %} <span class="affil" data-help-topic="affiliation" tabindex="0">({{ e.affiliation }})</span>{% endif %}{% if not loop.last %}; {% endif %}
             {% endfor %}
             {% if _affil_entries|length > 5 %}
                 <span class="muted">… +{{ _affil_entries|length - 5 }} more</span>
@@ -180,7 +180,7 @@
             {% endif %}
             <div class="row"><span class="lab">Subjects:</span> {{ paper.subjects }}</div>
             {% if paper.msc_class %}
-            <div class="row"><span class="lab">MSC class:</span>
+            <div class="row"><span class="lab" data-help-topic="msc-class" tabindex="0">MSC class:</span>
                 {% set _fam = paper.msc_class.strip()[:2] %}
                 <a href="{{ url_for('msc_listing', msc_class=_fam) }}" class="mono">{{ paper.msc_class }}</a>
             </div>
@@ -220,7 +220,7 @@
             {% endif %}
             {% if paper.license %}
             <div class="row"><span class="lab">License:</span>
-                <span class="license-tag">{{ paper.license }}</span>
+                <span class="license-tag" data-help-topic="license-{{ paper.license }}" tabindex="0">{{ paper.license }}</span>
                 <a class="muted" style="font-size:11px;" href="{{ url_for('help_page_sub', page='license') }}">view license terms</a>
             </div>
             {% endif %}

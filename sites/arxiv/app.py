@@ -3645,6 +3645,351 @@ def paper_seo_meta(paper):
 
 
 # =======================================================================
+# R8 — observability, developer & telemetry endpoints, contextual help
+# All responses are deterministic functions of (corpus stats, arxiv_id,
+# fixed reference date) so no DB writes are needed and byte-identical
+# rebuilds stay intact.
+# =======================================================================
+
+# Build-time anchor for /healthz / /api/uptime. Fixed so "uptime" reads
+# stable across replays of the same mirror.
+SERVICE_BUILD_TS = MIRROR_REFERENCE_DATE.replace(hour=0, minute=0, second=0)
+
+
+@app.route("/healthz")
+@app.route("/health")
+def healthz():
+    """Cheap liveness probe — returns 200 + JSON when the DB connection
+    is reachable. Used by uptime monitors and the /api/uptime page."""
+    try:
+        n = db.session.query(func.count(Paper.id)).scalar() or 0
+        return jsonify({
+            "status": "ok",
+            "service": "arxiv-mirror",
+            "build_date": SERVICE_BUILD_TS.strftime("%Y-%m-%d"),
+            "papers": int(n),
+            "checks": {"database": "ok", "cache": "ok", "search": "ok"},
+        })
+    except Exception as exc:
+        return jsonify({"status": "degraded", "error": str(exc)}), 503
+
+
+@app.route("/api/uptime")
+def api_uptime():
+    """Uptime report — stable per build. The 'window_days' is digest-derived
+    from the build date so two builds of the same seed report the same SLA."""
+    digest = hashlib.md5(SERVICE_BUILD_TS.isoformat().encode("utf-8")).digest()
+    window_days = 30
+    # Synth a stable 99.9x percentage and per-day incidents.
+    avail_pp = 9990 + (digest[0] % 10)        # 99.90 .. 99.99
+    avail_pct = avail_pp / 100.0
+    incidents = []
+    for i in range(3):
+        day = SERVICE_BUILD_TS - timedelta(days=2 + i * 9)
+        incidents.append({
+            "date": day.strftime("%Y-%m-%d"),
+            "duration_min": 2 + (digest[(i + 1) * 2] % 18),
+            "summary": [
+                "Brief search latency spike",
+                "OAI-PMH replication delay",
+                "PDF mirror cache warmup",
+                "Authentication node rolling restart",
+            ][digest[i] % 4],
+            "severity": ["info", "minor", "minor"][i],
+        })
+    return jsonify({
+        "service": "arxiv-mirror",
+        "window_days": window_days,
+        "availability_pct": avail_pct,
+        "last_outage": incidents[0]["date"],
+        "incidents": incidents,
+        "build_date": SERVICE_BUILD_TS.strftime("%Y-%m-%d"),
+    })
+
+
+@app.route("/api/events")
+def api_events():
+    """Recent platform events feed — deterministic, anchored to the
+    most-recent paper submission_date in the corpus. Useful for tasks
+    like 'list the most recent platform events' or 'how many security
+    advisories in the events feed?'.
+    """
+    anchor = db.session.query(func.max(Paper.submitted_date)).scalar() or "2026-04-01"
+    try:
+        anchor_dt = datetime.strptime(anchor, "%Y-%m-%d")
+    except Exception:
+        anchor_dt = SERVICE_BUILD_TS
+    EVENT_BANK = [
+        ("submission", "info", "Daily submission window closed"),
+        ("submission", "info", "New submissions announced"),
+        ("ingest", "info", "Bulk OAI harvest cycle completed"),
+        ("ingest", "minor", "Backfill: 2018 metadata reprocessed"),
+        ("moderation", "info", "Moderator quorum reached for math.NT batch"),
+        ("moderation", "minor", "Cross-list reassignment applied"),
+        ("infra", "info", "Search index rebuild finished"),
+        ("infra", "minor", "Read-replica failover (no user impact)"),
+        ("security", "info", "Quarterly audit completed"),
+        ("security", "advisory", "TLS cert rotated on api.* endpoints"),
+        ("api", "info", "OAI-PMH endpoint capacity expanded"),
+        ("api", "info", "Citation batch export rate-limit raised"),
+        ("release", "info", "HTML5 renderer v3.2 deployed"),
+        ("release", "info", "Sitemap generator updated"),
+        ("policy", "info", "Withdrawal policy clarified in help"),
+    ]
+    n = max(1, min(40, int(request.args.get("limit", 20))))
+    sev = (request.args.get("severity") or "").strip().lower()
+    rows = []
+    for i in range(n):
+        kind, severity, summary = EVENT_BANK[i % len(EVENT_BANK)]
+        ts = anchor_dt - timedelta(hours=i * 9, minutes=(i * 13) % 60)
+        rows.append({
+            "id": f"EV-{ts.strftime('%Y%m%d')}-{i:03d}",
+            "ts": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "kind": kind,
+            "severity": severity,
+            "summary": summary,
+        })
+    if sev:
+        rows = [r for r in rows if r["severity"] == sev]
+    return jsonify({"anchor": anchor, "count": len(rows), "events": rows})
+
+
+@app.route("/api/log")
+def api_log():
+    """Application access-log tail. Synthesised from a fixed bank +
+    arxiv-id rotation so the output is identical across rebuilds.
+    Honours ?limit=N (default 25, max 200) and ?status=4xx|5xx|2xx."""
+    n = max(1, min(200, int(request.args.get("limit", 25))))
+    flt = (request.args.get("status") or "").strip().lower()
+    # Stable arxiv-id sample for the URL column.
+    sample = (Paper.query.order_by(Paper.arxiv_id)
+              .with_entities(Paper.arxiv_id).limit(120).all())
+    sample_ids = [r[0] for r in sample] or ["0000.00000"]
+    PATH_TPLS = [
+        "GET /abs/{aid}", "GET /pdf/{aid}", "GET /list/cs.LG/recent",
+        "GET /list/cs.CV/recent", "GET /search?query=quantum",
+        "GET /robots.txt", "GET /sitemap.xml", "POST /api/library/add",
+        "GET /api/papers/cs", "GET /citation/batch?n=50",
+        "GET /cite/batch?n=100&format=ris", "GET /MSC2020/68T",
+        "GET /year/2024/cs", "GET /find/grp_cs", "GET /oai-pmh",
+        "GET /atom/math.xml", "GET /healthz", "GET /api/uptime",
+    ]
+    STATUS_POOL = ["200"] * 16 + ["301", "302", "304", "404", "401", "500"]
+    lines = []
+    for i in range(n):
+        aid = sample_ids[i % len(sample_ids)]
+        path = PATH_TPLS[i % len(PATH_TPLS)].format(aid=aid)
+        status = STATUS_POOL[i % len(STATUS_POOL)]
+        ts = SERVICE_BUILD_TS - timedelta(seconds=i * 7 + 2)
+        # Deterministic 24-byte request id from arxiv_id + index
+        rid = hashlib.sha1(f"{aid}-{i}".encode()).hexdigest()[:16]
+        bytes_out = 256 + (hashlib.md5(rid.encode()).digest()[0] * 96)
+        lines.append({
+            "ts": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "request_id": rid,
+            "method_path": path,
+            "status": status,
+            "bytes": bytes_out,
+            "client_ip": f"10.0.{(i * 17) % 256}.{(i * 31) % 256}",
+        })
+    if flt in {"2xx", "3xx", "4xx", "5xx"}:
+        head = flt[0]
+        lines = [l for l in lines if l["status"].startswith(head)]
+    return jsonify({"count": len(lines), "lines": lines,
+                    "service": "arxiv-mirror"})
+
+
+@app.route("/api/telemetry")
+def api_telemetry():
+    """Aggregate counters — used for tasks like 'how many papers are
+    indexed' / 'how many comments' without scraping pages."""
+    return jsonify({
+        "papers_total": db.session.query(func.count(Paper.id)).scalar() or 0,
+        "papers_with_doi": db.session.query(func.count(Paper.id))
+            .filter(Paper.doi != "").scalar() or 0,
+        "papers_with_msc": db.session.query(func.count(Paper.id))
+            .filter(Paper.msc_class != "").scalar() or 0,
+        "comments_total": db.session.query(func.count(Comment.id)).scalar() or 0,
+        "library_items_total": db.session.query(func.count(LibraryItem.id)).scalar() or 0,
+        "users_total": db.session.query(func.count(User.id)).scalar() or 0,
+        "categories_total": db.session.query(func.count(Category.id)).scalar() or 0,
+        "build_date": SERVICE_BUILD_TS.strftime("%Y-%m-%d"),
+    })
+
+
+# -----------------------------------------------------------------------
+# Developer keys + webhooks. Read-only stubs — tokens & secrets are
+# digest-derived per session-less client so /developer/api-key never
+# leaks secret material and stays byte-identical across rebuilds.
+# -----------------------------------------------------------------------
+
+def _developer_token_for_email(email):
+    """Stable per-email token. Format mirrors `arx_live_*` industry style."""
+    norm = (email or "anonymous@arxiv.local").strip().lower()
+    raw = hashlib.sha256(("arxiv-dev-key|" + norm).encode("utf-8")).hexdigest()
+    return "arx_live_" + raw[:32]
+
+
+@app.route("/developer")
+@app.route("/developer/")
+def developer_index():
+    """Documentation hub for the public API surface."""
+    endpoints = [
+        ("GET /api/papers/<category>", "List most recent papers in a category"),
+        ("GET /api/stats", "Aggregate corpus counts"),
+        ("GET /api/telemetry", "Detailed counters including DOI/MSC coverage"),
+        ("GET /api/events", "Recent platform events"),
+        ("GET /api/uptime", "Service availability snapshot"),
+        ("GET /api/log?limit=N", "Recent access log (synthetic)"),
+        ("GET /healthz", "Liveness probe"),
+        ("POST /webhook/new-paper", "Subscribe a webhook URL for new-paper events"),
+        ("GET /oai-pmh", "OAI-PMH bulk harvest documentation"),
+        ("GET /cite/batch?n=N", "BibTeX/RIS batch export"),
+    ]
+    return render_template("developer.html",
+                           endpoints=endpoints,
+                           sdk_version="2.6.0",
+                           build_date=SERVICE_BUILD_TS.strftime("%Y-%m-%d"))
+
+
+@app.route("/developer/api-key", methods=["GET", "POST"])
+@csrf.exempt
+def developer_api_key():
+    """Stable developer key page. POST issues a fresh-looking response
+    but the underlying token is deterministic per email so the page can
+    be replayed in tasks like 'open /developer/api-key, log in, copy the
+    token'."""
+    if current_user.is_authenticated:
+        email = current_user.email
+    else:
+        email = (request.values.get("email") or "").strip().lower()
+    token = _developer_token_for_email(email) if email else ""
+    sample_curl = (
+        "curl -H 'Authorization: Bearer " + (token or "<your-token>") + "' "
+        + request.url_root.rstrip('/') + "/api/papers/cs"
+    )
+    return render_template("developer_api_key.html",
+                           email=email, token=token,
+                           sample_curl=sample_curl,
+                           build_date=SERVICE_BUILD_TS.strftime("%Y-%m-%d"))
+
+
+@app.route("/webhook/new-paper", methods=["GET", "POST"])
+@csrf.exempt
+def webhook_new_paper():
+    """Display a stable signing secret + last-delivery payload for the
+    new-paper webhook. POST also returns the same data — every request
+    is deterministic for a given email."""
+    email = ((current_user.email if current_user.is_authenticated else None)
+             or request.values.get("email") or "").strip().lower()
+    secret_seed = "arxiv-webhook|" + (email or "anonymous@arxiv.local")
+    signing_secret = "whsec_" + hashlib.sha256(
+        secret_seed.encode("utf-8")).hexdigest()[:40]
+    latest = (Paper.query.order_by(Paper.submitted_date.desc(),
+                                   Paper.arxiv_id.desc())
+              .first())
+    sample_payload = {
+        "event": "new-paper",
+        "delivery_id": hashlib.md5(secret_seed.encode()).hexdigest()[:24],
+        "occurred_at": SERVICE_BUILD_TS.strftime("%Y-%m-%dT00:00:00Z"),
+        "data": {
+            "arxiv_id": latest.arxiv_id if latest else None,
+            "title": latest.title if latest else None,
+            "primary_subject": (latest.primary_subject_code
+                                if latest else None),
+            "url": (request.url_root.rstrip("/") + f"/abs/{latest.arxiv_id}"
+                    if latest else None),
+        },
+    }
+    return render_template(
+        "webhook_new_paper.html",
+        email=email,
+        signing_secret=signing_secret,
+        sample_payload=json.dumps(sample_payload, indent=2, sort_keys=True),
+        latest=latest,
+    )
+
+
+# -----------------------------------------------------------------------
+# Contextual help — hover-text glossary for terms that show up on every
+# paper page (affiliations, licenses, MSC class). Served as JSON so the
+# UI can fetch & render tooltips without re-shipping a static dict.
+# -----------------------------------------------------------------------
+
+CONTEXTUAL_HELP = {
+    "affiliation": ("The author's home institution at submission time, "
+                    "parsed from the OAI-PMH metadata. arXiv does not "
+                    "verify affiliations — they reflect what the "
+                    "submitting author entered."),
+    "license-arXiv-perpetual": (
+        "arXiv perpetual, non-exclusive licence: grants arXiv the right "
+        "to distribute the work forever but the copyright stays with the "
+        "author. The default for submissions without an explicit Creative "
+        "Commons choice."),
+    "license-CC-BY-4.0": (
+        "Creative Commons Attribution 4.0 — anyone may reuse the work, "
+        "including commercially, as long as proper attribution is given."),
+    "license-CC-BY-SA-4.0": (
+        "Creative Commons Attribution-ShareAlike 4.0 — same as CC-BY-4.0 "
+        "but derivative works must use the same licence."),
+    "license-CC-BY-NC-SA-4.0": (
+        "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 — "
+        "non-commercial reuse with attribution and matching licence."),
+    "license-CC-BY-NC-ND-4.0": (
+        "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 — "
+        "non-commercial reuse only, no derivative works."),
+    "license-CC0-1.0": (
+        "Creative Commons Zero — the author has released the work into the "
+        "public domain to the extent possible by law."),
+    "msc-class": ("Mathematics Subject Classification (MSC2020) tag set "
+                  "by the author. Two-digit prefix marks the family; the "
+                  "letter+digits select a sub-area."),
+    "doi": ("Digital Object Identifier — persistent URL for the formally "
+            "published version of the paper (typically supplied after "
+            "journal acceptance)."),
+    "journal-ref": ("Journal reference — citation string for the formally "
+                    "published version. Many preprints never get one."),
+    "report-no": ("Institutional report number assigned by the lab or "
+                  "department that produced the paper."),
+    "msc": ("Mathematics Subject Classification family (see "
+            "MSC2020 page)."),
+    "keyboard-help": ("Keyboard shortcuts available on this page — see "
+                     "the floating help panel triggered by '?'."),
+}
+
+
+@app.route("/api/help/<topic>")
+def api_help(topic):
+    """Return contextual help text for a single hover-help topic.
+
+    Tasks frequently ask the agent to 'open /api/help/license-CC-BY-4.0
+    and copy the description' — the JSON output is stable and small.
+    """
+    topic = (topic or "").strip()
+    body = CONTEXTUAL_HELP.get(topic, "")
+    return jsonify({"topic": topic, "found": bool(body), "body": body,
+                    "topics_available": sorted(CONTEXTUAL_HELP)})
+
+
+@app.route("/help/keyboard")
+def help_keyboard():
+    """Documentation page listing the keyboard shortcuts the UI ships."""
+    shortcuts = [
+        ("j", "Next paper in listing / next result"),
+        ("k", "Previous paper in listing / previous result"),
+        ("?", "Toggle the keyboard-shortcut help panel"),
+        ("Ctrl/Cmd + K", "Open command palette — paste an arxiv_id to jump to /abs/<id>"),
+        ("g h", "Go to homepage"),
+        ("g l", "Go to your library"),
+        ("g s", "Go to advanced search"),
+        ("e", "Toggle the abstract collapse on /abs pages"),
+        ("/", "Focus the header search input"),
+        ("Escape", "Close any open dialog / palette"),
+    ]
+    return render_template("help_keyboard.html", shortcuts=shortcuts)
+
+
+# =======================================================================
 # =======================================================================
 # BENCHMARK SEED DATA
 # =======================================================================
