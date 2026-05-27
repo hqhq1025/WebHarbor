@@ -33,10 +33,42 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import text
 
-from app import (
-    app, db,
-    Category, Recipe, User, Review,
-)
+# NOTE: We deliberately do NOT import from ``app`` at module top level.
+# ``app.py`` imports ``seed_extended_catalog`` from this module from inside
+# its module-level ``with app.app_context()`` block, so the two modules
+# form an import cycle.  Doing ``from app import ...`` here would fail
+# with ``ImportError: cannot import name 'seed_extended_catalog' from
+# partially initialized module 'seed_data'`` any time ``seed_data`` is
+# loaded before ``app`` finishes importing (e.g. ``import seed_data``
+# from a REPL, scripts, or any tooling that touches this module directly).
+#
+# Instead, ``seed_extended_catalog()`` hydrates these names as module
+# globals at call time via ``_bind_app_symbols()`` below.  The helper
+# functions in this file only reference ``app`` / ``db`` / ``Category`` /
+# ``Recipe`` / ``User`` / ``Review`` inside their function bodies, so the
+# globals are guaranteed to be populated by the time they are looked up.
+app = None       # type: ignore[assignment]
+db = None        # type: ignore[assignment]
+Category = None  # type: ignore[assignment]
+Recipe = None    # type: ignore[assignment]
+User = None      # type: ignore[assignment]
+Review = None    # type: ignore[assignment]
+
+
+def _bind_app_symbols() -> None:
+    """Populate this module's ``app`` / ``db`` / model globals from ``app.py``.
+
+    Called from ``seed_extended_catalog()`` (and any other public entry
+    point added later) to break the import cycle with ``app.py``.
+    """
+    global app, db, Category, Recipe, User, Review
+    import app as _app_module  # late import — safe once app.py has loaded
+    app = _app_module.app
+    db = _app_module.db
+    Category = _app_module.Category
+    Recipe = _app_module.Recipe
+    User = _app_module.User
+    Review = _app_module.Review
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SCRAPED = os.path.join(BASE_DIR, 'scraped_data')
@@ -1407,6 +1439,11 @@ def _seed_holiday_fixture_recipes(cat_by_slug):
 def seed_extended_catalog():
     """Idempotent: add 14 new categories, ~500+ MealDB recipes, ~20
     reviewer users, and ~10 reviews per popular recipe."""
+    # Hydrate ``app`` / ``db`` / models as module globals.  Done lazily
+    # here (not at module top) to avoid a circular import with app.py;
+    # see the comment near the top of this file for details.
+    _bind_app_symbols()
+
     # Sentinel gate — 'british' is added in NEW_CATEGORIES; once present
     # the entire extension has already been seeded.
     if Category.query.filter_by(slug='british').first():
