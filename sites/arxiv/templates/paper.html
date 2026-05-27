@@ -186,7 +186,10 @@
             </div>
             {% endif %}
             {% if paper.acm_class %}
-            <div class="row"><span class="lab">ACM class:</span> <span class="mono">{{ paper.acm_class }}</span></div>
+            <div class="row"><span class="lab">ACM class:</span>
+                {% set _acm_first = paper.acm_class.strip().split(',')[0].strip() %}
+                <a href="{{ url_for('acm_listing', acm_class=_acm_first) }}" class="mono">{{ paper.acm_class }}</a>
+            </div>
             {% endif %}
             {% if paper.journal_ref %}
             <div class="row"><span class="lab">Journal-ref:</span>

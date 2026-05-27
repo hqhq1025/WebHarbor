@@ -1,13 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Community' if r10_view == 'community' else 'Discussions' }} – {{ repo.slug }}{% endblock %}
+{% block title %}Pull requests – {{ repo.slug }}{% endblock %}
 
 {% block content %}
 {% set _author = repo.slug.split('/')[0] %}
 {% set _name = repo.slug.split('/')[1] %}
-{% set _active = r10_view|default('discussions') %}
-<div class="container-wide page" id="repo-{{ _active }}-page">
-    {# R10 breadcrumb — surfaces the repo location on community/discussions
-       sub-routes so the agent can navigate back without DOM scraping. #}
+<div class="container-wide page" id="repo-pull-requests-page">
+    {# R10 breadcrumb mirrors _repo_head.html so PR pages are reachable as a
+       proper tab without redirecting. #}
     <nav class="repo-breadcrumb" aria-label="Repository breadcrumb"
          style="font-size: 13px; color: #6b7280; margin: 0 0 10px;">
         <a href="{{ url_for('index') }}">Home</a>
@@ -22,17 +21,18 @@
         <span aria-hidden="true">/</span>
         <a href="{{ url_for('author_page', username=_author) }}">{{ _author }}</a>
         <span aria-hidden="true">/</span>
-        <span aria-current="page">{{ _name }} · {{ _active }}</span>
+        <span aria-current="page">{{ _name }} · pull requests</span>
     </nav>
 
     <div class="repo-head-compact">
-        <h1>{{ repo.slug }} · {{ 'Community' if _active == 'community' else 'Discussions' }}</h1>
+        <h1>{{ repo.slug }} · Pull requests</h1>
         {% if current_user.is_authenticated %}
-        <a class="btn btn-primary" href="{{ url_for('discussion_new', author=_author, name=_name) }}">+ New discussion</a>
+        <a class="btn btn-primary" href="{{ url_for('discussion_new', author=_author, name=_name) }}?kind=pull-request">+ New pull request</a>
         {% endif %}
     </div>
 
-    {# R10 tab strip — all six tabs, with the current view highlighted. #}
+    {# R10 tab strip — every repo surface ships with: Card, Files, Community,
+       Discussions, PRs, Settings. #}
     {% set _files_url = (
         url_for('dataset_files', author=_author, name=_name) if repo.repo_type == 'dataset'
         else url_for('space_files', author=_author, name=_name) if repo.repo_type == 'space'
@@ -53,11 +53,6 @@
         else url_for('space_community', author=_author, name=_name) if repo.repo_type == 'space'
         else url_for('repo_community', author=_author, name=_name)
     ) %}
-    {% set _pr_url = (
-        url_for('dataset_pull_requests', author=_author, name=_name) if repo.repo_type == 'dataset'
-        else url_for('space_pull_requests', author=_author, name=_name) if repo.repo_type == 'space'
-        else url_for('repo_pull_requests', author=_author, name=_name)
-    ) %}
     {% set _settings_url = (
         url_for('dataset_settings', author=_author, name=_name) if repo.repo_type == 'dataset'
         else url_for('space_settings', author=_author, name=_name) if repo.repo_type == 'space'
@@ -66,16 +61,16 @@
     <div class="repo-tabs" role="tablist" aria-label="Repository sections">
         <a class="repo-tab" role="tab" href="{{ _card_url }}">{{ 'Dataset card' if repo.repo_type == 'dataset' else ('Space card' if repo.repo_type == 'space' else 'Model card') }}</a>
         <a class="repo-tab" role="tab" href="{{ _files_url }}">Files</a>
-        <a class="repo-tab {% if _active == 'community' %}is-active{% endif %}" role="tab" aria-selected="{{ 'true' if _active == 'community' else 'false' }}" href="{{ _community_url }}">Community <span class="tab-count">{{ discussions|length }}</span></a>
-        <a class="repo-tab {% if _active != 'community' %}is-active{% endif %}" role="tab" aria-selected="{{ 'true' if _active != 'community' else 'false' }}" href="{{ _disc_url }}">Discussions <span class="tab-count">{{ discussions|length }}</span></a>
-        <a class="repo-tab" role="tab" href="{{ _pr_url }}">PRs</a>
+        <a class="repo-tab" role="tab" href="{{ _community_url }}">Community</a>
+        <a class="repo-tab" role="tab" href="{{ _disc_url }}">Discussions</a>
+        <a class="repo-tab is-active" role="tab" aria-selected="true" href="{{ url_for('repo_pull_requests', author=_author, name=_name) if repo.repo_type not in ['dataset','space'] else (url_for('dataset_pull_requests', author=_author, name=_name) if repo.repo_type == 'dataset' else url_for('space_pull_requests', author=_author, name=_name)) }}">PRs <span class="tab-count">{{ pull_requests|length }}</span></a>
         <a class="repo-tab" role="tab" href="{{ _settings_url }}">Settings</a>
     </div>
 
-    <div class="discussion-list">
-        {% for d in discussions %}
-        <a class="discussion-row" href="{{ url_for('discussion_detail', author=_author, name=_name, discussion_id=d.id) }}">
-            <span class="discussion-kind tag tag-blue">{{ d.kind }}</span>
+    <div class="discussion-list" id="r10-pr-list" data-pr-count="{{ pull_requests|length }}">
+        {% for d in pull_requests %}
+        <a class="discussion-row pr-row" href="{{ url_for('discussion_detail', author=_author, name=_name, discussion_id=d.id) }}" data-pr-id="{{ d.id }}">
+            <span class="discussion-kind tag tag-green">pull-request</span>
             <div>
                 <strong>{{ d.title }}</strong>
                 <div class="discussion-meta">by {{ d.author.username if d.author else 'unknown' }} · {{ d.created_at.strftime('%b %d, %Y') }} · {{ d.replies.count() }} replies</div>
@@ -83,7 +78,7 @@
             <span class="discussion-upvotes">♥ {{ d.upvotes }}</span>
         </a>
         {% else %}
-        <p class="empty-state">No discussions yet.</p>
+        <p class="empty-state" id="no-prs">No pull requests yet. Open one to propose a change.</p>
         {% endfor %}
     </div>
 </div>

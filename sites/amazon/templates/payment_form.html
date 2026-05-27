@@ -10,6 +10,12 @@
         <form method="POST" novalidate>
             {{ form.csrf_token }}
 
+            {% if form.errors %}
+            <div class="form-error" role="alert" style="background:#fde8e8;border:1px solid #c0392b;color:#7f1d1d;padding:10px;border-radius:4px;margin-bottom:14px">
+                <strong>Please correct the highlighted fields.</strong>
+            </div>
+            {% endif %}
+
             <div class="form-group">
                 <label for="card_type">Card Type</label>
                 <select id="card_type" name="card_type" class="form-control">
@@ -23,13 +29,17 @@
             <div class="form-group">
                 <label for="cardholder_name">Name on Card</label>
                 <input type="text" id="cardholder_name" name="cardholder_name" class="form-control"
-                    value="{{ form.cardholder_name.data or '' }}" placeholder="As it appears on your card" required>
+                    value="{{ form.cardholder_name.data or '' }}" placeholder="As it appears on your card"
+                    {% if form.cardholder_name.errors %}aria-invalid="true" aria-describedby="err-cardholder_name"{% endif %} required>
+                {% for e in form.cardholder_name.errors %}<div class="form-error" id="err-cardholder_name" role="alert">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="form-group">
                 <label for="card_number">Card Number</label>
                 <input type="text" id="card_number" name="card_number" class="form-control"
-                    value="{{ form.card_number.data or '' }}" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    value="{{ form.card_number.data or '' }}" placeholder="1234 5678 9012 3456" maxlength="19"
+                    {% if form.card_number.errors %}aria-invalid="true" aria-describedby="err-card_number"{% endif %} required>
+                {% for e in form.card_number.errors %}<div class="form-error" id="err-card_number" role="alert">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="form-row">

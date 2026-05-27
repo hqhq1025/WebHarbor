@@ -15,6 +15,12 @@
         <form method="POST" novalidate>
             {{ form.csrf_token }}
 
+            {% if form.errors %}
+            <div class="form-error" role="alert" style="background:#fde8e8;border:1px solid #c0392b;color:#7f1d1d;padding:10px;border-radius:4px;margin-bottom:14px">
+                <strong>Please correct the highlighted fields.</strong>
+            </div>
+            {% endif %}
+
             <div class="form-group">
                 <label for="label">Address Label</label>
                 <select id="label" name="label" class="form-control">
@@ -27,19 +33,25 @@
             <div class="form-group">
                 <label for="full_name">Full Name</label>
                 <input type="text" id="full_name" name="full_name" class="form-control"
-                    value="{{ (addr.full_name if addr else '') or form.full_name.data or '' }}" required>
+                    value="{{ (addr.full_name if addr else '') or form.full_name.data or '' }}"
+                    {% if form.full_name.errors %}aria-invalid="true" aria-describedby="err-full_name"{% endif %} required>
+                {% for e in form.full_name.errors %}<div class="form-error" id="err-full_name" role="alert">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="form-group">
                 <label for="phone">Phone Number (optional)</label>
                 <input type="text" id="phone" name="phone" class="form-control"
-                    value="{{ (addr.phone if addr else '') or form.phone.data or '' }}">
+                    value="{{ (addr.phone if addr else '') or form.phone.data or '' }}"
+                    {% if form.phone.errors %}aria-invalid="true" aria-describedby="err-phone"{% endif %}>
+                {% for e in form.phone.errors %}<div class="form-error" id="err-phone" role="alert">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="form-group">
                 <label for="address_line1">Street Address</label>
                 <input type="text" id="address_line1" name="address_line1" class="form-control"
-                    value="{{ (addr.address_line1 if addr else '') or form.address_line1.data or '' }}" required>
+                    value="{{ (addr.address_line1 if addr else '') or form.address_line1.data or '' }}"
+                    {% if form.address_line1.errors %}aria-invalid="true" aria-describedby="err-address_line1"{% endif %} required>
+                {% for e in form.address_line1.errors %}<div class="form-error" id="err-address_line1" role="alert">{{ e }}</div>{% endfor %}
             </div>
 
             <div class="form-group">
@@ -52,12 +64,16 @@
                 <div class="form-group">
                     <label for="city">City</label>
                     <input type="text" id="city" name="city" class="form-control"
-                        value="{{ (addr.city if addr else '') or form.city.data or '' }}" required>
+                        value="{{ (addr.city if addr else '') or form.city.data or '' }}"
+                        {% if form.city.errors %}aria-invalid="true" aria-describedby="err-city"{% endif %} required>
+                    {% for e in form.city.errors %}<div class="form-error" id="err-city" role="alert">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="form-group">
                     <label for="state">State</label>
                     <input type="text" id="state" name="state" class="form-control"
-                        value="{{ (addr.state if addr else '') or form.state.data or '' }}" required>
+                        value="{{ (addr.state if addr else '') or form.state.data or '' }}"
+                        {% if form.state.errors %}aria-invalid="true" aria-describedby="err-state"{% endif %} required>
+                    {% for e in form.state.errors %}<div class="form-error" id="err-state" role="alert">{{ e }}</div>{% endfor %}
                 </div>
             </div>
 
@@ -65,7 +81,9 @@
                 <div class="form-group">
                     <label for="zip_code">ZIP Code</label>
                     <input type="text" id="zip_code" name="zip_code" class="form-control"
-                        value="{{ (addr.zip_code if addr else '') or form.zip_code.data or '' }}" required>
+                        value="{{ (addr.zip_code if addr else '') or form.zip_code.data or '' }}"
+                        {% if form.zip_code.errors %}aria-invalid="true" aria-describedby="err-zip_code"{% endif %} required>
+                    {% for e in form.zip_code.errors %}<div class="form-error" id="err-zip_code" role="alert">{{ e }}</div>{% endfor %}
                 </div>
                 <div class="form-group">
                     <label for="country">Country</label>

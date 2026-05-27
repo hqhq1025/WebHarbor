@@ -2771,6 +2771,117 @@ def robots_txt():
     return resp
 
 
+@app.route('/favicon.ico')
+def favicon_ico():
+    """Serve a tiny inline favicon so crawlers / browsers stop logging 404s.
+
+    Base.html links to an inline SVG `data:` URI, but conformant crawlers
+    still probe `/favicon.ico` directly — without this route every page load
+    in the access log shows a phantom 404. We return a 16×16 PNG byte-blob
+    (constant, byte-identical across rebuilds — does not break md5).
+    """
+    # Minimal 16×16 dark-blue PNG with a single orange 'a' — pre-rendered
+    # bytes, kept here so it ships inside app.py and never drifts.
+    import base64
+    png_b64 = (
+        'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAW0lEQVR42mNgGAWjYBSMglFA'
+        'GfwHASYGMpyJYIBNAQwMNCQAGYAuOERAGfgPDb9HwSgYBaNgFIyCUTAKRsEooFLgM9AAGoCG'
+        'A3pGRoyCUTAKRsEoGAWjYBQMOgAAJ3kEnvc6URsAAAAASUVORK5CYII='
+    )
+    body = base64.b64decode(png_b64)
+    resp = make_response(body)
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
+@app.route('/opensearch.xml')
+def opensearch_xml():
+    """OpenSearch descriptor — lets browsers add Amazon-mirror as a search
+    engine, which real Amazon.com exposes too. Some SEO-validator tasks
+    probe this directly; without it they 404 silently."""
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">\n'
+        '  <ShortName>Amazon</ShortName>\n'
+        '  <Description>Search Amazon.com</Description>\n'
+        '  <InputEncoding>UTF-8</InputEncoding>\n'
+        f'  <Image width="16" height="16" type="image/png">{SITE_CANONICAL_HOST}/favicon.ico</Image>\n'
+        f'  <Url type="text/html" method="get" template="{SITE_CANONICAL_HOST}/s?k={{searchTerms}}"/>\n'
+        f'  <Url type="application/x-suggestions+json" template="{SITE_CANONICAL_HOST}/api/search/suggest?q={{searchTerms}}"/>\n'
+        '</OpenSearchDescription>\n'
+    )
+    resp = make_response(body)
+    resp.headers['Content-Type'] = 'application/opensearchdescription+xml; charset=utf-8'
+    return resp
+
+
+# R10 — alias routes for common business-line URLs that agents (and real
+# users) reach for before reading the navigation. Each one 301s to the
+# canonical route, so the canonical URL still owns the page identity and
+# share-links keep working.
+@app.route('/freetime')
+def freetime_alias():
+    return redirect(url_for('kids_freetime_home'), code=301)
+
+
+@app.route('/amazon-live')
+@app.route('/live')
+def amazon_live_alias():
+    return redirect(url_for('live_shopping_home'), code=301)
+
+
+@app.route('/amazon-household')
+def amazon_household_alias():
+    return redirect(url_for('household_home'), code=301)
+
+
+@app.route('/amazon-outlet')
+def amazon_outlet_alias():
+    return redirect(url_for('outlet_home'), code=301)
+
+
+@app.route('/business')
+def business_alias():
+    return redirect(url_for('amazon_business'), code=301)
+
+
+@app.route('/today-deals')
+@app.route('/today-s-deals')
+@app.route('/deals/today')
+def today_deals_alias():
+    return redirect(url_for('todays_deals'), code=301)
+
+
+@app.route('/c/pharmacy')
+@app.route('/c/rx')
+def c_pharmacy_alias():
+    return redirect(url_for('pharmacy_home'), code=301)
+
+
+@app.route('/c/auto')
+@app.route('/c/automotive')
+def c_auto_alias():
+    return redirect(url_for('amazon_auto_home'), code=301)
+
+
+@app.route('/c/renewed')
+@app.route('/c/refurbished')
+def c_renewed_alias():
+    return redirect(url_for('amazon_renewed_home'), code=301)
+
+
+@app.route('/c/outlet')
+def c_outlet_alias():
+    return redirect(url_for('outlet_home'), code=301)
+
+
+@app.route('/c/freetime')
+@app.route('/c/kids')
+def c_freetime_alias():
+    return redirect(url_for('kids_freetime_home'), code=301)
+
+
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """XML sitemap covering /, /c/<slug>, and top-N product slugs.

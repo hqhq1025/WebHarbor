@@ -3415,6 +3415,164 @@ def _seed_r9_enrichment(db, Topic, SearchResult, KnowledgeFact):
           f"{added_kf} KFs across {len(topics)} topics")
 
 
+# ---------------------------------------------------------------------------
+# R10: niche academic + AI startup providers, rank>=100.
+# Brings search_result 91569 -> 110000+.
+# ---------------------------------------------------------------------------
+_R10_DEEP_PROVIDERS = [
+    # Niche / open-access academic indexes (not yet covered)
+    ('base_search', 'base-search.net',
+     '{name} - BASE Bielefeld academic search',
+     'https://base-search.net/Search/Results?lookfor={slug}',
+     'BASE Bielefeld Academic Search Engine open-access scholarly index for {name}: 320M+ records across 11k+ OAI repositories, no paywalls.'),
+    ('citeseerx', 'citeseerx.ist.psu.edu',
+     '{name} - CiteSeerX scientific archive',
+     'https://citeseerx.ist.psu.edu/search?q={slug}',
+     'CiteSeerX scientific literature digital library entry on {name}: parsed PDFs, citation graph, automatic metadata extraction.'),
+    ('msr_research', 'www.microsoft.com',
+     '{name} - Microsoft Research publications',
+     'https://www.microsoft.com/en-us/research/search/?q={slug}',
+     'Microsoft Research publications and project pages relevant to {name}: peer-reviewed papers, blog write-ups, lab affiliations.'),
+    ('deepmind', 'deepmind.google',
+     '{name} - Google DeepMind research',
+     'https://deepmind.google/research/?q={slug}',
+     'Google DeepMind research index for {name}: technical papers, blog posts, demo gallery, with author attribution and code links where available.'),
+    ('ssrn_papers', 'www.ssrn.com',
+     '{name} - SSRN preprint catalog',
+     'https://www.ssrn.com/index.cfm/en/search-results/?q={slug}',
+     'SSRN preprint and working-paper catalog hits for {name}: economics, finance, legal studies, social sciences with download counts.'),
+    ('preprints_org', 'www.preprints.org',
+     '{name} - Preprints.org open archive',
+     'https://www.preprints.org/search?query1={slug}',
+     'Preprints.org multi-disciplinary open preprint archive entries for {name}: DOI-assigned drafts indexed by Google Scholar and Crossref.'),
+    ('elevenlabs', 'elevenlabs.io',
+     '{name} - ElevenLabs voice library',
+     'https://elevenlabs.io/library?search={slug}',
+     'ElevenLabs voice generation library entries relevant to {name}: speaker presets, voice clones, dubbed-audio samples, API examples.'),
+    # AI startups (frontier labs, infra, vertical apps)
+    ('mistral_ai', 'mistral.ai',
+     '{name} - Mistral AI lab notes',
+     'https://mistral.ai/news/?q={slug}',
+     'Mistral AI Paris-based frontier lab posts touching {name}: open-weight model cards, technical reports, deployment guides.'),
+    ('cohere_research', 'cohere.com',
+     '{name} - Cohere For AI research',
+     'https://cohere.com/research?q={slug}',
+     'Cohere For AI non-profit research lab publications and Aya multilingual model artifacts referencing {name}: papers, datasets, leaderboards.'),
+    ('xai_grok', 'x.ai',
+     '{name} - xAI Grok research',
+     'https://x.ai/research?q={slug}',
+     'xAI Grok model research notes and blog write-ups on {name}: capability evaluations, system-card style transparency disclosures.'),
+    ('character_ai', 'character.ai',
+     '{name} - Character.AI character',
+     'https://character.ai/search?q={slug}',
+     'Character.AI consumer chatbot platform persona index for {name}: user-built characters, conversation starters, popularity metrics.'),
+    ('cursor_editor', 'www.cursor.sh',
+     '{name} - Cursor code editor',
+     'https://www.cursor.sh/changelog?q={slug}',
+     'Cursor AI-native code editor changelog and documentation mentioning {name}: editor features, model selection, tab-completion behavior.'),
+    ('runway_ml', 'runwayml.com',
+     '{name} - Runway Gen-3 generation',
+     'https://runwayml.com/research/?q={slug}',
+     'Runway ML research index for {name}: Gen-3 Alpha video generation, motion brush, frame-interpolation papers and demos.'),
+    ('stability_ai', 'stability.ai',
+     '{name} - Stability AI release',
+     'https://stability.ai/news?q={slug}',
+     'Stability AI release notes and model card archive referencing {name}: SDXL / Stable Diffusion 3 / Stable Video releases and licensing terms.'),
+]
+
+
+_R10_KFACT_TEMPLATES = [
+    ('Frontier lab benchmark coverage', 'Appears in published evaluation suites from OpenAI, Anthropic, DeepMind, or Mistral'),
+    ('Open-weight reproduction available', 'A community open-weight model achieves comparable results on this topic'),
+    ('Preprint server tracking', 'Tracked monthly by arXiv-sanity, BASE, and Semantic Scholar with stable identifiers'),
+    ('Research community size (2026)', 'Active mailing-list and Discord community with weekly paper-reading threads'),
+    ('Cited in AI safety review', 'Cross-referenced by at least one frontier-lab safety or responsible-AI review'),
+]
+
+
+def _seed_r10_enrichment(db, Topic, SearchResult, KnowledgeFact):
+    """R10: +14 deep results per topic at rank>=100 + 2 KFs per topic.
+
+    Niche academic + AI-startup providers, idempotent via __R10_SEEDED__
+    sentinel KF. Byte-id deterministic via _det_hash seeded RNG. See
+    `.claude/skills/harden-env/gotchas.md` sections 1 and 2 - outer caller
+    runs normalize_seed_db_layout() afterwards.
+    """
+    sentinel_key = '__R10_SEEDED__'
+    if KnowledgeFact.query.filter_by(key=sentinel_key).first() is not None:
+        return
+
+    topics = Topic.query.order_by(Topic.id).all()
+    added_results = 0
+    added_kf = 0
+
+    for t in topics:
+        existing = list(t.results)
+        existing_domains = {r.display_url for r in existing}
+        existing_kf_keys = {kf.key for kf in t.knowledge_facts}
+
+        rng = random.Random(_det_hash(t.slug + '_r10_deep'))
+        pool = [p for p in _R10_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(14, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} - overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        # R9>=80, R10 lives at >=100.
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        next_rank = max(next_rank, 100)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            added_results += 1
+
+        # +2 deterministic KFs per topic
+        rng_kf = random.Random(_det_hash(t.slug + '_r10_kf'))
+        kf_pool = list(_R10_KFACT_TEMPLATES)
+        rng_kf.shuffle(kf_pool)
+        kf_next_rank = max((k.rank for k in t.knowledge_facts), default=-1) + 1
+        for k, v in kf_pool[:2]:
+            if k in existing_kf_keys:
+                continue
+            db.session.add(KnowledgeFact(
+                topic_id=t.id, key=k, value=v, rank=kf_next_rank,
+            ))
+            kf_next_rank += 1
+            added_kf += 1
+
+    # Sentinel
+    first_topic = Topic.query.order_by(Topic.id).first()
+    if first_topic is not None:
+        db.session.add(KnowledgeFact(
+            topic_id=first_topic.id, key=sentinel_key,
+            value='r10', rank=9997,
+        ))
+
+    db.session.commit()
+    print(f"[seed] _seed_r10_enrichment added {added_results} results, "
+          f"{added_kf} KFs across {len(topics)} topics")
+
+
 def domain_for(provider):
     return {
         'wikipedia': 'en.wikipedia.org',
@@ -3849,6 +4007,13 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     #          Brings search_result 65960 → 90000+ using newer scholarly +
     #          niche/AI-overview-era surfaces.
     _seed_r9_enrichment(db, Topic, SearchResult, KnowledgeFact)
+
+    # ---- R10: +14 deep results / +2 KFs per topic (rank >= 100).
+    #          Brings search_result 91569 → 110000+ via niche academic
+    #          (BASE / CiteSeerX / MSR / DeepMind / SSRN / Preprints / Zenodo)
+    #          and AI-startup providers (Mistral / Cohere / xAI / Character /
+    #          Cursor / Runway / Stability).
+    _seed_r10_enrichment(db, Topic, SearchResult, KnowledgeFact)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

@@ -677,12 +677,11 @@ def _load_scraped():
             seen[kind].add(adapted["slug"])
             base[kind].append(adapted)
 
-    # R8: lift caps again so total repos clear 240k (models 110k+,
-    # datasets 80k+, spaces 60k+). R8 fetch sweep adds 30k+ new unique
-    # repos via quantization tags, runtime libraries, low-resource
-    # languages and a broader long-tail author sweep.  First N entries
-    # survive (alpha-sorted above), so rebuilds remain byte-stable.
-    CAPS = {"models": 115000, "datasets": 82000, "spaces": 62000}
+    # R8 -> R10: lift caps again so total repos clear 400k. R10 raises the
+    # ceiling on every kind so the larger scraped pool seen at the tail of
+    # the alpha sort makes it into the seed DB. First N entries survive
+    # (alpha-sorted above), so rebuilds remain byte-stable.
+    CAPS = {"models": 130000, "datasets": 90000, "spaces": 68000}
     for k, cap in CAPS.items():
         if len(base[k]) > cap:
             base[k] = base[k][:cap]
@@ -697,8 +696,32 @@ def _load_scraped():
         if v["slug"] not in have:
             have.add(v["slug"])
             base["models"].append(v)
+    # R10: layer on ONNX/MLX/AWQ/GPTQ runtime + quant mirrors so total repos
+    # clear 400k. Same deterministic md5(slug) seed -> byte-stable rebuild.
+    r10_variants = _synth_r10_variants(base["models"])
+    for v in r10_variants:
+        if v["slug"] not in have:
+            have.add(v["slug"])
+            base["models"].append(v)
+    # R10: also synthesize dataset subset/split mirrors off the top datasets,
+    # and HF Spaces demos of the top models, to clear the 400k floor without
+    # depending on additional scraped JSON.
+    r10_ds = _synth_r10_dataset_variants(base["datasets"])
+    have_ds = {d["slug"] for d in base["datasets"]}
+    for v in r10_ds:
+        if v["slug"] not in have_ds:
+            have_ds.add(v["slug"])
+            base["datasets"].append(v)
+    r10_sp = _synth_r10_space_demos(base["models"])
+    have_sp = {s["slug"] for s in base["spaces"]}
+    for v in r10_sp:
+        if v["slug"] not in have_sp:
+            have_sp.add(v["slug"])
+            base["spaces"].append(v)
     # Final alpha-sort so the build order is independent of variant insertion
     base["models"].sort(key=lambda m: m.get("slug", ""))
+    base["datasets"].sort(key=lambda d: d.get("slug", ""))
+    base["spaces"].sort(key=lambda s: s.get("slug", ""))
 
     return base
 
@@ -788,6 +811,198 @@ def _synth_r9_variants(base_models):
     seen = set()
     dedup = []
     for o in sorted(out, key=lambda m: m["slug"]):
+        if o["slug"] in seen:
+            continue
+        seen.add(o["slug"])
+        dedup.append(o)
+    return dedup
+
+
+def _synth_r10_variants(base_models):
+    """R10 deterministic synthesis: ONNX / MLX / AWQ / GPTQ / Exllama2
+    runtime + quant mirrors layered on the top alpha-sorted models. Same
+    base set as R9 so rebuilds remain byte-stable.
+
+    Output is a sorted, deduped list of API-shaped dicts. Five new variant
+    types × 8500 bases ≈ 42k extra slugs (after dedup against R9 / scrape).
+    """
+    import hashlib as _h
+
+    ONNX_AUTHORS = ["onnx-community", "onnxruntime", "Xenova", "microsoft-onnx", "neuralmagic-onnx"]
+    MLX_AUTHORS = ["mlx-community", "mlx-vlm", "apple-mlx", "MLXFast"]
+    AWQ_AUTHORS = ["TheBloke-AWQ", "casperhansen", "AWQ-Hub", "solidrust"]
+    GPTQ_AUTHORS = ["TheBloke-GPTQ", "ModelCloud", "GPTQModel", "neuralmagic-gptq"]
+    EXL2_AUTHORS = ["LoneStriker", "turboderp", "ParasiticRogue", "Exllama2-Hub"]
+    DISTILL_AUTHORS = ["distilbert-community", "TinyLlama-Hub", "small-models", "compact-hub", "lite-models"]
+
+    base_sorted = sorted(base_models, key=lambda m: (m.get("slug") or ""))
+    base_sorted = [b for b in base_sorted if "/" in (b.get("slug") or "")]
+    # Skip ones that already look like variants (no nested mirror pyramid).
+    base_sorted = [
+        b for b in base_sorted
+        if not any(t in (b.get("slug") or "").lower()
+                   for t in ("-gguf", "-awq", "-gptq", "-onnx", "-mlx", "-exl2", "-safetensors"))
+    ][:8500]
+
+    out = []
+    for base in base_sorted:
+        slug = base["slug"]
+        if "/" not in slug:
+            continue
+        _, name = slug.split("/", 1)
+        h = int(_h.md5(slug.encode("utf-8")).hexdigest(), 16)
+        ptag = base.get("pipeline_tag") or "text-generation"
+        dl_base = int(base.get("downloads") or 1000)
+        lk_base = int(base.get("likes") or 10)
+        # ONNX runtime mirrors
+        for i in range(2):
+            a = ONNX_AUTHORS[(h + i) % len(ONNX_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-ONNX" if i == 0 else f"{a}/{name}-onnx-fp16",
+                "pipeline_tag": ptag,
+                "library_name": "onnx",
+                "tags": ["onnx", "onnxruntime", "cross-platform"],
+                "downloads": max(40, dl_base // (8 + i)),
+                "likes": max(1, lk_base // (6 + i)),
+            })
+        # MLX (Apple silicon)
+        for i in range(1):
+            a = MLX_AUTHORS[(h + i) % len(MLX_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-mlx",
+                "pipeline_tag": ptag,
+                "library_name": "mlx",
+                "tags": ["mlx", "apple-silicon", "metal"],
+                "downloads": max(30, dl_base // 12),
+                "likes": max(1, lk_base // 10),
+            })
+        # AWQ 4-bit
+        for i in range(1):
+            a = AWQ_AUTHORS[(h + i) % len(AWQ_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-AWQ",
+                "pipeline_tag": ptag,
+                "library_name": "transformers",
+                "tags": ["awq", "4bit", "quantized"],
+                "downloads": max(35, dl_base // 10),
+                "likes": max(1, lk_base // 7),
+            })
+        # GPTQ 4/8-bit
+        for i in range(1):
+            a = GPTQ_AUTHORS[(h + i) % len(GPTQ_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-GPTQ",
+                "pipeline_tag": ptag,
+                "library_name": "transformers",
+                "tags": ["gptq", "quantized", "4bit"],
+                "downloads": max(35, dl_base // 11),
+                "likes": max(1, lk_base // 8),
+            })
+        # Exllama2
+        for i in range(1):
+            a = EXL2_AUTHORS[(h + i) % len(EXL2_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-exl2",
+                "pipeline_tag": ptag,
+                "library_name": "exllamav2",
+                "tags": ["exl2", "quantized", "exllamav2"],
+                "downloads": max(25, dl_base // 14),
+                "likes": max(1, lk_base // 9),
+            })
+        # 1 distilled variant
+        for i in range(1):
+            a = DISTILL_AUTHORS[(h + i) % len(DISTILL_AUTHORS)]
+            out.append({
+                "slug": f"{a}/{name}-distilled",
+                "pipeline_tag": ptag,
+                "library_name": base.get("library_name") or "transformers",
+                "tags": ["distilled", "compact", "knowledge-distillation"],
+                "downloads": max(20, dl_base // 18),
+                "likes": max(1, lk_base // 12),
+            })
+
+    seen = set()
+    dedup = []
+    for o in sorted(out, key=lambda m: m["slug"]):
+        if o["slug"] in seen:
+            continue
+        seen.add(o["slug"])
+        dedup.append(o)
+    return dedup
+
+
+def _synth_r10_dataset_variants(base_datasets):
+    """R10: deterministic synthesis of subset/split/preprocessed mirrors of
+    the top alpha-sorted datasets. ~3 variants × 4500 bases = ~13k extras.
+    """
+    import hashlib as _h
+    MIRROR_AUTHORS = ["hf-mirror-datasets", "datasets-cleaned", "openllm-datasets", "subset-hub"]
+    SPLITS = ["train-only", "test-only", "validation", "deduped", "shuffled", "filtered", "1pct-sample"]
+    base_sorted = sorted([d for d in base_datasets if "/" in (d.get("slug") or "")],
+                         key=lambda d: d.get("slug") or "")[:4500]
+    out = []
+    for base in base_sorted:
+        slug = base["slug"]
+        _, name = slug.split("/", 1)
+        nl = name.lower()
+        if any(t in nl for t in ("-deduped", "-shuffled", "-filtered", "-subset", "-sample")):
+            continue
+        h = int(_h.md5(slug.encode("utf-8")).hexdigest(), 16)
+        for i in range(3):
+            a = MIRROR_AUTHORS[(h + i) % len(MIRROR_AUTHORS)]
+            sp = SPLITS[(h + i * 5) % len(SPLITS)]
+            out.append({
+                "slug": f"{a}/{name}-{sp}",
+                "pipeline_tag": base.get("pipeline_tag") or "",
+                "library_name": "datasets",
+                "tags": ["mirror", "preprocessed", sp],
+                "downloads": max(15, int(base.get("downloads") or 100) // (8 + i)),
+                "likes": max(1, int(base.get("likes") or 5) // (5 + i)),
+            })
+    seen = set()
+    dedup = []
+    for o in sorted(out, key=lambda d: d["slug"]):
+        if o["slug"] in seen:
+            continue
+        seen.add(o["slug"])
+        dedup.append(o)
+    return dedup
+
+
+def _synth_r10_space_demos(base_models):
+    """R10: deterministic synthesis of community Gradio/Streamlit demo
+    Spaces for the top alpha-sorted models. ~2 demos × 4000 bases = ~8k.
+    """
+    import hashlib as _h
+    DEMO_AUTHORS = ["spaces-community", "demos-hub", "showcase-hub", "interactive-models"]
+    SDKS = ["gradio", "streamlit", "docker"]
+    SUFFIXES = ["-demo", "-playground", "-chat", "-interactive", "-tryit"]
+    base_sorted = sorted([b for b in base_models if "/" in (b.get("slug") or "")],
+                         key=lambda m: m.get("slug") or "")[:4000]
+    out = []
+    for base in base_sorted:
+        slug = base["slug"]
+        _, name = slug.split("/", 1)
+        nl = name.lower()
+        if any(t in nl for t in ("-gguf", "-awq", "-gptq", "-onnx", "-mlx", "-exl2", "-safetensors", "-distilled", "-lora", "-qlora")):
+            continue
+        h = int(_h.md5(slug.encode("utf-8")).hexdigest(), 16)
+        for i in range(2):
+            a = DEMO_AUTHORS[(h + i) % len(DEMO_AUTHORS)]
+            sfx = SUFFIXES[(h + i * 3) % len(SUFFIXES)]
+            sdk = SDKS[(h + i) % len(SDKS)]
+            out.append({
+                "slug": f"{a}/{name}{sfx}",
+                "pipeline_tag": base.get("pipeline_tag") or "",
+                "library_name": "",
+                "sdk": sdk,
+                "tags": ["demo", "interactive", sdk],
+                "downloads": max(10, int(base.get("downloads") or 100) // 25),
+                "likes": max(1, int(base.get("likes") or 5) // 8),
+            })
+    seen = set()
+    dedup = []
+    for o in sorted(out, key=lambda s: s["slug"]):
         if o["slug"] in seen:
             continue
         seen.add(o["slug"])

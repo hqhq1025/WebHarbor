@@ -4782,6 +4782,412 @@ def r9_api_multi_step():
 
 
 # ---------------------------------------------------------------------------
+# R10 — Final polish ring.
+#   * Today at Apple sessions catalog (15 topics × 20 retail cities).
+#   * Apple Card Daily Cash bundles + ACMI installments.
+#   * AppleCare+ With Theft & Loss matrix (6 device families × tiers × terms).
+#   * Apple Retail Store experience packages (30 stores × 7 services).
+#   * Vision Pro Persona / Spatial pack catalog.
+#   * /api/r10/multi-step deterministic e2e composition.
+# All deterministic — MD5-derived ids, no datetime.now(), no random.
+# ---------------------------------------------------------------------------
+
+R10_RETAIL_STORES = [
+    ('Apple Park Visitor Center', 'apple-park',     'Cupertino, CA',     'R001'),
+    ('Apple Fifth Avenue',        'fifth-avenue',   'New York, NY',      'R002'),
+    ('Apple Grand Central',       'grand-central',  'New York, NY',      'R003'),
+    ('Apple SoHo',                'soho',           'New York, NY',      'R004'),
+    ('Apple Michigan Avenue',     'michigan-avenue','Chicago, IL',       'R005'),
+    ('Apple Union Square',        'union-square',   'San Francisco, CA', 'R006'),
+    ('Apple Stanford',            'stanford',       'Palo Alto, CA',     'R007'),
+    ('Apple The Grove',           'the-grove',      'Los Angeles, CA',   'R008'),
+    ('Apple Tysons Corner',       'tysons-corner',  'McLean, VA',        'R009'),
+    ('Apple Carnegie Library',    'carnegie',       'Washington, DC',    'R010'),
+    ('Apple Boylston Street',     'boylston',       'Boston, MA',        'R011'),
+    ('Apple Williamsburg',        'williamsburg',   'Brooklyn, NY',      'R012'),
+    ('Apple Lincoln Park',        'lincoln-park',   'Chicago, IL',       'R013'),
+    ('Apple Aventura',            'aventura',       'Miami, FL',         'R014'),
+    ('Apple Lincoln Square',      'lincoln-square', 'Bellevue, WA',      'R015'),
+    ('Apple Covent Garden',       'covent-garden',  'London, UK',        'R016'),
+    ('Apple Regent Street',       'regent-street',  'London, UK',        'R017'),
+    ('Apple Champs-Elysees',      'champs-elysees', 'Paris, FR',         'R018'),
+    ('Apple Marche Saint-Germain','saint-germain',  'Paris, FR',         'R019'),
+    ('Apple Kurfurstendamm',      'kudamm',         'Berlin, DE',        'R020'),
+    ('Apple Marienplatz',         'marienplatz',    'Munich, DE',        'R021'),
+    ('Apple Piazza Liberty',      'piazza-liberty', 'Milan, IT',         'R022'),
+    ('Apple Puerta del Sol',      'puerta-del-sol', 'Madrid, ES',        'R023'),
+    ('Apple Ginza',               'ginza',          'Tokyo, JP',         'R024'),
+    ('Apple Marunouchi',          'marunouchi',     'Tokyo, JP',         'R025'),
+    ('Apple Shinjuku',            'shinjuku',       'Tokyo, JP',         'R026'),
+    ("Apple Jing'an",             'jingan',         'Shanghai, CN',      'R027'),
+    ('Apple Sanlitun',            'sanlitun',       'Beijing, CN',       'R028'),
+    ('Apple Sydney',              'sydney',         'Sydney, AU',        'R029'),
+    ('Apple Eaton Centre',        'eaton-centre',   'Toronto, CA',       'R030'),
+]
+R10_RETAIL_STORES_BY_SLUG = {s[1]: s for s in R10_RETAIL_STORES}
+
+R10_TODAY_AT_APPLE_TOPICS = [
+    ('Photo Walk',                'photo-walk',          'photo',    'iPhone'),
+    ('Photography Lab',           'photo-lab',           'photo',    'iPhone'),
+    ('Video Lab',                 'video-lab',           'video',    'iPhone'),
+    ('Sketch With Apple Pencil',  'sketch-pencil',       'art',      'iPad'),
+    ('Music Production in Logic', 'music-logic',         'music',    'Mac'),
+    ('Music Production in GarageBand', 'music-garageband','music',  'iPad'),
+    ('Coding with Swift Playgrounds','code-swift',       'code',     'iPad'),
+    ('App Design with Keynote',   'design-keynote',      'design',   'iPad'),
+    ('Fitness on Apple Watch',    'fitness-watch',       'fitness',  'Watch'),
+    ('Wellness with Mindfulness', 'wellness-mindful',    'wellness', 'Watch'),
+    ('Beats Made on iPad',        'beats-ipad',          'music',    'iPad'),
+    ('Spatial Photography',       'spatial-photo',       'photo',    'Vision'),
+    ('Edit Video in Final Cut',   'edit-final-cut',      'video',    'Mac'),
+    ('Kids: Photo Storyteller',   'kids-photo',          'kids',     'iPad'),
+    ('Kids: Coding Adventure',    'kids-code',           'kids',     'iPad'),
+]
+R10_TODAY_AT_APPLE_TOPICS_BY_SLUG = {t[1]: t for t in R10_TODAY_AT_APPLE_TOPICS}
+
+R10_TODAY_AT_APPLE_SESSION_TIMES = ['10:00', '12:00', '14:00', '16:00', '18:00']
+
+R10_DAILY_CASH_CATEGORIES = [
+    ('Apple Purchases',       'apple-purchases',    3.0),
+    ('Apple Pay',             'apple-pay',          2.0),
+    ('Apple Card Wallet',     'apple-card-wallet',  1.0),
+    ('Uber & Uber Eats',      'uber',               3.0),
+    ('Walgreens & Duane Reade','walgreens',         3.0),
+    ('Nike',                  'nike',               3.0),
+    ('Exxon Mobil',           'exxon',              3.0),
+    ('T-Mobile',              't-mobile',           3.0),
+]
+
+R10_DAILY_CASH_TIERS = [
+    ('Standard',  'standard',  0.00),
+    ('Plus',      'plus',      4.99),
+    ('Premium',   'premium',   9.99),
+    ('Family',    'family',   14.99),
+    ('Business',  'business', 29.99),
+]
+
+R10_APPLECARE_PLUS_FAMILIES = [
+    ('iPhone',     'iphone',     199.0),
+    ('MacBook',    'macbook',    379.0),
+    ('iPad',       'ipad',       149.0),
+    ('Apple Watch','watch',       99.0),
+    ('AirPods',    'airpods',     39.0),
+    ('Vision Pro', 'vision',     599.0),
+]
+
+R10_APPLECARE_PLUS_TIERS = [
+    ('Standard',           'standard',  1.00),
+    ('With Theft & Loss',  'theft-loss',1.35),
+    ('Premium 24/7',       'premium',   1.55),
+]
+
+R10_APPLECARE_PLUS_TERMS = [
+    ('2-Year', '2yr', 1.00),
+    ('3-Year', '3yr', 1.45),
+    ('4-Year', '4yr', 1.85),
+]
+
+R10_RETAIL_SERVICES = [
+    ('In-Store Pickup',     'pickup',          0.0,  'Reserve online, pick up in 1 hour at the store.'),
+    ('Genius Bar Repair',   'genius-bar',     49.0,  'Hardware diagnosis and repair at the Genius Bar.'),
+    ('Personal Setup',      'personal-setup', 39.0,  'One-on-one new device setup with a Specialist.'),
+    ('Business Briefing',   'business',       79.0,  'Tailored briefing for business + IT teams.'),
+    ('Education Briefing',  'education',      59.0,  'Tailored briefing for teachers and students.'),
+    ('Pro Workshop',        'pro-workshop',   99.0,  'In-depth pro workshop on Final Cut or Logic Pro.'),
+    ('Carrier Activation',  'carrier-activate',0.0, 'In-store iPhone activation with US carriers.'),
+]
+
+R10_VISION_PACK_CATEGORIES = [
+    ('Cinema',            'cinema'),
+    ('Spatial Family',    'spatial-family'),
+    ('Travel & Places',   'travel'),
+    ('Sports & Live',     'sports'),
+    ('Wellness',          'wellness'),
+    ('Productivity',      'productivity'),
+    ('Gaming',            'gaming'),
+    ('Education',         'education'),
+    ('Music Concerts',    'concerts'),
+    ('Photography',       'photography'),
+    ('Persona Pro',       'persona-pro'),
+    ('Persona Lite',      'persona-lite'),
+]
+
+R10_VISION_PACK_LEVELS = [
+    ('Starter',    'starter',  9.99),
+    ('Standard',   'standard', 19.99),
+    ('Plus',       'plus',     29.99),
+    ('Pro',        'pro',      49.99),
+]
+
+R10_ACMI_PRODUCT_LINES = [
+    ('iPhone',     'iphone',     1099.0),
+    ('Mac',        'mac',        1699.0),
+    ('iPad',       'ipad',        799.0),
+    ('Apple Watch','watch',       399.0),
+    ('AirPods',    'airpods',     249.0),
+    ('Vision Pro', 'vision',     3499.0),
+]
+R10_ACMI_TERMS = [
+    ( 6, '6mo'),
+    (12, '12mo'),
+    (18, '18mo'),
+    (24, '24mo'),
+    (36, '36mo'),
+    (48, '48mo'),
+]
+
+
+def _r10_hash_int(seed, nbytes=4):
+    import hashlib
+    return int.from_bytes(hashlib.md5(seed.encode()).digest()[:nbytes], 'big')
+
+
+def _r10_hash_hex(seed, n=10):
+    import hashlib
+    return hashlib.md5(seed.encode()).hexdigest()[:n].upper()
+
+
+@app.route('/today-at-apple')
+@app.route('/today-at-apple/')
+def r10_today_at_apple():
+    """Today at Apple — sessions catalog (read-only, byte-id safe)."""
+    return jsonify({
+        'ok': True,
+        'topics': [
+            {'slug': s, 'title': t, 'category': c, 'device': d}
+            for (t, s, c, d) in R10_TODAY_AT_APPLE_TOPICS
+        ],
+        'stores': [
+            {'id': sid, 'slug': slug, 'name': name, 'city': city}
+            for (name, slug, city, sid) in R10_RETAIL_STORES
+        ],
+        'session_times': R10_TODAY_AT_APPLE_SESSION_TIMES,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/today-at-apple/book', methods=['GET', 'POST'])
+@csrf.exempt
+def r10_today_at_apple_book():
+    """Book a Today at Apple session. Deterministic booking id from
+    MD5(email|topic|store|time)."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or request.form
+        email = (body.get('email') or '').strip().lower()
+        topic = (body.get('topic') or '').strip().lower()
+        store = (body.get('store') or '').strip().lower()
+        time_s = (body.get('time') or '').strip()
+        if not email or '@' not in email or '.' not in email.split('@')[-1]:
+            return jsonify({'ok': False, 'error': 'invalid_email'}), 400
+        if topic not in R10_TODAY_AT_APPLE_TOPICS_BY_SLUG:
+            return jsonify({'ok': False, 'error': 'invalid_topic',
+                            'valid': list(R10_TODAY_AT_APPLE_TOPICS_BY_SLUG.keys())}), 400
+        if store not in R10_RETAIL_STORES_BY_SLUG:
+            return jsonify({'ok': False, 'error': 'invalid_store',
+                            'valid': list(R10_RETAIL_STORES_BY_SLUG.keys())}), 400
+        if time_s not in R10_TODAY_AT_APPLE_SESSION_TIMES:
+            return jsonify({'ok': False, 'error': 'invalid_time',
+                            'valid': R10_TODAY_AT_APPLE_SESSION_TIMES}), 400
+        title, _, cat, device = R10_TODAY_AT_APPLE_TOPICS_BY_SLUG[topic]
+        store_name, _, city, store_id = R10_RETAIL_STORES_BY_SLUG[store]
+        booking_id = 'TAA-' + _r10_hash_hex(f'{email}|{topic}|{store}|{time_s}')
+        h = _r10_hash_int(f'{email}|{topic}|{store}|{time_s}')
+        session_day = (MIRROR_REFERENCE_DATE + timedelta(days=(h % 14) + 1)).date().isoformat()
+        return jsonify({
+            'ok': True, 'booked': True,
+            'booking_id': booking_id,
+            'email': email,
+            'topic': topic, 'title': title, 'category': cat, 'device': device,
+            'store_id': store_id, 'store': store_name, 'city': city,
+            'session_date': session_day, 'session_time': time_s,
+            'duration_minutes': 60,
+            'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+        })
+    return jsonify({
+        'ok': True,
+        'topics': [s for (_, s, _, _) in R10_TODAY_AT_APPLE_TOPICS],
+        'stores': [s for (_, s, _, _) in R10_RETAIL_STORES],
+        'session_times': R10_TODAY_AT_APPLE_SESSION_TIMES,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/retail/store/<slug>')
+def r10_retail_store_page(slug):
+    """Apple Retail Store page — store metadata + offered services.
+    Deterministic, no DB write."""
+    slug = slug.strip().lower()
+    if slug not in R10_RETAIL_STORES_BY_SLUG:
+        return jsonify({'ok': False, 'error': 'unknown_store',
+                        'valid': list(R10_RETAIL_STORES_BY_SLUG.keys())}), 404
+    name, _, city, store_id = R10_RETAIL_STORES_BY_SLUG[slug]
+    h = _r10_hash_int(slug)
+    return jsonify({
+        'ok': True,
+        'store_id': store_id, 'slug': slug, 'name': name, 'city': city,
+        'hours': '10:00 - 21:00 daily',
+        'pickup_available': True,
+        'genius_bar': True,
+        'today_at_apple': True,
+        'next_genius_slot_minutes': (h % 60) + 5,
+        'services': [
+            {'slug': svc_slug, 'name': svc_name, 'price_usd': svc_price,
+             'description': svc_desc}
+            for (svc_name, svc_slug, svc_price, svc_desc) in R10_RETAIL_SERVICES
+        ],
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/apple-card/daily-cash')
+@csrf.exempt
+def r10_apple_card_daily_cash():
+    """Apple Card Daily Cash dashboard — list of merchant categories + rates.
+    Read-only, deterministic."""
+    email = (request.args.get('email') or 'card@example.com').strip().lower()
+    tier = (request.args.get('tier') or 'standard').strip().lower()
+    tier_label = 'Standard'
+    tier_fee = 0.0
+    boost = 1.0
+    for (lab, slug, fee) in R10_DAILY_CASH_TIERS:
+        if slug == tier:
+            tier_label = lab
+            tier_fee = fee
+            boost = 1.0 + (fee / 100.0)  # higher tiers slightly boost cash-back
+            break
+    h = _r10_hash_int(email)
+    return jsonify({
+        'ok': True,
+        'card_holder': email,
+        'tier': tier, 'tier_label': tier_label, 'monthly_fee_usd': tier_fee,
+        'cash_back_categories': [
+            {'category': cat, 'slug': slug,
+             'rate_pct': round(rate * boost, 2)}
+            for (cat, slug, rate) in R10_DAILY_CASH_CATEGORIES
+        ],
+        'mtd_cash_back_usd': round((h % 5000) / 100.0, 2),
+        'lifetime_cash_back_usd': round((h % 250000) / 100.0, 2),
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/apple-card/installments', methods=['GET', 'POST'])
+@csrf.exempt
+def r10_apple_card_installments():
+    """Apple Card Monthly Installments (ACMI) calculator. Zero-interest
+    financing for Apple purchases. Deterministic plan id from
+    MD5(email|product|months)."""
+    body = request.get_json(silent=True) or request.form or {}
+    email = (body.get('email')
+             or request.args.get('email')
+             or 'card@example.com').strip().lower()
+    product_line = (body.get('product')
+                    or request.args.get('product')
+                    or 'iphone').strip().lower()
+    months = (body.get('months') or request.args.get('months') or '24').strip()
+    try:
+        months_i = int(months)
+    except ValueError:
+        return jsonify({'ok': False, 'error': 'invalid_months'}), 400
+    valid_months = [m for (m, _) in R10_ACMI_TERMS]
+    if months_i not in valid_months:
+        return jsonify({'ok': False, 'error': 'invalid_months',
+                        'valid': valid_months}), 400
+    line_lookup = {s: (lab, s, base) for (lab, s, base) in R10_ACMI_PRODUCT_LINES}
+    if product_line not in line_lookup:
+        return jsonify({'ok': False, 'error': 'invalid_product',
+                        'valid': list(line_lookup.keys())}), 400
+    label, _, base_price = line_lookup[product_line]
+    monthly = round(base_price / months_i, 2)
+    plan_id = 'ACMI-' + _r10_hash_hex(f'{email}|{product_line}|{months_i}')
+    h = _r10_hash_int(plan_id)
+    first_due = (MIRROR_REFERENCE_DATE + timedelta(days=(h % 28) + 1)).date().isoformat()
+    return jsonify({
+        'ok': True,
+        'plan_id': plan_id,
+        'email': email,
+        'product_line': product_line, 'product_label': label,
+        'price_usd': base_price,
+        'months': months_i,
+        'monthly_payment_usd': monthly,
+        'apr_pct': 0.0,
+        'first_payment_due': first_due,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+@app.route('/api/r10/multi-step', methods=['GET', 'POST'])
+@csrf.exempt
+def r10_api_multi_step():
+    """R10 multi-step composition.
+
+    Runs {today-at-apple-book → daily-cash → installments → applecare-plus
+    → trade-in-mail-in → retail-store-lookup} in one deterministic request
+    so an agent can validate the entire R10 surface in a single call.
+    Accepts: email, topic, store, time, product, months, device, zip.
+    """
+    body = request.get_json(silent=True) or request.form or {}
+    email = (body.get('email')
+             or request.args.get('email')
+             or 'multi@example.com').strip().lower()
+    topic = (body.get('topic')
+             or request.args.get('topic')
+             or 'photo-walk').strip().lower()
+    store = (body.get('store')
+             or request.args.get('store')
+             or 'apple-park').strip().lower()
+    time_s = (body.get('time')
+              or request.args.get('time')
+              or '10:00').strip()
+    product = (body.get('product')
+               or request.args.get('product')
+               or 'iphone').strip().lower()
+    months = (body.get('months')
+              or request.args.get('months')
+              or '24').strip()
+    device = (body.get('device')
+              or request.args.get('device')
+              or 'iPhone 14 Pro').strip()
+    zip_code = (body.get('zip')
+                or request.args.get('zip')
+                or '95014').strip()
+    # Fallbacks if caller supplied an unknown slug.
+    if topic not in R10_TODAY_AT_APPLE_TOPICS_BY_SLUG:
+        topic = 'photo-walk'
+    if store not in R10_RETAIL_STORES_BY_SLUG:
+        store = 'apple-park'
+    if time_s not in R10_TODAY_AT_APPLE_SESSION_TIMES:
+        time_s = '10:00'
+    valid_acmi = {s for (_, s, _) in R10_ACMI_PRODUCT_LINES}
+    if product not in valid_acmi:
+        product = 'iphone'
+    try:
+        months_i = int(months)
+        if months_i not in [m for (m, _) in R10_ACMI_TERMS]:
+            months_i = 24
+    except ValueError:
+        months_i = 24
+    booking_id = 'TAA-' + _r10_hash_hex(f'{email}|{topic}|{store}|{time_s}')
+    plan_id = 'ACMI-' + _r10_hash_hex(f'{email}|{product}|{months_i}')
+    applecare_id = 'AC+-' + _r10_hash_hex(f'{email}|{product}|theft-loss|3yr')
+    kit_id = 'KIT-' + _r10_hash_hex(f'{device}|good|{zip_code}|UPS')
+    store_id = R10_RETAIL_STORES_BY_SLUG[store][3]
+    h = _r10_hash_int(f'{email}|{topic}|{store}')
+    cash_back = round((h % 50000) / 100.0, 2)
+    return jsonify({
+        'ok': True,
+        'steps': 6,
+        'today_at_apple_booking_id': booking_id,
+        'apple_card_installment_plan_id': plan_id,
+        'applecare_plus_id': applecare_id,
+        'trade_in_kit_id': kit_id,
+        'retail_store_id': store_id,
+        'daily_cash_mtd_usd': cash_back,
+        'reference_date': MIRROR_REFERENCE_DATE.date().isoformat(),
+    })
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -11207,11 +11613,179 @@ def _extend_r9():
 EXTRA_PRODUCTS_R9 = _extend_r9()
 
 
+# ---------------------------------------------------------------------------
+# R10 expansion — final polish ring catalog.
+#   * Today at Apple session SKUs (15 topics × 20 stores = 300).
+#   * AppleCare+ With Theft & Loss matrix (6 fams × 3 tiers × 3 terms = 54).
+#   * Apple Card Daily Cash bundles (8 cats × 5 tiers = 40).
+#   * ACMI installment plan SKUs (6 lines × 6 terms = 36).
+#   * Retail Store experience packages (30 stores × 7 services = 210).
+#   * Vision Pro Persona / Spatial packs (12 cats × 4 levels = 48).
+# All deterministic; preserves byte-identical reset.
+# ---------------------------------------------------------------------------
+
+def _r10_specs(kind, **extra):
+    out = {
+        'r10_kind': kind,
+        'r10_service_terms_url': '/support/article/apple-services-terms',
+        'eligibility': 'See Terms of Service for region eligibility',
+        'fulfillment': 'Confirmation delivered to your Apple Account',
+    }
+    out.update(extra)
+    return out
+
+
+def _extend_r10():
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. Today at Apple session SKUs (booked seat per topic × store).
+    #    15 topics × 20 first stores = 300 SKUs.
+    # ------------------------------------------------------------------
+    for (topic_title, topic_slug, cat, device) in R10_TODAY_AT_APPLE_TOPICS:
+        for (store_name, store_slug, city, store_id) in R10_RETAIL_STORES[:20]:
+            name = f'Today at Apple — {topic_title} ({store_name})'
+            slug = f'r10-taa-{topic_slug}-{store_slug}'
+            extra.append((name, slug, 'accessories', 'today-at-apple',
+                          f'Today at Apple session: {topic_title} at {store_name} ({city}).',
+                          f'Free 60-minute Today at Apple session at {store_name} in {city}. '
+                          f'Hands-on {topic_title} class led by a Creative Pro. '
+                          f'Bring your {device} or borrow one in-store. '
+                          f'Reserve a seat in advance — sessions fill up quickly.',
+                          0.0, None, [city], [],
+                          _r10_specs('today-at-apple',
+                                     topic=topic_title, store=store_name,
+                                     city=city, store_id=store_id,
+                                     device=device, category=cat,
+                                     duration_minutes=60, free=True,
+                                     whats_new='R10 — Today at Apple session row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # B. AppleCare+ With Theft & Loss matrix.
+    #    6 fams × 3 tiers × 3 terms = 54 SKUs.
+    # ------------------------------------------------------------------
+    for (fam, fam_slug, base) in R10_APPLECARE_PLUS_FAMILIES:
+        for (tier, tier_slug, tier_mult) in R10_APPLECARE_PLUS_TIERS:
+            for (term, term_slug, term_mult) in R10_APPLECARE_PLUS_TERMS:
+                price = round(base * tier_mult * term_mult, 2)
+                name = f'AppleCare+ {tier} {term} — {fam}'
+                slug = f'r10-applecare-plus-{fam_slug}-{tier_slug}-{term_slug}'
+                extra.append((name, slug, 'accessories', 'applecare-plus-tl',
+                              f'AppleCare+ {tier} coverage for {fam} ({term}).',
+                              f'AppleCare+ {tier} extended hardware service plus accidental damage '
+                              f'and 24/7 priority technical support for {fam}. {term} term. '
+                              f'Includes coverage for theft and loss when the With Theft & Loss '
+                              f'tier is selected.',
+                              price, None, [tier], [term],
+                              _r10_specs('applecare-plus-tl',
+                                         device_family=fam, tier=tier, term=term,
+                                         accidental_damage_incidents=2,
+                                         theft_loss_incidents=2 if 'theft' in tier_slug else 0,
+                                         priority_support_24x7=True,
+                                         whats_new='R10 — AppleCare+ Theft & Loss row.'),
+                              2025, ''))
+
+    # ------------------------------------------------------------------
+    # C. Apple Card Daily Cash bundles.
+    #    8 categories × 5 tiers = 40 SKUs.
+    # ------------------------------------------------------------------
+    for (cat_label, cat_slug, rate) in R10_DAILY_CASH_CATEGORIES:
+        for (tier_label, tier_slug, tier_fee) in R10_DAILY_CASH_TIERS:
+            name = f'Apple Card Daily Cash — {cat_label} ({tier_label})'
+            slug = f'r10-daily-cash-{cat_slug}-{tier_slug}'
+            extra.append((name, slug, 'accessories', 'daily-cash-bundle',
+                          f'Apple Card Daily Cash on {cat_label} ({tier_label} tier).',
+                          f'Apple Card Daily Cash bundle for {cat_label} at the {tier_label} tier. '
+                          f'Earn {rate}% cash back on every purchase in this category, paid daily into '
+                          f'your Apple Cash balance. {tier_label} tier subscribers receive additional '
+                          f'benefits in the Wallet app.',
+                          tier_fee, None, [cat_label, tier_label], [],
+                          _r10_specs('daily-cash-bundle',
+                                     category=cat_label, tier=tier_label,
+                                     base_rate_pct=rate,
+                                     paid_into='Apple Cash',
+                                     requires_apple_card=True,
+                                     whats_new='R10 — Daily Cash bundle row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # D. Apple Card Monthly Installments (ACMI) plans.
+    #    6 product lines × 6 term lengths = 36 SKUs.
+    # ------------------------------------------------------------------
+    for (line, line_slug, base) in R10_ACMI_PRODUCT_LINES:
+        for (months_i, term_slug) in R10_ACMI_TERMS:
+            monthly = round(base / months_i, 2)
+            name = f'ACMI {months_i}-Month 0% APR — {line}'
+            slug = f'r10-acmi-{line_slug}-{term_slug}'
+            extra.append((name, slug, 'accessories', 'acmi-installment',
+                          f'Apple Card Monthly Installment plan: {line} over {months_i} months.',
+                          f'Pay for your {line} over {months_i} months at 0% APR with Apple Card. '
+                          f'Approximately ${monthly:.2f}/mo. No fees, no penalties for early payoff. '
+                          f'Requires an Apple Card in good standing.',
+                          0.0, monthly, [line], [f'{months_i} months'],
+                          _r10_specs('acmi-installment',
+                                     product_line=line, months=months_i,
+                                     monthly_payment_usd=monthly,
+                                     apr_pct=0.0,
+                                     requires_apple_card=True,
+                                     whats_new='R10 — ACMI installment plan row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # E. Retail Store experience packages.
+    #    30 stores × 7 services = 210 SKUs.
+    # ------------------------------------------------------------------
+    for (store_name, store_slug, city, store_id) in R10_RETAIL_STORES:
+        for (svc_name, svc_slug, svc_price, svc_desc) in R10_RETAIL_SERVICES:
+            name = f'{svc_name} — {store_name}'
+            slug = f'r10-retail-{store_slug}-{svc_slug}'
+            extra.append((name, slug, 'accessories', 'retail-service',
+                          f'{svc_name} at {store_name} ({city}).',
+                          f'{svc_desc} Available exclusively at {store_name} in {city}. '
+                          f'Reserve a slot online for the fastest service. Bring your Apple ID '
+                          f'and a government-issued photo ID for purchases or activations.',
+                          svc_price, None, [city], [],
+                          _r10_specs('retail-service',
+                                     store=store_name, store_id=store_id,
+                                     city=city, service=svc_name,
+                                     reservation_required=svc_slug in ('genius-bar', 'pro-workshop'),
+                                     whats_new='R10 — Retail Store service row.'),
+                          2025, ''))
+
+    # ------------------------------------------------------------------
+    # F. Vision Pro Persona / Spatial pack catalog.
+    #    12 categories × 4 levels = 48 SKUs.
+    # ------------------------------------------------------------------
+    for (cat_label, cat_slug) in R10_VISION_PACK_CATEGORIES:
+        for (lvl_label, lvl_slug, lvl_price) in R10_VISION_PACK_LEVELS:
+            name = f'Vision Pro Pack — {cat_label} ({lvl_label})'
+            slug = f'r10-vision-pack-{cat_slug}-{lvl_slug}'
+            extra.append((name, slug, 'vision', 'vision-pack',
+                          f'Curated Vision Pro spatial pack: {cat_label} at the {lvl_label} level.',
+                          f'A curated bundle of spatial videos, photos, and apps for Apple Vision Pro '
+                          f'tailored to {cat_label}. {lvl_label} level includes additional environments '
+                          f'and longer-form spatial cinema clips. Compatible with visionOS 2.0+.',
+                          lvl_price, None, [cat_label, lvl_label], [],
+                          _r10_specs('vision-pack',
+                                     category=cat_label, level=lvl_label,
+                                     spatial_audio=True,
+                                     min_visionos='2.0',
+                                     requires_vision_pro=True,
+                                     whats_new='R10 — Vision Pro spatial pack row.'),
+                          2025, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R10 = _extend_r10()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R9 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R10 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7 + EXTRA_PRODUCTS_R8 + EXTRA_PRODUCTS_R9):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7 + EXTRA_PRODUCTS_R8 + EXTRA_PRODUCTS_R9 + EXTRA_PRODUCTS_R10):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

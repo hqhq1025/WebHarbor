@@ -7795,3 +7795,982 @@ def expand_places_r9(db, Place, Category, City):
                 db.session.commit()
     db.session.commit()
     print(f"expand_places_r9: added {added} R9 places (total {Place.query.count()})")
+
+
+# ===========================================================================
+# R10: international landmarks + ski/dive verticals + hostels + coliving +
+# accessibility-focused services + bike-share + new chains.  Pushes Place
+# count from ~786k to ~900k+ so the 8-step compound journeys
+# (search → place → directions → save → review → photo → share → timeline)
+# and cross-city travel multi-stop tasks have deep result pages to land on.
+# Plus a programmatic transit-line expansion so /transit/lines/<slug>
+# returns HTTP 200 across 200+ lines.
+# ===========================================================================
+
+_R10_INTL_LANDMARKS = [
+    # (base, subtitle, cat_slug, rating_lo, rating_hi)
+    ("Old Town Square Heritage Walk",   "Historic square",    "attractions",  4.5, 4.9),
+    ("Grand Bazaar Marketplace",        "Covered bazaar",     "shopping",     4.3, 4.8),
+    ("Hilltop Citadel Overlook",        "Citadel viewpoint",  "attractions",  4.4, 4.9),
+    ("Riverside Promenade",             "Riverwalk",          "parks",        4.4, 4.9),
+    ("Cathedral of the Holy Cross",     "Cathedral",          "attractions",  4.5, 4.9),
+    ("Stone Bridge Heritage Site",      "Historic bridge",    "attractions",  4.3, 4.8),
+    ("Imperial Garden",                 "Imperial garden",    "parks",        4.5, 4.9),
+    ("Royal Palace State Rooms",        "Palace tour",        "attractions",  4.4, 4.9),
+    ("Castle Walls Walking Path",       "Castle walk",        "attractions",  4.4, 4.8),
+    ("Heritage Lighthouse Promenade",   "Heritage walk",      "attractions",  4.4, 4.8),
+    ("Botanical Conservatory",          "Conservatory",       "parks",        4.5, 4.9),
+    ("Folklore Museum",                 "Folklore museum",    "museums",      4.3, 4.8),
+    ("Maritime Heritage Museum",        "Maritime museum",    "museums",      4.4, 4.8),
+    ("Ancient Forum Ruins",             "Ruins site",         "attractions",  4.5, 4.9),
+    ("Open-Air Sculpture Park",         "Sculpture park",     "parks",        4.3, 4.8),
+    ("Hot Springs Public Baths",        "Public baths",       "attractions",  4.2, 4.7),
+    ("Old Quarter Lantern Lane",        "Lantern lane",       "shopping",     4.3, 4.8),
+    ("Spice Market Hall",               "Spice market",       "shopping",     4.2, 4.7),
+    ("Heritage Tram Loop",              "Heritage tram",      "transit",      4.4, 4.9),
+    ("Funicular to Hilltop",            "Funicular",          "transit",      4.4, 4.9),
+    ("Cable Car Skyride",               "Cable car",          "attractions",  4.5, 4.9),
+    ("Ancient City Gate",               "City gate",          "attractions",  4.3, 4.8),
+    ("Old Library Reading Room",        "Historic library",   "museums",      4.5, 4.9),
+    ("Heritage Tea House",              "Tea house",          "coffee-shops", 4.4, 4.8),
+    ("Spice Souk Inner Court",          "Souk court",         "shopping",     4.2, 4.7),
+    ("Riverbank Pagoda Park",           "Pagoda park",        "parks",        4.4, 4.9),
+    ("Old Monastery Cloister",          "Monastery",          "attractions",  4.5, 4.9),
+    ("Historic Synagogue",              "Synagogue tour",     "attractions",  4.3, 4.8),
+    ("Heritage Mosque Courtyard",       "Mosque courtyard",   "attractions",  4.5, 4.9),
+    ("Royal Mint Heritage Museum",      "Mint museum",        "museums",      4.3, 4.8),
+]
+
+_R10_SKI_RESORTS = [
+    # (base, subtitle, primary_category, rating_lo, rating_hi)
+    ("Powder Ridge Ski Resort",         "Ski resort",         "attractions",  4.4, 4.8),
+    ("Silver Spruce Ski Area",          "Ski area",           "attractions",  4.3, 4.8),
+    ("Granite Bowl Mountain Resort",    "Mountain resort",    "attractions",  4.4, 4.9),
+    ("Cornice Ridge Ski Resort",        "Ski resort",         "attractions",  4.3, 4.8),
+    ("Glacier Park Ski Lodge",          "Ski lodge",          "hotels",       4.4, 4.9),
+    ("Pinecone Pass Snow Park",         "Snow park",          "attractions",  4.2, 4.7),
+    ("Avalanche Bowl Ski Resort",       "Ski resort",         "attractions",  4.3, 4.8),
+    ("Nordic Track Cross-Country Area", "XC ski area",        "attractions",  4.4, 4.8),
+    ("Cathedral Peak Ski Resort",       "Ski resort",         "attractions",  4.5, 4.9),
+    ("Alpine Crest Ski Lodge",          "Ski lodge",          "hotels",       4.4, 4.9),
+    ("Snowcap Ridge Ski Area",          "Ski area",           "attractions",  4.3, 4.8),
+    ("Bluebird Bowl Ski Resort",        "Ski resort",         "attractions",  4.4, 4.9),
+    ("Twin Peaks Ski Resort",           "Ski resort",         "attractions",  4.5, 4.9),
+    ("White Pine Ski Lodge",            "Ski lodge",          "hotels",       4.3, 4.8),
+    ("Bear Pass Ski Resort",            "Ski resort",         "attractions",  4.3, 4.8),
+    ("Snowy Owl Nordic Center",         "Nordic center",      "attractions",  4.4, 4.8),
+    ("Granite Crest Ski Resort",        "Ski resort",         "attractions",  4.4, 4.9),
+    ("Cedar Bowl Ski Resort",           "Ski resort",         "attractions",  4.3, 4.8),
+    ("Ridgeline Ski & Snowboard Park",  "Ski park",           "attractions",  4.3, 4.8),
+    ("Skyline Tubing Park",             "Tubing park",        "attractions",  4.2, 4.7),
+]
+
+_R10_DIVE_SITES = [
+    ("Coral Garden Dive Site",          "Coral dive",         "attractions",  4.5, 4.9),
+    ("Shipwreck Reef Dive Site",        "Wreck dive",         "attractions",  4.5, 4.9),
+    ("Manta Ray Cleaning Station",      "Manta dive",         "attractions",  4.6, 4.9),
+    ("Blue Hole Dive Site",             "Blue hole",          "attractions",  4.5, 4.9),
+    ("Kelp Forest Cove Dive Site",      "Kelp dive",          "attractions",  4.4, 4.9),
+    ("Pinnacle Reef Dive Site",         "Pinnacle dive",      "attractions",  4.5, 4.9),
+    ("Drift Wall Dive Site",            "Drift dive",         "attractions",  4.4, 4.9),
+    ("Cathedral Cavern Dive Site",      "Cavern dive",        "attractions",  4.5, 4.9),
+    ("Anemone Garden Dive Site",        "Anemone dive",       "attractions",  4.4, 4.9),
+    ("Seal Rock Dive Site",             "Seal dive",          "attractions",  4.4, 4.8),
+    ("Reef Shark Channel Dive Site",    "Shark dive",         "attractions",  4.5, 4.9),
+    ("Octopus Den Dive Site",           "Octopus dive",       "attractions",  4.4, 4.9),
+    ("Lighthouse Reef Dive Site",       "Lighthouse dive",    "attractions",  4.4, 4.9),
+    ("Steel Trawler Wreck Dive Site",   "Wreck dive",         "attractions",  4.4, 4.8),
+    ("Whale Bone Cove Dive Site",       "Cove dive",          "attractions",  4.4, 4.9),
+    ("Eel Garden Dive Site",            "Eel dive",           "attractions",  4.3, 4.8),
+    ("Coral Wall Dive Site",            "Wall dive",          "attractions",  4.5, 4.9),
+    ("Lava Tube Underwater Dive Site",  "Lava tube dive",     "attractions",  4.5, 4.9),
+    ("Mooring Buoy Reef Dive Site",     "Buoy reef dive",     "attractions",  4.3, 4.8),
+    ("Submerged Garden Dive Site",      "Garden dive",        "attractions",  4.4, 4.9),
+]
+
+_R10_HOSTELS = [
+    ("Backpacker Heritage Hostel",      "Heritage hostel",    "hotels",       4.0, 4.5),
+    ("Riverside Pod Hostel",            "Pod hostel",         "hotels",       4.1, 4.6),
+    ("Old Town Bunk Hostel",            "Bunk hostel",        "hotels",       3.9, 4.5),
+    ("Garden Courtyard Hostel",         "Courtyard hostel",   "hotels",       4.2, 4.7),
+    ("Capsule Cabin Hostel",            "Capsule hostel",     "hotels",       4.3, 4.7),
+    ("Coastline Surf Hostel",           "Surf hostel",        "hotels",       4.1, 4.6),
+    ("Mountain Lodge Hostel",           "Mountain hostel",    "hotels",       4.0, 4.5),
+    ("Wanderer's Bunkhouse",            "Bunkhouse",          "hotels",       3.9, 4.4),
+    ("Heritage Pension Hostel",         "Pension hostel",     "hotels",       4.0, 4.5),
+    ("Backyard Garden Hostel",          "Garden hostel",      "hotels",       4.1, 4.6),
+    ("Old Mill Conversion Hostel",      "Industrial hostel",  "hotels",       4.2, 4.7),
+    ("Lighthouse Keeper Hostel",        "Lighthouse hostel",  "hotels",       4.2, 4.7),
+    ("Spice Quarter Hostel",            "Quarter hostel",     "hotels",       4.0, 4.5),
+    ("Lantern Lane Hostel",             "Heritage hostel",    "hotels",       4.1, 4.6),
+    ("Train Carriage Hostel",           "Quirky hostel",      "hotels",       4.3, 4.8),
+    ("Treehouse Pod Hostel",            "Treehouse hostel",   "hotels",       4.3, 4.8),
+    ("Tug Boat Hostel",                 "Boat hostel",        "hotels",       4.2, 4.7),
+    ("Old Bakery Hostel",               "Quirky hostel",      "hotels",       4.0, 4.5),
+    ("Skyline Roof Hostel",             "Rooftop hostel",     "hotels",       4.1, 4.6),
+    ("Coffee House Hostel",             "Cafe hostel",        "hotels",       4.2, 4.7),
+]
+
+_R10_COLIVING = [
+    ("Co-Live Heritage House",          "Coliving",           "services",     4.2, 4.7),
+    ("Co-Live Co-Work Lofts",           "Coliving + cowork",  "services",     4.3, 4.8),
+    ("Co-Live Garden Annex",            "Garden coliving",    "services",     4.2, 4.7),
+    ("Co-Live Riverside Annex",         "Riverside coliving", "services",     4.2, 4.7),
+    ("Co-Live Tower Studios",           "Tower coliving",     "services",     4.3, 4.8),
+    ("Co-Live Train-District Lofts",    "Loft coliving",      "services",     4.2, 4.7),
+    ("Co-Live Old-Mill Suites",         "Mill coliving",      "services",     4.3, 4.8),
+    ("Co-Live Studio Annex",            "Studio coliving",    "services",     4.1, 4.6),
+    ("Co-Live Heritage Loft",           "Heritage loft",      "services",     4.3, 4.8),
+    ("Co-Live Industrial Annex",        "Industrial coliving","services",     4.2, 4.7),
+    ("Co-Live Family Suites",           "Family coliving",    "services",     4.3, 4.8),
+    ("Co-Live Skybridge Studios",       "Skybridge coliving", "services",     4.2, 4.7),
+    ("Co-Live Roof Garden Annex",       "Rooftop coliving",   "services",     4.3, 4.8),
+    ("Co-Live Old-Town Apartments",     "Old-town coliving",  "services",     4.2, 4.7),
+    ("Co-Live Atelier Lofts",           "Atelier coliving",   "services",     4.3, 4.8),
+]
+
+_R10_ACCESSIBLE_FACILITIES = [
+    # Accessibility-focused service venues. All flagged wheelchair-accessible.
+    ("Accessible Public Restroom Plaza",     "Accessible restroom",  "services",  4.3, 4.8),
+    ("Wheelchair-Friendly Visitor Center",   "Visitor center",       "services",  4.4, 4.9),
+    ("Accessible Public Library Branch",     "Accessible library",   "services",  4.4, 4.9),
+    ("All-Ages Sensory-Friendly Center",     "Sensory center",       "services",  4.5, 4.9),
+    ("Wheelchair-Loaner Pavilion",           "Loaner pavilion",      "services",  4.3, 4.8),
+    ("Adult Changing Family Restroom",       "Family restroom",      "services",  4.5, 4.9),
+    ("Service-Animal Welcome Lounge",        "Service-animal lounge","services",  4.4, 4.8),
+    ("Assistive-Hearing Public Hall",        "Assistive hall",       "services",  4.3, 4.8),
+    ("Braille Tour Public Garden",           "Braille garden",       "parks",     4.4, 4.9),
+    ("Sign-Language Tour Visitor Booth",     "Sign-language booth",  "services",  4.3, 4.8),
+    ("Audio-Description Theater",            "Audio-desc theater",   "entertainment",4.4, 4.9),
+    ("Quiet Sensory Room Public Hall",       "Sensory room",         "services",  4.5, 4.9),
+    ("Mobility-Aid Rental Booth",            "Mobility rental",      "services",  4.3, 4.8),
+    ("Accessible Beach Mat Launch",          "Accessible launch",    "beaches",   4.4, 4.9),
+    ("Accessible Trailhead Pavilion",        "Accessible trailhead", "parks",     4.4, 4.9),
+]
+
+_R10_BIKE_STATIONS = [
+    ("Riverside Bike-Share Station",         "Bike-share",   "services", 4.0, 4.6),
+    ("Downtown Bike-Share Hub",              "Bike-share",   "services", 4.1, 4.6),
+    ("Park Edge Bike-Share Station",         "Bike-share",   "services", 4.0, 4.5),
+    ("Transit Plaza Bike-Share Hub",         "Bike-share",   "services", 4.1, 4.6),
+    ("University Bike-Share Station",        "Bike-share",   "services", 4.0, 4.5),
+    ("Civic Center Bike-Share Hub",          "Bike-share",   "services", 4.1, 4.6),
+    ("Marina Bike-Share Station",            "Bike-share",   "services", 4.0, 4.5),
+    ("Old-Town Bike-Share Station",          "Bike-share",   "services", 4.0, 4.5),
+    ("Light-Rail Plaza Bike-Share Hub",      "Bike-share",   "services", 4.1, 4.6),
+    ("Greenway Trailhead Bike-Share Hub",    "Bike-share",   "services", 4.0, 4.5),
+    ("Cargo-Bike Rental Station",            "Cargo bike",   "services", 4.2, 4.7),
+    ("E-Bike Rental Station",                "E-bike",       "services", 4.2, 4.7),
+    ("Family Bike Rental Station",           "Family bike",  "services", 4.1, 4.6),
+]
+
+# Chains: gated to ~750 city subset so total chain rows ≈ 7.5k (same gating
+# pattern as R9 to avoid runaway counts).
+_R10_CHAIN_BASES = [
+    ("Notes Coffee Co.",            "coffee-shops",   "$",   4.3, 4.8),
+    ("Origin Coffee Roasters",      "coffee-shops",   "$$",  4.5, 4.9),
+    ("Gail's Bakery Cafe",          "coffee-shops",   "$$",  4.4, 4.9),
+    ("% Arabica Pop-Up",            "coffee-shops",   "$$",  4.5, 4.9),
+    ("Honest Crust Pizza",          "restaurants",    "$$",  4.3, 4.8),
+    ("Greenhouse Salad Bar",        "restaurants",    "$",   4.2, 4.7),
+    ("Honest Burger Counter",       "restaurants",    "$$",  4.3, 4.8),
+    ("Wok in the Park",             "restaurants",    "$",   4.2, 4.7),
+    ("Brewdog Outpost",             "restaurants",    "$$",  4.1, 4.6),
+    ("Dishoom Counter",             "restaurants",    "$$",  4.5, 4.9),
+    ("Pho-Nomenal Express",         "restaurants",    "$",   4.3, 4.8),
+    ("Tacombi Curbside",            "restaurants",    "$$",  4.4, 4.9),
+]
+
+
+def _r10_make_chain_seed(city_slug):
+    return int.from_bytes(
+        hashlib.md5(("r10chainpick:" + city_slug).encode()).digest()[:4],
+        "big")
+
+
+def expand_places_r10(db, Place, Category, City):
+    """R10 expansion: international landmarks + ski/dive/hostel/coliving +
+    accessibility-focused services + bike-share + new chains.
+
+    Sweeps R10 template lists against every city in deterministic order,
+    seed_int_hex-driven attribute synthesis identical to R9.  Adds ~115k
+    new venues so Place count tops 900k.  Idempotent (no-op once count
+    >= 880000).
+    """
+    if Place.query.count() >= 880000:
+        return
+
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    # Donor pool of real hero images (same pattern as R9).
+    donor_pool = []
+    for p in (Place.query
+              .filter(Place.hero_image.like("/static/images/places/%"))
+              .order_by(Place.id).limit(80).all()):
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    # Unified template stream.  Each entry:
+    #   (cat_slug, name_fmt, subtitle, desc, price, rlo, rhi, r10_kind, extra)
+    stream = []
+
+    for base, sub, cat_slug, rlo, rhi in _R10_INTL_LANDMARKS:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} in the {{anchor}} area; guided audio walk and printed map "
+            f"available at the welcome desk.",
+            "$", rlo, rhi, "intl", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_SKI_RESORTS:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} serving the {{anchor}} region; rentals, lessons, and a "
+            f"day-pass kiosk at the base lodge.",
+            "$$$", rlo, rhi, "ski", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_DIVE_SITES:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} off the {{anchor}} coast; guided boat trips operate "
+            f"daily; site briefing posted on the operator board.",
+            "$$$", rlo, rhi, "dive", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_HOSTELS:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"Budget-friendly {sub.lower()} serving the {{anchor}} area "
+            f"with shared kitchen, lockers, and a 24/7 reception desk.",
+            "$", rlo, rhi, "hostel", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_COLIVING:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} in the {{anchor}} area with private rooms, shared "
+            f"lounges, and on-site coworking memberships available.",
+            "$$$", rlo, rhi, "coliving", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_ACCESSIBLE_FACILITIES:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} serving the {{anchor}} area; wheelchair-accessible "
+            f"entrance, accessible restroom, and assistive-device loaners.",
+            "Free", rlo, rhi, "accessible", {},
+        ))
+
+    for base, sub, cat_slug, rlo, rhi in _R10_BIKE_STATIONS:
+        stream.append((
+            cat_slug, "{anchor} " + base, sub,
+            f"{sub} station in the {{anchor}} area; rentals, locks, and "
+            f"helmet loans available at the kiosk.",
+            "$", rlo, rhi, "bikeshare", {},
+        ))
+
+    for chain, cat, price, rlo, rhi in _R10_CHAIN_BASES:
+        stream.append((
+            cat, f"{chain} — {{anchor}}",
+            "Chain", f"{chain} location serving the {{anchor}} area.",
+            price, rlo, rhi, "chain", {"chain": chain},
+        ))
+
+    added = 0
+    chain_city_threshold = 750
+
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        city_seed = _r10_make_chain_seed(city.slug)
+        chain_eligible = (city_seed % len(cities)) < chain_city_threshold
+
+        # Deterministic per-city template shuffle.
+        templates = list(enumerate(stream))
+        for i in range(len(templates) - 1, 0, -1):
+            j = int.from_bytes(
+                hashlib.md5(f"r10sh:{city.slug}:{i}".encode()).digest()[:4],
+                "big") % (i + 1)
+            templates[i], templates[j] = templates[j], templates[i]
+
+        for idx, tpl in templates:
+            (cat_slug, pattern, subtitle, desc, price, rlo, rhi, kind, extra) = tpl
+            if kind == "chain" and not chain_eligible:
+                continue
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            slug = f"r10-{kind}-{city.slug}-{idx:03d}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            local_seed = _seed_int_hex(slug, "r10loc")
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + ((local_seed % 800) - 400) / 10000.0
+            lng = city.lng + (((local_seed // 800) % 1000) - 500) / 10000.0
+            rating = round(rlo + (local_seed % 100) / 100.0 * (rhi - rlo), 1)
+            review_count = 11 + (local_seed % 3300)
+
+            chain_brand = extra.get("chain", "")
+            tags = ["r10", kind, cat_slug, anchor.lower(), city.country.lower()]
+            for k, v in extra.items():
+                if isinstance(v, (str, int, float)):
+                    tags.append(f"{k}-{v}".lower().replace(" ", "-"))
+
+            hours_opts = [
+                "Daily: 6:00 AM - 10:00 PM",
+                "Mon-Sun: 8:00 AM - 8:00 PM",
+                "Tue-Sun: 9:00 AM - 6:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 7:00 AM - 9:00 PM, Weekends 8:00 AM - 8:00 PM",
+                "Daily: 9:00 AM - 9:00 PM",
+                "Mon-Sun: 5:30 AM - 11:00 PM",
+            ]
+            hours_pick = (local_seed >> 5) % 7
+            is_24h_flag = (hours_pick == 3)
+            accessible_kind = (kind == "accessible")
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc.format(anchor=anchor) if "{anchor}" in desc else desc,
+                address=f"{20 + (local_seed % 9800)} {['Acacia','Camellia','Dogwood','Elm','Fern','Gingko','Holly','Iris','Jasmine','Kingsway'][local_seed % 10]} Rd, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_opts[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                subcategory=subtitle,
+                chain_brand=chain_brand,
+                is_24h=is_24h_flag,
+                is_popular=(rating >= 4.7 and (local_seed % 5) == 0),
+                has_parking_lot=(kind in ("ski", "coliving", "hostel") or (local_seed % 4) == 0),
+                ev_charging=(kind == "bikeshare" and (local_seed % 3) == 0),
+                bicycle_parking=(kind in ("bikeshare", "accessible", "hostel") or (local_seed % 2) == 0),
+                indoor_zone_type="",
+                floor_number="",
+                parking_lot_capacity=(40 + (local_seed % 200) if kind == "ski" else 0),
+                delivery_available=(kind == "chain" and cat_slug == "restaurants" and (local_seed % 2) == 0),
+                dine_in=(cat_slug in ("restaurants", "coffee-shops")),
+                takeout=(cat_slug in ("restaurants", "coffee-shops")),
+                accepts_reservations=(kind in ("ski", "dive", "coliving")),
+                serves_breakfast=(cat_slug == "coffee-shops" or kind == "hostel"),
+                serves_lunch=(cat_slug == "restaurants"),
+                serves_dinner=(cat_slug == "restaurants"),
+                serves_alcohol=(kind == "chain" and cat_slug == "restaurants" and (local_seed % 4) == 0),
+                serves_vegetarian=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+                wheelchair_accessible_entrance=accessible_kind or (local_seed % 3) == 0,
+                wheelchair_accessible_restroom=accessible_kind or (local_seed % 4) == 0,
+                wheelchair_accessible_parking=accessible_kind or (local_seed % 5) == 0,
+                wheelchair_accessible_seating=accessible_kind or (local_seed % 5) == 0,
+                has_braille_menu=accessible_kind and (local_seed % 2) == 0,
+                has_assistive_hearing=accessible_kind and (local_seed % 2) == 0,
+                has_service_animal_welcome=accessible_kind or (local_seed % 4) == 0,
+            ))
+            added += 1
+            if added % 2000 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"expand_places_r10: added {added} R10 places (total {Place.query.count()})")
+
+
+# ---------------------------------------------------------------------------
+# R10 transit-line expansion: programmatic generation so /transit/lines/<slug>
+# returns HTTP 200 for 200+ slugs.  Each line is deterministic on city+index.
+# ---------------------------------------------------------------------------
+
+# Major metros that get extra transit lines.  Already covered by hand-rolled
+# _TRANSIT_LINES; we add 3-4 more per metro + extend coverage to additional
+# cities with no transit lines yet.
+_R10_METRO_LINE_SPECS = [
+    # (city_slug, [(slug_suffix, name, short_name, agency, mode, color, peak, off, hours, stops_template, desc)])
+    # Stops_template is a list of stop names; same shape as _TRANSIT_LINES.
+    ("new-york", [
+        ("mta-2-train", "2 Train (7th Avenue Express)", "2", "MTA New York City Subway", "subway", "#EE352E",
+         "Every 6 min", "Every 10 min", "24 hours",
+         ["Wakefield-241 St","233 St","225 St","219 St","Gun Hill Rd","Burke Av","Allerton Av","Pelham Pkwy","Bronx Park East","E 180 St","West Farms Sq","174 St","Freeman St","Simpson St","Intervale Av","Prospect Av","Jackson Av","3 Av-149 St","149 St-Grand Concourse","135 St","125 St","116 St","Central Park N","96 St","72 St","Times Sq-42 St","34 St-Penn","14 St","Chambers St","Park Pl","Fulton St","Wall St","Clark St","Borough Hall","Hoyt St","Nevins St","Atlantic Av-Barclays","Bergen St","Grand Army Plaza","Eastern Pkwy-Brooklyn Museum","Franklin Av","President St","Sterling St","Winthrop St","Church Av","Beverley Rd","Newkirk Av","Flatbush Av-Brooklyn College"],
+         "2 train runs as the 7th Avenue Express linking the Bronx to Brooklyn."),
+        ("mta-7-train", "7 Train (Flushing Local)", "7", "MTA New York City Subway", "subway", "#B933AD",
+         "Every 4 min", "Every 9 min", "24 hours",
+         ["34 St-Hudson Yards","Times Sq-42 St","5 Av","Grand Central-42 St","Vernon Blvd-Jackson Av","Hunters Point Av","Court Sq","Queensboro Plaza","33 St-Rawson","40 St-Lowery","46 St-Bliss","52 St","61 St-Woodside","69 St","74 St-Broadway","82 St-Jackson Hts","90 St-Elmhurst Av","103 St-Corona Plaza","111 St","Mets-Willets Pt","Flushing-Main St"],
+         "7 train connects Hudson Yards to Flushing-Main St via Long Island City."),
+        ("mta-a-train", "A Train (8th Avenue Express)", "A", "MTA New York City Subway", "subway", "#0039A6",
+         "Every 6 min", "Every 12 min", "24 hours",
+         ["Inwood-207 St","Dyckman St","190 St","181 St","175 St","168 St","145 St","125 St","59 St-Columbus Circle","42 St-Port Authority","34 St-Penn","14 St","W 4 St-Washington Sq","Canal St","Chambers St","Fulton St","High St","Jay St-MetroTech","Hoyt-Schermerhorn","Nostrand Av","Utica Av","Broadway Junction","Rockaway Av","Liberty Av","Van Siclen Av","Shepherd Av","Euclid Av","Grant Av","80 St","88 St","Rockaway Blvd","104 St","111 St","Lefferts Blvd"],
+         "A train runs from Inwood-207 St to Lefferts Blvd/Rockaway branches."),
+        ("mta-m23-sbs", "M23 Select Bus (23rd St Crosstown)", "M23", "MTA NYC Bus", "bus", "#FF6319",
+         "Every 6 min", "Every 12 min", "5:00 AM – 1:00 AM",
+         ["Chelsea Piers","11 Av/23 St","10 Av/23 St","9 Av/23 St","8 Av/23 St","7 Av/23 St","6 Av/23 St","5 Av/23 St","Madison Av/23 St","Park Av S/23 St","Lexington Av/23 St","3 Av/23 St","2 Av/23 St","1 Av/23 St","FDR Loop","E 23 St/Avenue C","Waterside Plaza"],
+         "M23 SBS crosstown service along 23rd Street."),
+    ]),
+    ("san-francisco", [
+        ("muni-j-church", "J Church Light Rail", "J", "SFMTA Muni Metro", "light-rail", "#FAA61A",
+         "Every 10 min", "Every 15 min", "5:00 AM – 1:00 AM",
+         ["Embarcadero","Montgomery St","Powell St","Civic Center","Van Ness","Church St","16 St","20 St","24 St","30 St","Glen Park","Balboa Park"],
+         "J Church runs from Embarcadero through Noe Valley to Balboa Park."),
+        ("muni-k-ingleside", "K Ingleside Light Rail", "K", "SFMTA Muni Metro", "light-rail", "#569BBE",
+         "Every 10 min", "Every 15 min", "5:00 AM – 1:00 AM",
+         ["Embarcadero","Montgomery St","Powell St","Civic Center","Van Ness","Church St","Castro","Forest Hill","West Portal","Junipero Serra","Plymouth Av","Ocean Av","Brighton Av","Geneva Av","Balboa Park"],
+         "K Ingleside connects Embarcadero with Balboa Park via West Portal."),
+        ("muni-t-third", "T Third Light Rail", "T", "SFMTA Muni Metro", "light-rail", "#BF5B17",
+         "Every 10 min", "Every 15 min", "5:00 AM – 1:00 AM",
+         ["Sunnydale","Arleta","Williams","Hudson","Kirkwood","Revere","Shafter","Carroll","Gilman","Le Conte","Marin","Evans","Hudson/Innes","Bayshore","Oakdale","Third/20","Third/23","Third/Mariposa","Brannan","Embarcadero","Folsom","Montgomery","Powell","Civic Center","Van Ness"],
+         "T Third runs along the Third Street corridor in southeast SF."),
+        ("bart-blue-line", "BART Dublin/Pleasanton–Daly City", "Blue", "Bay Area Rapid Transit", "subway", "#0099CC",
+         "Every 15 min", "Every 20 min", "5:00 AM – 12:00 AM",
+         ["Daly City","Balboa Park","Glen Park","24 St Mission","16 St Mission","Civic Center","Powell St","Montgomery St","Embarcadero","West Oakland","12 St Oakland City Center","19 St Oakland","Lake Merritt","Fruitvale","Coliseum","San Leandro","Bay Fair","Castro Valley","West Dublin/Pleasanton","Dublin/Pleasanton"],
+         "Blue Line connects Daly City with Dublin/Pleasanton via Oakland."),
+    ]),
+    ("boston", [
+        ("mbta-blue-line", "MBTA Blue Line", "BL", "MBTA", "subway", "#003DA5",
+         "Every 5 min", "Every 9 min", "5:00 AM – 12:30 AM",
+         ["Bowdoin","Government Center","State","Aquarium","Maverick","Airport","Wood Island","Orient Heights","Suffolk Downs","Beachmont","Revere Beach","Wonderland"],
+         "Blue Line runs between Bowdoin and Wonderland through East Boston."),
+        ("mbta-orange-line", "MBTA Orange Line", "OL", "MBTA", "subway", "#ED8B00",
+         "Every 5 min", "Every 9 min", "5:00 AM – 12:30 AM",
+         ["Oak Grove","Malden Center","Wellington","Assembly","Sullivan Square","Community College","North Station","Haymarket","State","Downtown Crossing","Chinatown","Tufts Medical Center","Back Bay","Massachusetts Avenue","Ruggles","Roxbury Crossing","Jackson Square","Stony Brook","Green Street","Forest Hills"],
+         "Orange Line runs from Oak Grove to Forest Hills."),
+        ("mbta-green-c", "MBTA Green Line C (Cleveland Circle)", "C", "MBTA", "light-rail", "#00843D",
+         "Every 8 min", "Every 13 min", "5:00 AM – 12:30 AM",
+         ["Government Center","Park Street","Boylston","Arlington","Copley","Hynes","Kenmore","Saint Mary's St","Hawes St","Kent St","St. Paul St","Coolidge Corner","Summit Ave","Brandon Hall","Fairbanks","Washington Square","Tappan St","Dean Rd","Englewood Ave","Cleveland Circle"],
+         "C branch of the Green Line, terminating at Cleveland Circle."),
+        ("mbta-green-d", "MBTA Green Line D (Riverside)", "D", "MBTA", "light-rail", "#00843D",
+         "Every 8 min", "Every 13 min", "5:00 AM – 12:30 AM",
+         ["Union Square","Lechmere","Science Park","North Station","Haymarket","Government Center","Park Street","Boylston","Arlington","Copley","Hynes","Kenmore","Fenway","Longwood","Brookline Village","Brookline Hills","Beaconsfield","Reservoir","Chestnut Hill","Newton Centre","Newton Highlands","Eliot","Waban","Woodland","Riverside"],
+         "D branch of the Green Line, terminating at Riverside."),
+    ]),
+    ("chicago", [
+        ("cta-green-line", "CTA Green Line", "Green", "Chicago Transit Authority", "subway", "#009B3A",
+         "Every 6 min", "Every 12 min", "4:00 AM – 1:00 AM",
+         ["Harlem/Lake","Oak Park","Ridgeland","Austin","Central","Laramie","Cicero","Pulaski","Conservatory","Kedzie","California","Ashland","Morgan","Clinton","Clark/Lake","State/Lake","Roosevelt","Cermak-McCormick Place","35-Bronzeville-IIT","Indiana","43rd","47th","51st","Garfield","King Drive","Cottage Grove","Halsted","Ashland/63rd"],
+         "Green Line runs from Harlem/Lake to Ashland/63rd and Cottage Grove."),
+        ("cta-brown-line", "CTA Brown Line", "Brown", "Chicago Transit Authority", "subway", "#62361B",
+         "Every 6 min", "Every 10 min", "4:00 AM – 1:00 AM",
+         ["Kimball","Kedzie","Francisco","Rockwell","Western","Damen","Montrose","Irving Park","Addison","Paulina","Southport","Belmont","Wellington","Diversey","Fullerton","Armitage","Sedgwick","Chicago","Merchandise Mart","Washington/Wells","Quincy","LaSalle/Van Buren","Adams/Wabash","State/Lake","Clark/Lake"],
+         "Brown Line connects Kimball to the Chicago Loop."),
+        ("cta-orange-line", "CTA Orange Line", "Orange", "Chicago Transit Authority", "subway", "#F9461C",
+         "Every 7 min", "Every 12 min", "4:00 AM – 12:30 AM",
+         ["Midway","Pulaski","Kedzie","Western","35th/Archer","Ashland","Halsted","Roosevelt","Library","LaSalle/Van Buren","Quincy","Washington/Wells","Clark/Lake","State/Lake","Adams/Wabash"],
+         "Orange Line connects Midway International Airport with the Loop."),
+        ("cta-pink-line", "CTA Pink Line", "Pink", "Chicago Transit Authority", "subway", "#E27EA6",
+         "Every 8 min", "Every 12 min", "4:00 AM – 12:30 AM",
+         ["54th/Cermak","Cicero","Kostner","Pulaski","Central Park","Kedzie","California","Western","Damen","18th","Polk","Ashland","Morgan","Clinton","Clark/Lake","State/Lake","Washington/Wells","Quincy","LaSalle/Van Buren","Adams/Wabash"],
+         "Pink Line runs from 54th/Cermak through Pilsen to the Loop."),
+    ]),
+    ("washington", [
+        ("wmata-blue", "WMATA Blue Line", "BL", "WMATA Metrorail", "subway", "#009CDE",
+         "Every 8 min", "Every 12 min", "5:00 AM – 12:00 AM",
+         ["Largo Town Center","Morgan Boulevard","Addison Road","Capitol Heights","Benning Road","Stadium-Armory","Potomac Av","Eastern Market","Capitol South","Federal Center SW","L'Enfant Plaza","Smithsonian","Federal Triangle","Metro Center","McPherson Square","Farragut West","Foggy Bottom-GWU","Rosslyn","Arlington Cemetery","Pentagon","Pentagon City","Crystal City","Ronald Reagan Airport","Braddock Road","King Street","Van Dorn Street","Franconia-Springfield"],
+         "Blue Line runs from Largo Town Center to Franconia-Springfield."),
+        ("wmata-orange", "WMATA Orange Line", "OR", "WMATA Metrorail", "subway", "#ED8B00",
+         "Every 8 min", "Every 12 min", "5:00 AM – 12:00 AM",
+         ["New Carrollton","Landover","Cheverly","Deanwood","Minnesota Avenue","Stadium-Armory","Potomac Av","Eastern Market","Capitol South","Federal Center SW","L'Enfant Plaza","Smithsonian","Federal Triangle","Metro Center","McPherson Square","Farragut West","Foggy Bottom-GWU","Rosslyn","Court House","Clarendon","Virginia Square-GMU","Ballston-MU","East Falls Church","West Falls Church","Dunn Loring","Vienna"],
+         "Orange Line runs from New Carrollton to Vienna."),
+        ("wmata-silver", "WMATA Silver Line", "SV", "WMATA Metrorail", "subway", "#A1A3A1",
+         "Every 8 min", "Every 12 min", "5:00 AM – 12:00 AM",
+         ["Ashburn","Loudoun Gateway","Washington Dulles Intl Airport","Innovation Center","Herndon","Reston Town Center","Wiehle-Reston East","Spring Hill","Greensboro","Tysons","McLean","East Falls Church","Ballston-MU","Virginia Square-GMU","Clarendon","Court House","Rosslyn","Foggy Bottom-GWU","Farragut West","McPherson Square","Metro Center","Federal Triangle","Smithsonian","L'Enfant Plaza","Federal Center SW","Capitol South","Eastern Market","Potomac Av","Stadium-Armory","Benning Road","Capitol Heights","Addison Road","Morgan Boulevard","Largo Town Center","Downtown Largo"],
+         "Silver Line connects Ashburn and Dulles Airport to Downtown Largo."),
+    ]),
+    ("seattle", [
+        ("sound-transit-2-line", "Sound Transit 2 Line (East Link)", "2", "Sound Transit", "light-rail", "#5DA73B",
+         "Every 10 min", "Every 15 min", "5:00 AM – 1:00 AM",
+         ["South Bellevue","East Main","Bellevue Downtown","Wilburton","Spring District","BelRed","Overlake Village","Microsoft","Redmond Technology","Marymoor Village","Downtown Redmond"],
+         "2 Line connects Bellevue and Redmond on the east side."),
+        ("sound-transit-t-line", "Sound Transit T Line (Tacoma Link)", "T", "Sound Transit", "light-rail", "#B7CE2C",
+         "Every 12 min", "Every 24 min", "5:00 AM – 11:00 PM",
+         ["Tacoma Dome","Union Station","Convention Center","Theater District","Old City Hall","S 25 St","Hilltop","Tacoma General","St. Joseph's","Stadium","S 6 St","S 8 St"],
+         "T Line is the streetcar in downtown Tacoma."),
+        ("king-county-rapidride-e", "King County RapidRide E Line", "E", "King County Metro", "bus", "#CE0E2D",
+         "Every 6 min", "Every 12 min", "24 hours",
+         ["Aurora Village TC","185th & Aurora","145th & Aurora","130th & Aurora","115th & Aurora","Northgate","Green Lake","Wallingford","Fremont Bridge","Aurora Bridge","Galer St","Republican St","3rd & Pine","3rd & Pike","3rd & Marion","3rd & Cherry","Pioneer Square"],
+         "RapidRide E Line runs along Aurora Ave N."),
+    ]),
+    ("los-angeles", [
+        ("metro-a-line", "LA Metro A Line (Blue)", "A", "LA Metro", "light-rail", "#0072CE",
+         "Every 8 min", "Every 12 min", "4:00 AM – 12:30 AM",
+         ["Azusa","APU/Citrus College","Glendora","San Dimas","La Verne","Pomona","Claremont","Montclair","Azusa Downtown","Irwindale","Duarte","Monrovia","Arcadia","Sierra Madre Villa","Allen","Lake","Memorial Park","Del Mar","Fillmore","South Pasadena","Highland Park","Southwest Museum","Heritage Square","Lincoln/Cypress","Chinatown","Union Station","Little Tokyo","Pico/Aliso","Mariachi Plaza","Soto","Indiana","Maravilla","East LA Civic Center","Atlantic"],
+         "A Line is the longest light-rail line; runs from Azusa to Long Beach."),
+        ("metro-e-line", "LA Metro E Line (Expo)", "E", "LA Metro", "light-rail", "#FFC727",
+         "Every 8 min", "Every 12 min", "4:00 AM – 12:30 AM",
+         ["Downtown Santa Monica","17th St/SMC","26th/Bergamot","Expo/Bundy","Expo/Sepulveda","Westwood/Rancho Park","Palms","Culver City","La Cienega/Jefferson","Expo/La Brea","Farmdale","Expo/Crenshaw","Expo/Western","Expo/Vermont","Expo Park/USC","Jefferson/USC","Pico","7th St/Metro Center"],
+         "E Line runs from Downtown Santa Monica to Downtown LA."),
+        ("metro-g-line", "LA Metro G Line (Orange BRT)", "G", "LA Metro", "bus", "#FF9933",
+         "Every 8 min", "Every 12 min", "4:00 AM – 12:30 AM",
+         ["Chatsworth","Sherman Way","Roscoe","Nordhoff","Reseda","Tampa","Pierce College","Winnetka","De Soto","Canoga","Sherman Way","Warner Center","Canoga","Pierce College","Reseda","Balboa","Woodley","Sepulveda","Van Nuys","Woodman","Valley College","Laurel Canyon","North Hollywood"],
+         "G Line is a dedicated busway across the San Fernando Valley."),
+        ("metro-k-line", "LA Metro K Line (Crenshaw)", "K", "LA Metro", "light-rail", "#E37D87",
+         "Every 10 min", "Every 15 min", "4:00 AM – 12:30 AM",
+         ["Expo/Crenshaw","Martin Luther King Jr","Leimert Park","Hyde Park","Fairview Heights","Downtown Inglewood","Westchester/Veterans","Aviation/Century"],
+         "K Line connects Expo/Crenshaw with Aviation/Century."),
+    ]),
+    ("miami", [
+        ("metrorail-green", "Metrorail Green Line", "G", "Miami-Dade Transit", "subway", "#00853F",
+         "Every 7 min", "Every 15 min", "5:00 AM – 12:00 AM",
+         ["Palmetto","Okeechobee","Hialeah","Tri-Rail","Northside","Dr. Martin Luther King Jr Plaza","Brownsville","Earlington Heights","Allapattah","Santa Clara","Civic Center","Culmer","Historic Overtown/Lyric Theatre","Government Center","Brickell","Vizcaya","Coconut Grove","Douglas Road","University","South Miami","Dadeland North","Dadeland South"],
+         "Green Line runs from Palmetto to Dadeland South."),
+        ("metromover-inner", "Metromover Inner Loop", "IN", "Miami-Dade Transit", "light-rail", "#0072CE",
+         "Every 90 sec", "Every 3 min", "5:00 AM – 12:00 AM",
+         ["Government Center","Wilkie D. Ferguson","Knight Center","Bayfront Park","College/Bayside","First Street","Third Street"],
+         "Inner Loop circles Downtown Miami."),
+        ("metrobus-202", "Metrobus 202 Little Havana Connection", "202", "Miami-Dade Transit", "bus", "#003366",
+         "Every 15 min", "Every 30 min", "5:00 AM – 11:00 PM",
+         ["Government Center","SW 8 St & 2 Av","SW 8 St & 5 Av","SW 8 St & 10 Av","SW 8 St & 17 Av","SW 8 St & 22 Av","SW 8 St & 27 Av","Calle Ocho","Marlins Park","Brownsville"],
+         "202 connects downtown with Little Havana."),
+    ]),
+    ("london", [
+        ("tfl-piccadilly", "Piccadilly Line", "PI", "Transport for London", "subway", "#0019A8",
+         "Every 3 min", "Every 6 min", "5:00 AM – 12:30 AM",
+         ["Cockfosters","Oakwood","Southgate","Arnos Grove","Bounds Green","Wood Green","Turnpike Lane","Manor House","Finsbury Park","Arsenal","Holloway Road","Caledonian Road","King's Cross St. Pancras","Russell Square","Holborn","Covent Garden","Leicester Square","Piccadilly Circus","Green Park","Hyde Park Corner","Knightsbridge","South Kensington","Gloucester Road","Earl's Court","Barons Court","Hammersmith","Acton Town","South Ealing","Northfields","Boston Manor","Osterley","Hounslow East","Hounslow Central","Hounslow West","Hatton Cross","Heathrow Terminals 2 & 3","Heathrow Terminal 4","Heathrow Terminal 5"],
+         "Piccadilly line runs from Cockfosters to Heathrow Airport."),
+        ("tfl-victoria", "Victoria Line", "VI", "Transport for London", "subway", "#039BE5",
+         "Every 2 min", "Every 4 min", "5:00 AM – 12:30 AM",
+         ["Brixton","Stockwell","Vauxhall","Pimlico","Victoria","Green Park","Oxford Circus","Warren Street","Euston","King's Cross St. Pancras","Highbury & Islington","Finsbury Park","Seven Sisters","Tottenham Hale","Blackhorse Road","Walthamstow Central"],
+         "Victoria line runs from Brixton to Walthamstow Central."),
+        ("tfl-elizabeth", "Elizabeth Line", "EL", "Transport for London", "commuter-rail", "#7156A5",
+         "Every 4 min", "Every 8 min", "5:00 AM – 1:00 AM",
+         ["Reading","Twyford","Maidenhead","Taplow","Burnham","Slough","Langley","Iver","West Drayton","Hayes & Harlington","Heathrow Terminal 4","Heathrow Terminal 5","Heathrow Terminals 2 & 3","Southall","Hanwell","West Ealing","Ealing Broadway","Acton Main Line","Paddington","Bond Street","Tottenham Court Road","Farringdon","Liverpool Street","Whitechapel","Canary Wharf","Custom House","Woolwich","Abbey Wood","Stratford","Maryland","Forest Gate","Manor Park","Ilford","Seven Kings","Goodmayes","Chadwell Heath","Romford","Gidea Park","Harold Wood","Brentwood","Shenfield"],
+         "Elizabeth line crosses London east-to-west via Paddington and Canary Wharf."),
+        ("tfl-bus-25", "Bus 25 (Oxford Circus – Ilford)", "25", "Transport for London", "bus", "#DC241F",
+         "Every 6 min", "Every 12 min", "24 hours",
+         ["Oxford Circus","Bond Street","Marble Arch","Holborn","Chancery Lane","St. Paul's","Bank","Aldgate","Whitechapel","Stepney Green","Mile End","Bow Road","Stratford","Forest Gate","Manor Park","Ilford"],
+         "Route 25 is one of London's busiest, running 24/7."),
+    ]),
+    ("paris", [
+        ("ratp-metro-1", "RATP Metro 1", "1", "RATP", "subway", "#FFCD00",
+         "Every 2 min", "Every 5 min", "5:30 AM – 1:15 AM",
+         ["La Défense","Esplanade de La Défense","Pont de Neuilly","Les Sablons","Porte Maillot","Argentine","Charles de Gaulle - Étoile","George V","Franklin D. Roosevelt","Champs-Élysées - Clemenceau","Concorde","Tuileries","Palais Royal - Musée du Louvre","Louvre - Rivoli","Châtelet","Hôtel de Ville","Saint-Paul","Bastille","Gare de Lyon","Reuilly - Diderot","Nation","Porte de Vincennes","Saint-Mandé","Bérault","Château de Vincennes"],
+         "Line 1 crosses Paris from La Défense to Château de Vincennes."),
+        ("ratp-metro-14", "RATP Metro 14", "14", "RATP", "subway", "#62259D",
+         "Every 90 sec", "Every 4 min", "5:30 AM – 1:15 AM",
+         ["Orly Airport","Pont de Rungis","Chevilly-Larue","Thiais","Maison Blanche","Olympiades","Bibliothèque François Mitterrand","Cour Saint-Émilion","Bercy","Gare de Lyon","Châtelet","Pyramides","Madeleine","Saint-Lazare","Pont Cardinet","Porte de Clichy","Saint-Ouen","Mairie de Saint-Ouen"],
+         "Line 14 connects Orly Airport with Saint-Denis via Châtelet."),
+        ("ratp-rer-a", "RATP RER A", "A", "RATP", "commuter-rail", "#E2231A",
+         "Every 3 min", "Every 6 min", "5:00 AM – 1:30 AM",
+         ["Saint-Germain-en-Laye","Le Vésinet-Le Pecq","La Défense","Charles de Gaulle - Étoile","Auber","Châtelet - Les Halles","Gare de Lyon","Nation","Vincennes","Joinville-le-Pont","Noisy-le-Grand","Marne-la-Vallée - Chessy"],
+         "RER A connects Saint-Germain to Marne-la-Vallée (Disneyland)."),
+    ]),
+    ("tokyo", [
+        ("jr-yamanote", "JR Yamanote Line", "JY", "JR East", "subway", "#9ACD32",
+         "Every 3 min", "Every 5 min", "4:30 AM – 1:00 AM",
+         ["Tokyo","Yurakucho","Shimbashi","Hamamatsucho","Tamachi","Shinagawa","Osaki","Gotanda","Meguro","Ebisu","Shibuya","Harajuku","Yoyogi","Shinjuku","Shin-Okubo","Takadanobaba","Mejiro","Ikebukuro","Otsuka","Sugamo","Komagome","Tabata","Nishi-Nippori","Nippori","Uguisudani","Ueno","Okachimachi","Akihabara","Kanda"],
+         "JR Yamanote loops around central Tokyo connecting major hubs."),
+        ("tokyo-metro-marunouchi", "Tokyo Metro Marunouchi Line", "M", "Tokyo Metro", "subway", "#F62E36",
+         "Every 3 min", "Every 5 min", "5:00 AM – 1:00 AM",
+         ["Ogikubo","Minami-Asagaya","Shin-Koenji","Higashi-Koenji","Shin-Nakano","Nakano-Sakaue","Nishi-Shinjuku","Shinjuku","Shinjuku-sanchome","Shinjuku-gyoemmae","Yotsuya-sanchome","Yotsuya","Akasaka-mitsuke","Kokkai-gijidomae","Kasumigaseki","Ginza","Tokyo","Otemachi","Awajicho","Ochanomizu","Hongo-sanchome","Korakuen","Myogadani","Shin-Otsuka","Ikebukuro"],
+         "Marunouchi Line connects Ogikubo and Ikebukuro through central Tokyo."),
+        ("toei-oedo", "Toei Oedo Line", "E", "Toei Subway", "subway", "#B6007A",
+         "Every 4 min", "Every 6 min", "5:00 AM – 1:00 AM",
+         ["Tochomae","Shinjuku-nishiguchi","Higashi-Shinjuku","Wakamatsu-kawada","Ushigome-yanagicho","Ushigome-kagurazaka","Iidabashi","Kasuga","Hongo-sanchome","Ueno-okachimachi","Shin-Okachimachi","Kuramae","Ryogoku","Morishita","Kiyosumi-shirakawa","Monzen-nakacho","Tsukishima","Kachidoki","Tsukijishijo","Shiodome","Daimon","Akabanebashi","Azabu-juban","Roppongi","Aoyama-itchome","Kokuritsu-kyogijo","Yoyogi","Shinjuku","Tochomae"],
+         "Oedo Line loops around inner Tokyo and connects to Tochomae."),
+    ]),
+    ("singapore", [
+        ("mrt-north-south", "MRT North-South Line", "NS", "SMRT Trains", "subway", "#E0241A",
+         "Every 3 min", "Every 6 min", "5:30 AM – 12:00 AM",
+         ["Jurong East","Bukit Batok","Bukit Gombak","Choa Chu Kang","Yew Tee","Kranji","Marsiling","Woodlands","Admiralty","Sembawang","Canberra","Yishun","Khatib","Yio Chu Kang","Ang Mo Kio","Bishan","Braddell","Toa Payoh","Novena","Newton","Orchard","Somerset","Dhoby Ghaut","City Hall","Raffles Place","Marina Bay","Marina South Pier"],
+         "North-South Line connects Jurong East with Marina South Pier."),
+        ("mrt-circle", "MRT Circle Line", "CC", "SMRT Trains", "subway", "#F89829",
+         "Every 4 min", "Every 7 min", "5:30 AM – 12:00 AM",
+         ["HarbourFront","Telok Blangah","Labrador Park","Pasir Panjang","Haw Par Villa","Kent Ridge","one-north","Buona Vista","Holland Village","Farrer Road","Botanic Gardens","Caldecott","Bishan","Marymount","Lorong Chuan","Serangoon","Bartley","Tai Seng","MacPherson","Paya Lebar","Dakota","Mountbatten","Stadium","Nicoll Highway","Promenade","Esplanade","Bras Basah","Dhoby Ghaut"],
+         "Circle Line loops around central Singapore."),
+        ("mrt-east-west", "MRT East-West Line", "EW", "SMRT Trains", "subway", "#009645",
+         "Every 3 min", "Every 6 min", "5:30 AM – 12:00 AM",
+         ["Pasir Ris","Tampines","Simei","Tanah Merah","Bedok","Kembangan","Eunos","Paya Lebar","Aljunied","Kallang","Lavender","Bugis","City Hall","Raffles Place","Tanjong Pagar","Outram Park","Tiong Bahru","Redhill","Queenstown","Commonwealth","Buona Vista","Dover","Clementi","Jurong East","Chinese Garden","Lakeside","Boon Lay","Pioneer","Joo Koon","Gul Circle","Tuas Crescent","Tuas West Road","Tuas Link"],
+         "East-West Line connects Pasir Ris to Tuas Link via downtown."),
+    ]),
+    ("hong-kong", [
+        ("mtr-island-line", "MTR Island Line", "ISL", "MTR Corporation", "subway", "#0075C2",
+         "Every 3 min", "Every 6 min", "6:00 AM – 1:00 AM",
+         ["Kennedy Town","HKU","Sai Ying Pun","Sheung Wan","Central","Admiralty","Wan Chai","Causeway Bay","Tin Hau","Fortress Hill","North Point","Quarry Bay","Tai Koo","Sai Wan Ho","Shau Kei Wan","Heng Fa Chuen","Chai Wan"],
+         "Island Line runs from Kennedy Town to Chai Wan."),
+        ("mtr-tsuen-wan-line", "MTR Tsuen Wan Line", "TWL", "MTR Corporation", "subway", "#ED1D24",
+         "Every 3 min", "Every 6 min", "6:00 AM – 1:00 AM",
+         ["Central","Admiralty","Tsim Sha Tsui","Jordan","Yau Ma Tei","Mong Kok","Prince Edward","Sham Shui Po","Cheung Sha Wan","Lai Chi Kok","Mei Foo","Lai King","Kwai Fong","Kwai Hing","Tai Wo Hau","Tsuen Wan"],
+         "Tsuen Wan Line connects Central with Tsuen Wan via Kowloon."),
+    ]),
+    ("toronto", [
+        ("ttc-line-1", "TTC Line 1 Yonge-University", "1", "Toronto Transit Commission", "subway", "#FFCC00",
+         "Every 3 min", "Every 5 min", "6:00 AM – 1:30 AM",
+         ["Vaughan Metropolitan Centre","Highway 407","Pioneer Village","York University","Finch West","Downsview Park","Sheppard West","Wilson","Yorkdale","Lawrence West","Glencairn","Eglinton West","St. Clair West","Dupont","Spadina","St. George","Museum","Queen's Park","St. Patrick","Osgoode","St. Andrew","Union","King","Queen","Dundas","College","Wellesley","Bloor-Yonge","Rosedale","Summerhill","St. Clair","Davisville","Eglinton","Lawrence","York Mills","Sheppard-Yonge","North York Centre","Finch"],
+         "Line 1 is the U-shaped subway through downtown Toronto."),
+        ("ttc-line-2", "TTC Line 2 Bloor-Danforth", "2", "Toronto Transit Commission", "subway", "#00923F",
+         "Every 3 min", "Every 5 min", "6:00 AM – 1:30 AM",
+         ["Kipling","Islington","Royal York","Old Mill","Jane","Runnymede","High Park","Keele","Dundas West","Lansdowne","Dufferin","Ossington","Christie","Bathurst","Spadina","St. George","Bay","Bloor-Yonge","Sherbourne","Castle Frank","Broadview","Chester","Pape","Donlands","Greenwood","Coxwell","Woodbine","Main Street","Victoria Park","Warden","Kennedy"],
+         "Line 2 runs along Bloor-Danforth from Kipling to Kennedy."),
+        ("ttc-streetcar-501", "TTC Streetcar 501 Queen", "501", "Toronto Transit Commission", "tram", "#FFCC00",
+         "Every 8 min", "Every 15 min", "5:00 AM – 1:30 AM",
+         ["Long Branch Loop","Park Lawn","Roncesvalles","Sunnyside","Dufferin","Bathurst","Spadina","University","Yonge","Jarvis","Sherbourne","Parliament","Broadview","Coxwell","Woodbine","Neville Park"],
+         "501 Queen streetcar runs along Queen Street."),
+    ]),
+    ("sydney", [
+        ("sydney-t1-north-shore", "T1 North Shore & Western Line", "T1", "Sydney Trains", "commuter-rail", "#F37021",
+         "Every 5 min", "Every 15 min", "4:30 AM – 1:00 AM",
+         ["Berowra","Mt Kuring-gai","Mt Colah","Asquith","Hornsby","Waitara","Wahroonga","Warrawee","Turramurra","Pymble","Gordon","Killara","Lindfield","Roseville","Chatswood","Artarmon","St Leonards","Wollstonecraft","Waverton","North Sydney","Milsons Point","Wynyard","Town Hall","Central","Strathfield","Lidcombe","Auburn","Granville","Parramatta","Westmead","Wentworthville","Pendle Hill","Toongabbie","Seven Hills","Blacktown","Doonside","Rooty Hill","Mt Druitt","St Marys","Werrington","Kingswood","Penrith","Emu Plains"],
+         "T1 line is the main commuter route from Penrith to Berowra."),
+        ("sydney-metro-north-west", "Sydney Metro North-West", "M", "Sydney Metro", "subway", "#22A745",
+         "Every 4 min", "Every 8 min", "5:00 AM – 1:00 AM",
+         ["Tallawong","Rouse Hill","Kellyville","Bella Vista","Norwest","Hills Showground","Castle Hill","Cherrybrook","Epping","Macquarie University","Macquarie Park","North Ryde","Chatswood"],
+         "Metro North-West connects Tallawong with Chatswood."),
+        ("sydney-light-rail-l1", "L1 Dulwich Hill Line", "L1", "Sydney Trains", "light-rail", "#9C1F2E",
+         "Every 10 min", "Every 15 min", "5:00 AM – 1:00 AM",
+         ["Central","Capitol Square","Paddy's Markets","Exhibition Centre","Convention","Pyrmont Bay","The Star","John Street Square","Fish Market","Wentworth Park","Glebe","Jubilee Park","Rozelle Bay","Lilyfield","Leichhardt North","Hawthorne","Marion","Taverners Hill","Lewisham West","Waratah Mills","Arlington","Dulwich Hill"],
+         "L1 is the Inner West light rail line."),
+    ]),
+]
+
+
+def _r10_make_line_seed(slug):
+    return int.from_bytes(
+        hashlib.md5(("r10line:" + slug).encode()).digest()[:4], "big")
+
+
+def expand_transit_lines_r10(db, TransitLine, City):
+    """Add curated transit lines to bring TransitLine count from ~14 to 200+.
+
+    Combines hand-rolled major-metro additions with a programmatic fan-out
+    that gives every city already in _R10_METRO_LINE_SPECS a deterministic
+    set of crosstown bus routes (M1..M8) plus the named lines above.
+    Idempotent — no-op once TransitLine count >= 200.
+    """
+    if TransitLine.query.count() >= 200:
+        return
+
+    cities_by_slug = {c.slug: c for c in City.query.all()}
+    added = 0
+
+    # --- Phase A: hand-rolled named lines per top metro -----------------
+    for city_slug, lines in _R10_METRO_LINE_SPECS:
+        city = cities_by_slug.get(city_slug)
+        for entry in lines:
+            (slug, name, short_name, agency, mode, color,
+             peak, off, hours, stops, desc) = entry
+            if TransitLine.query.filter_by(slug=slug).first():
+                continue
+            line_seed = _r10_make_line_seed(slug)
+            notes = ("All stations wheelchair-accessible with elevators."
+                     if line_seed % 3 == 0 else
+                     ("Most stations have elevators; check station details."
+                      if line_seed % 3 == 1 else
+                      "Selected stations are accessible; transfer points include elevators."))
+            db.session.add(TransitLine(
+                slug=slug, name=name, short_name=short_name, agency=agency,
+                mode=mode, color=color,
+                city_id=city.id if city else None,
+                frequency_peak=peak, frequency_off=off, hours=hours,
+                stops_json=json.dumps(stops),
+                description=desc, accessibility_notes=notes,
+            ))
+            added += 1
+
+    # --- Phase B: programmatic crosstown bus routes per metro ------------
+    # Each metro that already has subway/light-rail coverage in _TRANSIT_LINES
+    # plus _R10_METRO_LINE_SPECS gets 8 generic crosstown bus routes so
+    # /transit/lines/<slug> has dense bus-mode coverage too.
+    BUS_TEMPLATE_CITIES = [
+        "new-york","san-francisco","boston","chicago","washington","seattle",
+        "los-angeles","miami","london","paris","tokyo","singapore",
+        "hong-kong","toronto","sydney","berlin","madrid","barcelona",
+        "rome","amsterdam","vienna","prague","istanbul",
+    ]
+    BUS_CORRIDORS = [
+        ("Crosstown Crosstown Express", "X1", "Bus", "Every 6 min", "Every 15 min", "5:00 AM – 1:00 AM"),
+        ("North-South Limited",         "N1", "Bus", "Every 8 min", "Every 20 min", "5:00 AM – 12:00 AM"),
+        ("East-West Limited",           "E1", "Bus", "Every 8 min", "Every 20 min", "5:00 AM – 12:00 AM"),
+        ("Airport Express",             "AX", "Bus", "Every 12 min","Every 30 min", "4:00 AM – 1:00 AM"),
+        ("Riverfront Loop",             "RV", "Bus", "Every 15 min","Every 30 min", "6:00 AM – 11:00 PM"),
+        ("University District Loop",    "UN", "Bus", "Every 10 min","Every 20 min", "5:30 AM – 12:30 AM"),
+        ("Hospital Shuttle",            "HS", "Bus", "Every 12 min","Every 30 min", "5:00 AM – 11:00 PM"),
+        ("Night Owl",                   "NO", "Bus", "Every 20 min","Every 30 min", "11:00 PM – 5:00 AM"),
+    ]
+    BUS_STOPS_BANK = [
+        "Central Station","Civic Center","Old Town","Riverside","Marina",
+        "University Plaza","Hospital Loop","Convention Center","Heritage Square",
+        "Spice Market","Theater District","Cathedral Square","Botanic Gardens",
+        "Library Plaza","Pier 1","Pier 4","Pier 7","City Hall","Town Square",
+        "Aquarium","Stadium","Museum Quarter","Train Station","Airport Terminal 1",
+        "Airport Terminal 2","Bus Depot","North Gate","South Gate","East Gate","West Gate",
+        "Park & Ride","Industrial Park","Hillside","Skyline Tower","Plaza Mayor",
+    ]
+    for city_slug in BUS_TEMPLATE_CITIES:
+        city = cities_by_slug.get(city_slug)
+        if not city:
+            continue
+        for i, corr in enumerate(BUS_CORRIDORS):
+            slug = f"r10-bus-{city_slug}-{i:02d}"
+            if TransitLine.query.filter_by(slug=slug).first():
+                continue
+            (label, short_name, agency_kind, peak, off, hours) = corr
+            line_seed = _r10_make_line_seed(slug)
+            # Pick 16 deterministic stops from BUS_STOPS_BANK.
+            stops = []
+            for k in range(16):
+                idx = (line_seed + k * 7919) % len(BUS_STOPS_BANK)
+                stop = BUS_STOPS_BANK[idx]
+                if stop not in stops:
+                    stops.append(stop)
+            if not stops:
+                stops = BUS_STOPS_BANK[:16]
+            anchor = city.display_name.split(",")[0]
+            name = f"{anchor} {label}"
+            color = ["#005EB8","#D7263D","#1F8A70","#F4A261","#264653","#E76F51","#2A9D8F","#8E44AD"][i % 8]
+            desc = (f"{name} is a deterministic R10-seed bus route covering "
+                    f"a major corridor in {anchor}.")
+            notes = ("All stops wheelchair-accessible with low-floor buses."
+                     if line_seed % 2 == 0
+                     else "Most stops accessible; check operator alerts for exceptions.")
+            db.session.add(TransitLine(
+                slug=slug, name=name, short_name=short_name,
+                agency=f"{anchor} Transit", mode="bus", color=color,
+                city_id=city.id,
+                frequency_peak=peak, frequency_off=off, hours=hours,
+                stops_json=json.dumps(stops),
+                description=desc, accessibility_notes=notes,
+            ))
+            added += 1
+            if TransitLine.query.count() >= 240:
+                break
+        if TransitLine.query.count() >= 240:
+            break
+
+    db.session.commit()
+    print(f"expand_transit_lines_r10: added {added} R10 transit lines "
+          f"(total {TransitLine.query.count()})")
+
+
+# ---------------------------------------------------------------------------
+# R10 targeted backfill: populate popular_times / menu / hours_json /
+# review_snippets / ratings_dist / noise_level / accessibility_score on
+# the new R10 rows only.  Faster than re-running the full backfill, and
+# preserves byte-identical reset (deterministic per slug).
+# ---------------------------------------------------------------------------
+
+def backfill_place_extras_r10(db, Place, Category):
+    """Targeted backfill for R10 places: fills popular_times_json,
+    menu_json, hours_json (per-day), review_snippets_json, ratings_dist_json,
+    noise_level, crowd_level, mask_required, and accessibility_score for
+    every place whose slug starts with 'r10-'.
+
+    Idempotent — skips rows whose popular_times_json is already non-empty.
+    All values derive from md5(slug + salt) so byte-identical reset holds.
+    """
+    cat_by_id = {c.id: c.slug for c in Category.query.all()}
+    DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+    # R5 noise/crowd/mask tables — local copy to avoid coupling.
+    _NOISE_BY_CAT = {
+        "restaurants": ["moderate", "lively", "lively", "loud", "moderate"],
+        "entertainment": ["lively", "loud", "loud", "lively", "moderate"],
+        "coffee-shops": ["moderate", "quiet", "moderate", "moderate", "lively"],
+        "hotels": ["quiet", "quiet", "moderate", "moderate"],
+        "parks": ["quiet", "moderate", "lively"],
+        "shopping": ["moderate", "lively", "moderate"],
+        "transit": ["moderate", "lively", "loud", "moderate"],
+        "attractions": ["moderate", "lively", "loud"],
+        "beaches": ["moderate", "lively", "moderate"],
+        "services": ["moderate", "quiet"],
+        "museums": ["quiet", "moderate", "quiet", "moderate"],
+    }
+    _CROWD_BY_CAT = {
+        "restaurants": ["moderate", "high", "moderate", "low", "very-high"],
+        "entertainment": ["high", "very-high", "moderate", "high"],
+        "coffee-shops": ["moderate", "high", "low", "moderate"],
+        "hotels": ["moderate", "low", "moderate"],
+        "parks": ["low", "moderate", "high"],
+        "shopping": ["moderate", "high", "very-high"],
+        "transit": ["high", "very-high", "moderate"],
+        "attractions": ["high", "very-high"],
+        "beaches": ["high", "very-high", "moderate"],
+        "services": ["low", "moderate"],
+        "museums": ["moderate", "high", "low"],
+    }
+
+    # Pull only r10 rows in batches.  Index on slug (LIKE prefix) is fast
+    # enough at ~117k rows without OFFSET pagination because we filter by
+    # the prefix directly.
+    BATCH = 2000
+    last_id = 0
+    written = 0
+    while True:
+        rows = (Place.query
+                .filter(Place.slug.like("r10-%"))
+                .filter(Place.id > last_id)
+                .order_by(Place.id)
+                .limit(BATCH).all())
+        if not rows:
+            break
+        last_id = rows[-1].id
+        for p in rows:
+            slug = p.slug or ""
+            cat_slug = cat_by_id.get(p.category_id, "")
+            name_lc = (p.name or "").lower()
+
+            # Detect whether review_snippets is in the legacy list-of-strings
+            # format and force regeneration if so.
+            snippets_ok = False
+            if p.review_snippets_json and p.review_snippets_json not in ("", "[]"):
+                try:
+                    snip_existing = json.loads(p.review_snippets_json)
+                    snippets_ok = (isinstance(snip_existing, list) and
+                                   snip_existing and
+                                   isinstance(snip_existing[0], dict) and
+                                   "rating" in snip_existing[0])
+                except (json.JSONDecodeError, TypeError):
+                    snippets_ok = False
+
+            need_popular = not (p.popular_times_json and p.popular_times_json not in ("", "[]"))
+            need_snippets = not snippets_ok
+            need_ratings = not (p.ratings_dist_json and p.ratings_dist_json not in ("", "[]"))
+            # Only flag need_menu when a template exists for the category;
+            # otherwise menu_json stays "[]" and we should NOT keep re-touching
+            # the row (which would break byte-identical reset).
+            _has_menu_template = bool(_menu_template_for(slug, name_lc, cat_slug))
+            need_menu = _has_menu_template and not (
+                p.menu_json and p.menu_json not in ("", "[]"))
+            need_noise = not p.noise_level
+            # accessibility_score is set to round(access_count * 100 / 7).
+            # For rows where every accessibility flag is False, the canonical
+            # score IS 0 — don't keep re-flagging it as needing fill.
+            _a11y_any_true = (
+                bool(p.wheelchair_accessible_entrance) or
+                bool(p.wheelchair_accessible_restroom) or
+                bool(p.wheelchair_accessible_parking) or
+                bool(p.wheelchair_accessible_seating) or
+                bool(p.has_braille_menu) or
+                bool(p.has_assistive_hearing) or
+                bool(p.has_service_animal_welcome)
+            )
+            need_a11y = _a11y_any_true and (p.accessibility_score or 0) == 0
+
+            if not any([need_popular, need_snippets, need_ratings,
+                        need_menu, need_noise, need_a11y]):
+                continue  # fully filled in canonical format
+
+            # busiest day/hour deterministic from slug
+            if cat_slug == "coffee-shops" or "cafe" in name_lc:
+                busy_d_options = [0, 1, 2, 5]
+                base_hour = 8
+            elif cat_slug == "shopping":
+                busy_d_options = [5, 6]
+                base_hour = 14
+            elif cat_slug in ("hotels",):
+                busy_d_options = [4, 5, 6]
+                base_hour = 18
+            else:
+                busy_d_options = [3, 4, 5]
+                base_hour = 13
+            busy_d = busy_d_options[_seed_int(slug, "bd") % len(busy_d_options)]
+            peak_h = max(0, min(23, base_hour + (_seed_int(slug, "ph") % 5) - 2))
+
+            matrix = _gen_popular_times(slug, cat_slug, busy_d, peak_h)
+            p.popular_times_json = json.dumps(matrix)
+            p.busiest_day = DAY_KEYS[busy_d]
+            p.busiest_hour = peak_h
+
+            # hours_json (per-day breakdown derived from canonical string)
+            if not p.hours_json or p.hours_json == "{}":
+                hd = _hours_dict_from_string(p.hours or "")
+                if hd:
+                    p.hours_json = json.dumps(hd)
+
+            # review_snippets (deterministic 3-6 snippets per place).
+            # Format: list of {rating:int, author:str, text:str} dicts — the
+            # template iterates and reads s.rating / s.author / s.text.
+            snippet_seed = _seed_int(slug, "rsn")
+            snippet_pool = [
+                "Great location and friendly staff.",
+                "Lovely atmosphere and clean facilities.",
+                "Recommended for first-time visitors.",
+                "Quiet area with easy access from the main road.",
+                "Helpful information at the entrance kiosk.",
+                "Smooth check-in and clear signage.",
+                "Charming details and a relaxed pace.",
+                "Worth the trip — would visit again.",
+                "Accessible entrance and well-marked paths.",
+                "Pleasant surprise — exceeded expectations.",
+            ]
+            author_pool = ["Alex M.","Sam K.","Jordan L.","Taylor P.","Casey R.",
+                           "Riley B.","Morgan D.","Avery T.","Quinn H.","Drew W."]
+            n_snip = 3 + (snippet_seed % 4)
+            picks = []
+            for k in range(n_snip):
+                text_idx = (snippet_seed + k * 31) % len(snippet_pool)
+                rating = 5 - ((snippet_seed >> (k * 2)) % 3)  # 3..5
+                author = author_pool[(snippet_seed + k * 17) % len(author_pool)]
+                picks.append({
+                    "rating": rating,
+                    "author": author,
+                    "text": snippet_pool[text_idx],
+                })
+            p.review_snippets_json = json.dumps(picks)
+
+            # ratings_dist
+            rc = max(0, p.review_count or 0)
+            r = p.rating or 4.0
+            if r >= 4.7:
+                w = [62, 22, 9, 4, 3]
+            elif r >= 4.4:
+                w = [50, 28, 12, 6, 4]
+            elif r >= 4.0:
+                w = [38, 30, 17, 9, 6]
+            elif r >= 3.5:
+                w = [28, 26, 22, 14, 10]
+            else:
+                w = [18, 22, 22, 20, 18]
+            tot = sum(w)
+            dist = [(rc * x) // tot for x in w]
+            dist[0] += rc - sum(dist)
+            p.ratings_dist_json = json.dumps(dist)
+
+            # menu for restaurant-ish r10 places
+            mtpl = _menu_template_for(slug, name_lc, cat_slug)
+            if mtpl:
+                off = (_seed_int(slug, "menu") % 5) - 2
+                menu = []
+                for section_name, items in mtpl:
+                    sec_items = []
+                    for nm, dsc, price in items:
+                        sec_items.append({
+                            "name": nm, "desc": dsc,
+                            "price": max(3, price + off),
+                        })
+                    menu.append({"section": section_name, "items": sec_items})
+                p.menu_json = json.dumps(menu)
+
+            # noise / crowd / mask
+            noise_options = _NOISE_BY_CAT.get(cat_slug, ["moderate", "quiet", "lively"])
+            crowd_options = _CROWD_BY_CAT.get(cat_slug, ["moderate", "low", "high"])
+            p.noise_level = noise_options[_seed_int(slug, "n5n") % len(noise_options)]
+            p.crowd_level = crowd_options[_seed_int(slug, "n5c") % len(crowd_options)]
+            p.mask_required = (_seed_int(slug, "n5m") % 100) < 4
+
+            # accessibility_score from boolean flags already set in
+            # expand_places_r10 (re-compute so the score reflects reality).
+            access_count = sum([
+                bool(p.wheelchair_accessible_entrance),
+                bool(p.wheelchair_accessible_restroom),
+                bool(p.wheelchair_accessible_parking),
+                bool(p.wheelchair_accessible_seating),
+                bool(p.has_braille_menu),
+                bool(p.has_assistive_hearing),
+                bool(p.has_service_animal_welcome),
+            ])
+            p.accessibility_score = round(access_count * 100 / 7)
+
+            written += 1
+        db.session.commit()
+    print(f"backfill_place_extras_r10: filled extras on {written} R10 place rows")

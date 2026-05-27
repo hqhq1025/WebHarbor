@@ -3430,11 +3430,92 @@ def space_discussions(author, name):
 
 
 # ------------------------------------------------------------
+# R10 — every repo card surface (model / dataset / space) needs the full
+# six-tab strip: Card · Files · Community · Discussions · PRs · Settings.
+# `Community` is a top-level alias for `Discussions`; `PRs` filters the
+# Discussion table down to kind=='pull-request'; `Settings` is a stub
+# repo-admin page that surfaces visibility + danger-zone controls.
+# Every (model, dataset, space) × (community, pull-requests, settings)
+# combination is exposed so the tab strip is uniformly 200 across kinds.
+# ------------------------------------------------------------
+def _r10_repo_or_404(author, name, repo_type=None):
+    slug = f"{author}/{name}"
+    q = Repository.query.filter_by(slug=slug)
+    if repo_type:
+        q = q.filter_by(repo_type=repo_type)
+    return q.first_or_404()
+
+
+def _r10_render_community(repo):
+    discussions = Discussion.query.filter_by(repo_id=repo.id).order_by(Discussion.created_at.desc()).all()
+    return render_template("discussions.html", repo=repo, discussions=discussions, r10_view="community")
+
+
+def _r10_render_pull_requests(repo):
+    prs = (Discussion.query
+           .filter_by(repo_id=repo.id, kind="pull-request")
+           .order_by(Discussion.created_at.desc())
+           .all())
+    return render_template("repo_pull_requests.html", repo=repo, pull_requests=prs)
+
+
+def _r10_render_settings(repo):
+    return render_template("repo_settings.html", repo=repo)
+
+
+@app.route("/<author>/<name>/community")
+def repo_community(author, name):
+    return _r10_render_community(_r10_repo_or_404(author, name))
+
+
+@app.route("/<author>/<name>/pull-requests")
+@app.route("/<author>/<name>/pulls")
+def repo_pull_requests(author, name):
+    return _r10_render_pull_requests(_r10_repo_or_404(author, name))
+
+
+@app.route("/<author>/<name>/settings")
+def repo_settings(author, name):
+    return _r10_render_settings(_r10_repo_or_404(author, name))
+
+
+@app.route("/datasets/<author>/<name>/community")
+def dataset_community(author, name):
+    return _r10_render_community(_r10_repo_or_404(author, name, "dataset"))
+
+
+@app.route("/datasets/<author>/<name>/pull-requests")
+@app.route("/datasets/<author>/<name>/pulls")
+def dataset_pull_requests(author, name):
+    return _r10_render_pull_requests(_r10_repo_or_404(author, name, "dataset"))
+
+
+@app.route("/datasets/<author>/<name>/settings")
+def dataset_settings(author, name):
+    return _r10_render_settings(_r10_repo_or_404(author, name, "dataset"))
+
+
+@app.route("/spaces/<author>/<name>/community")
+def space_community(author, name):
+    return _r10_render_community(_r10_repo_or_404(author, name, "space"))
+
+
+@app.route("/spaces/<author>/<name>/pull-requests")
+@app.route("/spaces/<author>/<name>/pulls")
+def space_pull_requests(author, name):
+    return _r10_render_pull_requests(_r10_repo_or_404(author, name, "space"))
+
+
+@app.route("/spaces/<author>/<name>/settings")
+def space_settings(author, name):
+    return _r10_render_settings(_r10_repo_or_404(author, name, "space"))
+
+
+# ------------------------------------------------------------
 # R5 routes — copy snippets, dataset row pagination, readme section
 # anchors, like animation, discussion reply threading, AutoTrain billing
 # estimate, paper implementations, organization billing.
-# ------------------------------------------------------------
-def _section_slug(title: str) -> str:
+# ------------------------------------------------------------def _section_slug(title: str) -> str:
     s = (title or "").strip().lower()
     out = []
     for ch in s:

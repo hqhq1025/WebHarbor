@@ -4084,7 +4084,7 @@ def _ensure_amenity_combos():
     # Also set landmark_tags so "near Kashi Vishwanath" search works
     city = City.query.filter_by(key='varanasi').first()
     if city:
-        for p in Property.query.filter_by(city_id=city.id).all():
+        for p in Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all():
             tags = json.loads(p.landmark_tags or '[]')
             if 'Kashi Vishwanath' not in tags:
                 tags.append('Kashi Vishwanath')
@@ -4093,7 +4093,7 @@ def _ensure_amenity_combos():
     # Chicago: 9+ rating, free cancel, gym (downtown)
     city = City.query.filter_by(key='chicago').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = 0
         for p in props:
             if count >= 3:
@@ -4121,7 +4121,7 @@ def _ensure_amenity_combos():
                 p.landmark_tags = json.dumps(tags)
         # Ensure at least 3 properties have Louvre tag + pool + WiFi
         if len(louvre_props) < 3:
-            for p in Property.query.filter_by(city_id=city.id).limit(3).all():
+            for p in Property.query.filter_by(city_id=city.id).limit(3).order_by(Property.id.asc()).all():
                 tags = json.loads(p.landmark_tags or '[]')
                 if 'Louvre' not in tags:
                     tags.append('Louvre')
@@ -4132,7 +4132,7 @@ def _ensure_amenity_combos():
     # Paris: 9+ WiFi breakfast
     city = City.query.filter_by(key='paris').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = sum(1 for p in props if p.rating >= 9.0 and p.has_wifi and p.breakfast_included)
         needed = 3 - count
         for p in props:
@@ -4150,7 +4150,7 @@ def _ensure_amenity_combos():
     if city:
         five_star = Property.query.filter_by(city_id=city.id, stars=5).count()
         if five_star < 3:
-            for p in Property.query.filter_by(city_id=city.id).filter(Property.stars < 5).limit(3 - five_star).all():
+            for p in Property.query.filter_by(city_id=city.id).filter(Property.stars < 5).limit(3 - five_star).order_by(Property.id.asc()).all():
                 p.stars = 5
 
     # Sydney: 8+ WiFi parking
@@ -4163,7 +4163,7 @@ def _ensure_amenity_combos():
     # Amsterdam: 9+ bicycle
     city = City.query.filter_by(key='amsterdam').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = sum(1 for p in props if p.rating >= 9.0 and p.has_bicycle_rental)
         needed = 3 - count
         for p in props:
@@ -4197,7 +4197,7 @@ def _ensure_amenity_combos():
     # Lisbon: airport shuttle + 8.5+ + breakfast
     city = City.query.filter_by(key='lisbon').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = 0
         for p in props:
             if count >= 3:
@@ -4214,7 +4214,7 @@ def _ensure_amenity_combos():
     # Sapporo (Hokkaido): 9+
     city = City.query.filter_by(key='sapporo').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = 0
         for p in props:
             if count >= 3:
@@ -4232,7 +4232,7 @@ def _ensure_amenity_combos():
     # Rome: 7+ rating + free cancellation + breakfast
     city = City.query.filter_by(key='rome').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = sum(1 for p in props if p.rating >= 7.0 and p.free_cancellation and p.breakfast_included)
         needed = 3 - count
         for p in props:
@@ -4248,7 +4248,7 @@ def _ensure_amenity_combos():
     # Tokyo: 9+ spa
     city = City.query.filter_by(key='tokyo').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = sum(1 for p in props if p.rating >= 9.0 and p.has_spa)
         needed = 3 - count
         for p in props:
@@ -4268,7 +4268,7 @@ def _ensure_amenity_combos():
     # Vienna: parking + breakfast + 8+
     city = City.query.filter_by(key='vienna').first()
     if city:
-        props = Property.query.filter_by(city_id=city.id).all()
+        props = Property.query.filter_by(city_id=city.id).order_by(Property.id.asc()).all()
         count = sum(1 for p in props if p.rating >= 8.0 and p.has_parking and p.breakfast_included)
         needed = 3 - count
         for p in props:

@@ -2457,6 +2457,76 @@ def msc_listing(msc_class=None):
                            total=total, page=page, per_page=per_page)
 
 
+# -----------------------------------------------------------------------
+# R10 — ACM Computing Classification System (1998 CCS) browse route.
+# Mirrors /MSC2020 surface for ACM class strings (e.g. F.2.2, H.3.3, I.2.7).
+# -----------------------------------------------------------------------
+
+_ACM_FAMILY_LABELS = {
+    "A": "General Literature",
+    "B": "Hardware",
+    "C": "Computer Systems Organization",
+    "D": "Software",
+    "E": "Data",
+    "F": "Theory of Computation",
+    "G": "Mathematics of Computing",
+    "H": "Information Systems",
+    "I": "Computing Methodologies",
+    "J": "Computer Applications",
+    "K": "Computing Milieux",
+}
+
+
+@app.route("/acm/<path:acm_class>")
+@app.route("/acm/")
+@app.route("/acm")
+def acm_listing(acm_class=None):
+    """Browse papers by ACM Computing Classification System (CCS) tag.
+
+    Index (no class): list top-level ACM CCS family directory (A..K).
+    Detail (class supplied): list papers whose acm_class column contains it.
+    Patterns we recognise: ``F.2``, ``F.2.2``, ``H.3.3``. Filter is a simple
+    substring match against the stored acm_class string (which may carry
+    multiple comma-separated tags).
+    """
+    if acm_class is None:
+        rows = db.session.query(Paper.acm_class).filter(
+            Paper.acm_class != "").all()
+        counts = {}
+        for (ac,) in rows:
+            for fam in re.findall(r"\b([A-K])\.\d", ac or ""):
+                counts[fam] = counts.get(fam, 0) + 1
+        families = []
+        for fam in sorted(_ACM_FAMILY_LABELS):
+            families.append({
+                "code": fam,
+                "label": _ACM_FAMILY_LABELS[fam],
+                "count": counts.get(fam, 0),
+            })
+        return render_template("msc_index.html",
+                               families=families,
+                               total_papers=sum(counts.values()),
+                               scheme_label="ACM CCS (1998)",
+                               scheme_endpoint="acm_listing")
+    pattern = f"%{acm_class}%"
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 25
+    q = (Paper.query.filter(Paper.acm_class.ilike(pattern))
+         .order_by(Paper.submitted_year.desc(),
+                   Paper.submitted_month.desc(), Paper.arxiv_id.desc()))
+    total = q.count()
+    papers = q.offset((page - 1) * per_page).limit(per_page).all()
+    fam_letter = acm_class.strip()[:1].upper()
+    family_label = _ACM_FAMILY_LABELS.get(fam_letter, "")
+    return render_template("msc_class.html",
+                           msc_class=acm_class,
+                           family_label=family_label,
+                           papers=papers,
+                           total=total, page=page, per_page=per_page,
+                           scheme_label="ACM CCS",
+                           scheme_endpoint="acm_listing")
+
+
 @app.route("/journal-ref-search", methods=["GET", "POST"])
 def journal_ref_search():
     """Browse / search papers by journal-ref string.

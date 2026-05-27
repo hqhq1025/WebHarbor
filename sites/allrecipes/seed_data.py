@@ -1679,6 +1679,20 @@ def seed_extended_catalog():
         print(f"[seed_extended] R9 polish FAILED: {exc!r}")
         raise
 
+    # ----- R10: 3 closing variant passes (Dessert-Sweet / Seafood-Coastal /
+    # Grilling-BBQ) + 1 new top-level "grilling" cooking-method category.
+    # Subsamples the remaining non-variant Test Kitchen base at step 9 so we
+    # add ~2790 recipes, crossing 31000 with broad dessert/seafood/grill
+    # coverage.
+    try:
+        from r10_seed import run_r10_polish
+        r10_counts = run_r10_polish(cat_by_slug)
+        if not r10_counts.get('skipped'):
+            print(f"[seed_extended] R10 polish: {r10_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R10 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

@@ -162,6 +162,16 @@ class Word(db.Model):
     # Surfaced on word_detail and on /dialect/<slug>/history.
     r9_subdomain = db.Column(db.String(40), default='')
 
+    # R10 extensions ----------------------------------------------------------
+    # Task-module bucket: '' | lookup | grammar | quiz | flashcard |
+    # ielts | vocab-builder. Lets the compound-task generator filter
+    # candidate rows per module without scanning the whole catalog.
+    # Not indexed — the compound-task pool is small (~8.5k rows) and a
+    # full-scan filter at graphql query time is fast enough; skipping the
+    # index saves ~250 KB on disk and helps the seed DB stay under
+    # the 100 MiB blob limit.
+    r10_topic = db.Column(db.String(20), default='')
+
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
 
@@ -2344,9 +2354,9 @@ def healthz():
     import hashlib as _hl
     return jsonify({
         'status': 'ok',
-        'release': R9_RELEASE_TAG,
-        'build_id': 'cambridge-r9-' + _hl.md5(
-            f'r9|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
+        'release': R10_RELEASE_TAG,
+        'build_id': 'cambridge-r10-' + _hl.md5(
+            f'r10|{MIRROR_REFERENCE_DATE.date().isoformat()}'.encode()
         ).hexdigest()[:10],
         'snapshot_date': MIRROR_REFERENCE_DATE.date().isoformat(),
         'words_total': db.session.query(func.count(Word.id)).filter(
@@ -2354,6 +2364,9 @@ def healthz():
         'specialties_total': db.session.query(func.count(Word.id)).filter(
             Word.is_thesaurus_phrase == False,  # noqa
             Word.r9_specialty != '').scalar(),
+        'topics_total': db.session.query(func.count(Word.id)).filter(
+            Word.is_thesaurus_phrase == False,  # noqa
+            Word.r10_topic != '').scalar(),
         'checks': {
             'db': 'ok',
             'cache': 'ok',
@@ -2454,6 +2467,7 @@ def _r8_word_to_graphql(w):
         'modernEquiv': w.r8_modern_equiv or '',
         'specialty': w.r9_specialty or '',
         'subdomain': w.r9_subdomain or '',
+        'topic': w.r10_topic or '',
     }
 
 
@@ -2507,6 +2521,9 @@ def api_v2_graphql():
             q = q.filter(Word.register == register)
         if specialty:
             q = q.filter(Word.r9_specialty == specialty)
+        topic = _vget('topic')
+        if topic:
+            q = q.filter(Word.r10_topic == topic)
         rows = q.order_by(Word.headword.asc()).limit(limit).all()
         return jsonify({'data': {'words':
                                  [_r8_word_to_graphql(w) for w in rows]}})
@@ -2542,12 +2559,17 @@ def api_v2_graphql():
                  .filter(Word.is_thesaurus_phrase == False,  # noqa
                          Word.r9_specialty != '')
                  .distinct().order_by(Word.r9_specialty.asc()).all()]
+        topics = [t for (t,) in db.session.query(Word.r10_topic)
+                  .filter(Word.is_thesaurus_phrase == False,  # noqa
+                          Word.r10_topic != '')
+                  .distinct().order_by(Word.r10_topic.asc()).all()]
         return jsonify({'data': {'stats': {
             'totalWords': n,
             'registers': regs,
             'domains': doms,
             'specialties': specs,
-            'release': R9_RELEASE_TAG,
+            'topics': topics,
+            'release': R10_RELEASE_TAG,
         }}})
 
     return jsonify({
@@ -2665,6 +2687,9 @@ def r8_tour():
 # ---------------------------------------------------------------------------
 
 R9_RELEASE_TAG = 'r9'
+R10_RELEASE_TAG = 'r10'
+R10_TOPICS = ('lookup', 'grammar', 'quiz', 'flashcard',
+              'ielts', 'vocab-builder')
 R9_SPECIALTIES = ('programming', 'finance', 'medicine')
 R9_SPECIALTY_LABEL = {
     'programming': 'Programming',
@@ -4764,6 +4789,55 @@ def seed_database():
                 r8_modern_equiv=wd.get('r8_modern_equiv', ''),
                 r9_specialty=wd.get('r9_specialty', ''),
                 r9_subdomain=wd.get('r9_subdomain', ''),
+            ))
+        # R10 expansion: ~8500 lean WordNet entries to push the catalog
+        # past 75000 while staying under the 100 MiB blob limit. Each row
+        # carries an ``r10_topic`` task-module bucket used by the compound
+        # task generator. Many text columns are left NULL (rather than
+        # default'd to '' or a synthesized path) so SQLite's column-NULL
+        # bitmap can skip them in the row payload — this shaves roughly
+        # 100 bytes per row off the resulting DB file. Append-after-r9
+        # so legacy ids stay stable.
+        extra9 = _load_json('words_r10.json') or []
+        for wd in extra9:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''),
+                # Empty strings → NULL on the way in (smaller row).
+                guide_word=wd.get('guide_word') or None,
+                phonetic_uk=wd.get('phonetic_uk') or None,
+                phonetic_us=wd.get('phonetic_us') or None,
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk') or None),
+                audio_uk_path=wd.get('audio_uk_path') or None,
+                audio_us_path=wd.get('audio_us_path') or None,
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register') or None,
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology') or None,
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note') or None,
+                antonyms_json=_j(wd.get('antonyms', [])),
+                roots_json=_j(wd.get('roots', [])),
+                shared_coll_anchor=wd.get('shared_coll_anchor') or None,
+                r6_dict=wd.get('r6_dict') or None,
+                r7_domain=wd.get('r7_domain') or None,
+                dialect_uk=wd.get('dialect_uk') or None,
+                dialect_us=wd.get('dialect_us') or None,
+                defined_term_id=wd.get('defined_term_id') or None,
+                r8_modern_equiv=wd.get('r8_modern_equiv') or None,
+                r9_specialty=wd.get('r9_specialty') or None,
+                r9_subdomain=wd.get('r9_subdomain') or None,
+                r10_topic=wd.get('r10_topic', ''),
             ))
     else:
         # Fallback: inline curated lists.

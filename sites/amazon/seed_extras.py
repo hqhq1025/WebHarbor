@@ -978,6 +978,19 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_r9(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_r9 failed: {e}") from e
+    # R10: final polish — push catalog past 55500 by adding cross-business
+    # bundles (HSA-eligible care kits, VIN-fit auto packs, Refurb-grade
+    # bundles, Monogram-pack Amazon Custom), Made-by-Amazon private label
+    # expansion (Basics / Essentials / Aware), Seasonal long-tail (Spring /
+    # Summer / Fall / Winter + Holiday Gift Guide), and Amazon Warehouse
+    # Deals (open-box, frustration-free packaging).  Adds bundle-kind /
+    # made-by-amazon / seasonal-band / holiday-gift-guide / warehouse-deal /
+    # frustration-free quality fields.
+    try:
+        from seed_r10 import seed_r10
+        seed_r10(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r10 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

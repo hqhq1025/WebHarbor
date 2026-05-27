@@ -1,14 +1,19 @@
 {% extends "base.html" %}
-{% block title %}MSC2020 Index — arXiv{% endblock %}
+{% set _scheme = scheme_label|default("MSC2020") %}
+{% set _endpoint = scheme_endpoint|default("msc_listing") %}
+{% block title %}{{ _scheme }} Index — arXiv{% endblock %}
 {% block breadcrumbs %}
     <span class="sep">&gt;</span>
-    <span style="color:#fff">MSC2020</span>
+    <span style="color:#fff">{{ _scheme }}</span>
 {% endblock %}
 {% block content %}
 
-<h1 style="font-size:20px;margin:14px 0 4px;">Mathematics Subject Classification — MSC2020</h1>
+<h1 style="font-size:20px;margin:14px 0 4px;">
+    {% if _endpoint == 'acm_listing' %}ACM Computing Classification — CCS (1998)
+    {% else %}Mathematics Subject Classification — MSC2020{% endif %}
+</h1>
 <div class="muted" style="font-size:13px;margin-bottom:18px;">
-    Browse {{ total_papers }} classified papers by top-level MSC family code.
+    Browse {{ total_papers }} classified papers by top-level {{ _scheme }} family code.
     Click any row to drill into the matching paper list.
 </div>
 
@@ -24,20 +29,25 @@
     <tbody>
         {% for fam in families %}
         <tr>
-            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a class="mono" href="{{ url_for('msc_listing', msc_class=fam.code) }}">{{ fam.code }}</a></td>
-            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a href="{{ url_for('msc_listing', msc_class=fam.code) }}">{{ fam.label }}</a></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a class="mono" href="{{ url_for(_endpoint, msc_class=fam.code) if _endpoint == 'msc_listing' else url_for(_endpoint, acm_class=fam.code) }}">{{ fam.code }}</a></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a href="{{ url_for(_endpoint, msc_class=fam.code) if _endpoint == 'msc_listing' else url_for(_endpoint, acm_class=fam.code) }}">{{ fam.label }}</a></td>
             <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);text-align:right;"><span class="mono">{{ fam.count }}</span></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 {% else %}
-<p class="muted">No MSC-classified papers in the corpus.</p>
+<p class="muted">No {{ _scheme }}-classified papers in the corpus.</p>
 {% endif %}
 
 <p class="muted" style="font-size:11px;margin-top:18px;">
     Source: <a href="{{ url_for('category_taxonomy') }}">arXiv subject taxonomy</a>.
-    MSC codes come from the bibliographic metadata supplied by paper authors.
+    {{ _scheme }} codes come from the bibliographic metadata supplied by paper authors.
+    {% if _endpoint == 'acm_listing' %}
+    See also: <a href="{{ url_for('msc_listing') }}">MSC2020 index</a>.
+    {% else %}
+    See also: <a href="{{ url_for('acm_listing') }}">ACM CCS index</a>.
+    {% endif %}
 </p>
 
 {% endblock %}

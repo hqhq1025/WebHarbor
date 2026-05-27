@@ -4248,14 +4248,15 @@ def _normalize_seed_db_layout():
     """Re-emit indexes in alpha order + VACUUM the SQLite file so two
     independent rebuilds produce byte-identical .db files. Gated on the
     presence of a sentinel pragma so it only runs once (the first build);
-    subsequent warm restarts skip it. Sentinel bumped to 3 in R7 because
-    we added ix_courses_partner_id / ix_courses_level / ix_courses_instructor.
+    subsequent warm restarts skip it. Sentinel bumped to 4 in R10 because
+    seed_v11 backfills modules + missing R5 columns on legacy rows; the new
+    backfill alters index page contents so the previous sentinel must miss.
     See harden-env/gotchas.md item #2."""
     from sqlalchemy import text
     conn = db.engine.connect()
     try:
         sentinel = conn.execute(text("PRAGMA user_version")).scalar()
-        if sentinel == 3:
+        if sentinel == 4:
             return  # already normalized
         idx_rows = conn.execute(text(
             "SELECT name, sql FROM sqlite_master "
@@ -4266,7 +4267,7 @@ def _normalize_seed_db_layout():
         for name, sql in sorted(idx_rows, key=lambda r: r[0]):
             if sql:
                 conn.execute(text(sql))
-        conn.execute(text("PRAGMA user_version = 3"))
+        conn.execute(text("PRAGMA user_version = 4"))
         conn.commit()
         conn.execute(text("VACUUM"))
         conn.commit()
@@ -4387,6 +4388,21 @@ with app.app_context():
     # testimonials backfill covers v10 courses on the FIRST build.
     from seed_extras import seed_v10 as _seed_v10
     _seed_v10(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R10 polish (iter 10/10, FINAL) — Global/Regional + Learning-Path Bridges
+    # — adds ~2940 deterministic 2026 courses across 14 domains × 6 subtopics
+    # × 5 partners × 7 variants and +10 publisher partners (5 regional hubs,
+    # 4 specialty publishers + 1 anchor). Also performs FINAL quality polish:
+    # backfills modules on any module-less legacy course and re-checks every
+    # row for null preview_video_url / textbook_isbn / workload columns. Must
+    # run BEFORE seed_testimonials_and_extras so testimonials cover v11 rows
+    # on the FIRST build.
+    from seed_extras import seed_v11 as _seed_v11
+    _seed_v11(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

@@ -157,7 +157,29 @@
     else url_for('model_files', author=_author, name=_name)
 ) %}
 {# R5: ARIA roles on the tab strip so keyboard / screen-reader users can
-   move between Card / Files / Viewer / Community without re-grouping the DOM. #}
+   move between Card / Files / Viewer / Community without re-grouping the DOM.
+   R10: full six-tab strip Card · Files · Community · Discussions · PRs ·
+   Settings is exposed uniformly across model / dataset / space surfaces. #}
+{% set _disc_url = (
+    url_for('dataset_discussions', author=_author, name=_name) if repo.repo_type == 'dataset'
+    else url_for('space_discussions', author=_author, name=_name) if repo.repo_type == 'space'
+    else url_for('repo_discussions', author=_author, name=_name)
+) %}
+{% set _community_url = (
+    url_for('dataset_community', author=_author, name=_name) if repo.repo_type == 'dataset'
+    else url_for('space_community', author=_author, name=_name) if repo.repo_type == 'space'
+    else url_for('repo_community', author=_author, name=_name)
+) %}
+{% set _pr_url = (
+    url_for('dataset_pull_requests', author=_author, name=_name) if repo.repo_type == 'dataset'
+    else url_for('space_pull_requests', author=_author, name=_name) if repo.repo_type == 'space'
+    else url_for('repo_pull_requests', author=_author, name=_name)
+) %}
+{% set _settings_url = (
+    url_for('dataset_settings', author=_author, name=_name) if repo.repo_type == 'dataset'
+    else url_for('space_settings', author=_author, name=_name) if repo.repo_type == 'space'
+    else url_for('repo_settings', author=_author, name=_name)
+) %}
 <div class="repo-tabs" role="tablist" aria-label="Repository sections">
     <a class="repo-tab {% if _active_tab == 'card' %}is-active{% endif %}"
        role="tab" aria-selected="{{ 'true' if _active_tab == 'card' else 'false' }}" tabindex="{{ '0' if _active_tab == 'card' else '-1' }}"
@@ -169,13 +191,19 @@
     <a class="repo-tab {% if _active_tab == 'dataset_viewer' %}is-active{% endif %}"
        role="tab" aria-selected="{{ 'true' if _active_tab == 'dataset_viewer' else 'false' }}" tabindex="{{ '0' if _active_tab == 'dataset_viewer' else '-1' }}"
        href="{{ url_for('dataset_viewer', author=_author, name=_name) }}">Dataset viewer</a>
-    {% else %}
-    <a class="repo-tab" role="tab" aria-selected="false" tabindex="-1"
-       href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else (url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name)) }}#metrics">Metrics</a>
     {% endif %}
     <a class="repo-tab {% if _active_tab == 'community' %}is-active{% endif %}"
        role="tab" aria-selected="{{ 'true' if _active_tab == 'community' else 'false' }}" tabindex="{{ '0' if _active_tab == 'community' else '-1' }}"
-       href="{{ url_for('repo_discussions', author=_author, name=_name) }}">Community {% if discussions is defined %}<span class="tab-count">{{ discussions|length }}</span>{% endif %}</a>
+       href="{{ _community_url }}">Community {% if discussions is defined %}<span class="tab-count">{{ discussions|length }}</span>{% endif %}</a>
+    <a class="repo-tab {% if _active_tab == 'discussions' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'discussions' else 'false' }}" tabindex="{{ '0' if _active_tab == 'discussions' else '-1' }}"
+       href="{{ _disc_url }}">Discussions</a>
+    <a class="repo-tab {% if _active_tab == 'pull_requests' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'pull_requests' else 'false' }}" tabindex="{{ '0' if _active_tab == 'pull_requests' else '-1' }}"
+       href="{{ _pr_url }}">PRs</a>
+    <a class="repo-tab {% if _active_tab == 'settings' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'settings' else 'false' }}" tabindex="{{ '0' if _active_tab == 'settings' else '-1' }}"
+       href="{{ _settings_url }}">Settings</a>
 </div>
 <script>
 (function(){

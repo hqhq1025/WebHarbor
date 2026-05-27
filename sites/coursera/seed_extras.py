@@ -5307,3 +5307,269 @@ def seed_v10(db, models):
     print(f"  + seed_v10: added {created} courses (R9 2026 Labs/Academy/Industry-Cert), "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# R10 (iter 10/10) — Global/Regional capstone tracks + learning-path bridges +
+# quality polish (backfill missing modules + missing R5 columns on any row).
+# ─────────────────────────────────────────────────────────────────────────────
+
+R10_NEW_PARTNERS = [
+    # Regional learning hubs (5)
+    ('Coursera APAC Learning Hub',  'coursera-apac-r10',   'Singapore',     'institution', 'APAC Hub'),
+    ('Coursera EMEA Learning Hub',  'coursera-emea-r10',   'United Kingdom','institution', 'EMEA Hub'),
+    ('Coursera Africa Skill Net',   'coursera-africa-r10', 'South Africa',  'institution', 'Africa Net'),
+    ('Coursera LatAm EdTech Hub',   'coursera-latam-r10',  'Brazil',        'institution', 'LatAm Hub'),
+    ('Coursera Nordic Academy',     'coursera-nordic-r10', 'Sweden',        'institution', 'Nordic Acad'),
+    # Specialty publishers (4)
+    ('Global Capstone Showcase',    'global-capstone-r10', 'United States', 'institution', 'Capstone'),
+    ('Lifelong Learner Network',    'lifelong-net-r10',    'United States', 'institution', 'Lifelong'),
+    ('Career Switcher Alliance',    'career-switcher-r10', 'United States', 'institution', 'Switcher'),
+    ('Returnship Skills Council',   'returnship-r10',      'United States', 'institution', 'Returnship'),
+    # R10 anchor (idempotency sentinel)
+    ('R10 2026 Anchor',             'r10-2026-anchor',     'United States', 'institution', 'R10 Anchor'),
+]
+
+# 14 R10 domains × 6 subtopics × 5 partners × 7 R5 variants = 2940 courses.
+R10_DOMAINS = [
+    # K-12 → Undergrad → Grad → Certificate learning path (4)
+    ('K-12 Capstone Showcase 2026',    'K-12 Capstone',         'Personal Development',
+     ['global-capstone-r10', 'khan-academy-r8', 'collegeboard-r8', 'outschool-r8', 'natgeo-ed-r8']),
+    ('Undergrad Career Path 2026',     'Undergrad Career',      'Business',
+     ['career-switcher-r10', 'duke', 'umich', 'umd', 'global-capstone-r10']),
+    ('Graduate Research Bridge 2026',  'Graduate Research',     'Computer Science',
+     ['global-capstone-r10', 'stanford', 'cmu', 'mit', 'harvardx-ext-r8']),
+    ('Certificate Stack Accelerator',  'Cert Stack',            'Information Technology',
+     ['career-switcher-r10', 'coursera-academy-r9', 'comptia-r9', 'google', 'ibm']),
+    # Lifelong / returnship / senior bridges (3)
+    ('Lifelong Learner Path 2026',     'Lifelong Path',         'Personal Development',
+     ['lifelong-net-r10', 'aarp-r8', 'toastmasters-r8', 'linkedin-learning-r8', 'pbs-learningmedia-r8']),
+    ('Returnship Bridge 2026',         'Returnship Bridge',     'Business',
+     ['returnship-r10', 'lifelong-net-r10', 'linkedin-learning-r8', 'mckinsey', 'deloitte']),
+    ('Senior Career Bridge 2026',      'Senior Bridge',         'Personal Development',
+     ['lifelong-net-r10', 'aarp-r8', 'americorps-senior-r8', 'toastmasters-r8', 'returnship-r10']),
+    # Regional tracks (5)
+    ('Regional APAC Track 2026',       'APAC Track',            'Business',
+     ['coursera-apac-r10', 'nus', 'ntu', 'hkust', 'utokyo']),
+    ('Regional EMEA Track 2026',       'EMEA Track',            'Business',
+     ['coursera-emea-r10', 'oxford', 'cambridge', 'imperial', 'ethz']),
+    ('Regional Africa Track 2026',     'Africa Track',          'Business',
+     ['coursera-africa-r10', 'global-capstone-r10', 'unesco', 'who', 'worldbank']),
+    ('Regional LatAm Track 2026',      'LatAm Track',           'Business',
+     ['coursera-latam-r10', 'global-capstone-r10', 'unesco', 'worldbank', 'lifelong-net-r10']),
+    ('Regional Nordic Track 2026',     'Nordic Track',          'Business',
+     ['coursera-nordic-r10', 'global-capstone-r10', 'epfl', 'ethz', 'lifelong-net-r10']),
+    # Global capstone showcase (2)
+    ('Global Capstone Showcase 2026',  'Global Capstone',       'Computer Science',
+     ['global-capstone-r10', 'stanford', 'cmu', 'mit', 'google']),
+    ('Polished Catalog Edition 2026',  'Polished Catalog',      'Data Science',
+     ['global-capstone-r10', 'ibm', 'google', 'microsoft', 'nvidia']),
+]
+
+R10_SUBTOPICS = [
+    'Foundations',
+    'Cross-Disciplinary Bridge',
+    'Workforce Readiness Drill',
+    'Portfolio Capstone',
+    'Mentor-Reviewed Project',
+    'Outcome Showcase 2026',
+]
+
+
+def seed_v11(db, models):
+    """R10 catalog polish (iter 10/10) — adds ~2940 deterministic 2026 courses
+    across 14 Global/Regional + Learning-Path-Bridge domains × 6 subtopics ×
+    5 partners × 7 R5 variants, plus +10 publisher partners (5 regional hubs,
+    4 specialty publishers, 1 anchor). Also performs FINAL quality polish:
+    backfills missing course modules and any remaining null R5 columns
+    (preview_video_url / textbook_isbn / estimated_workload_hours_per_week).
+
+    Idempotent — gated on partner slug `r10-2026-anchor`. Deterministic — no
+    `random.*`, no `datetime.now()`, derives everything from SEED_REF_DATE.
+    """
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='r10-2026-anchor').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in R10_NEW_PARTNERS:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        # Terse module shape: keeps syllabus integrity (week title +
+        # description + 1 lesson) while trimming per-row bytes so the
+        # post-R10 seed DB stays under the 100MB limit.
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} Orientation'
+                md = f'Path orientation + baseline rubric for {primary}.'
+            elif w == weeks:
+                mt = f'Week {w}: {primary} Capstone'
+                md = f'Portfolio capstone for {primary} on the 2026 rubric.'
+            else:
+                mt = f'Week {w}: {primary} Drill {w}'
+                md = f'Cross-disciplinary drill + graded assignment, {primary}.'
+            vts = [f'Lesson {w}: {mt}']
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=4, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    for d_idx, (domain, primary, category, partners) in enumerate(R10_DOMAINS):
+        for s_idx, subtopic in enumerate(R10_SUBTOPICS):
+            topic_title = f'{domain} {subtopic}'
+            for p_idx, partner_slug in enumerate(partners):
+                partner_eff = (partner_slug if pid.get(partner_slug)
+                               else 'r10-2026-anchor')
+                for v_idx, variant in enumerate(R5_VARIANTS):
+                    idx = (d_idx * 1000 + s_idx * 100
+                           + p_idx * 10 + v_idx)
+                    spec = _v6_make_course(
+                        R5_VARIANT=variant, topic=topic_title,
+                        primary=primary, category=category,
+                        partner_eff=partner_eff, pid=pid,
+                        idx=idx, anchor_tag='r10-2026',
+                        prefix_slug='r10-2026')
+                    spec['is_new'] = True
+                    spec['sort_date'] = (SEED_REF_DATE - timedelta(
+                        days=(d_idx * 4 + s_idx * 2 + v_idx) % 60
+                    )).strftime('%Y-%m-%d')
+                    # Tag with learning-path / regional track for filtering.
+                    if d_idx < 4:
+                        track_tag = 'r10-learning-path'
+                    elif d_idx < 7:
+                        track_tag = 'r10-lifelong-bridge'
+                    elif d_idx < 12:
+                        track_tag = 'r10-regional'
+                    else:
+                        track_tag = 'r10-global-capstone'
+                    base_tags = json.loads(json.dumps(spec['feature_tags']))
+                    if track_tag not in base_tags:
+                        base_tags.append(track_tag)
+                    if 'r10-polish' not in base_tags:
+                        base_tags.append('r10-polish')
+                    spec['feature_tags'] = base_tags
+                    if Course.query.filter_by(slug=spec['slug']).first():
+                        continue
+                    _persist(spec)
+                    created += 1
+        db.session.commit()
+
+    # 2) Quality polish — backfill missing modules on any course that has none.
+    #    Uses deterministic 1-week orientation modules keyed off course slug
+    #    so a second run produces byte-identical rows. Covers 62 legacy
+    #    courses from base seed (Degrees, AI Ethics, 3D Printing etc.).
+    moduleless = Course.query.filter(
+        ~Course.id.in_(db.session.query(CourseModule.course_id))
+    ).all()
+    polished_modules = 0
+    for c in moduleless:
+        primary = (c.subcategory or c.category or 'Course Content').strip() or 'Course Content'
+        weeks_int = max(1, int(round(c.duration_weeks or 4.0)))
+        weeks_int = min(weeks_int, 4)  # cap legacy backfill at 4 weeks
+        for w in range(1, weeks_int + 1):
+            if w == 1:
+                mt = f'Week {w}: {c.title} Orientation'
+                md = f'Syllabus walkthrough + prerequisite check for {primary}.'
+            elif w == weeks_int:
+                mt = f'Week {w}: {c.title} Capstone'
+                md = f'Capstone activity + reflection for {primary}.'
+            else:
+                mt = f'Week {w}: {c.title} Module {w}'
+                md = f'Lessons + graded assignment on {primary}.'
+            vts = [f'Lesson {w}: {mt}']
+            db.session.add(CourseModule(
+                course_id=c.id, week_number=w, title=mt, description=md,
+                videos_count=4, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+            polished_modules += 1
+    if polished_modules:
+        db.session.commit()
+
+    # 3) Backfill R5 columns on any rows still missing them (final safety net) —
+    #    catches the one course (finance-for-non-finance-professionals) and
+    #    any stragglers from earlier rounds.
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+        polished_r5 = len(rows)
+    finally:
+        conn.close()
+
+    print(f"  + seed_v11: added {created} courses (R10 2026 Global/Regional/Path), "
+          f"polished {polished_modules} backfill modules, "
+          f"polished {polished_r5} R5-column rows, "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

@@ -5752,6 +5752,191 @@ def seed_r9_user_repos():
     return added
 
 
+# ─────────────────────────── R10 catalog growth ───────────────────────────
+# Push the catalog from R9's 50k → 56k+ by minting a fresh slot of repos
+# with the `r10-` prefix. Same hash-deterministic mint as R5–R9 so two
+# rebuilds match byte-for-byte. New suffixes cover the R10 compound-flow
+# vocabulary (trending → fork → branch → PR → review → merge → CI →
+# release → package) so generated names surface in keyword search.
+
+_R10_REPO_TARGET = 56000
+_R10_REPO_SUFFIXES = [
+    'trending-board', 'fork-helper', 'branch-mover', 'pr-flow', 'review-bot',
+    'merge-queue', 'ci-runner', 'release-train', 'package-cache', 'fanout10',
+    'pipeline10', 'kit10', 'forge10', 'beacon10', 'lens10',
+    'pivot10', 'relay10', 'switch10', 'router10', 'broker10',
+    'cache10', 'shard10', 'splitter10', 'merger10', 'compressor10',
+    'tagger10', 'pruner10', 'sentry10', 'oracle10', 'lighthouse10',
+]
+
+
+def seed_r10_user_repos():
+    """Mint up to ~6000 R10 repos under existing owners. Each owner caps at
+    ~160 total repos so the catalog stays balanced. Deterministic via SHA-1
+    of (owner.username, slot). Covers the 10-step compound flow
+    (trending → repo → fork → branch → PR → review → merge → CI →
+    release → package) by name + readme."""
+    have = Repository.query.count()
+    if have >= _R10_REPO_TARGET:
+        return 0
+
+    owners = (User.query
+              .join(Repository, Repository.owner_id == User.id)
+              .order_by(User.username.asc())
+              .distinct()
+              .all())
+    if not owners:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    topics_pool = [
+        'merge-queue', 'pull-request', 'code-review', 'continuous-integration',
+        'continuous-delivery', 'release-engineering', 'package-registry',
+        'fork', 'branch', 'cherry-pick', 'trending', 'pipeline',
+        'ci-cd', 'github-actions', 'devops', 'platform-engineering',
+        'rust', 'go', 'python', 'typescript', 'sdk', 'cli',
+    ]
+
+    # Compound-flow vocabulary mirrors the 10 steps of the R10 task set.
+    _AREA_BANK = [
+        'trending', 'fork', 'branch', 'pull-request', 'review',
+        'merge-queue', 'ci-runner', 'release', 'package', 'fanout',
+        'review-bot', 'merge-helper',
+    ]
+
+    added = 0
+    for slot in range(len(_R10_REPO_SUFFIXES)):
+        if have + added >= _R10_REPO_TARGET:
+            break
+        for owner in owners:
+            if have + added >= _R10_REPO_TARGET:
+                break
+            existing_for_owner = sum(1 for fn in existing_full
+                                     if fn.startswith(owner.username + '/'))
+            if existing_for_owner >= 160:
+                continue
+            suffix = _R10_REPO_SUFFIXES[
+                (slot + _r6_hash(owner.username)) % len(_R10_REPO_SUFFIXES)]
+            base_name = f"r10-{suffix}-{slot}"
+            full = f"{owner.username}/{base_name}"
+            if full in existing_full:
+                base_name = (
+                    f"r10-{suffix}-{slot}-{_r6_hash(owner.username, slot) % 9999}")
+                full = f"{owner.username}/{base_name}"
+                if full in existing_full:
+                    continue
+            h = _r6_hash('r10', full)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = _AREA_BANK[(h >> 3) % len(_AREA_BANK)]
+            desc = (
+                f"R10 polish on the {area} subsystem — trending → fork → "
+                f"branch → PR → review → merge → CI → release → package, "
+                f"used in production by {owner.username}."
+            )[:255]
+            feature1 = _R6_FEATURE_BANK[(h >> 7) % len(_R6_FEATURE_BANK)]
+            feature2 = _R6_FEATURE_BANK[(h >> 11) % len(_R6_FEATURE_BANK)]
+            install_tmpl = _R6_INSTALL_BANK.get(lang, 'cargo install {name}')
+            cmd = install_tmpl.format(name=base_name, full=full,
+                                      org=owner.username.lower())
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            readme = (
+                f"# {full}\n\n> {desc}\n\n## Why\n\n"
+                f"- {feature1}\n- {feature2}\n"
+                f"- Built around the 10-step ship flow "
+                f"(trending → fork → branch → PR → review → merge → CI → "
+                f"release → package).\n\n"
+                f"## Install\n\n```bash\n{cmd}\n```\n\n"
+                f"## Workflow\n\n"
+                f"1. Browse `/trending` to discover changes.\n"
+                f"2. Fork into your namespace.\n"
+                f"3. Cut a topic branch.\n"
+                f"4. Open a pull request.\n"
+                f"5. Get a review (see `/{full}/pulls`).\n"
+                f"6. Merge via the merge queue.\n"
+                f"7. CI runs via Actions (see `/{full}/actions`).\n"
+                f"8. Release is cut (see `/{full}/releases`).\n"
+                f"9. Package is published (see `/{full}/packages`).\n"
+                f"10. Watchers/forkers are notified.\n"
+            )
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            stars = 4 + (h % 2400)
+            forks = max(0, stars // (3 + (h % 5)))
+            watchers = max(1, stars // 4)
+            open_issues = (h >> 4) % 11
+            is_archived = ((h >> 9) % 28 == 0)
+
+            topic_slugs = []
+            for k in range(3 + (h % 3)):
+                ts = topics_pool[(h * 7 + k * 23) % len(topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=100 + (h % 1100),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 120),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(f"r10|{full}".encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=owner.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 12) % 44 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 7 == 0),
+                has_issues=True,
+                owner_type='organization' if (h >> 14) % 3 == 0 else 'user',
+                default_branch=default_branch,
+                size_kb=120 + (h % 20000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=(
+                    f"v{1 + (h % 6)}.{(h >> 2) % 20}.{(h >> 4) % 18}"),
+                latest_release_date=pushed - timedelta(days=2 + (h % 50)),
+                latest_release_notes=(
+                    f"R10 polish on the {area} subsystem: fork/branch/PR/"
+                    "review/merge/CI/release/package wiring."
+                ),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"feat({area}): R10 polish — fork → PR → review → "
+                    "merge → CI → release → package"),
+                latest_commit_date=pushed,
+                latest_commit_additions=14 + (h % 280),
+                latest_commit_deletions=2 + ((h >> 1) % 140),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 1000 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
 # ─────────────────────────── R9: chat/classroom/scanning surface ───────────────────────────
 # Read-only routes added in R9. Every payload is hash-deterministic so two
 # rebuilds produce the same DOM and the WebVoyager tasks have stable answers.
@@ -9295,10 +9480,13 @@ def create_app():
         # R9: extend catalog to 50k+; commits topped via seed_extra_commits.
         c17 = seed_r9_user_repos() or 0
         c1f = seed_extra_commits() or 0
+        # R10: extend catalog to 56k+; commits topped via seed_extra_commits.
+        c18 = seed_r10_user_repos() or 0
+        c1g = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18 + ct) > 0)
     return app
 
 
@@ -9342,10 +9530,13 @@ with app.app_context():
         # R9
         c17 = seed_r9_user_repos() or 0
         c1f = seed_extra_commits() or 0
+        # R10
+        c18 = seed_r10_user_repos() or 0
+        c1g = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18 + ct) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

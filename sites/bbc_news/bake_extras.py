@@ -8928,6 +8928,1098 @@ def bake_r9(con: sqlite3.Connection) -> dict[str, int]:
     return stats
 
 
+# =======================================================================
+# R10 — final polish: +3000 articles across 6 channels, URL backfill,
+# empty-category top-up. Sentinel gated by R10_SENTINEL_BODY comment.
+# =======================================================================
+
+R10_SENTINEL_BODY = "<<R10-baked>>"
+R10_REFERENCE_DATE = MIRROR_REFERENCE_DATE  # 2026-04-15 — same anchor
+
+# Deterministic-only — no wall-clock anywhere below.
+
+
+# ----- News desk pool -------------------------------------------------
+
+# 25 BBC News reporters + their fixed beat / section.
+R10_NEWS_REPORTERS: list[tuple[str, str, str]] = [
+    # (name, beat_label, section_slug)
+    ("Laura Kuenssberg",   "Westminster",        "politics"),
+    ("Chris Mason",        "Westminster",        "politics"),
+    ("Faisal Islam",       "Economics",          "business"),
+    ("Simon Jack",         "Business",           "business"),
+    ("Dharshini David",    "Economics",          "business"),
+    ("Fergal Keane",       "World Affairs",      "world"),
+    ("Lyse Doucet",        "Foreign Affairs",    "world"),
+    ("Orla Guerin",        "International",      "world"),
+    ("Jeremy Bowen",       "Middle East",        "world"),
+    ("Sarah Rainsford",    "Eastern Europe",     "europe"),
+    ("Frank Gardner",      "Security",           "world"),
+    ("Justin Webb",        "North America",      "us_canada"),
+    ("Sarah Smith",        "North America",      "us_canada"),
+    ("Mark Lowen",         "Europe",             "europe"),
+    ("Anna Holligan",      "Europe",             "europe"),
+    ("Mark Easton",        "UK Home Affairs",    "uk"),
+    ("Sima Kotecha",       "UK Affairs",         "uk"),
+    ("Dominic Casciani",   "Home Affairs",       "uk"),
+    ("Hugh Pym",           "Health",             "health"),
+    ("Nick Triggle",       "Health",             "health"),
+    ("Pallab Ghosh",       "Science",            "science"),
+    ("Rebecca Morelle",    "Science",            "science"),
+    ("Justin Rowlatt",     "Climate",            "earth"),
+    ("Matt McGrath",       "Environment",        "earth"),
+    ("Zoe Kleinman",       "Technology",         "technology"),
+]
+
+# 40 generic news angles — each combined with a reporter + day index to
+# produce a deterministic headline / lead pair.
+R10_NEWS_ANGLES: list[tuple[str, str]] = [
+    ("{beat}: ministers face fresh questions over {topic}",
+     "Senior figures in the {beat} world are facing pointed questions about {topic} after a series of disclosures, the BBC understands."),
+    ("{beat}: regulator opens formal review into {topic}",
+     "A formal review of {topic} has opened in the {beat} space, with first findings expected within ninety days."),
+    ("{beat}: select committee summons evidence on {topic}",
+     "MPs sitting on the relevant select committee have summoned written and oral evidence on {topic}, in a sign of the issue's growing weight in {beat}."),
+    ("{beat}: industry body urges clearer rules on {topic}",
+     "The industry body for {beat} has urged ministers to publish a clear rule book on {topic}, warning of fragmented practice across the UK."),
+    ("{beat}: long read - what the {topic} story means",
+     "A BBC long read explores the wider arc of {topic} and what it means for {beat} over the next twelve months."),
+    ("{beat}: ten things to know about {topic}",
+     "Ten concise points from the BBC {beat} desk to bring readers up to speed on {topic}."),
+    ("{beat}: live updates - {topic}",
+     "Live coverage from the BBC {beat} desk as the {topic} story develops through the day."),
+    ("{beat}: chart of the week - {topic}",
+     "The BBC {beat} desk picks a single chart to explain this week's {topic} story."),
+    ("{beat}: video explainer - {topic}",
+     "A 90-second BBC video walks through the key {topic} numbers from the {beat} desk."),
+    ("{beat}: reader Q&A on {topic}",
+     "The BBC {beat} desk answers ten reader questions on {topic}, drawn from emails sent this week."),
+    ("{beat}: analysis - the politics of {topic}",
+     "Analysis from the BBC {beat} desk: why {topic} is politically more sensitive than the headlines suggest."),
+    ("{beat}: behind the scenes on {topic}",
+     "A BBC {beat} reporter goes behind the scenes on the {topic} story, with the team that broke it."),
+    ("{beat}: timeline - how {topic} unfolded",
+     "A BBC {beat} timeline of {topic}, from the first whispers to today's developments."),
+    ("{beat}: voices - readers respond to {topic}",
+     "BBC readers respond to the {topic} story with their own experiences, gathered by the {beat} desk."),
+    ("{beat}: facing the cameras - {topic}",
+     "The {beat} desk hosts a face-to-camera interview with the chief player in the {topic} story."),
+    ("{beat}: small print - the detail in the {topic} document",
+     "BBC {beat} reads the small print of the latest {topic} document and reports back."),
+    ("{beat}: data deep dive on {topic}",
+     "A data-driven BBC {beat} deep dive into the numbers behind {topic}."),
+    ("{beat}: fact check - {topic}",
+     "BBC Verify's {beat} fact check tests the most-shared claims about {topic}."),
+    ("{beat}: morning briefing - {topic}",
+     "BBC {beat} morning briefing: the {topic} story in eight lines before the day starts."),
+    ("{beat}: weekend wrap - {topic}",
+     "A weekend wrap of the {topic} story from the BBC {beat} desk."),
+    ("{beat}: month in review - {topic}",
+     "A month-in-review of {topic} from the {beat} desk, looking at how the picture has shifted."),
+    ("{beat}: year ahead on {topic}",
+     "The BBC {beat} desk maps the year ahead on {topic} in five steps."),
+    ("{beat}: case study - {topic}",
+     "A single case study from the BBC {beat} desk to illustrate how {topic} plays out on the ground."),
+    ("{beat}: graphic of the day - {topic}",
+     "The BBC {beat} graphic of the day, breaking down {topic} into three blocks."),
+    ("{beat}: regional angle - {topic}",
+     "A BBC {beat} regional reporter files a local-angle piece on {topic}, with on-the-ground voices."),
+    ("{beat}: in their words - {topic}",
+     "BBC {beat} hands the mic to the people directly affected by {topic}, in their own words."),
+    ("{beat}: explained in 200 words - {topic}",
+     "BBC {beat} explains {topic} in exactly 200 words for readers in a hurry."),
+    ("{beat}: jargon-buster - {topic}",
+     "BBC {beat} translates the jargon of {topic} into plain English."),
+    ("{beat}: from the archive - {topic}",
+     "BBC {beat} dives into the archive to find an old story that prefigured {topic}."),
+    ("{beat}: comment - the editor on {topic}",
+     "The BBC {beat} editor gives a brief on-the-record comment on the {topic} story."),
+    ("{beat}: video diary - {topic}",
+     "A BBC {beat} reporter keeps a video diary across the week of the {topic} story."),
+    ("{beat}: opinion exchange - {topic}",
+     "A balanced BBC {beat} opinion exchange between two voices on {topic}."),
+    ("{beat}: corrections and clarifications - {topic}",
+     "A short BBC {beat} note correcting earlier reporting on {topic}."),
+    ("{beat}: ahead of the vote on {topic}",
+     "BBC {beat} sets out what to watch for in the upcoming vote on {topic}."),
+    ("{beat}: what we know so far - {topic}",
+     "A running BBC {beat} explainer of what is and isn't known about {topic}."),
+    ("{beat}: deep questions on {topic}",
+     "BBC {beat} asks five deep questions about {topic} that the headline writers missed."),
+    ("{beat}: stress test - {topic}",
+     "BBC {beat} stress-tests the central claim behind the {topic} story."),
+    ("{beat}: explainer - the global angle on {topic}",
+     "BBC {beat} steps back and explains the global angle on {topic}."),
+    ("{beat}: a reporter writes - {topic}",
+     "A first-person BBC {beat} essay from the reporter closest to the {topic} story."),
+    ("{beat}: the next chapter on {topic}",
+     "BBC {beat} looks ahead to the next chapter of the {topic} story."),
+]
+
+R10_NEWS_TOPICS: list[str] = [
+    "housing reform",       "rail fares",          "energy bills",
+    "interest rates",       "school standards",    "NHS waiting times",
+    "social care funding",  "asylum policy",       "borders strategy",
+    "tax thresholds",       "infrastructure plans","trade deals",
+    "online safety",        "AI regulation",       "data protection",
+    "press freedom",        "voting rules",        "devolution plans",
+    "city deals",           "high street decline", "renewable rollout",
+    "carbon targets",       "water industry",      "river pollution",
+    "air quality",          "minimum wage",        "pension reform",
+    "research funding",     "defence spending",    "Nato commitments",
+    "civil service reform", "public transport",    "regional banks",
+    "rural broadband",      "supermarket prices",  "high street banks",
+    "drug pricing",          "mental health beds",
+]
+
+
+def _r10_news_body(name: str, beat: str, topic: str, angle_lead: str) -> str:
+    paras = [
+        angle_lead,
+        f"{name}, the BBC's {beat} correspondent, reports that the picture "
+        f"on {topic} has shifted noticeably in the last week, with senior "
+        "figures on multiple sides confirming previously private positions.",
+        f"BBC analysis suggests three concrete consequences for readers as "
+        f"{topic} continues to develop: a change in how the issue is "
+        "discussed at Westminster, a measurable shift in how it shows up in "
+        "official data, and a small but real effect on day-to-day life.",
+        f"In a follow-up read, the BBC {beat} desk has pulled together a "
+        f"single chart on {topic}, three further on-the-record interviews, "
+        "and an audio explainer published to BBC Sounds the same day.",
+        "BBC Verify will return to several of the most-shared claims tied "
+        "to this story over the next forty-eight hours, with a dedicated "
+        "Verify thread on the timeline.",
+        "Editorial note: the BBC welcomes corrections and clarifications "
+        "via the standard channels; the next update on this rolling story "
+        "is scheduled for the following morning bulletin.",
+    ]
+    return "\n\n".join(paras)
+
+
+def synth_r10_news_desk(con, hero_pool: list[str]) -> list[dict]:
+    """25 reporters x 40 angles = 1000 news-desk articles."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    for ri, (name, beat, section) in enumerate(R10_NEWS_REPORTERS):
+        cid = _r9_cat_id(con, section) or _r9_cat_id(con, "news") or 1
+        for ai, (hl_pat, lead_pat) in enumerate(R10_NEWS_ANGLES):
+            topic = R10_NEWS_TOPICS[(ri * 3 + ai) % len(R10_NEWS_TOPICS)]
+            headline = hl_pat.format(beat=beat, topic=topic)
+            lead = lead_pat.format(beat=beat, topic=topic)
+            slug = _det_slug("r10-news", f"{name}|{ai}")
+            hero = (hero_pool[(_det_int(slug) + ri * 19 + ai * 7)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r10_news_body(name, beat, topic, lead)
+            ts = base - timedelta(
+                days=(ri * 5 + ai * 3) % 330 + 1,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 11) % 60,
+            )
+            tags = ["r10-news-desk", "news-desk", "reporter-" + slug,
+                    "beat-" + beat.lower().replace(" ", "-"),
+                    "topic-" + topic.replace(" ", "-")]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section,
+                subsection=beat, region_label="UK", ts=ts,
+                view_count=400 + (_det_int(slug) % 28000),
+                country="UK", hero=hero, author=name,
+                topics=[beat, name, topic, "BBC News"],
+                feature_tags=tags,
+                content_type="article",
+                is_featured=1 if (ri + ai) % 23 == 0 else 0,
+            ))
+    return out
+
+
+# ----- Sport pool -----------------------------------------------------
+
+R10_SPORTS: list[tuple[str, str, str]] = [
+    # (section_slug, label, locale)
+    ("football",      "Football",      "Premier League"),
+    ("cricket",       "Cricket",       "Test series"),
+    ("tennis",        "Tennis",        "Grand Slam"),
+    ("rugby",         "Rugby",         "Six Nations"),
+    ("golf",          "Golf",          "Open Championship"),
+    ("athletics",     "Athletics",     "Diamond League"),
+    ("horse_racing",  "Horse Racing",  "Cheltenham Festival"),
+    ("snooker",       "Snooker",       "World Championship"),
+    ("boxing",        "Boxing",        "world title fight"),
+    ("formula1",      "Formula 1",     "British Grand Prix"),
+]
+
+R10_SPORT_ANGLES: list[tuple[str, str]] = [
+    ("{sport} report: late drama settles {locale} fixture",
+     "A late twist settled today's {sport} {locale} fixture, with the BBC team courtside for every key moment."),
+    ("{sport} preview: what to watch in this weekend's {locale}",
+     "BBC {sport} previews the weekend's {locale} action with form guides, head-to-heads and one storyline to follow."),
+    ("{sport} explainer: how the {locale} format works",
+     "BBC {sport} runs through the {locale} format, the qualifying criteria and what counts as a win."),
+    ("{sport} interview: the {locale} winner speaks to the BBC",
+     "The {locale} winner sat down with the BBC {sport} desk after the closing ceremony for a wide-ranging interview."),
+    ("{sport} chart: five numbers that defined the {locale}",
+     "Five numbers from BBC Sport that defined the {locale}, with charts for each."),
+    ("{sport} live: minute-by-minute from the {locale}",
+     "A minute-by-minute BBC {sport} live blog from the {locale} as the action unfolds."),
+    ("{sport} podcast: the {locale} round-up",
+     "BBC Sounds picks up the {locale} round-up in a thirty-minute podcast from the BBC {sport} desk."),
+    ("{sport} video: the moment of the {locale}",
+     "BBC {sport} captures the moment that defined the {locale} in a single short video clip."),
+    ("{sport} verdict: the BBC pundit on the {locale}",
+     "A BBC {sport} pundit gives a five-paragraph verdict on the {locale}."),
+    ("{sport} feature: rising stars at the {locale}",
+     "BBC {sport} profiles three rising names spotted at this year's {locale}."),
+    ("{sport} explainer: the {locale} rules in 200 words",
+     "BBC {sport} explains the {locale} rule book in exactly 200 words."),
+    ("{sport} highlights: full BBC video catch-up of the {locale}",
+     "BBC {sport} publishes the full highlights from this week's {locale} on BBC iPlayer."),
+    ("{sport} archive: the great BBC moments at the {locale}",
+     "A BBC {sport} archive walk through the most-replayed moments from the {locale}."),
+    ("{sport} reflection: the {locale} from the team coach",
+     "BBC {sport} grabs the team coach for a long reflection after the {locale}."),
+    ("{sport} feature: women in the {locale}",
+     "BBC {sport} profiles the women shaping this year's {locale} on and off the field."),
+    ("{sport} explainer: the science behind the {locale}",
+     "BBC {sport} digs into the science and equipment that decides the {locale}."),
+    ("{sport} fan voice: BBC asks the {locale} crowd",
+     "BBC {sport} hands the mic to the {locale} crowd for their take on the day's play."),
+    ("{sport} timeline: the {locale} day by day",
+     "A BBC {sport} timeline of the {locale}, from opening ceremony to final whistle."),
+    ("{sport} preview: the BBC {locale} fantasy guide",
+     "BBC {sport}'s fantasy guide for the {locale}, with picks across price tiers."),
+    ("{sport} debate: the {locale} controversy",
+     "BBC {sport} hosts a balanced two-voice debate on the most-talked-about {locale} controversy."),
+    ("{sport} numbers: the {locale} in stats",
+     "BBC {sport} publishes a stats pack on the {locale} that includes pass maps, heat charts and pace data."),
+    ("{sport} academy: the BBC junior {locale} guide",
+     "BBC {sport} publishes a junior guide to the {locale} for primary-age readers."),
+    ("{sport} comeback: BBC profiles the {locale} returner",
+     "BBC {sport} profiles a former champion making a comeback at this year's {locale}."),
+    ("{sport} on radio: the BBC commentary team at the {locale}",
+     "Behind the scenes with the BBC {sport} radio commentary team at the {locale}."),
+    ("{sport} reaction: the {locale} runner-up",
+     "BBC {sport} catches the {locale} runner-up for a gracious post-match reaction."),
+    ("{sport} controversy: VAR / referee at the {locale}",
+     "BBC {sport} dissects the referee's call that turned the {locale}."),
+    ("{sport} weather: the {locale} forecast and play",
+     "BBC {sport} brings together the {locale} forecast and the day's play in one chart."),
+    ("{sport} coaching: BBC analysis of the {locale} tactics",
+     "BBC {sport}'s coaching segment breaks down the tactical patterns of the {locale}."),
+    ("{sport} history: BBC archive opens the {locale} vault",
+     "BBC {sport}'s archive team opens up the {locale} vault for forgotten clips."),
+    ("{sport} youth: the {locale} academy game",
+     "BBC {sport} watches the under-21 fixture that ran alongside the senior {locale}."),
+    ("{sport} community: BBC reports from a {locale} watch party",
+     "BBC {sport} files from a community watch party celebrating the {locale}."),
+    ("{sport} business: the money behind the {locale}",
+     "BBC {sport} business desk explains where the money flows around the {locale}."),
+    ("{sport} sponsors: the {locale} brand line-up",
+     "BBC {sport} lists the brand line-up around the {locale}, in one short table."),
+    ("{sport} disability: BBC profiles the {locale} para-sport",
+     "BBC {sport} profiles the para-sport version of the {locale}, with full match reports."),
+    ("{sport} medical: the {locale} injury list",
+     "BBC {sport} runs the current injury list ahead of the {locale}, with expected return windows."),
+    ("{sport} legacy: a year on from the {locale}",
+     "BBC {sport} returns one year on to the {locale} winner's town for a legacy piece."),
+    ("{sport} kids: the BBC {locale} explainer for under-12s",
+     "BBC {sport} for under-12s explains the {locale} with friendly graphics and short captions."),
+    ("{sport} digest: the {locale} weekly newsletter",
+     "BBC {sport}'s weekly digest from the {locale}, lifted from the newsletter."),
+    ("{sport} crossover: the {locale} meets BBC Earth",
+     "BBC {sport} crossover with BBC Earth on the {locale} venue's wildlife and weather."),
+    ("{sport} live blog: closing five minutes of the {locale}",
+     "BBC {sport} live blogs the closing five minutes of the {locale}, second by second."),
+    ("{sport} after-the-final: BBC interviews the new champion",
+     "BBC {sport} sits down with the newly crowned {locale} champion for an extended interview."),
+    ("{sport} sound: BBC captures the {locale} stadium audio",
+     "BBC {sport} audio team captures the unique sound of the {locale} stadium."),
+    ("{sport} broadcast: how BBC films the {locale}",
+     "BBC {sport} explains the technical broadcast set-up that brings the {locale} to your screen."),
+    ("{sport} fashion: the {locale} kits and shirts",
+     "BBC {sport} surveys the kits and shirts that defined the {locale}."),
+    ("{sport} retirement: BBC profile of the {locale} farewell",
+     "BBC {sport} profiles the {locale} farewell tour of a long-serving player."),
+    ("{sport} debut: BBC catches the {locale} newcomer",
+     "BBC {sport} grabs a few words with a debut player at the {locale}."),
+    ("{sport} crossover: the {locale} in the news",
+     "BBC {sport} pulls together how the {locale} bled into the wider news cycle."),
+    ("{sport} graphic: the {locale} run-rate / pace chart",
+     "BBC {sport} publishes a single pace-and-progress chart for the {locale}."),
+    ("{sport} review: the BBC {locale} week in three minutes",
+     "BBC {sport} compresses the {locale} week into a three-minute video and a two-paragraph read."),
+    ("{sport} fans: the BBC {locale} fan survey",
+     "BBC {sport} surveys 400 fans on the {locale} verdict and publishes the results."),
+    ("{sport} legend: BBC archive on the {locale} all-time XI",
+     "BBC {sport}'s archive picks an all-time XI for the {locale}, with explanations."),
+    ("{sport} streaming: the {locale} on iPlayer",
+     "BBC {sport} flags the {locale} catch-up windows on BBC iPlayer."),
+    ("{sport} family: BBC family guide to following the {locale}",
+     "BBC {sport}'s family guide for parents following the {locale} with kids."),
+    ("{sport} cup draw: the BBC {locale} bracket",
+     "BBC {sport} publishes the live cup draw bracket for the {locale}."),
+    ("{sport} reflection: BBC long read on the {locale}",
+     "A BBC Sport long read takes a step back from the {locale} and asks what it means for the sport."),
+    ("{sport} kids voice: the BBC {locale} listener letter",
+     "BBC {sport} reads out a letter from a junior listener on what the {locale} means to them."),
+    ("{sport} table: the BBC {locale} league standings",
+     "BBC {sport}'s live league table for the {locale}, updated round by round."),
+    ("{sport} interview part 2: the BBC {locale} after-game chat",
+     "Part two of the BBC {sport} after-game interview from the {locale}."),
+    ("{sport} fixtures: the BBC {locale} schedule chart",
+     "A BBC {sport} schedule chart for the rest of the {locale}, with kick-off times."),
+    ("{sport} match-day: BBC inside the {locale} dressing room",
+     "BBC {sport} films a rare inside look at the {locale} dressing room before play."),
+]
+
+
+def _r10_sport_body(sport: str, locale: str, angle_lead: str) -> str:
+    paras = [
+        angle_lead,
+        f"BBC Sport's {sport} desk has built this {locale} report around "
+        "three on-the-ground reporters, four video producers and the BBC "
+        f"data team. Live updates are available throughout the {locale} on "
+        "the dedicated live blog.",
+        f"In addition to the main {sport} match report, BBC Sport offers a "
+        "30-second video, a chart pack, an analyst's voice note from BBC "
+        "Sounds, and a stats deep dive linked from this page.",
+        f"BBC Sport's {sport} archive will be linked from the bottom of this "
+        f"piece for any reader who wants to follow the {locale} story back "
+        "across previous tournaments.",
+        "Editorial note: the BBC welcomes reader corrections and "
+        f"clarifications on any factual point in this {sport} report.",
+    ]
+    return "\n\n".join(paras)
+
+
+def synth_r10_sport_reports(con, hero_pool: list[str]) -> list[dict]:
+    """10 sports x 60 angles = 600 sport articles."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    for si, (section, label, locale) in enumerate(R10_SPORTS):
+        cid = _r9_cat_id(con, section) or _r9_cat_id(con, "sport") or 1
+        for ai, (hl_pat, lead_pat) in enumerate(R10_SPORT_ANGLES):
+            headline = hl_pat.format(sport=label, locale=locale)
+            lead = lead_pat.format(sport=label, locale=locale)
+            slug = _det_slug("r10-sport", f"{section}|{ai}")
+            hero = (hero_pool[(_det_int(slug) + si * 31 + ai * 11)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r10_sport_body(label, locale, lead)
+            ts = base - timedelta(
+                days=(si * 4 + ai * 2) % 300 + 1,
+                hours=(_det_int(slug) // 5) % 24,
+                minutes=(_det_int(slug) // 13) % 60,
+            )
+            tags = ["r10-sport", "sport-" + section,
+                    "sport-locale-" + locale.lower().replace(" ", "-"),
+                    "match-report"]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section,
+                subsection=locale, region_label="UK", ts=ts,
+                view_count=500 + (_det_int(slug) % 32000),
+                country="UK", hero=hero, author="BBC Sport",
+                topics=[label, locale, "BBC Sport"],
+                feature_tags=tags,
+                content_type="article",
+                is_featured=1 if (si + ai) % 19 == 0 else 0,
+            ))
+    return out
+
+
+# ----- Weather pool --------------------------------------------------
+
+R10_WEATHER_CITIES: list[tuple[str, str]] = [
+    ("london",        "London"),
+    ("manchester",    "Manchester"),
+    ("birmingham",    "Birmingham"),
+    ("liverpool",     "Liverpool"),
+    ("leeds",         "Leeds"),
+    ("sheffield",     "Sheffield"),
+    ("newcastle",     "Newcastle"),
+    ("bristol",       "Bristol"),
+    ("nottingham",    "Nottingham"),
+    ("leicester",     "Leicester"),
+    ("southampton",   "Southampton"),
+    ("brighton",      "Brighton"),
+    ("cambridge",     "Cambridge"),
+    ("oxford",        "Oxford"),
+    ("york",          "York"),
+    ("norwich",       "Norwich"),
+    ("plymouth",      "Plymouth"),
+    ("exeter",        "Exeter"),
+    ("bath",          "Bath"),
+    ("portsmouth",    "Portsmouth"),
+    ("edinburgh",     "Edinburgh"),
+    ("glasgow",       "Glasgow"),
+    ("aberdeen",      "Aberdeen"),
+    ("inverness",     "Inverness"),
+    ("dundee",        "Dundee"),
+    ("cardiff",       "Cardiff"),
+    ("swansea",       "Swansea"),
+    ("newport",       "Newport"),
+    ("bangor",        "Bangor"),
+    ("aberystwyth",   "Aberystwyth"),
+    ("belfast",       "Belfast"),
+    ("londonderry",   "Londonderry"),
+    ("dublin",        "Dublin"),
+    ("cork",          "Cork"),
+    ("limerick",      "Limerick"),
+    ("paris",         "Paris"),
+    ("madrid",        "Madrid"),
+    ("rome",          "Rome"),
+    ("berlin",        "Berlin"),
+    ("amsterdam",     "Amsterdam"),
+    ("brussels",      "Brussels"),
+    ("vienna",        "Vienna"),
+    ("warsaw",        "Warsaw"),
+    ("athens",        "Athens"),
+    ("lisbon",        "Lisbon"),
+    ("dubai",         "Dubai"),
+    ("tokyo",         "Tokyo"),
+    ("sydney",        "Sydney"),
+    ("new-york",      "New York"),
+    ("toronto",       "Toronto"),
+]
+
+R10_WEATHER_ANGLES: list[tuple[str, str]] = [
+    ("{city} weather: today's hour-by-hour forecast",
+     "BBC Weather publishes an hour-by-hour outlook for {city} with cloud cover, wind direction and rain probability."),
+    ("{city} weather: the 7-day outlook",
+     "A seven-day BBC Weather outlook for {city}, with high/low temperatures and a daily summary."),
+    ("{city} weather: pollen and UV report",
+     "BBC Weather's pollen and UV report for {city} for the day, with category bands."),
+    ("{city} weather: warnings and advisories",
+     "BBC Weather warnings and advisories for {city}, refreshed every fifteen minutes."),
+    ("{city} weather: this weekend's outlook",
+     "BBC Weather's weekend outlook for {city}, with confidence bands."),
+    ("{city} weather: holiday-window outlook",
+     "BBC Weather's longer outlook for {city} ahead of the next holiday window."),
+    ("{city} weather: storm risk briefing",
+     "BBC Weather's storm-risk briefing for {city}, with named-storm watch."),
+    ("{city} weather: temperature swings explained",
+     "BBC Weather explains the temperature swings on the way for {city} with a single chart."),
+]
+
+
+def _r10_weather_body(city: str, angle_lead: str) -> str:
+    paras = [
+        angle_lead,
+        f"The BBC Weather centre in {city} is staffed across the working day "
+        "with a duty forecaster on rotation through the weekend.",
+        f"Today's headline for {city}: scattered cloud, a moderate breeze "
+        "from the west and a chance of late showers easing overnight.",
+        "Tomorrow brings brighter spells; the BBC Weather centre's "
+        f"confidence in the {city} forecast is rated medium-high.",
+        f"BBC Weather also publishes a localised radio bulletin for {city} "
+        "every hour on the half-past from BBC Sounds.",
+    ]
+    return "\n\n".join(paras)
+
+
+def synth_r10_weather(con, hero_pool: list[str]) -> list[dict]:
+    """50 cities x 8 angles = 400 weather articles."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "weather") or 1
+    for ci, (city_slug, city_name) in enumerate(R10_WEATHER_CITIES):
+        for ai, (hl_pat, lead_pat) in enumerate(R10_WEATHER_ANGLES):
+            headline = hl_pat.format(city=city_name)
+            lead = lead_pat.format(city=city_name)
+            slug = _det_slug("r10-wx", f"{city_slug}|{ai}")
+            hero = (hero_pool[(_det_int(slug) + ci * 17 + ai * 5)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r10_weather_body(city_name, lead)
+            ts = base - timedelta(
+                days=(ci + ai * 3) % 200 + 1,
+                hours=(_det_int(slug) // 11) % 24,
+                minutes=(_det_int(slug) // 7) % 60,
+            )
+            tags = ["r10-weather", "weather-city-" + city_slug,
+                    "weather-angle-" + str(ai)]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="weather",
+                subsection=city_name, region_label="UK", ts=ts,
+                view_count=200 + (_det_int(slug) % 12000),
+                country="UK", hero=hero, author="BBC Weather",
+                topics=[city_name, "Weather", "BBC Weather"],
+                feature_tags=tags,
+                content_type="article",
+                is_featured=1 if (ci + ai) % 31 == 0 else 0,
+            ))
+    return out
+
+
+# ----- iPlayer pool --------------------------------------------------
+
+R10_IPLAYER_NEW_SHOWS: list[tuple[str, str, str]] = [
+    # show_slug, show_name, parent_category
+    ("the-traitors-uk",        "The Traitors UK",        "entertainment"),
+    ("gladiators-2026",        "Gladiators (2026)",      "entertainment"),
+    ("interior-design-masters","Interior Design Masters","culture"),
+    ("the-apprentice-2026",    "The Apprentice (2026)",  "business"),
+    ("dragons-den-2026",       "Dragons' Den (2026)",    "business"),
+    ("masterchef-2026",        "MasterChef (2026)",      "food"),
+    ("bake-off-2026",          "Bake Off (2026)",        "food"),
+    ("strictly-2026",          "Strictly Come Dancing (2026)","entertainment"),
+    ("eastenders-2026",        "EastEnders (2026)",      "drama"),
+    ("casualty-2026",          "Casualty (2026)",        "drama"),
+    ("call-the-midwife-2026",  "Call the Midwife (2026)","drama"),
+    ("vera-2026",              "Vera (2026)",            "drama"),
+    ("shetland-2026",          "Shetland (2026)",        "drama"),
+    ("happy-valley-2026",      "Happy Valley (2026)",    "drama"),
+    ("blue-lights-2026",       "Blue Lights (2026)",     "drama"),
+    ("the-responder-2026",     "The Responder (2026)",   "drama"),
+    ("ghosts-2026",            "Ghosts (2026)",          "entertainment"),
+    ("motherland-2026",        "Motherland (2026)",      "entertainment"),
+    ("not-going-out-2026",     "Not Going Out (2026)",   "entertainment"),
+    ("inside-no-9-2026",       "Inside No. 9 (2026)",    "drama"),
+    ("countryfile-2026",       "Countryfile (2026)",     "earth"),
+    ("springwatch-2026",       "Springwatch (2026)",     "earth"),
+    ("autumnwatch-2026",       "Autumnwatch (2026)",     "earth"),
+    ("planet-earth-iv",        "Planet Earth IV",        "earth"),
+    ("blue-planet-iv",         "Blue Planet IV",         "earth"),
+    ("frozen-planet-iii",      "Frozen Planet III",      "earth"),
+    ("antiques-roadshow-2026", "Antiques Roadshow (2026)","culture"),
+    ("the-repair-shop-2026",   "The Repair Shop (2026)", "culture"),
+    ("escape-to-the-country-2026","Escape to the Country (2026)","culture"),
+    ("a-place-in-the-sun-2026","A Place in the Sun (2026)","culture"),
+    ("songs-of-praise-2026",   "Songs of Praise (2026)", "culture"),
+    ("question-time-2026",     "Question Time (2026)",   "politics"),
+    ("newsnight-2026",         "Newsnight (2026)",       "politics"),
+    ("panorama-2026",          "Panorama (2026)",        "uk"),
+    ("only-connect-2026",      "Only Connect (2026)",    "entertainment"),
+    ("pointless-2026",         "Pointless (2026)",       "entertainment"),
+    ("mastermind-2026",        "Mastermind (2026)",      "entertainment"),
+    ("university-challenge-2026","University Challenge (2026)","entertainment"),
+    ("countdown-2026",         "Countdown (2026)",       "entertainment"),
+    ("eggheads-2026",          "Eggheads (2026)",        "entertainment"),
+]
+
+
+def synth_r10_iplayer(con, hero_pool: list[str]) -> list[dict]:
+    """40 shows x 10 episodes = 400 iPlayer articles."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    ipl_cid = _r9_cat_id(con, "iplayer") or 1
+    for si, (show_slug, show_name, parent) in enumerate(R10_IPLAYER_NEW_SHOWS):
+        cid = _r9_cat_id(con, parent) or ipl_cid
+        for ei in range(10):
+            n = ei + 1
+            angle = R9_BBC_THREE_ANGLES[(si * 3 + ei) % len(R9_BBC_THREE_ANGLES)]
+            angle_hl, angle_lead = angle
+            headline = angle_hl.format(show=show_name, n=n)
+            lead = angle_lead.format(show=show_name, n=n)
+            slug = _det_slug("r10-ipl", f"{show_slug}|{ei}")
+            hero = (hero_pool[(_det_int(slug) + si * 23 + ei * 9)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r9_episode_body(show_name, n, lead, "BBC iPlayer")
+            ts = base - timedelta(
+                days=(si * 6 + ei * 3) % 320 + 1,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 11) % 60,
+            )
+            tags = ["r10-iplayer", "iplayer", "iplayer-episode",
+                    "iplayer-show-" + show_slug,
+                    "iplayer-play-episode"]
+            if (si * 3 + ei) % 4 == 0:
+                tags.append("signed-content")
+            if (si * 5 + ei) % 4 == 1:
+                tags.append("audio-described")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="iplayer",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=1800 + (_det_int(slug) % 26000),
+                country="UK", hero=hero, author=show_name,
+                topics=[show_name, "BBC iPlayer", "Catch-up"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ei) % 23 == 0 else 0,
+            ))
+    return out
+
+
+# ----- Sounds (radio shows) pool ------------------------------------
+
+R10_SOUNDS_SHOWS: list[tuple[str, str, str, str]] = [
+    # (show_slug, show_name, mood, station)
+    ("today-programme",          "Today",                          "current",   "Radio 4"),
+    ("woman-s-hour",             "Woman's Hour",                   "thoughtful","Radio 4"),
+    ("in-our-time",              "In Our Time",                    "thoughtful","Radio 4"),
+    ("desert-island-discs",      "Desert Island Discs",            "warm",      "Radio 4"),
+    ("the-archers",              "The Archers",                    "warm",      "Radio 4"),
+    ("the-news-quiz",            "The News Quiz",                  "playful",   "Radio 4"),
+    ("just-a-minute",            "Just a Minute",                  "playful",   "Radio 4"),
+    ("the-museum-of-curiosity",  "The Museum of Curiosity",        "playful",   "Radio 4"),
+    ("more-or-less",             "More or Less",                   "thoughtful","Radio 4"),
+    ("file-on-4",                "File on 4",                      "serious",   "Radio 4"),
+    ("from-our-own-correspondent","From Our Own Correspondent",    "thoughtful","Radio 4"),
+    ("any-questions",            "Any Questions?",                 "current",   "Radio 4"),
+    ("inside-health",            "Inside Health",                  "thoughtful","Radio 4"),
+    ("you-and-yours",            "You and Yours",                  "current",   "Radio 4"),
+    ("the-bottom-line",          "The Bottom Line",                "current",   "Radio 4"),
+    ("money-box",                "Money Box",                      "current",   "Radio 4"),
+    ("ramblings",                "Ramblings",                      "calm",      "Radio 4"),
+    ("gardeners-question-time",  "Gardeners' Question Time",       "warm",      "Radio 4"),
+    ("the-life-scientific",      "The Life Scientific",            "thoughtful","Radio 4"),
+    ("loose-ends",               "Loose Ends",                     "playful",   "Radio 4"),
+    ("zoe-ball-breakfast",       "The Zoe Ball Breakfast Show",    "uplifting", "Radio 2"),
+    ("jo-whiley",                "Jo Whiley",                      "uplifting", "Radio 2"),
+    ("steve-wright",             "Steve Wright in the Afternoon",  "uplifting", "Radio 2"),
+    ("sara-cox",                 "Sara Cox",                       "uplifting", "Radio 2"),
+    ("vernon-kay",               "Vernon Kay",                     "uplifting", "Radio 2"),
+    ("ken-bruce-show",           "The Ken Bruce Show",             "uplifting", "Radio 2"),
+    ("greg-james",               "Greg James",                     "playful",   "Radio 1"),
+    ("clara-amfo",               "Clara Amfo",                     "uplifting", "Radio 1"),
+    ("annie-mac",                "Annie Mac",                      "uplifting", "Radio 1"),
+    ("scott-mills",              "Scott Mills",                    "playful",   "Radio 1"),
+    ("nick-grimshaw",            "Nick Grimshaw",                  "playful",   "Radio 1"),
+    ("petroc-trelawny",          "Petroc Trelawny Breakfast",      "calm",      "Radio 3"),
+    ("composer-of-the-week",     "Composer of the Week",           "thoughtful","Radio 3"),
+    ("private-passions",         "Private Passions",               "calm",      "Radio 3"),
+    ("late-junction",            "Late Junction",                  "calm",      "Radio 3"),
+    ("five-live-breakfast",      "5 Live Breakfast",               "current",   "5 Live"),
+    ("five-live-drive",          "5 Live Drive",                   "current",   "5 Live"),
+    ("five-live-sport",          "5 Live Sport",                   "current",   "5 Live"),
+    ("six-music-breakfast",      "6 Music Breakfast",              "uplifting", "6 Music"),
+    ("six-music-mary-anne",      "Mary Anne Hobbs",                "calm",      "6 Music"),
+]
+
+
+def _r10_sounds_body(show: str, station: str, ep_idx: int, mood: str) -> str:
+    paras = [
+        f"This week's episode of {show} on BBC {station} keeps to a {mood} "
+        "register, with two long interviews and a short feature.",
+        f"Episode {ep_idx} of {show} opens with a familiar piece of "
+        "scene-setting from the host, before moving to the first guest.",
+        f"The {station} production team marks {show} as suitable for "
+        "subtitled and AD versions on BBC Sounds, with both tracks "
+        "available from the episode page.",
+        f"On BBC Sounds, {show} is currently available to listen to "
+        "live and on demand for the next thirty days.",
+        "Editorial note: BBC Sounds welcomes corrections via the standard "
+        "feedback form linked from this page.",
+    ]
+    return "\n\n".join(paras)
+
+
+def synth_r10_sounds(con, hero_pool: list[str]) -> list[dict]:
+    """40 radio shows x 10 episodes = 400 sounds articles."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "sounds") or 1
+    for si, (show_slug, show_name, mood, station) in enumerate(R10_SOUNDS_SHOWS):
+        for ei in range(10):
+            n = ei + 1
+            headline = f"{show_name} on BBC {station}: episode {n}"
+            lead = (f"Episode {n} of {show_name} on BBC {station}, in a "
+                    f"{mood} register. Available now on BBC Sounds with "
+                    "subtitles and audio description.")
+            slug = _det_slug("r10-snd", f"{show_slug}|{ei}")
+            hero = (hero_pool[(_det_int(slug) + si * 13 + ei * 7)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r10_sounds_body(show_name, station, n, mood)
+            ts = base - timedelta(
+                days=(si * 4 + ei * 3) % 280 + 1,
+                hours=(_det_int(slug) // 5) % 24,
+                minutes=(_det_int(slug) // 13) % 60,
+            )
+            tags = ["r10-sounds", "sounds", "sounds-show-" + show_slug,
+                    "sounds-station-" + station.lower().replace(" ", "-"),
+                    "mood-" + mood]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="sounds",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=300 + (_det_int(slug) % 14000),
+                country="UK", hero=hero, author=show_name,
+                topics=[show_name, station, "BBC Sounds", mood.title()],
+                feature_tags=tags,
+                content_type="audio",
+                is_featured=1 if (si + ei) % 27 == 0 else 0,
+            ))
+    return out
+
+
+# ----- CBeebies pool -------------------------------------------------
+
+R10_CBEEBIES_ACTIVITIES: list[tuple[str, str]] = [
+    ("colours and numbers",  "A short song-along episode about colours and the numbers one to ten."),
+    ("seasons and weather",  "A gentle look at the four seasons and the kind of weather each brings."),
+    ("animals on the farm",  "Meeting the animals on a small working farm and naming each one."),
+    ("creatures in the pond","Pond dipping with a magnifying glass and three new minibeast friends."),
+    ("garden helpers",       "Helping in the garden with watering cans, seed packets and clean fingers."),
+    ("baking biscuits",      "Mixing, rolling and cutting biscuits with a grown-up nearby."),
+    ("the bus to nursery",   "A first ride on the local bus, watching the streets go past."),
+    ("library day",          "A trip to the local library and picking a first borrowed book."),
+    ("a walk in the rain",   "Putting on wellies and finding the biggest puddle to splash in."),
+    ("snow day",             "Bundling up, making snow tracks and learning the names of cloud shapes."),
+    ("the post office",      "Posting a hand-drawn card to a grandparent."),
+    ("the playground",       "Trying the three pieces of playground equipment in turn."),
+    ("the bedtime ritual",   "Bath, story and a soft song before sleep."),
+    ("sharing toys",         "Learning to take turns with a treasured toy."),
+    ("brushing teeth",       "A friendly story about brushing teeth in the morning and night."),
+    ("the new baby",         "A gentle story about welcoming a new baby into the family."),
+    ("granny visits",        "Granny comes to visit and brings a small surprise from the garden."),
+    ("the recycling truck",  "Sorting paper, plastic and food waste into the right bins."),
+    ("the toy hospital",     "A small teddy goes to the toy hospital for a stitch and a hug."),
+    ("the lost shoe",        "Retracing the day to find a missing shoe in the hallway."),
+    ("at the doctor",        "A first visit to the GP and a kind explanation of what happens."),
+    ("at the dentist",       "A friendly story about a check-up at the dentist."),
+    ("first day at nursery", "Saying goodbye in the morning and what to expect by lunchtime."),
+    ("the painting",         "Mixing red and yellow to discover orange for the very first time."),
+    ("kitchen helpers",      "A small role helping to lay the table for tea."),
+    ("the train ride",       "A first long-ish train ride with a packed lunch and a window seat."),
+    ("the seaside",          "A gentle trip to the sea with bucket, spade and lots of sand."),
+    ("a picnic in the park", "Packing the picnic, laying the blanket and sharing the sandwiches."),
+    ("camping in the garden","A first overnight camp under a small tent in the back garden."),
+    ("the new shoes",        "Going to the shoe shop and trying on three pairs."),
+    ("a windy day",          "What to do with hair, hats and kites when the wind picks up."),
+    ("the bus to the zoo",   "A ride to the zoo and a kind hello to four favourite animals."),
+    ("the city farm",        "A morning at the city farm meeting goats, ducks and chickens."),
+    ("the school visit",     "A short visit to the local primary school as part of starting big school."),
+    ("learning to dress",    "A patient story about doing buttons up and tying shoelaces."),
+    ("a lullaby",            "A short bedtime episode built around a single old lullaby."),
+    ("morning yoga",         "A gentle wake-up routine of three slow stretches."),
+    ("kindness day",         "A story about a small act of kindness on the school run."),
+    ("the new pet",          "Welcoming a new pet into the home and naming it together."),
+    ("a friend's visit",     "Hosting a small friend for the afternoon and sharing the favourite toys."),
+]
+
+
+def synth_r10_cbeebies(con, hero_pool: list[str]) -> list[dict]:
+    """35 shows x ~12 activities (capped to 400 total)."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    cid = _r9_cat_id(con, "cbeebies") or 1
+    # Use the same R9 show pool — keep the slugs aligned.
+    target = 400
+    for si, (show_slug, show_name) in enumerate(R9_CBEEBIES_SHOWS):
+        for ai, (activity, gist) in enumerate(R10_CBEEBIES_ACTIVITIES):
+            if len(out) >= target:
+                break
+            headline = f"{show_name}: {activity}"
+            lead = f"{show_name} takes on {activity}. {gist}"
+            slug = _det_slug("r10-cbb", f"{show_slug}|{ai}")
+            hero = (hero_pool[(_det_int(slug) + si * 11 + ai * 5)
+                              % len(hero_pool)] if hero_pool else "")
+            body = _r9_kids_body(show_name, ai + 1, lead, "pre-school")
+            ts = base - timedelta(
+                days=(si * 5 + ai * 2) % 250 + 1,
+                hours=(_det_int(slug) // 9) % 24,
+                minutes=(_det_int(slug) // 7) % 60,
+            )
+            tags = ["r10-cbeebies", "cbeebies",
+                    "cbeebies-show-" + show_slug,
+                    "kids-pre-school"]
+            if (si * 2 + ai) % 4 == 0:
+                tags.append("signed-content")
+            if (si * 3 + ai) % 4 == 1:
+                tags.append("audio-described")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="cbeebies",
+                subsection=show_name, region_label="UK", ts=ts,
+                view_count=400 + (_det_int(slug) % 15000),
+                country="UK", hero=hero, author="CBeebies",
+                topics=[show_name, "CBeebies", "Pre-school"],
+                feature_tags=tags,
+                content_type="video",
+                is_featured=1 if (si + ai) % 17 == 0 else 0,
+            ))
+        if len(out) >= target:
+            break
+    return out
+
+
+# ----- URL backfill / empty-cat top-up -------------------------------
+
+def backfill_empty_source_urls(con: sqlite3.Connection) -> int:
+    """Every article must have a real-looking BBC URL. Backfill empty
+    source_url to https://www.bbc.com/news/articles/<slug>."""
+    cur = con.cursor()
+    rows = cur.execute(
+        "SELECT id, slug FROM articles "
+        "WHERE source_url IS NULL OR source_url = '' OR source_url NOT LIKE 'https://www.bbc.%'"
+    ).fetchall()
+    if not rows:
+        return 0
+    updates = [
+        (f"https://www.bbc.com/news/articles/{slug}", aid)
+        for aid, slug in rows
+    ]
+    cur.executemany(
+        "UPDATE articles SET source_url=? WHERE id=?", updates
+    )
+    return len(updates)
+
+
+# Top up the small set of empty categories with a few seed articles so
+# `/section/<slug>` is never an empty shell.
+R10_EMPTY_CAT_SEEDS: list[tuple[str, str]] = [
+    ("australia",     "Australia"),
+    ("style",         "Style"),
+    ("worlds_table",  "World's Table"),
+    ("sounds",        "Sounds"),
+    ("radio",         "Radio"),
+    ("video_clips",   "Video Clips"),
+    ("snooker",       "Snooker"),
+    ("boxing",        "Boxing"),
+    ("formula1",      "Formula 1"),
+]
+
+
+def synth_r10_empty_cat_seeds(con, hero_pool: list[str]) -> list[dict]:
+    """Add 8 short articles to each currently-empty category so the
+    section landing page is never empty."""
+    base = R10_REFERENCE_DATE
+    out: list[dict] = []
+    for ci, (slug_root, label) in enumerate(R10_EMPTY_CAT_SEEDS):
+        cid = _r9_cat_id(con, slug_root)
+        if cid is None:
+            continue
+        for ei in range(8):
+            n = ei + 1
+            headline = f"{label} on BBC: feature number {n}"
+            lead = (f"BBC {label} desk publishes feature number {n} - a "
+                    "short, deterministically generated seed entry so the "
+                    f"/section/{slug_root} page has something to render.")
+            slug = _det_slug("r10-empty", f"{slug_root}|{ei}")
+            hero = (hero_pool[(_det_int(slug) + ci * 11 + ei * 5)
+                              % len(hero_pool)] if hero_pool else "")
+            body = (f"{lead}\n\nThis is a deterministic seed entry for the "
+                    f"{label} category. It exists so the section landing "
+                    "page, the RSS feed and the Atom feed all have a real "
+                    "row to render. The R10 polish round added eight such "
+                    "rows to each previously-empty category.")
+            ts = base - timedelta(
+                days=(ci * 3 + ei) % 90 + 1,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 5) % 60,
+            )
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=slug_root,
+                subsection=label, region_label="UK", ts=ts,
+                view_count=100 + (_det_int(slug) % 4000),
+                country="UK", hero=hero, author="BBC " + label,
+                topics=[label, "BBC"],
+                feature_tags=["r10-empty-cat-seed", slug_root],
+                content_type="article",
+                is_featured=0,
+            ))
+    return out
+
+
+# ----- inserts / comments / sentinel --------------------------------
+
+def insert_r10_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+R10_COMMENT_TOP: list[str] = [
+    "R10 news-desk pages render fast — the timeline article in particular is a clean read.",
+    "Good to see every Sport discipline now has 60+ articles; the schedule chart helps.",
+    "/weather/<city> now covers 50 places and the 7-day chart is a nice touch.",
+    "/iplayer 40 new shows landed cleanly, including the signed/AD flag at section level.",
+    "/sounds station landing (Radio 1/2/3/4/5 Live/6 Music) finally feels populated.",
+    "Empty categories are gone — /section/snooker, /section/boxing all return real lists.",
+    "Article source URLs are uniform now; the back-to-bbc.com link works on every story.",
+]
+
+R10_COMMENT_REPLIES: list[str] = [
+    "Agreed — the cross-channel breadcrumb is the real R10 upgrade.",
+    "Tried a five-step compound through news → sport → weather → iplayer → sounds → cbeebies and it threaded cleanly.",
+    "Real URLs help the schema.json output look authentic for downstream tools.",
+    "Snooker, boxing and F1 finally have section-level RSS that parses.",
+    "Glad the kids' R10 pre-school activity strand sits in /cbeebies cleanly.",
+]
+
+
+def insert_r10_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R10_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+    pool: list[tuple[int, str]] = []
+    for tag in ("r10-news-desk", "r10-sport", "r10-weather", "r10-iplayer",
+                "r10-sounds", "r10-cbeebies"):
+        rows = cur.execute(
+            "SELECT id, slug FROM articles WHERE feature_tags LIKE ? LIMIT 12",
+            (f"%{tag}%",),
+        ).fetchall()
+        pool.extend(rows)
+    if not pool:
+        return 0
+    base = R10_REFERENCE_DATE
+    out_rows: list[tuple] = []
+    for i, (art_id, _slug) in enumerate(pool):
+        uid_top = user_ids[i % len(user_ids)]
+        top_body = R10_COMMENT_TOP[i % len(R10_COMMENT_TOP)]
+        top_ts = base - timedelta(days=(i % 30) + 1, hours=(i * 3) % 24,
+                                  minutes=(i * 7) % 60)
+        out_rows.append((uid_top, art_id, None, top_body, 0, 0,
+                         top_ts.strftime("%Y-%m-%d %H:%M:%S")))
+        for j in range(2):
+            uid_r = user_ids[(i + j + 1) % len(user_ids)]
+            r_body = R10_COMMENT_REPLIES[(i + j) % len(R10_COMMENT_REPLIES)]
+            r_ts = top_ts + timedelta(hours=j + 1, minutes=(j * 11) % 60)
+            out_rows.append((uid_r, art_id, None, r_body, 0, 0,
+                             r_ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur = con.cursor()
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        out_rows,
+    )
+    return len(out_rows)
+
+
+def insert_r10_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R10_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    # Take a small slice across the six R10 strands.
+    art_rows: list[int] = []
+    for tag in ("r10-news-desk", "r10-sport", "r10-weather", "r10-iplayer",
+                "r10-sounds", "r10-cbeebies"):
+        rs = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY id LIMIT 40",
+            (f"%{tag}%",),
+        ).fetchall()
+        art_rows.extend(r[0] for r in rs)
+    base = R10_REFERENCE_DATE
+    out: list[tuple] = []
+    for i, art_id in enumerate(art_rows):
+        uid = user_ids[i % len(user_ids)]
+        ts = base - timedelta(days=(i * 2) % 120 + 1,
+                              hours=(i * 5) % 24,
+                              minutes=(i * 13) % 60)
+        out.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if out:
+        cur.executemany(
+            "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+            "VALUES (?, ?, ?)",
+            out,
+        )
+    return len(out)
+
+
+def insert_r10_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R10_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    existing = {(r[0], r[1]) for r in cur.execute(
+        "SELECT user_id, article_id FROM bookmarks"
+    )}
+    art_rows: list[int] = []
+    for tag in ("r10-news-desk", "r10-sport", "r10-weather", "r10-iplayer",
+                "r10-sounds", "r10-cbeebies"):
+        rs = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY id LIMIT 12",
+            (f"%{tag}%",),
+        ).fetchall()
+        art_rows.extend(r[0] for r in rs)
+    base = R10_REFERENCE_DATE
+    out: list[tuple] = []
+    for i, art_id in enumerate(art_rows):
+        uid = user_ids[i % len(user_ids)]
+        if (uid, art_id) in existing:
+            continue
+        ts = base - timedelta(days=(i * 3) % 90 + 1,
+                              hours=(i * 7) % 24,
+                              minutes=(i * 5) % 60)
+        out.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+        existing.add((uid, art_id))
+    if out:
+        cur.executemany(
+            "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+            "VALUES (?, ?, ?)",
+            out,
+        )
+    return len(out)
+
+
+def plant_r10_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R10_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles ORDER BY id LIMIT 1").fetchone()
+    if not uid_row or not art_row:
+        return
+    ts = R10_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid_row[0], art_row[0], None, R10_SENTINEL_BODY, 0, 0, ts),
+    )
+
+
+def bake_r10(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R10 final-polish additions. Idempotent (sentinel-gated)."""
+    stats: dict[str, int] = {}
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R10_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    # Backfill / quality first — these touch existing rows.
+    stats["url_backfills"] = backfill_empty_source_urls(con)
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_r10_news_desk(con, hero_pool),
+        synth_r10_sport_reports(con, hero_pool),
+        synth_r10_weather(con, hero_pool),
+        synth_r10_iplayer(con, hero_pool),
+        synth_r10_sounds(con, hero_pool),
+        synth_r10_cbeebies(con, hero_pool),
+        synth_r10_empty_cat_seeds(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r10_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r10_comments(con)
+    stats["new_reading_history"] = insert_r10_reading_history(con)
+    stats["new_bookmarks"] = insert_r10_bookmarks(con)
+
+    plant_r10_sentinel(con)
+    return stats
+
+
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -8958,6 +10050,7 @@ def main() -> None:
         r7_stats = bake_r7(con)
         r8_stats = bake_r8(con)
         r9_stats = bake_r9(con)
+        r10_stats = bake_r10(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -8996,8 +10089,12 @@ def main() -> None:
         v for k, v in r9_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r10_total_inserts = sum(
+        v for k, v in r10_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts + r8_total_inserts + r9_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts + r8_total_inserts + r9_total_inserts + r10_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -9018,6 +10115,7 @@ def main() -> None:
     print(f"[bake] R7 stats: {r7_stats}")
     print(f"[bake] R8 stats: {r8_stats}")
     print(f"[bake] R9 stats: {r9_stats}")
+    print(f"[bake] R10 stats: {r10_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

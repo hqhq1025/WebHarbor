@@ -4633,7 +4633,10 @@ def seed_database():
                            backfill_transit_no_service_r6,
                            expand_places_r7,
                            expand_places_r8,
-                           expand_places_r9)
+                           expand_places_r9,
+                           expand_places_r10,
+                           expand_transit_lines_r10,
+                           backfill_place_extras_r10)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -4674,6 +4677,18 @@ def seed_database():
     # geocache / large parks) + fresh chain rows.  Adds ~195k more venues so
     # the place table tops 750k; idempotent (no-op once Place.count >= 740000).
     expand_places_r9(db, Place, Category, City)
+    # --- R10: international landmarks + ski/dive verticals + hostels +
+    # coliving + accessibility-focused services + bike-share + new chains.
+    # Pushes the place table to ~900k.  Idempotent (no-op once
+    # Place.count >= 880000).  Also expands transit_line catalog from ~14
+    # to 200+ so the /transit/lines/<slug> route returns HTTP 200 across
+    # a wide curated + programmatic set of subway/light-rail/bus routes.
+    expand_places_r10(db, Place, Category, City)
+    expand_transit_lines_r10(db, TransitLine, City)
+    # R10 quality polish: fill popular_times / menu / hours_json / etc
+    # only on R10 places.  Targeted (filter by slug LIKE 'r10-%'); much
+    # faster than re-running the full backfill_place_extras over 900k rows.
+    backfill_place_extras_r10(db, Place, Category)
 
 
 # --------------------------------------------------------------------------
