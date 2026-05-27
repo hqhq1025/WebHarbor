@@ -198,7 +198,9 @@ main {
     overflow: hidden;
     position: relative;
     background: #fff;
-    margin-bottom: -200px;
+    /* fix gotcha #48: removed margin-bottom:-200px — designed for tall
+       hero-with-image, but the lite CTA hero (~120px) gets entirely
+       eaten, leaving only a dark strip behind the cards. */
 }
 .hero-banner img {
     width: 100%;
