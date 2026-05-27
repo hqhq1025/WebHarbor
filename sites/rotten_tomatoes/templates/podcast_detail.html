@@ -3,7 +3,7 @@
 {% block content %}
 <div class="podcast-detail">
     <header class="podcast-header">
-        <img src="{{ podcast.image }}" alt="{{ podcast.title }}" class="podcast-cover" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+        <img loading="lazy" decoding="async" src="{{ podcast.image }}" alt="{{ podcast.title }}" class="podcast-cover" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
         <div class="podcast-meta">
             <h1>{{ podcast.title }}</h1>
             <p class="podcast-host">Hosted by {{ podcast.host }}</p>

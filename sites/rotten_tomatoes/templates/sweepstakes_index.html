@@ -6,7 +6,7 @@
     <div class="sweep-grid">
         {% for s in sweepstakes %}
         <a href="/sweepstakes/{{ s.slug }}" class="sweep-card">
-            <img src="{{ s.image }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <img loading="lazy" decoding="async" src="{{ s.image }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
             <h3>{{ s.title }}</h3>
             <p>{{ s.description }}</p>
             <p class="meta">Ends {{ s.ends_on }}</p>

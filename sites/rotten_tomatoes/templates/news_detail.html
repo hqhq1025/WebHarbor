@@ -8,7 +8,7 @@
         <p class="news-byline">By <strong>{{ article.author }}</strong> · {{ article.published_at.strftime('%b %d, %Y') }}</p>
     </header>
     {% if article.image %}
-    <div class="news-hero"><img src="{{ article.image }}" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+    <div class="news-hero"><img loading="lazy" decoding="async" src="{{ article.image }}" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
     {% endif %}
     <p class="news-lede">{{ article.summary }}</p>
     <div class="news-body">{{ article.body|safe }}</div>
@@ -17,7 +17,7 @@
     <aside class="related-movie">
         <h3>Related Movie</h3>
         <a href="/m/{{ tag_movie.slug }}" class="movie-mini">
-            <img src="{{ tag_movie.poster_image }}" alt="{{ tag_movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <img loading="lazy" decoding="async" src="{{ tag_movie.poster_image }}" alt="{{ tag_movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
             <div>
                 <div class="card-title">{{ tag_movie.title }} ({{ tag_movie.year }})</div>
                 <div class="card-scores">

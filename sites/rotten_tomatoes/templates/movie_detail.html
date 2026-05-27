@@ -4,7 +4,7 @@
 <div class="movie-detail">
     <div class="movie-header">
         <div class="movie-poster-col">
-            <img src="{{ movie.poster_image }}" alt="{{ movie.title }}" class="movie-poster-large" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <img loading="lazy" decoding="async" src="{{ movie.poster_image }}" alt="{{ movie.title }}" class="movie-poster-large" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
         </div>
         <div class="movie-info-col">
             <h1 class="movie-title-large">{{ movie.title }} <span class="movie-year">({{ movie.year }})</span></h1>
@@ -103,7 +103,7 @@
             {% for c in actors[:8] %}
             <a href="/celebrity/{{ c.person.slug }}" class="cast-card">
                 {% if c.person.photo %}
-                <img src="{{ c.person.photo }}" alt="{{ c.person.name }}" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'cast-placeholder\'>👤</div>'">
+                <img loading="lazy" decoding="async" src="{{ c.person.photo }}" alt="{{ c.person.name }}" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'cast-placeholder\'>👤</div>'">
                 {% else %}
                 <div class="cast-placeholder">👤</div>
                 {% endif %}
@@ -236,7 +236,7 @@
             {% for movie in similar_movies %}
             <a href="/m/{{ movie.slug }}" class="movie-card">
                 <div class="card-poster">
-                    <img src="{{ movie.poster_image }}" alt="{{ movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                    <img loading="lazy" decoding="async" src="{{ movie.poster_image }}" alt="{{ movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
                 </div>
                 <div class="card-scores">
                     <span class="score tomatometer {{ movie.tomatometer_status }}">{{ movie.tomatometer_icon }} {{ movie.tomatometer }}%</span>

@@ -16,7 +16,7 @@
     <div class="podcast-grid">
         {% for p in podcasts %}
         <a href="/podcasts/{{ p.slug }}" class="podcast-card">
-            <img src="{{ p.image }}" alt="{{ p.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
             <h3>{{ p.title }}</h3>
             <p>{{ p.description }}</p>
         </a>

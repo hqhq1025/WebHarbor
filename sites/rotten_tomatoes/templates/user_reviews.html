@@ -13,7 +13,7 @@
         {% set movie = review.movie %}
         <div class="user-review-card">
             <a href="/m/{{ movie.slug }}" class="review-movie-link">
-                <img src="{{ movie.poster_image }}" alt="{{ movie.title }}" class="review-poster" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <img loading="lazy" decoding="async" src="{{ movie.poster_image }}" alt="{{ movie.title }}" class="review-poster" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
             </a>
             <div class="review-body">
                 <a href="/m/{{ movie.slug }}" class="review-movie-title">{{ movie.title }} ({{ movie.year }})</a>

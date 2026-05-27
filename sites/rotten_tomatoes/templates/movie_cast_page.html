@@ -16,7 +16,7 @@
         <div class="cast-grid">
             {% for d in directors %}
             <a href="/celebrity/{{ d.person.slug }}" class="cast-card">
-                <img src="{{ d.person.photo }}" alt="{{ d.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <img loading="lazy" decoding="async" src="{{ d.person.photo }}" alt="{{ d.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
                 <div class="cast-name">{{ d.person.name }}</div>
                 <div class="cast-character">Director</div>
             </a>
@@ -30,7 +30,7 @@
         <div class="cast-grid">
             {% for c in actors %}
             <a href="/celebrity/{{ c.person.slug }}" class="cast-card">
-                <img src="{{ c.person.photo }}" alt="{{ c.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <img loading="lazy" decoding="async" src="{{ c.person.photo }}" alt="{{ c.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
                 <div class="cast-name">{{ c.person.name }}</div>
                 <div class="cast-character">{{ c.character_name or '—' }}</div>
             </a>

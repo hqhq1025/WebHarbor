@@ -3,7 +3,7 @@
 {% block content %}
 <div class="sweep-detail">
     <header class="sweep-header">
-        <img src="{{ sweepstake.image }}" alt="{{ sweepstake.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+        <img loading="lazy" decoding="async" src="{{ sweepstake.image }}" alt="{{ sweepstake.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
         <div class="sweep-meta">
             <h1>{{ sweepstake.title }}</h1>
             <p class="sweep-prize"><strong>Prize:</strong> {{ sweepstake.prize }}</p>

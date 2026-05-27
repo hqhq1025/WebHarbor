@@ -27,7 +27,7 @@
         <li class="list-item">
             <span class="rank">#{{ item.order }}</span>
             <a href="/m/{{ m.slug }}" class="movie-mini">
-                <img src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <img loading="lazy" decoding="async" src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
                 <div>
                     <div class="card-title">{{ m.title }} ({{ m.year }})</div>
                     <div class="card-scores">

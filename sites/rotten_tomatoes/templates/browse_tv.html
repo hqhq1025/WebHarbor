@@ -14,7 +14,7 @@
     <div class="movie-grid">
         {% for s in shows %}
         <a href="/tv/{{ s.slug }}" class="movie-card">
-            <div class="card-poster"><img src="{{ s.poster }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="card-poster"><img loading="lazy" decoding="async" src="{{ s.poster }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
             <div class="card-scores">
                 <span class="score tomatometer {{ 'certified-fresh' if s.certified_fresh else ('fresh' if s.tomatometer >= 60 else 'rotten') }}">🍅 {{ s.tomatometer }}%</span>
                 <span class="score audience">🍿 {{ s.audience_score }}%</span>

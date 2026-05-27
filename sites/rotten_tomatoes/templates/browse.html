@@ -69,7 +69,7 @@
             <div class="movie-card-wrapper">
                 <a href="/m/{{ movie.slug }}" class="movie-card">
                     <div class="card-poster">
-                        <img src="{{ movie.poster_image }}" alt="{{ movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                        <img loading="lazy" decoding="async" src="{{ movie.poster_image }}" alt="{{ movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
                     </div>
                     <div class="card-info">
                         <div class="card-title">{{ movie.title }}</div>

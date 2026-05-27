@@ -19,7 +19,7 @@
     <div class="movie-grid">
         {% for m in movies %}
         <a href="/m/{{ m.slug }}" class="movie-card">
-            <div class="card-poster"><img src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="card-poster"><img loading="lazy" decoding="async" src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
             <div class="card-scores"><span class="score tomatometer">🍅 {{ m.tomatometer }}%</span></div>
             <div class="card-title">{{ m.title }}</div>
         </a>
