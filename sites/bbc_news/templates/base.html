@@ -308,13 +308,23 @@
     <div class="footer-bottom">
         <div class="footer-inner">
             <nav class="footer-legal" aria-label="Legal">
+                <a href="{{ url_for('terms_page') }}">About the BBC</a>
+                <span aria-hidden="true">·</span>
                 <a href="{{ url_for('terms_page') }}">Terms of Use</a>
                 <span aria-hidden="true">·</span>
-                <a href="{{ url_for('privacy_page') }}">Privacy Notice</a>
+                <a href="{{ url_for('terms_page') }}">Subscription Terms</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('privacy_page') }}">Privacy Policy</a>
                 <span aria-hidden="true">·</span>
                 <a href="{{ url_for('cookies_page') }}">Cookies</a>
                 <span aria-hidden="true">·</span>
-                <a href="{{ url_for('accessibility_page') }}">Accessibility</a>
+                <a href="{{ url_for('accessibility_page') }}">Accessibility Help</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('terms_page') }}">Contact the BBC</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('terms_page') }}">Advertise with us</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('terms_page') }}">BBC.com Help &amp; FAQs</a>
             </nav>
             <p>Copyright © {{ current_year }} BBC. The BBC is not responsible for the content of external sites. Read about our approach to external linking.</p>
         </div>
