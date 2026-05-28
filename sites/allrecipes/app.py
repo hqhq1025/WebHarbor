@@ -445,15 +445,64 @@ def safe_redirect_target(target, default_endpoint='index'):
 # Routes — Static Pages
 # ---------------------------------------------------------------------------
 
+_INDEX_CATEGORY_CACHE = None
+
+def _cached_index_categories():
+    """Categories ordered by display_order, each annotated with a `recipe_count`.
+
+    Using ``cat.recipes | length`` in the template triggers a lazy-load on
+    every category card (~46 categories) and pulls ~31k Recipe rows total —
+    that's what caused the homepage to spend 2s in template rendering.
+    We compute the counts once with a single GROUP BY and cache the list;
+    ``/reset/<site>`` restarts the worker so the cache is recreated.
+    """
+    global _INDEX_CATEGORY_CACHE
+    if _INDEX_CATEGORY_CACHE is not None:
+        return _INDEX_CATEGORY_CACHE
+    cats = Category.query.order_by(Category.display_order).all()
+    counts = dict(
+        db.session.query(Recipe.category_id, db.func.count(Recipe.id))
+        .group_by(Recipe.category_id).all()
+    )
+    for c in cats:
+        c.recipe_count = counts.get(c.id, 0)
+    _INDEX_CATEGORY_CACHE = cats
+    return cats
+
+
+_INDEX_PAYLOAD_CACHE = None
+
+def _cached_index_payload():
+    """Bundle of read-only queries for the homepage.
+
+    Without an index on ``is_featured`` / ``is_editors_pick`` / ``review_count``,
+    each homepage hit was running 4 full-table scans over 31k rows. The data
+    is static between ``/reset/<site>`` calls so we cache the whole payload
+    at module scope.
+    """
+    global _INDEX_PAYLOAD_CACHE
+    if _INDEX_PAYLOAD_CACHE is not None:
+        return _INDEX_PAYLOAD_CACHE
+    payload = dict(
+        featured=Recipe.query.filter_by(is_featured=True).limit(6).all(),
+        editors_picks=Recipe.query.filter_by(is_editors_pick=True).limit(6).all(),
+        latest=Recipe.query.order_by(Recipe.created_at.desc()).limit(12).all(),
+        popular=Recipe.query.order_by(Recipe.review_count.desc()).limit(8).all(),
+    )
+    _INDEX_PAYLOAD_CACHE = payload
+    return payload
+
+
 @app.route('/')
 def index():
-    featured = Recipe.query.filter_by(is_featured=True).limit(6).all()
-    editors_picks = Recipe.query.filter_by(is_editors_pick=True).limit(6).all()
-    latest = Recipe.query.order_by(Recipe.created_at.desc()).limit(12).all()
-    categories = Category.query.order_by(Category.display_order).all()
-    popular = Recipe.query.order_by(Recipe.review_count.desc()).limit(8).all()
-    return render_template('index.html', featured=featured, editors_picks=editors_picks,
-                           latest=latest, categories=categories, popular=popular)
+    payload = _cached_index_payload()
+    categories = _cached_index_categories()
+    return render_template('index.html',
+                           featured=payload['featured'],
+                           editors_picks=payload['editors_picks'],
+                           latest=payload['latest'],
+                           categories=categories,
+                           popular=payload['popular'])
 
 
 @app.route('/recipes')
@@ -819,7 +868,14 @@ def _build_category_recipes(cat, page, per_page=12, min_total=20):
       1) Recipes with explicit `category_id == cat.id` (highest review_count first)
       2) Recipes matched by the slug-specific predicate (excluding 1)
       3) If still <`min_total`, popular recipes (excluding above) as filler
+
+    Perf cap: we never materialise more than ``CAP`` recipes per source query.
+    Real category pages only show the first few hundred items via pagination,
+    so loading 30k rows just to render 12 cards was the bottleneck (slug
+    "desserts" matched ~9k rows). ``CAP`` is sized so pagination still works
+    for the deepest plausible page (~per_page * 30).
     """
+    CAP = max(min_total, per_page * 30)
     seen = set()
     ordered = []
 
@@ -827,6 +883,7 @@ def _build_category_recipes(cat, page, per_page=12, min_total=20):
               .filter_by(category_id=cat.id)
               .order_by(Recipe.review_count.desc(),
                         Recipe.avg_rating.desc())
+              .limit(CAP)
               .all())
     for r in direct:
         if r.id not in seen:
@@ -834,16 +891,19 @@ def _build_category_recipes(cat, page, per_page=12, min_total=20):
             ordered.append(r)
 
     clause = _category_match_clause(cat.slug)
-    if clause is not None:
+    if clause is not None and len(ordered) < CAP:
         expanded = (Recipe.query
                     .filter(clause)
                     .order_by(Recipe.review_count.desc(),
                               Recipe.avg_rating.desc())
+                    .limit(CAP)
                     .all())
         for r in expanded:
             if r.id not in seen:
                 seen.add(r.id)
                 ordered.append(r)
+            if len(ordered) >= CAP:
+                break
 
     # Pad with popular recipes until at least `min_total` cards exist.
     if len(ordered) < min_total:
@@ -1526,9 +1586,44 @@ def _diversify_search_results(results, query, candidates_pool=None):
 @app.route('/search')
 def search():
     q = request.args.get('q', '').strip()
+    page = request.args.get('page', 1, type=int)
+    PAGE_SIZE = 24
     query_obj = Recipe.query
     query_obj = _apply_recipe_filters(query_obj)
-    candidates = query_obj.all()
+
+    # SQL pre-filter on the main token: the legacy code did
+    # ``query_obj.all()`` (31k rows) and scored every recipe in Python,
+    # which dominated TTFB. Push the OR-over-haystack into SQL so we only
+    # hand a tiny candidate slice to ``_score_recipe``.
+    candidates = None
+    if q:
+        tokens_pre = [t.lower() for t in re.findall(r'[a-z0-9]+', q.lower())
+                      if t and t not in STOPWORDS and len(t) >= 2]
+        if tokens_pre:
+            from sqlalchemy import or_ as _or, and_ as _and
+            pat_clauses = []
+            for t in tokens_pre:
+                like = f'%{t}%'
+                pat_clauses.append(_or(
+                    Recipe.title.ilike(like),
+                    Recipe.description.ilike(like),
+                    Recipe.cuisine.ilike(like),
+                    Recipe.ingredients_json.ilike(like),
+                    Recipe.tags_json.ilike(like),
+                    Recipe.feature_tags.ilike(like),
+                    Recipe.dietary_tags_json.ilike(like),
+                    Recipe.dish_type.ilike(like),
+                    Recipe.main_ingredient.ilike(like),
+                    Recipe.cooking_method.ilike(like),
+                    Recipe.occasion.ilike(like),
+                ))
+            # at least one token must hit
+            candidates = (query_obj.filter(_or(*pat_clauses))
+                          .limit(2000).all())
+    if candidates is None:
+        # Empty query / stop-word only / no filter: just take popular slice.
+        candidates = (query_obj.order_by(Recipe.review_count.desc())
+                      .limit(2000).all())
 
     if q:
         tokens = [t.lower() for t in re.findall(r'[a-z0-9]+', q.lower())
@@ -1554,8 +1649,17 @@ def search():
         results = _diversify_search_results(results, q, candidates_pool=candidates)
 
     static_matches = _match_static_pages(q)
-    return render_template('search.html', query=q, results=results,
-                           count=len(results), static_matches=static_matches)
+
+    # Paginate so the template doesn't render 9k+ cards inline (was 9.8MB
+    # body / 1.8s render for q=chicken).
+    total = len(results)
+    n_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(1, min(page, n_pages))
+    page_items = results[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
+
+    return render_template('search.html', query=q, results=page_items,
+                           count=total, static_matches=static_matches,
+                           page=page, n_pages=n_pages, per_page=PAGE_SIZE)
 
 
 # ---------------------------------------------------------------------------

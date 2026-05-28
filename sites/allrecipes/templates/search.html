@@ -49,6 +49,18 @@
         </div>
         {% endfor %}
     </div>
+    {% if n_pages is defined and n_pages > 1 %}
+    <nav class="pagination" aria-label="Search pagination" style="margin:24px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      {% if page > 1 %}<a href="?q={{ query }}&page={{ page-1 }}" rel="prev">&laquo; Prev</a>{% endif %}
+      {% set start_p = (page - 2) if (page - 2) > 1 else 1 %}
+      {% set end_p = (page + 2) if (page + 2) < n_pages else n_pages %}
+      {% for p in range(start_p, end_p + 1) %}
+        {% if p == page %}<strong>{{ p }}</strong>{% else %}<a href="?q={{ query }}&page={{ p }}">{{ p }}</a>{% endif %}
+      {% endfor %}
+      {% if page < n_pages %}<a href="?q={{ query }}&page={{ page+1 }}" rel="next">Next &raquo;</a>{% endif %}
+      <span style="color:#666;margin-left:auto;font-size:0.9rem;">Page {{ page }} of {{ n_pages }}</span>
+    </nav>
+    {% endif %}
     {% elif query and not static_matches %}
     <div class="search-empty" role="region" aria-label="No search results">
         <div class="search-empty-icon" aria-hidden="true">&#128270;</div>

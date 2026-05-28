@@ -64,7 +64,7 @@
             <a href="{{ url_for('category_page', slug=cat.slug) }}" class="category-card">
                 <div class="category-card-icon">{{ icons.get(cat.slug, '&#127860;') | safe }}</div>
                 <div class="category-card-name">{{ cat.name }}</div>
-                <div class="category-card-count">{{ cat.recipes | length }} recipes</div>
+                <div class="category-card-count">{{ cat.recipe_count if cat.recipe_count is defined else (cat.recipes | length) }} recipes</div>
             </a>
             {% endfor %}
         </div>
