@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}My workshops &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.mw-head { background:#0a3a5f; color:#fff; padding:1.6rem 1.8rem; border-radius:14px; margin-bottom:1.4rem; }
+.mw-head h1 { margin:0 0 .25rem; }
+.mw-head p { margin:0; opacity:.88; }
+.mw-section h2 { color:#0a3a5f; margin:1.2rem 0 .7rem; }
+.mw-card { background:#fff; padding:1.05rem 1.25rem; border:1px solid #dde5ee; border-radius:10px; margin-bottom:.85rem; display:grid; grid-template-columns: 110px 1fr auto; gap:1rem; align-items:center; }
+.mw-card.past { opacity:.72; }
+.mw-date-block { background:#0a3a5f; color:#fff; padding:.55rem; border-radius:8px; text-align:center; }
+.mw-card.past .mw-date-block { background:#7a8794; }
+.mw-date-day { font-size:1.35rem; font-weight:700; line-height:1; }
+.mw-date-month { font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; }
+.mw-date-year { font-size:.7rem; opacity:.78; }
+.mw-card h3 { margin:0 0 .2rem; }
+.mw-card h3 a { color:#0a3a5f; }
+.mw-card .mw-meta { color:#506070; font-size:.84rem; }
+.mw-card .mw-reg { color:#506070; font-size:.78rem; margin-top:.25rem; }
+.mw-card .mw-cta a { background:#0a3a5f; color:#fff; padding:.4rem .85rem; border-radius:6px; font-size:.82rem; font-weight:600; }
+.mw-empty { background:#fff; padding:1.4rem; border:1.5px dashed #dde5ee; border-radius:10px; text-align:center; color:#7a8794; }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('account') }}">My account</a> / <span>My workshops</span></nav>
+
+<section class="mw-head">
+  <h1>My workshops</h1>
+  <p>{{ upcoming|length }} upcoming &middot; {{ past|length }} attended</p>
+</section>
+
+<section class="mw-section">
+  <h2>Upcoming registrations</h2>
+  {% if upcoming %}
+    {% for entry in upcoming %}
+      {% set w = entry.workshop %}
+      <article class="mw-card">
+        <div class="mw-date-block">
+          <div class="mw-date-day">{{ w.held_on.strftime('%d') }}</div>
+          <div class="mw-date-month">{{ w.held_on.strftime('%b') }}</div>
+          <div class="mw-date-year">{{ w.held_on.strftime('%Y') }}</div>
+        </div>
+        <div>
+          <h3><a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a></h3>
+          <div class="mw-meta">Presented by {{ w.presenter }} &middot; {{ w.duration_min }} min &middot; {{ w.location }}</div>
+          <div class="mw-reg">Registered {{ entry.reg.registered_at.strftime('%b %d, %Y') }}</div>
+        </div>
+        <div class="mw-cta">
+          <a href="{{ url_for('workshop_detail', slug=w.slug) }}">View details</a>
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <div class="mw-empty">
+      <p>You have no upcoming workshop registrations.</p>
+      <p><a href="{{ url_for('workshops') }}">Browse workshops &raquo;</a></p>
+    </div>
+  {% endif %}
+</section>
+
+<section class="mw-section">
+  <h2>Past workshops</h2>
+  {% if past %}
+    {% for entry in past %}
+      {% set w = entry.workshop %}
+      <article class="mw-card past">
+        <div class="mw-date-block">
+          <div class="mw-date-day">{{ w.held_on.strftime('%d') }}</div>
+          <div class="mw-date-month">{{ w.held_on.strftime('%b') }}</div>
+          <div class="mw-date-year">{{ w.held_on.strftime('%Y') }}</div>
+        </div>
+        <div>
+          <h3><a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a></h3>
+          <div class="mw-meta">Presented by {{ w.presenter }} &middot; {{ w.duration_min }} min &middot; {{ w.location }}</div>
+          <div class="mw-reg">Registered {{ entry.reg.registered_at.strftime('%b %d, %Y') }}</div>
+        </div>
+        <div class="mw-cta">
+          <a href="{{ url_for('workshop_detail', slug=w.slug) }}">Recap</a>
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <div class="mw-empty">
+      <p>No past workshop history on record.</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<style>
+.td-head { background:linear-gradient(135deg,#0079bf,#005a8c); color:#fff; padding:1.8rem 2rem; border-radius:14px; margin-bottom:1.6rem; }
+.td-head h1 { margin:0 0 .3rem; font-size:1.8rem; }
+.td-head p { margin:0; opacity:.92; }
+.td-stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:.85rem; margin-bottom:1.6rem; }
+.td-stat { background:#fff; padding:1rem 1.2rem; border:1px solid #dde5ee; border-radius:10px; }
+.td-stat dt { color:#506070; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.25rem; }
+.td-stat dd { margin:0; color:#0a3a5f; font-weight:700; font-size:1.6rem; }
+.td-section { background:#fff; padding:1.2rem 1.4rem; border:1px solid #dde5ee; border-radius:12px; margin-bottom:1.2rem; }
+.td-section header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.85rem; }
+.td-section header h2 { color:#0079bf; margin:0; font-size:1.15rem; }
+.td-section header a { color:#0079bf; font-size:.85rem; font-weight:600; }
+.td-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+.td-table th, .td-table td { padding:.5rem .65rem; border-bottom:1px solid #eef2f6; text-align:left; }
+.td-table th { background:#f6f9fc; color:#506070; font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+.td-code { font-family: monospace; background:#e8f5f3; padding:.12rem .42rem; border-radius:4px; font-weight:600; font-size:.82rem; }
+.td-badge { display:inline-block; padding:.12rem .55rem; border-radius:10px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.td-badge.active { background:#dcf3df; color:#1f7a31; }
+.td-badge.completed { background:#e6ebf2; color:#506070; }
+.td-fav-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap:.7rem; }
+.td-fav { background:#fff; border:1px solid #f3c8c1; border-radius:8px; padding:.55rem; text-align:center; }
+.td-fav img { max-width:100%; max-height:90px; }
+.td-fav a { color:#7a2034; font-size:.82rem; font-weight:600; display:block; margin-top:.3rem; line-height:1.2; }
+.td-empty { color:#7a8794; font-style:italic; font-size:.9rem; margin:0; }
+.td-ws-row { display:flex; justify-content:space-between; padding:.55rem 0; border-bottom:1px dashed #eef2f6; font-size:.9rem; }
+.td-ws-row:last-child { border-bottom:0; }
+.td-ws-row a { color:#0a3a5f; font-weight:600; }
+.td-ws-row .td-ws-date { color:#506070; font-size:.8rem; white-space:nowrap; margin-left:1rem; }
+.td-two { display:grid; grid-template-columns: 1.3fr 1fr; gap:1.2rem; }
+@media (max-width:900px) { .td-two { grid-template-columns: 1fr; } }
+</style>
+
+<nav class="breadcrumb"><a href="{{ url_for('account') }}">My account</a> / <span>Teacher dashboard</span></nav>
+
+<section class="td-head">
+  <h1>Teacher dashboard</h1>
+  <p>Hello {{ current_user.name }} &middot; {{ current_user.institution or 'PhET educator' }}{% if current_user.country %} &middot; {{ current_user.country }}{% endif %}</p>
+</section>
+
+<dl class="td-stats">
+  <div class="td-stat"><dt>Classroom sessions</dt><dd>{{ sessions|length }}</dd></div>
+  <div class="td-stat"><dt>Active right now</dt><dd>{{ active_sessions|length }}</dd></div>
+  <div class="td-stat"><dt>Students reached</dt><dd>{{ total_students }}</dd></div>
+  <div class="td-stat"><dt>Favorited sims</dt><dd>{{ fav_sims|length }}</dd></div>
+  <div class="td-stat"><dt>Saved for lesson prep</dt><dd>{{ saved|length }}</dd></div>
+  <div class="td-stat"><dt>Workshops upcoming</dt><dd>{{ upcoming_ws|length }}</dd></div>
+</dl>
+
+<section class="td-section">
+  <header>
+    <h2>Classroom sessions</h2>
+    <a href="{{ url_for('classroom_mode_setup') }}">Start a new session &raquo;</a>
+  </header>
+  {% if sessions %}
+    <table class="td-table">
+      <thead><tr><th>Started</th><th>Session</th><th>Simulation</th><th>Code</th><th>Students</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in sessions %}
+          <tr>
+            <td>{{ s.started_at.strftime('%b %d, %Y') }}</td>
+            <td>{{ s.name }}</td>
+            <td>{% set sim = sim_map.get(s.sim_id) %}{% if sim %}<a href="{{ url_for('simulation_detail', slug=sim.slug) }}">{{ sim.title }}</a>{% else %}sim #{{ s.sim_id }}{% endif %}</td>
+            <td><span class="td-code">{{ s.session_code }}</span></td>
+            <td>{{ s.students_count }}</td>
+            <td><span class="td-badge {{ s.status }}">{{ s.status }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="td-empty">No classroom sessions yet. Use the link above to create your first one.</p>
+  {% endif %}
+</section>
+
+<div class="td-two">
+  <section class="td-section">
+    <header>
+      <h2>Favorite simulations</h2>
+      <a href="{{ url_for('my_favorites') }}">Open favorites &raquo;</a>
+    </header>
+    {% if fav_sims %}
+      <div class="td-fav-grid">
+        {% for sim in fav_sims %}
+          <div class="td-fav">
+            {% if sim.slug in available_thumbnails %}
+              <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/sims/' ~ sim.slug ~ '.png') }}" alt="{{ sim.title }}">
+            {% endif %}
+            <a href="{{ url_for('simulation_detail', slug=sim.slug) }}">{{ sim.title }}</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="td-empty">No favorites yet. Tap the heart on any simulation to add one.</p>
+    {% endif %}
+  </section>
+
+  <section class="td-section">
+    <header>
+      <h2>My workshops</h2>
+      <a href="{{ url_for('my_workshops') }}">All registrations &raquo;</a>
+    </header>
+    {% if upcoming_ws %}
+      <h3 style="font-size:.85rem; color:#506070; text-transform:uppercase; letter-spacing:.04em; margin:.3rem 0 .4rem;">Upcoming</h3>
+      {% for w in upcoming_ws %}
+        <div class="td-ws-row">
+          <a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a>
+          <span class="td-ws-date">{{ w.held_on.strftime('%b %d, %Y') }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% if past_ws %}
+      <h3 style="font-size:.85rem; color:#506070; text-transform:uppercase; letter-spacing:.04em; margin:.9rem 0 .4rem;">Attended</h3>
+      {% for w in past_ws %}
+        <div class="td-ws-row">
+          <a href="{{ url_for('workshop_detail', slug=w.slug) }}">{{ w.title }}</a>
+          <span class="td-ws-date">{{ w.held_on.strftime('%b %d, %Y') }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% if not upcoming_ws and not past_ws %}
+      <p class="td-empty">No workshop registrations yet. <a href="{{ url_for('workshops') }}">Browse workshops &raquo;</a></p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="td-section">
+  <header>
+    <h2>Saved for lesson prep</h2>
+    <a href="{{ url_for('account') }}">Full saved list &raquo;</a>
+  </header>
+  {% if saved %}
+    <ul style="margin:0; padding-left:1.1rem;">
+      {% for row in saved %}
+        <li style="margin-bottom:.5rem;">
+          <a href="{{ url_for('simulation_detail', slug=row.simulation.slug) }}">{{ row.simulation.title }}</a>
+          {% if row.notes %}<span style="color:#506070; font-size:.85rem;"> &middot; {{ row.notes }}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="td-empty">No saved simulations yet.</p>
+  {% endif %}
+</section>
+
+{% if authored_plans %}
+<section class="td-section">
+  <header>
+    <h2>Lesson plans you authored</h2>
+    <a href="{{ url_for('submit_lesson_plan') }}">Submit another &raquo;</a>
+  </header>
+  <ul style="margin:0; padding-left:1.1rem;">
+    {% for plan in authored_plans %}
+      <li style="margin-bottom:.45rem;">
+        <a href="{{ url_for('lesson_plan_detail', slug=plan.slug) }}">{{ plan.title }}</a>
+        <span style="color:#506070; font-size:.85rem;"> &middot; {{ plan.grade_band }} &middot; {{ plan.download_count }} downloads</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% endblock %}

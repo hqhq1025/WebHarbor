@@ -9,6 +9,22 @@
   &middot; Role: {{ current_user.role|capitalize }}
 </p>
 
+<style>
+.acct-shortcuts { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:.75rem; margin:1rem 0 1.6rem; }
+.acct-shortcut { background:#fff; border:1px solid #dde5ee; border-radius:10px; padding:.95rem 1.1rem; text-decoration:none; color:#0a3a5f; }
+.acct-shortcut:hover { border-color:#0079bf; }
+.acct-shortcut strong { display:block; color:#0079bf; font-size:1rem; margin-bottom:.2rem; }
+.acct-shortcut span { font-size:.82rem; color:#506070; }
+</style>
+
+<nav class="acct-shortcuts" aria-label="Account shortcuts">
+  <a class="acct-shortcut" href="{{ url_for('teacher_dashboard') }}"><strong>Teacher dashboard</strong><span>Classroom sessions, favorites, workshops</span></a>
+  <a class="acct-shortcut" href="{{ url_for('my_favorites') }}"><strong>My favorites</strong><span>Sims I have starred</span></a>
+  <a class="acct-shortcut" href="{{ url_for('my_workshops') }}"><strong>My workshops</strong><span>Upcoming and attended</span></a>
+  <a class="acct-shortcut" href="{{ url_for('classroom_mode') }}"><strong>Classroom mode</strong><span>Live student sessions</span></a>
+  <a class="acct-shortcut" href="{{ url_for('submit_lesson_plan') }}"><strong>Submit lesson plan</strong><span>Share with educators</span></a>
+</nav>
+
 <section class="row">
   <h2 class="row-title">Saved simulations ({{ saved_rows|length }})</h2>
   {% if saved_rows %}

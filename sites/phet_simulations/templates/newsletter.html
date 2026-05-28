@@ -12,6 +12,9 @@
 .nl-submit { background:#0079bf; color:#fff; padding:.7rem 1.5rem; border:0; border-radius:8px; font-weight:600; cursor:pointer; width:100%; margin-top:.4rem; }
 .nl-perks { display:grid; grid-template-columns: repeat(3, 1fr); gap:.6rem; margin-top:1.4rem; }
 .nl-perk { background:#f4f9ff; border:1px solid #cee1f2; padding:.7rem .5rem; border-radius:8px; font-size:.78rem; color:#0a3a5f; }
+.nl-checks { gap:.4rem; }
+.nl-check { display:flex; align-items:center; gap:.45rem; font-size:.84rem; color:#3c4a55; font-weight:500; cursor:pointer; }
+.nl-check input { width:auto; padding:0; }
 </style>
 
 <div class="nl-wrap">
@@ -39,6 +42,11 @@
       <div class="nl-row">
         <label>Country</label>
         <input type="text" name="country" placeholder="Country">
+      </div>
+      <div class="nl-row nl-checks">
+        <label class="nl-check"><input type="checkbox" name="release_alerts" value="1" checked> Email me when a new simulation is released</label>
+        <label class="nl-check"><input type="checkbox" name="translation_alerts" value="1"> Email me when a new translation is released for sims I teach</label>
+        <label class="nl-check"><input type="checkbox" name="lesson_alerts" value="1"> Send the monthly lesson-plan digest</label>
       </div>
       <button class="nl-submit" type="submit">Subscribe</button>
     </form>

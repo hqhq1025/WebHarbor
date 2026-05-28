@@ -1553,6 +1553,109 @@ def topic_hub(slug):
     )
 
 
+@app.route("/my/workshops")
+@login_required
+def my_workshops():
+    rows = (
+        WorkshopRegistration.query
+        .filter_by(user_id=current_user.id)
+        .order_by(WorkshopRegistration.registered_at.desc())
+        .all()
+    )
+    today = date(2026, 5, 28)
+    upcoming = []
+    past = []
+    for r in rows:
+        w = Workshop.query.get(r.workshop_id)
+        if not w:
+            continue
+        entry = {"reg": r, "workshop": w}
+        if w.held_on >= today:
+            upcoming.append(entry)
+        else:
+            past.append(entry)
+    upcoming.sort(key=lambda e: e["workshop"].held_on)
+    past.sort(key=lambda e: e["workshop"].held_on, reverse=True)
+    return render_template(
+        "my_workshops.html", upcoming=upcoming, past=past,
+    )
+
+
+@app.route("/teacher/dashboard")
+@login_required
+def teacher_dashboard():
+    """Teacher dashboard summarising classroom sessions, favorites,
+    workshop registrations, saved sims and lesson plans authored by the
+    signed-in teacher. Surfaces the four engagement tables
+    (classroom_session, favorite, workshop_registration, saved_simulation)
+    in one place."""
+    sessions = (
+        ClassroomSession.query.filter_by(user_id=current_user.id)
+        .order_by(ClassroomSession.started_at.desc())
+        .all()
+    )
+    # Resolve the sim title for each session in one query.
+    sim_ids = {s.sim_id for s in sessions}
+    sim_map = {
+        s.id: s for s in Simulation.query.filter(Simulation.id.in_(sim_ids)).all()
+    } if sim_ids else {}
+
+    favs = (
+        Favorite.query.filter_by(user_id=current_user.id)
+        .order_by(Favorite.created_at.desc())
+        .all()
+    )
+    fav_sim_ids = [f.sim_id for f in favs]
+    fav_sim_map = {
+        s.id: s for s in Simulation.query.filter(Simulation.id.in_(fav_sim_ids)).all()
+    } if fav_sim_ids else {}
+    fav_sims = [fav_sim_map[i] for i in fav_sim_ids if i in fav_sim_map]
+
+    saved = (
+        SavedSimulation.query.filter_by(user_id=current_user.id)
+        .order_by(SavedSimulation.saved_at.desc())
+        .all()
+    )
+
+    ws_regs = (
+        WorkshopRegistration.query
+        .filter_by(user_id=current_user.id)
+        .all()
+    )
+    today = date(2026, 5, 28)
+    upcoming_ws = []
+    past_ws = []
+    for r in ws_regs:
+        w = Workshop.query.get(r.workshop_id)
+        if not w:
+            continue
+        (upcoming_ws if w.held_on >= today else past_ws).append(w)
+    upcoming_ws.sort(key=lambda w: w.held_on)
+    past_ws.sort(key=lambda w: w.held_on, reverse=True)
+
+    authored_plans = (
+        LessonPlan.query.filter_by(author=current_user.name)
+        .order_by(LessonPlan.published_date.desc())
+        .all()
+    )
+
+    total_students = sum(s.students_count or 0 for s in sessions)
+    active_sessions = [s for s in sessions if s.status == "active"]
+
+    return render_template(
+        "teacher_dashboard.html",
+        sessions=sessions,
+        sim_map=sim_map,
+        fav_sims=fav_sims,
+        saved=saved,
+        upcoming_ws=upcoming_ws,
+        past_ws=past_ws,
+        authored_plans=authored_plans,
+        total_students=total_students,
+        active_sessions=active_sessions,
+    )
+
+
 def _unique_slug(model, base):
     """Return a slug unique within model's table."""
     candidate = base
@@ -2686,13 +2789,19 @@ def _make_overview(title, topics, subjects):
 
 def seed_all():
     # Short-circuit: if the seed DB already contains the deepened catalogue
-    # we have nothing to do. This keeps byte-identical resets working
-    # because we never mutate the file on boot when it is already seeded.
+    # AND the teacher-engagement tables are populated, we have nothing to do.
+    # This keeps byte-identical resets working because we never mutate the
+    # file on boot when it is already seeded.
     if (Simulation.query.count() > 0
             and LessonPlan.query.count() > 0
             and TeacherTip.query.count() > 0
             and NewsArticle.query.count() > 0
-            and Sponsor.query.count() > 0):
+            and Sponsor.query.count() > 0
+            and ClassroomSession.query.count() > 0
+            and WorkshopRegistration.query.count() > 0
+            and ContactMessage.query.count() > 0
+            and NewsletterSubscriber.query.count() > 0
+            and Favorite.query.count() > 0):
         return
     seed_subjects()
     seed_grades()
@@ -2708,6 +2817,14 @@ def seed_all():
     seed_workshops()
     seed_team_members()
     seed_faq_items()
+    # Teacher engagement seeds — populate the 5 zero-row tables surfaced
+    # by the /teacher/dashboard, /my/workshops, /contact, /newsletter and
+    # /sim/<slug>/favorite GUI flows.
+    seed_classroom_sessions()
+    seed_workshop_registrations()
+    seed_contact_messages()
+    seed_newsletter_subscribers()
+    seed_favorites()
     normalize_seed_db_layout()
 
 
@@ -3488,6 +3605,284 @@ def seed_faq_items():
             answer=answer,
             sort_order=sort_order,
             helpful=(h >> 4) % 320,
+        ))
+    db.session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Teacher-engagement seeds — populate the 5 tables that stayed 0-row after
+# the initial deepening pass: classroom_session, workshop_registration,
+# contact_message, newsletter_subscriber, favorite. All deterministic; the
+# resulting rows mirror plausible teacher engagement against the deepened
+# catalogue (PhET account holders create sessions, register for workshops,
+# email the team, subscribe to release notes, favorite simulations).
+# ---------------------------------------------------------------------------
+
+
+CLASSROOM_SESSION_SEED = [
+    # (teacher_email, sim_slug, session_name, students_count, days_ago, status)
+    ("teacher@phet.test", "forces-and-motion-basics",
+     "Period 3 Physics - Newton's Laws Lab", 24, 28, "completed"),
+    ("teacher@phet.test", "gravity-and-orbits",
+     "Period 5 Astronomy - Orbital Mechanics", 22, 21, "completed"),
+    ("teacher@phet.test", "build-an-atom",
+     "Chemistry Block A - Atomic Structure Intro", 27, 14, "completed"),
+    ("teacher@phet.test", "balancing-chemical-equations",
+     "Chemistry Block B - Balancing Reactions", 26, 11, "completed"),
+    ("teacher@phet.test", "energy-skate-park",
+     "Period 3 Physics - Conservation of Energy", 24, 7, "completed"),
+    ("teacher@phet.test", "ph-scale",
+     "Chemistry Block A - Acids and Bases", 27, 2, "active"),
+    ("demo@phet.test", "natural-selection",
+     "Biology 9 - Evolution Day 1", 19, 17, "completed"),
+    ("demo@phet.test", "plate-tectonics",
+     "Earth Science 8 - Continental Drift", 21, 5, "active"),
+]
+
+
+def seed_classroom_sessions():
+    if ClassroomSession.query.count() > 0:
+        return
+    for email, slug, name, students, days_ago, status in CLASSROOM_SESSION_SEED:
+        user = User.query.filter_by(email=email).first()
+        sim = Simulation.query.filter_by(slug=slug).first()
+        if not (user and sim):
+            continue
+        code_seed = _md5_seed("classroom", email, slug, name)
+        code = f"PHET-{(code_seed % 1000000):06d}"
+        started = MIRROR_REFERENCE_DATE - timedelta(days=days_ago)
+        started = started.replace(hour=9, minute=30, second=0, microsecond=0)
+        db.session.add(ClassroomSession(
+            user_id=user.id,
+            sim_id=sim.id,
+            session_code=code,
+            name=name,
+            students_count=students,
+            started_at=started,
+            status=status,
+        ))
+    db.session.commit()
+
+
+# (workshop_slug, [registrant_emails])
+WORKSHOP_REGISTRATION_SEED = [
+    ("intro-to-html5-sims",
+     ["teacher@phet.test", "demo@phet.test", "research@phet.test"]),
+    ("assessment-with-sims-2024",
+     ["teacher@phet.test", "research@phet.test"]),
+    ("equity-in-stem-2025",
+     ["teacher@phet.test", "demo@phet.test"]),
+    ("phet-day-springfield-2025",
+     ["teacher@phet.test"]),
+    ("classroom-mode-deep-dive",
+     ["teacher@phet.test", "demo@phet.test"]),
+    ("accessibility-workshop-spring",
+     ["teacher@phet.test"]),
+    ("middle-school-lab-design",
+     ["demo@phet.test"]),
+    ("virtual-summer-institute-2026",
+     ["teacher@phet.test", "research@phet.test"]),
+]
+
+
+def seed_workshop_registrations():
+    if WorkshopRegistration.query.count() > 0:
+        return
+    for ws_slug, emails in WORKSHOP_REGISTRATION_SEED:
+        workshop = Workshop.query.filter_by(slug=ws_slug).first()
+        if not workshop:
+            continue
+        added = 0
+        for email in emails:
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                continue
+            offset = _md5_seed("ws_reg", ws_slug, email) % 14400
+            registered_at = MIRROR_REFERENCE_DATE - timedelta(
+                days=21, seconds=offset,
+            )
+            db.session.add(WorkshopRegistration(
+                workshop_id=workshop.id,
+                user_id=user.id,
+                registered_at=registered_at,
+            ))
+            added += 1
+        # Bump the workshop.registered counter so capacity widgets render
+        # something other than zero. Add a deterministic baseline of other
+        # (non-benchmark) educators so seats-left math is plausible.
+        baseline = (_md5_seed("ws_baseline", ws_slug) % 30) + 10
+        workshop.registered = min(workshop.capacity, baseline + added)
+    db.session.commit()
+
+
+CONTACT_MESSAGE_SEED = [
+    # (name, email, topic, subject, body, days_ago)
+    ("Linda Ortiz", "lortiz@bouldervalley.k12.co.us", "teaching",
+     "Lesson plan tags for NGSS MS-PS3",
+     "Hi PhET team - could the lesson-plan filter expose NGSS performance "
+     "expectation tags? My middle-school PLC is mapping the catalog to "
+     "MS-PS3 and MS-PS4 and we keep losing track of which plans we have "
+     "already vetted. Happy to share the spreadsheet we built so far.", 18),
+    ("Hiroshi Tanaka", "h.tanaka@kobe-u.ac.jp", "translations",
+     "Japanese terminology consistency in chemistry sims",
+     "We have noticed three different translations of 'electronegativity' "
+     "across Concentration, Molecule Polarity, and Build a Molecule. "
+     "Would the team like our lab to submit a consolidated terminology "
+     "pass for the chemistry suite?", 14),
+    ("Aisha Mohammed", "a.mohammed@kaust.edu.sa", "accessibility",
+     "Arabic voicing pacing in Gravity and Orbits",
+     "Voicing in Gravity and Orbits speaks the Arabic descriptions much "
+     "faster than the English. Some of my low-vision students said the "
+     "pacing was hard to follow. Would it be possible to expose a pacing "
+     "control in the voicing panel?", 11),
+    ("Sanjay Patel", "spatel@iitb.ac.in", "research",
+     "Research collaboration - eye-tracking with Circuit Construction Kit",
+     "We are an undergraduate physics-education research lab at IIT Bombay "
+     "running an eye-tracking study with Circuit Construction Kit DC. "
+     "Would PhET be willing to share anonymized telemetry on the voltmeter "
+     "widget so we can correlate gaze data with click events?", 9),
+    ("Marcus Bell", "marcus.bell@gatesfoundation.org", "press",
+     "Press inquiry - accessibility milestone",
+     "Hi - I am writing a short feature on edtech accessibility milestones "
+     "for our quarterly review. Could someone on the team be available "
+     "for a 30-minute interview about voicing rollout in the PhET catalog?",
+     7),
+    ("Karen Wright", "k.wright@phet-edu.org", "general",
+     "Offline classroom pack for rural BC schools",
+     "Several teachers in our rural BC district have unreliable internet. "
+     "Is there a current packaging guide for the offline classroom pack? "
+     "The 2023 instructions reference a Java installer we can no longer "
+     "use.", 6),
+    ("Diego Alvarez", "diego.alvarez@bachilleratounam.mx", "teaching",
+     "Spanish 'States of Matter' worksheet pack",
+     "Looking for a Spanish-language worksheet pack to accompany States "
+     "of Matter for our 10th graders. The English worksheets are great; "
+     "anything similar that has been classroom-tested in Spanish?", 5),
+    ("Robin Cho", "robin.cho@a11yedu.org", "accessibility",
+     "Sonification tuning request for Pendulum Lab",
+     "The high-frequency tones in Pendulum Lab's sonification track go "
+     "above 8 kHz which is uncomfortable for some of our hearing-aid "
+     "users. Could the team consider pinning the upper bound near 4 kHz "
+     "and remapping the period to a different audio dimension?", 4),
+    ("Felipe Souza", "felipe.souza@usp.br", "bug",
+     "Plate Tectonics - convergent boundary collision arrow missing",
+     "On the Plate Tectonics simulation, the convergent boundary case is "
+     "missing the collision-direction arrow that the explainer screencast "
+     "shows. Tested in Chrome 124 on Ubuntu and Edge 124 on Windows. "
+     "Screenshots attached on our follow-up email.", 3),
+    ("Sara Cohen", "sara.cohen@thereaderfund.org", "general",
+     "Donation matching - Reader Fund up to USD 25k",
+     "The Reader Fund would like to discuss a one-time donation match "
+     "for the spring giving campaign, up to USD 25,000. Who on the "
+     "advancement side should we route paperwork to?", 1),
+]
+
+
+def seed_contact_messages():
+    if ContactMessage.query.count() > 0:
+        return
+    for name, email, topic, subject, body, days_ago in CONTACT_MESSAGE_SEED:
+        created = MIRROR_REFERENCE_DATE - timedelta(days=days_ago)
+        created = created.replace(
+            hour=(_md5_seed("ct_hour", email) % 9) + 9,
+            minute=(_md5_seed("ct_min", subject) % 60),
+            second=0, microsecond=0,
+        )
+        db.session.add(ContactMessage(
+            name=name, email=email, topic=topic,
+            subject=subject, body=body, created_at=created,
+        ))
+    db.session.commit()
+
+
+NEWSLETTER_SUBSCRIBER_SEED = [
+    ("jordan.elliot@apsk12.org", "teacher", "United States", 220),
+    ("priya.shankar@dpsbangalore.in", "teacher", "India", 207),
+    ("min.park@snu.ac.kr", "researcher", "South Korea", 198),
+    ("benjamin.weiss@gymnasium-berlin.de", "teacher", "Germany", 192),
+    ("luiza.araujo@ufrj.br", "researcher", "Brazil", 184),
+    ("simone.morel@ac-paris.fr", "teacher", "France", 176),
+    ("emeka.okafor@unilag.edu.ng", "teacher", "Nigeria", 171),
+    ("oksana.kovalenko@knu.ua", "teacher", "Ukraine", 168),
+    ("isabella.rossi@liceo-galilei.it", "teacher", "Italy", 161),
+    ("yusuf.haddad@aub.edu.lb", "researcher", "Lebanon", 154),
+    ("noor.alharbi@ksu.edu.sa", "teacher", "Saudi Arabia", 149),
+    ("tom.ngata@waikato.ac.nz", "teacher", "New Zealand", 142),
+    ("hanae.lefevre@ulb.ac.be", "teacher", "Belgium", 137),
+    ("kofi.boateng@knust.edu.gh", "teacher", "Ghana", 130),
+    ("maria.fernandez@uchile.cl", "researcher", "Chile", 123),
+    ("anders.lindqvist@kth.se", "teacher", "Sweden", 119),
+    ("akiko.yamada@waseda.jp", "teacher", "Japan", 112),
+    ("matei.popescu@unibuc.ro", "teacher", "Romania", 105),
+    ("rasmus.larsen@dtu.dk", "researcher", "Denmark", 98),
+    ("camille.thibault@umontreal.ca", "teacher", "Canada", 91),
+    ("ahmet.yilmaz@boun.edu.tr", "teacher", "Turkey", 86),
+    ("naledi.mokoena@up.ac.za", "teacher", "South Africa", 81),
+    ("clara.westwood@cam.ac.uk", "researcher", "United Kingdom", 74),
+    ("david.ruiz@unam.mx", "teacher", "Mexico", 68),
+    ("ingrid.bauer@univie.ac.at", "teacher", "Austria", 61),
+    ("sophie.hayward@uoit.ca", "administrator", "Canada", 53),
+    ("ravi.menon@du.ac.in", "teacher", "India", 47),
+    ("eva.novakova@cuni.cz", "researcher", "Czech Republic", 41),
+    ("marek.zielinski@uw.edu.pl", "teacher", "Poland", 36),
+    ("samira.amir@aub.edu.lb", "student", "Lebanon", 28),
+    ("paula.garcia@uniandes.edu.co", "teacher", "Colombia", 22),
+    ("oluwaseun.adeyemi@unilag.edu.ng", "researcher", "Nigeria", 17),
+    ("yelena.markovic@bg.ac.rs", "teacher", "Serbia", 12),
+    ("kateryna.lysenko@lnu.edu.ua", "teacher", "Ukraine", 8),
+    ("rafael.torres@umsa.bo", "teacher", "Bolivia", 5),
+    ("hannah.fleming@oregonstate.edu", "researcher", "United States", 3),
+]
+
+
+def seed_newsletter_subscribers():
+    if NewsletterSubscriber.query.count() > 0:
+        return
+    for email, role, country, days_ago in NEWSLETTER_SUBSCRIBER_SEED:
+        created = MIRROR_REFERENCE_DATE - timedelta(days=days_ago)
+        created = created.replace(
+            hour=(_md5_seed("nl_hour", email) % 12) + 7,
+            minute=(_md5_seed("nl_min", email) % 60),
+            second=0, microsecond=0,
+        )
+        db.session.add(NewsletterSubscriber(
+            email=email, role=role, country=country, created_at=created,
+        ))
+    db.session.commit()
+
+
+# Teacher's favorites are distinct from saved_simulation seeds (those mirror
+# the lesson-prep workflow; favorites mirror the heart-icon "I love this
+# sim" flow). Sims chosen are high-traffic anchors across subjects.
+FAVORITE_SEED = [
+    ("teacher@phet.test", "gravity-and-orbits", 35),
+    ("teacher@phet.test", "energy-skate-park", 30),
+    ("teacher@phet.test", "balancing-chemical-equations", 24),
+    ("teacher@phet.test", "plate-tectonics", 16),
+    ("teacher@phet.test", "photosynthesis", 9),
+    ("teacher@phet.test", "circuit-construction-kit-dc", 4),
+    ("demo@phet.test", "states-of-matter", 22),
+    ("demo@phet.test", "natural-selection", 13),
+    ("demo@phet.test", "fractions-intro", 6),
+]
+
+
+def seed_favorites():
+    if Favorite.query.count() > 0:
+        return
+    for email, slug, days_ago in FAVORITE_SEED:
+        user = User.query.filter_by(email=email).first()
+        sim = Simulation.query.filter_by(slug=slug).first()
+        if not (user and sim):
+            continue
+        created = MIRROR_REFERENCE_DATE - timedelta(days=days_ago)
+        created = created.replace(
+            hour=(_md5_seed("fav_hour", email, slug) % 14) + 7,
+            minute=(_md5_seed("fav_min", email, slug) % 60),
+            second=0, microsecond=0,
+        )
+        db.session.add(Favorite(
+            user_id=user.id, sim_id=sim.id, created_at=created,
         ))
     db.session.commit()
 
