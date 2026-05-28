@@ -59,11 +59,18 @@
         <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
     </a>
     <div class="top-header-right">
-        <a class="top-nav-link" href="{{ url_for('trending') }}">Trending</a>
-        <a class="top-nav-link" href="{{ url_for('doodles') }}">Doodles</a>
-        <a class="top-nav-link" href="/images">Images</a>
-        <a class="top-nav-link" href="/videos">Videos</a>
-        <a class="top-nav-link" href="/scholar/search">Scholar</a>
+        {% macro nav_link(target, label) -%}
+        {%- if request.path == target -%}
+        <span class="top-nav-link active" aria-current="page">{{ label }}</span>
+        {%- else -%}
+        <a class="top-nav-link" href="{{ target }}">{{ label }}</a>
+        {%- endif -%}
+        {%- endmacro %}
+        {{ nav_link(url_for('trending'), 'Trending') }}
+        {{ nav_link(url_for('doodles'), 'Doodles') }}
+        {{ nav_link('/images', 'Images') }}
+        {{ nav_link('/videos', 'Videos') }}
+        {{ nav_link('/scholar/search', 'Scholar') }}
         <a class="top-nav-link" href="{{ url_for('r7_locales') }}"
            title="{{ hl|default('en') }}-{{ gl|default('US') }} — change locale">
             {{ hl|default('en')|upper }}-{{ gl|default('US')|upper }}
@@ -73,6 +80,8 @@
         </button>
         {% if current_user.is_authenticated %}
         <a class="user-avatar" href="{{ url_for('account') }}" title="{{ current_user.name }}">{{ current_user.avatar_letter or 'G' }}</a>
+        {% elif request.path == url_for('login') %}
+        <span class="sign-in-btn active" aria-current="page">Sign in</span>
         {% else %}
         <a href="{{ url_for('login') }}" class="sign-in-btn">Sign in</a>
         {% endif %}
