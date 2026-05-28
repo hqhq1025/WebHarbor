@@ -39,7 +39,7 @@
   <div class="sa-search-bar">
     <form method="get" action="{{ url_for('search') }}">
       <input type="text" name="q" placeholder="Search articles, calculators, advisors, states..." value="{{ request.args.get('q', '') }}">
-      <button type="submit">Search</button>
+      <button type="submit"><svg class="sprite-icon" width="14" height="14" aria-hidden="true" style="vertical-align:middle"><use href="#sprite-arrow-right-sm-icon"/></svg> Search</button>
     </form>
   </div>
 </header>
