@@ -1344,6 +1344,28 @@ def attractions():
                                     'max_price': max_price, 'sort': sort})
 
 
+@app.route('/attractions/<int:aid>')
+def attraction_detail(aid):
+    """Attraction detail page — wired Book buttons land here."""
+    attraction = Attraction.query.get_or_404(aid)
+    similar = (Attraction.query
+               .filter(Attraction.city_key == attraction.city_key,
+                       Attraction.id != attraction.id)
+               .order_by(Attraction.rating.desc())
+               .limit(6).all())
+    return render_template('attraction_detail.html',
+                           attraction=attraction, similar=similar)
+
+
+@app.route('/attractions/<int:aid>/book', methods=['GET', 'POST'])
+def attraction_book(aid):
+    """Stub booking flow — confirms availability and returns to the detail page."""
+    attraction = Attraction.query.get_or_404(aid)
+    flash(f"Availability confirmed for {attraction.name}. Continue to checkout to reserve.",
+          'success')
+    return redirect(url_for('attraction_detail', aid=aid))
+
+
 @app.route('/airport-taxis')
 def airport_taxis():
     """Airport taxi quotes — filter ?airport=&vehicle=&max_price=."""

@@ -63,7 +63,7 @@
                         <div style="font-size:11px;color:#888;">From</div>
                         <div style="font-size:18px;font-weight:700;color:var(--bk-blue);">${{ '%.0f' % a.price_usd }}</div>
                     </div>
-                    <a href="#" class="btn-primary" style="padding:8px 14px;font-size:13px;">Book</a>
+                    <a href="{{ url_for('attraction_detail', aid=a.id) }}" class="btn-primary" style="padding:8px 14px;font-size:13px;">Book</a>
                 </div>
             </div>
             {% else %}

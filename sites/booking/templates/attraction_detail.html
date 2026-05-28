@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ attraction.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container" style="padding:24px 0;">
+    <div class="pd-breadcrumb" style="margin-bottom:12px;font-size:13px;">
+        <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+        <a href="{{ url_for('attractions') }}">Attractions</a> &rsaquo;
+        <span>{{ attraction.name }}</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+        <div>
+            <span class="badge" style="background:var(--bk-blue-lighter);color:var(--bk-blue);">{{ attraction.category }}</span>
+            <h1 style="margin-top:8px;">{{ attraction.name }}</h1>
+            <p style="font-size:14px;color:#666;">&#128205; {{ attraction.city_display }} &middot; {{ attraction.duration_hours }} hours</p>
+            <div style="margin-top:8px;font-size:14px;">
+                <span class="rating-score" style="display:inline-block;background:var(--bk-blue);color:#fff;padding:4px 8px;border-radius:4px;">{{ attraction.rating }}</span>
+                <span style="margin-left:8px;color:#666;">{{ '%d' % attraction.review_count }} reviews</span>
+            </div>
+
+            <h2 style="margin-top:24px;">About this activity</h2>
+            <p style="font-size:14px;line-height:1.6;color:#333;">{{ attraction.description_short }}</p>
+
+            <h2 style="margin-top:24px;">What's included</h2>
+            <ul style="font-size:14px;line-height:1.8;color:#333;">
+                <li>Duration: {{ attraction.duration_hours }} hour{{ 's' if attraction.duration_hours != 1 }}</li>
+                {% if attraction.instant_confirmation %}<li>&#10004; Instant confirmation</li>{% endif %}
+                {% if attraction.free_cancellation %}<li>&#10004; Free cancellation up to 24 hours before</li>{% endif %}
+                {% if attraction.mobile_voucher %}<li>&#128241; Mobile voucher accepted</li>{% endif %}
+            </ul>
+
+            <h2 style="margin-top:24px;">Location</h2>
+            <p style="font-size:14px;color:#333;">{{ attraction.city_display }}</p>
+        </div>
+
+        <aside style="padding:20px;background:#fff;border:1px solid var(--bk-border);border-radius:8px;position:sticky;top:20px;">
+            <div style="font-size:12px;color:#888;">From</div>
+            <div style="font-size:28px;font-weight:700;color:var(--bk-blue);">${{ '%.0f' % attraction.price_usd }}</div>
+            <div style="font-size:12px;color:#666;margin-bottom:14px;">per person</div>
+
+            <form method="get" action="{{ url_for('attraction_book', aid=attraction.id) }}" style="display:flex;flex-direction:column;gap:8px;">
+                <label style="font-size:12px;color:#555;">Date
+                    <input type="date" name="date" style="width:100%;padding:8px;border:1px solid var(--bk-border);border-radius:4px;">
+                </label>
+                <label style="font-size:12px;color:#555;">Travellers
+                    <select name="travellers" style="width:100%;padding:8px;border:1px solid var(--bk-border);border-radius:4px;">
+                        <option value="1">1 adult</option>
+                        <option value="2" selected>2 adults</option>
+                        <option value="3">3 adults</option>
+                        <option value="4">4 adults</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn-primary" style="padding:12px;font-size:15px;font-weight:600;margin-top:8px;">Check availability</button>
+            </form>
+
+            <div style="margin-top:14px;font-size:12px;color:#666;line-height:1.6;">
+                {% if attraction.free_cancellation %}<div>&#10004; Free cancellation</div>{% endif %}
+                {% if attraction.instant_confirmation %}<div>&#10004; Reserve now, pay later</div>{% endif %}
+                {% if attraction.mobile_voucher %}<div>&#128241; Mobile voucher</div>{% endif %}
+            </div>
+        </aside>
+    </div>
+
+    <h2 style="margin-top:32px;">Similar activities in {{ attraction.city_display }}</h2>
+    <div class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:12px;">
+        {% for s in similar %}
+        <a href="{{ url_for('attraction_detail', aid=s.id) }}" style="text-decoration:none;color:inherit;">
+            <div class="property-card" style="padding:12px;background:#fff;border:1px solid var(--bk-border);border-radius:8px;">
+                <span class="badge" style="background:var(--bk-blue-lighter);color:var(--bk-blue);font-size:11px;">{{ s.category }}</span>
+                <h3 style="font-size:14px;margin-top:6px;">{{ s.name }}</h3>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                    <span style="font-size:13px;color:var(--bk-blue);font-weight:700;">${{ '%.0f' % s.price_usd }}</span>
+                    <span class="rating-score" style="font-size:12px;">{{ s.rating }}</span>
+                </div>
+            </div>
+        </a>
+        {% else %}
+        <p style="grid-column:1 / -1;color:#666;">No similar activities found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
