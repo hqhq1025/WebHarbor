@@ -302,51 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 /* ============================================================
- * R5: dark-mode + high-contrast toggles (cookie + localStorage)
- * ============================================================ */
-(function () {
-    function setPref(name, value) {
-        try { localStorage.setItem(name, value); } catch (e) {}
-        document.body.setAttribute('data-' + name.replace('bbc_', '').replace('_', ''), value);
-        const endpoint = name === 'bbc_dark_mode'
-            ? '/api/dark-mode' : '/api/high-contrast';
-        const form = new FormData();
-        form.append('value', value);
-        form.append('csrf_token', csrfToken());
-        fetch(endpoint, { method: 'POST', body: form, credentials: 'same-origin' })
-            .catch(() => {});
-    }
-
-    function loadPref(name) {
-        try { return localStorage.getItem(name); } catch (e) { return null; }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        // Hydrate from localStorage (sync ahead of cookie round-trip).
-        const dm = loadPref('bbc_dark_mode');
-        if (dm) document.body.setAttribute('data-darkmode', dm);
-        const hc = loadPref('bbc_high_contrast');
-        if (hc) document.body.setAttribute('data-highcontrast', hc);
-
-        const dmBtn = document.getElementById('darkmode-toggle');
-        if (dmBtn) dmBtn.addEventListener('click', function () {
-            const next = document.body.getAttribute('data-darkmode') === 'on' ? 'off' : 'on';
-            setPref('bbc_dark_mode', next);
-            dmBtn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
-            dmBtn.setAttribute('data-current', next);
-        });
-
-        const hcBtn = document.getElementById('contrast-toggle');
-        if (hcBtn) hcBtn.addEventListener('click', function () {
-            const next = document.body.getAttribute('data-highcontrast') === 'on' ? 'off' : 'on';
-            setPref('bbc_high_contrast', next);
-            hcBtn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
-            hcBtn.setAttribute('data-current', next);
-        });
-    });
-})();
-
-/* ============================================================
  * R5: ARIA live region — announce breaking news to screen readers
  * ============================================================ */
 (function () {
