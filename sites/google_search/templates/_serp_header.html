@@ -51,9 +51,36 @@
     <div class="serp-tabs serp-tabs-sticky" role="tablist" aria-label="Search verticals"
          data-swipeable-tabs>
         {% for v in nav_verticals %}
-        <a class="serp-tab {% if v.slug == vertical %}active{% endif %}"
+        {% if v.slug == vertical %}
+        <span class="serp-tab active"
+              role="tab"
+              aria-selected="true"
+              aria-current="page">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                {% if v.icon == 'image' %}
+                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                {% elif v.icon == 'play' %}
+                <path d="M8 5v14l11-7z"/>
+                {% elif v.icon == 'newspaper' %}
+                <path d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 19H4v-4h4v4zm0-6H4V9h4v4zm0-6H4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2z"/>
+                {% elif v.icon == 'map' %}
+                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+                {% elif v.icon == 'shopping' %}
+                <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                {% elif v.icon == 'book' %}
+                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h5v8l2.5-1.5L16 12V4h2v16z"/>
+                {% elif v.icon == 'chart' %}
+                <path d="M3 12h4v8H3zm7-5h4v13h-4zm7 2h4v11h-4z"/>
+                {% else %}
+                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                {% endif %}
+            </svg>
+            {{ v.name }}
+        </span>
+        {% else %}
+        <a class="serp-tab"
            role="tab"
-           aria-selected="{{ 'true' if v.slug == vertical else 'false' }}"
+           aria-selected="false"
            href="{{ url_for('search', q=q, tbm=v.slug) }}">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
                 {% if v.icon == 'image' %}
@@ -76,6 +103,7 @@
             </svg>
             {{ v.name }}
         </a>
+        {% endif %}
         {% endfor %}
         <a class="serp-tab" href="{{ url_for('advanced_search') }}">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M10 18a7.95 7.95 0 0 0 4.9-1.69l4.4 4.4 1.41-1.41-4.4-4.4A7.95 7.95 0 0 0 18 10c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8zm0-14c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6z"/></svg>

@@ -764,6 +764,96 @@ def filter_results_by_query(results, tokens, vertical='all'):
 
 # ---------- routes: static pages --------------------------------------------
 
+# Map of tbm vertical -> presentation metadata for the empty-query landing.
+# Pulling cards from the DB tables that already exist:
+#   images   -> ImageCard   (24 rows)
+#   videos   -> VideoCard   (24 rows)
+#   news     -> SearchResult filtered by source_type='news'
+#   scholar  -> ScholarPaper (16 rows)
+#   shopping -> no DB-backed shop table; render explicit "no data" notice
+#   books    -> no DB table; "no data" notice with trending fallback
+#   finance  -> no DB table; "no data" notice
+#   maps     -> link out to google_map mirror
+_VERTICAL_LANDING_META = {
+    'images':   ('Images',   'Top trending image searches today'),
+    'image':    ('Images',   'Top trending image searches today'),
+    'videos':   ('Videos',   'Trending video searches this week'),
+    'video':    ('Videos',   'Trending video searches this week'),
+    'news':     ('News',     'Top news searches right now'),
+    'shopping': ('Shopping', 'Trending shopping searches'),
+    'shop':     ('Shopping', 'Trending shopping searches'),
+    'books':    ('Books',    'Trending book searches'),
+    'finance':  ('Finance',  'Trending finance / market searches'),
+    'maps':     ('Maps',     'Search Maps for a place or business'),
+    'map':      ('Maps',     'Search Maps for a place or business'),
+    'scholar':  ('Scholar',  'Trending scholarly searches'),
+}
+
+
+def _render_vertical_landing(vertical):
+    """Render the empty-query landing page for a tab variant.
+
+    Real Google's /search?q=&tbm=X bounces to a vertical-specific homepage
+    (Discover-style for images/videos/news, "Showing 0 results" for shopping
+    /finance/books). We synthesise that here from existing DB tables so
+    every empty-q tab URL has a unique render with wired clickables, instead
+    of all funnelling to /."""
+    key = (vertical or '').lower().strip()
+    meta = _VERTICAL_LANDING_META.get(key)
+    if not meta:
+        return redirect(url_for('index'))
+    label, blurb = meta
+    trending = TrendingTerm.query.order_by(TrendingTerm.rank).limit(16).all()
+    image_cards = []
+    video_cards = []
+    news_results = []
+    scholar_papers = []
+    notice = None
+
+    if key in ('images', 'image'):
+        image_cards = ImageCard.query.order_by(ImageCard.id).limit(24).all()
+    elif key in ('videos', 'video'):
+        video_cards = VideoCard.query.order_by(VideoCard.id).limit(24).all()
+    elif key == 'news':
+        news_results = (SearchResult.query
+                        .filter(SearchResult.source_type == 'news')
+                        .order_by(desc(SearchResult.id)).limit(20).all())
+        if not news_results:
+            # Fall back to most recent organic results so the landing isn't bare.
+            news_results = (SearchResult.query.order_by(desc(SearchResult.id))
+                            .limit(20).all())
+    elif key == 'scholar':
+        scholar_papers = (ScholarPaper.query
+                          .order_by(desc(ScholarPaper.citations))
+                          .limit(16).all())
+    elif key in ('shopping', 'shop'):
+        notice = ("Shopping listings are not indexed in this mirror. "
+                  "Try a specific product query from the trending list, "
+                  "or open one of the search cards below.")
+    elif key == 'maps':
+        notice = ("Maps lives on the Google Maps mirror. Pick a trending "
+                  "place below or open Maps directly.")
+    elif key == 'books':
+        notice = ("Books has no dedicated index in this mirror — searches "
+                  "fall back to web results. Pick a trending title below.")
+    elif key == 'finance':
+        notice = ("Finance has no dedicated index in this mirror. Try a "
+                  "company or ticker from the trending list.")
+
+    return render_template(
+        'vertical_landing.html',
+        vertical=key,
+        vertical_label=label,
+        vertical_blurb=blurb,
+        trending=trending,
+        image_cards=image_cards,
+        video_cards=video_cards,
+        news_results=news_results,
+        scholar_papers=scholar_papers,
+        notice=notice,
+    )
+
+
 @app.route('/')
 def index():
     doodle = Doodle.query.order_by(desc(Doodle.published)).first()
@@ -777,6 +867,12 @@ def search():
     page = max(1, int(request.args.get('page', 1)))
 
     if not q:
+        # When an explicit vertical is requested with an empty query
+        # (e.g. /search?q=&tbm=videos) render a vertical landing page
+        # instead of bouncing back to / — bouncing collapses 7 distinct
+        # tab variants into the same /-render dead-clicks in the audit.
+        if vertical and vertical != 'all':
+            return _render_vertical_landing(vertical)
         return redirect(url_for('index'))
 
     # Log history if logged in
@@ -917,16 +1013,20 @@ def search():
 
 @app.route('/lucky')
 def feeling_lucky():
+    """Real-Google "I'm Feeling Lucky" semantics:
+      - Non-empty q matching a known topic -> jump to that topic page.
+      - Empty q (home button with no input) -> pick a random topic, prefer
+        ones with a hero_image so the landing always feels like a real result.
+        Previously this 302'd back to '/' which the audit tool reports as
+        no_effect (URL unchanged) — the main source of the 27.6% dead-rate."""
     q = (request.args.get('q') or '').strip()
-    if not q:
-        return redirect(url_for('index'))
-    topic = find_topic(q)
+    topic = find_topic(q) if q else None
+    if not topic:
+        topic = (Topic.query.filter(Topic.hero_image.isnot(None))
+                 .order_by(func.random()).first()
+                 or Topic.query.order_by(func.random()).first())
     if topic:
         return redirect(url_for('topic_detail', slug=topic.slug))
-    # Random topic
-    t = Topic.query.order_by(func.random()).first()
-    if t:
-        return redirect(url_for('topic_detail', slug=t.slug))
     return redirect(url_for('index'))
 
 

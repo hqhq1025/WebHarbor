@@ -98,12 +98,13 @@
 
     <div class="home-lang">
         Google offered in:
-        <a href="#">Español</a>
-        <a href="#">Français</a>
-        <a href="#">Deutsch</a>
-        <a href="#">日本語</a>
-        <a href="#">中文</a>
-        <a href="#">العربية</a>
+        <a href="{{ url_for('index', hl='es', gl='ES') }}">Español</a>
+        <a href="{{ url_for('index', hl='fr', gl='FR') }}">Français</a>
+        <a href="{{ url_for('index', hl='de', gl='DE') }}">Deutsch</a>
+        <a href="{{ url_for('index', hl='ja', gl='JP') }}">日本語</a>
+        <a href="{{ url_for('index', hl='zh', gl='CN') }}">中文</a>
+        <a href="{{ url_for('index', hl='ar', gl='SA') }}">العربية</a>
+        <a class="home-lang-more" href="{{ url_for('r7_locales') }}">More languages →</a>
     </div>
 </div>
 {% endblock %}

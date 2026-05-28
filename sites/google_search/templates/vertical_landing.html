@@ -1,0 +1,131 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ vertical_label }} - Google{% endblock %}
+{% block og_title %}{{ vertical_label }} - Google{% endblock %}
+{% block og_description %}{{ vertical_blurb }} — Google {{ vertical_label }}.{% endblock %}
+{% block header %}{{ serp_header('', vertical) }}{% endblock %}
+
+{% block content %}
+<div class="serp-body" id="main-results">
+    <div class="serp-main">
+        <div class="vertical-landing-head">
+            <h1 class="vertical-landing-title">{{ vertical_label }}</h1>
+            <p class="vertical-landing-blurb">{{ vertical_blurb }}</p>
+        </div>
+
+        {% if notice %}
+        <div class="vertical-landing-notice" role="status">
+            {{ notice }}
+            {% if vertical == 'maps' %}
+            <div style="margin-top:8px;">
+                <a class="chip" href="/search?q=restaurants&tbm=all">Search "restaurants"</a>
+                <a class="chip" href="/search?q=coffee+shop&tbm=all">Search "coffee shop"</a>
+                <a class="chip" href="/maps">Open Maps app</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if trending %}
+        <section class="vertical-landing-section" aria-labelledby="vl-trending-h">
+            <h2 class="vl-section-title" id="vl-trending-h">Trending {{ vertical_label|lower }} searches</h2>
+            <div class="similar-chips" aria-label="Trending searches">
+                {% for t in trending %}
+                <a class="chip" href="{{ url_for('search', q=t.term, tbm=vertical) }}">{{ t.term }}</a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if image_cards %}
+        <section class="vertical-landing-section" aria-labelledby="vl-images-h">
+            <h2 class="vl-section-title" id="vl-images-h">Featured image searches</h2>
+            <div class="vl-grid vl-grid-images">
+                {% for c in image_cards %}
+                <a class="vl-image-card" href="{{ url_for('search', q=c.query_text, tbm='images') }}"
+                   title="{{ c.title }}">
+                    <div class="vl-image-thumb">
+                        {% if c.source_url %}
+                        <img loading="lazy" decoding="async" src="{{ c.source_url }}" alt="{{ c.alt or c.title }}"
+                             onerror="this.style.display='none'">
+                        {% endif %}
+                    </div>
+                    <div class="vl-image-meta">
+                        <div class="vl-image-title">{{ c.title }}</div>
+                        <div class="vl-image-domain">{{ c.source_domain }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if video_cards %}
+        <section class="vertical-landing-section" aria-labelledby="vl-videos-h">
+            <h2 class="vl-section-title" id="vl-videos-h">Featured video searches</h2>
+            <div class="vl-grid vl-grid-videos">
+                {% for v in video_cards %}
+                <a class="vl-video-card" href="{{ url_for('search', q=v.title, tbm='videos') }}"
+                   title="{{ v.title }}">
+                    <div class="vl-video-thumb">
+                        {% if v.upstream_url %}
+                        <span class="vl-video-platform">{{ v.platform or 'video' }}</span>
+                        {% endif %}
+                        <span class="vl-video-duration">{{ v.duration or '' }}</span>
+                    </div>
+                    <div class="vl-video-meta">
+                        <div class="vl-video-title">{{ v.title }}</div>
+                        <div class="vl-video-channel">{{ v.channel }}{% if v.published %} · {{ v.published }}{% endif %}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if news_results %}
+        <section class="vertical-landing-section" aria-labelledby="vl-news-h">
+            <h2 class="vl-section-title" id="vl-news-h">Top news headlines</h2>
+            <div class="vl-news-list">
+                {% for r in news_results %}
+                <a class="vl-news-row" href="{{ url_for('url_redirect', q=r.url) }}">
+                    <div class="vl-news-source">{{ r.display_url or r.source or 'news' }}</div>
+                    <div class="vl-news-title">{{ r.title }}</div>
+                    {% if r.snippet %}
+                    <div class="vl-news-snippet">{{ r.snippet[:180] }}{% if r.snippet|length > 180 %}…{% endif %}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if scholar_papers %}
+        <section class="vertical-landing-section" aria-labelledby="vl-scholar-h">
+            <h2 class="vl-section-title" id="vl-scholar-h">Highly-cited papers</h2>
+            <div class="vl-scholar-list">
+                {% for p in scholar_papers %}
+                <a class="vl-scholar-row" href="/scholar/{{ p.slug }}">
+                    <div class="vl-scholar-title">{{ p.title }}</div>
+                    <div class="vl-scholar-meta">{{ p.authors_csv }} · {{ p.venue }} {{ p.year }} · {{ p.citations }} citations</div>
+                    {% if p.abstract %}
+                    <div class="vl-scholar-snippet">{{ p.abstract[:200] }}{% if p.abstract|length > 200 %}…{% endif %}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="vertical-landing-foot">
+            <a class="see-more-btn" href="{{ url_for('index') }}">← Back to Google</a>
+            {% if vertical not in ('maps','shopping','books','finance') %}
+            <a class="see-more-btn"
+               href="{{ url_for('search', q=(trending[0].term if trending else 'news today'), tbm=vertical) }}">
+                Open the {{ vertical_label }} tab for a sample query →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
