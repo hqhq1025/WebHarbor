@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     {# Snapshot date — exposed as meta so agents can read it without a visible UI banner. #}
     {% if mirror_today %}
@@ -11,8 +12,7 @@
     {% endif %}
     <title>{% block title %}arXiv.org e-Print archive{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='images/brand/arxiv-logomark.svg') }}" type="image/svg+xml">
-    {# R7 — alternate language links surface /lang/<code>/ stubs for SEO crawlers. #}
+{# R7 — alternate language links surface /lang/<code>/ stubs for SEO crawlers. #}
     <link rel="alternate" hreflang="en" href="/lang/en{{ request.path if request.path != '/' else '' }}">
     <link rel="alternate" hreflang="zh" href="/lang/zh{{ request.path if request.path != '/' else '' }}">
     <link rel="alternate" hreflang="es" href="/lang/es{{ request.path if request.path != '/' else '' }}">
