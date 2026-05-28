@@ -927,9 +927,16 @@ def _register_routes(app) -> None:
     @login_required
     def ext_myaccount_checklists():
         raw = GearChecklist.query.filter_by(user_id=current_user.id).order_by(GearChecklist.id.desc()).all()
+        # Perf: one prefetch keyed by category — replaces N×GearList.query.first()
+        # inside the per-row loop. First-match semantics preserved via .first().
+        gear_by_cat = {}
+        cats_needed = {row.category for row in raw if row.category}
+        if cats_needed:
+            for g in GearList.query.filter(GearList.category.in_(cats_needed)).all():
+                gear_by_cat.setdefault(g.category, g)
         checklists = []
         for row in raw:
-            gear = GearList.query.filter_by(category=row.category).first()
+            gear = gear_by_cat.get(row.category)
             try:
                 items = json.loads(row.items_json or "[]")
             except (ValueError, TypeError):
