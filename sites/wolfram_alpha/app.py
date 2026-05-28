@@ -1098,7 +1098,7 @@ def _find_best_computation(query):
     """
     if not query:
         return None
-    all_comps = ComputationResult.query.all()
+    all_comps = _cached_computation_snapshots()
     if not all_comps:
         return None
 
@@ -1110,10 +1110,8 @@ def _find_best_computation(query):
     ql_norm = _normalize_math(query)
     if ql_norm:
         for c in eligible:
-            if _normalize_math(c.input_query) == ql_norm:
-                return c
-            if c.parsed_input and _normalize_math(c.parsed_input) == ql_norm:
-                return c
+            if c._iq_norm == ql_norm or (c._pi_norm and c._pi_norm == ql_norm):
+                return _hydrate_computation(c.id)
 
     tokens = _tokenize(query)
     if tokens:
@@ -1127,15 +1125,15 @@ def _find_best_computation(query):
             best_score = scored[0][0]
             min_required = max(1, len(tokens) // 3)
             if best_score >= min_required:
-                return scored[0][1]
+                return _hydrate_computation(scored[0][1].id)
 
     # --- (2) Normalized-substring fallback (also handles the tokens=[] case).
     if ql_norm:
         best = None
         best_lcs = 0
         for c in eligible:
-            iq_norm = _normalize_math(c.input_query)
-            pi_norm = _normalize_math(c.parsed_input or '')
+            iq_norm = c._iq_norm
+            pi_norm = c._pi_norm
             if not iq_norm and not pi_norm:
                 continue
             if (ql_norm and (ql_norm in iq_norm or iq_norm in ql_norm or
@@ -1144,15 +1142,54 @@ def _find_best_computation(query):
                 if lcs > best_lcs:
                     best, best_lcs = c, lcs
         if best is not None:
-            return best
+            return _hydrate_computation(best.id)
 
     # --- (3) Legacy fuzzy-contains fallback (case-insensitive, raw strings).
     ql = query.lower()
     for c in eligible:
         iq = (c.input_query or '').lower()
         if iq and (ql in iq or iq in ql):
-            return c
+            return _hydrate_computation(c.id)
     return None
+
+
+# ─── Module-level snapshot cache of ComputationResult ────────────────────────
+# 55k+ rows × per-request full-table scan was ~876ms on /input. We snapshot the
+# scoring-relevant columns once into immutable per-row helper objects so
+# subsequent requests skip the ORM/DB entirely. `/reset/<site>` restarts the
+# worker which naturally clears this cache.
+
+class _CompSnap:
+    __slots__ = ('id', 'input_query', 'parsed_input', 'plaintext', 'keywords',
+                 'category', 'subcategory', 'required_specifiers',
+                 '_iq_norm', '_pi_norm')
+
+    def __init__(self, row):
+        self.id = row.id
+        self.input_query = row.input_query
+        self.parsed_input = row.parsed_input
+        self.plaintext = row.plaintext
+        self.keywords = row.keywords
+        self.category = row.category
+        self.subcategory = row.subcategory
+        self.required_specifiers = row.required_specifiers
+        self._iq_norm = _normalize_math(self.input_query)
+        self._pi_norm = _normalize_math(self.parsed_input or '')
+
+
+_COMP_SNAPSHOTS = None
+
+
+def _cached_computation_snapshots():
+    global _COMP_SNAPSHOTS
+    if _COMP_SNAPSHOTS is None:
+        rows = ComputationResult.query.all()
+        _COMP_SNAPSHOTS = [_CompSnap(r) for r in rows]
+    return _COMP_SNAPSHOTS
+
+
+def _hydrate_computation(comp_id):
+    return db.session.get(ComputationResult, comp_id)
 
 
 @app.route('/input')
