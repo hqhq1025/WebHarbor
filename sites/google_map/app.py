@@ -1069,8 +1069,33 @@ def place_detail(slug):
     # below opens a search filtered by that category near this place.
     nearby_cat = (request.args.get("nearby_category") or "").strip().lower()
     nearby = []
+    # Perf: prefer indexed lat/lng bbox pre-filter (30 mi ≈ 0.5° lat / 0.7° lng)
+    # over `limit(2000)` global scan + Python-side haversine.  Without bbox,
+    # SQLite returned the first 2000 places in (lat, lng) index order — almost
+    # none of them near `place`.  Bbox cuts the working set from ~2000 ORM
+    # hydrations to a few hundred and lets `ix_place_lat_lng` /
+    # `ix_place_category_id_lat_lng` actually drive a range scan.
+    #
+    # Second layer: even after bbox, dense urban centers (SF/NYC/Chicago)
+    # still return 1k-5k candidates.  Use `with_entities` to fetch only
+    # (id, lat, lng, rating, review_count, category_id) as cheap tuples,
+    # score in Python, then hydrate ORM rows only for the top ~12 per
+    # section.  Avoids loading TEXT/JSON columns (description, photos_json,
+    # tags_json, amenities_json, review_snippets_json, hours_json) on rows
+    # we'll discard.
+    nearby_cat_chips = []
     if place.lat and place.lng:
-        cand_q = Place.query.filter(Place.id != place.id, Place.lat != 0)
+        lat_lo, lat_hi = place.lat - 0.5, place.lat + 0.5
+        lng_lo, lng_hi = place.lng - 0.7, place.lng + 0.7
+        bbox_filter = (
+            Place.id != place.id,
+            Place.lat.between(lat_lo, lat_hi),
+            Place.lng.between(lng_lo, lng_hi),
+        )
+        cand_q = db.session.query(
+            Place.id, Place.lat, Place.lng,
+            Place.rating, Place.review_count, Place.category_id,
+        ).filter(*bbox_filter)
         if nearby_cat:
             cat = Category.query.filter(or_(
                 Category.slug == nearby_cat,
@@ -1084,43 +1109,67 @@ def place_detail(slug):
         # "which is the nearest X" tasks.  Sort by rating × log(reviews)
         # so popular places surface first, mirroring real Google Maps'
         # relevance-driven ordering.
+        # Also build nearby_cat_chips in the SAME pass (was a duplicate
+        # limit(2000) scan before — now one walk over the bbox subset).
         scored = []
-        for p in cand_q.limit(2000).all():
-            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+        cat_count = {}  # category_id -> nearby-radius row count for chips
+        for pid, p_lat, p_lng, p_rating, p_rc, p_cat_id in cand_q.limit(2000).all():
+            d = _haversine_mi(place.lat, place.lng, p_lat, p_lng)
             if d <= 30:
-                rel = (p.rating or 4.0) * math.log(max(p.review_count or 1, 1) + 2)
-                scored.append((rel, d, p))
+                rel = (p_rating or 4.0) * math.log(max(p_rc or 1, 1) + 2)
+                scored.append((rel, d, pid, p_cat_id))
+                if p_cat_id is not None:
+                    cat_count[p_cat_id] = cat_count.get(p_cat_id, 0) + 1
         scored.sort(key=lambda x: -x[0])
+        # Pick top IDs + distances for the section (cat-diversified or not)
+        nearby_picks = []  # list of (id, distance)
         if nearby_cat:
-            for _, d, p in scored[:12]:
-                p.distance_mi = d
-                nearby.append(p)
+            for _, d, pid, _cid in scored[:12]:
+                nearby_picks.append((pid, d))
         else:
             seen_cat = {}
-            for _, d, p in scored:
-                if seen_cat.get(p.category_id, 0) >= 2:
+            for _, d, pid, cid in scored:
+                if seen_cat.get(cid, 0) >= 2:
                     continue
-                seen_cat[p.category_id] = seen_cat.get(p.category_id, 0) + 1
-                p.distance_mi = d
-                nearby.append(p)
-                if len(nearby) >= 12:
+                seen_cat[cid] = seen_cat.get(cid, 0) + 1
+                nearby_picks.append((pid, d))
+                if len(nearby_picks) >= 12:
                     break
+        if nearby_picks:
+            id_to_d = dict(nearby_picks)
+            rows = (Place.query
+                    .filter(Place.id.in_(list(id_to_d.keys()))).all())
+            rows.sort(key=lambda r: [pid for pid, _ in nearby_picks].index(r.id))
+            for r in rows:
+                r.distance_mi = id_to_d.get(r.id)
+            nearby = rows
+        # If a category filter narrowed the chip count, fall back to a
+        # category-agnostic bbox sweep so the chip row still surfaces 8
+        # nearby categories.  Cheap — same bbox, indexed tuples only.
+        if nearby_cat and not cat_count:
+            for pid, p_lat, p_lng, p_rating, p_rc, p_cat_id in (
+                db.session.query(
+                    Place.id, Place.lat, Place.lng,
+                    Place.rating, Place.review_count, Place.category_id,
+                ).filter(*bbox_filter).limit(2000).all()
+            ):
+                d = _haversine_mi(place.lat, place.lng, p_lat, p_lng)
+                if d <= 30 and p_cat_id is not None:
+                    cat_count[p_cat_id] = cat_count.get(p_cat_id, 0) + 1
+        if cat_count:
+            top_chip_ids = sorted(cat_count.items(),
+                                  key=lambda kv: -kv[1])[:8]
+            cat_rows = {c.id: c for c in Category.query.filter(
+                Category.id.in_([cid for cid, _ in top_chip_ids])).all()}
+            nearby_cat_chips = [(cat_rows[cid], cnt)
+                                for cid, cnt in top_chip_ids
+                                if cid in cat_rows]
     if not nearby:
         nearby = Place.query.filter(
             Place.city_id == place.city_id, Place.id != place.id,
         ).order_by(Place.rating.desc()).limit(12).all()
         for p in nearby:
             p.distance_mi = None
-    # Category chips: top categories represented in 30-mi radius
-    nearby_cat_chips = []
-    if place.lat and place.lng:
-        seen_chip = {}
-        for p in (Place.query.filter(Place.id != place.id, Place.lat != 0)
-                  .limit(2000).all()):
-            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
-            if d <= 30 and p.category:
-                seen_chip[p.category] = seen_chip.get(p.category, 0) + 1
-        nearby_cat_chips = sorted(seen_chip.items(), key=lambda kv: -kv[1])[:8]
     # Is saved?
     is_saved = False
     user_lists = []
@@ -1140,46 +1189,91 @@ def place_detail(slug):
     reviewers_also = []   # heuristic: same category cluster + popular
     better_rated_1mi = [] # strictly better rating within 1.0 mile
     if place.lat and place.lng:
-        cand = Place.query.filter(Place.id != place.id, Place.lat != 0)
-        # Same category narrowing for the "Similar nearby" rail
-        sim_q = cand.filter(Place.category_id == place.category_id)
-        for p in sim_q.limit(1500).all():
-            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+        # Perf: per-section bbox tuned to each radius, all served by
+        # ix_place_lat_lng / ix_place_category_id_lat_lng range scans.
+        # 1 mi ≈ 0.015°, 8 mi ≈ 0.13°, 15 mi ≈ 0.25°.  Lightweight tuples
+        # (id, lat, lng, rating, review_count) for the haversine pass,
+        # then bulk ORM hydrate just the final top-6 per section.
+        tup_cols = (Place.id, Place.lat, Place.lng,
+                    Place.rating, Place.review_count)
+
+        sim_lat_lo, sim_lat_hi = place.lat - 0.25, place.lat + 0.25
+        sim_lng_lo, sim_lng_hi = place.lng - 0.30, place.lng + 0.30
+        sim_q = db.session.query(*tup_cols).filter(
+            Place.id != place.id,
+            Place.category_id == place.category_id,
+            Place.lat.between(sim_lat_lo, sim_lat_hi),
+            Place.lng.between(sim_lng_lo, sim_lng_hi),
+        )
+        sim_scored = []
+        for pid, p_lat, p_lng, p_rating, _ in sim_q.limit(1500).all():
+            d = _haversine_mi(place.lat, place.lng, p_lat, p_lng)
             if d <= 15:
-                p.distance_mi = d
-                similar_nearby.append(p)
-        similar_nearby.sort(key=lambda p: (p.distance_mi, -(p.rating or 0)))
-        similar_nearby = similar_nearby[:6]
+                sim_scored.append((d, -(p_rating or 0), pid))
+        sim_scored.sort()
+        sim_top = sim_scored[:6]
+        if sim_top:
+            sim_id_to_d = {pid: d for d, _, pid in sim_top}
+            order = [pid for _, _, pid in sim_top]
+            rows = Place.query.filter(Place.id.in_(order)).all()
+            rows.sort(key=lambda r: order.index(r.id))
+            for r in rows:
+                r.distance_mi = sim_id_to_d[r.id]
+            similar_nearby = rows
 
         # Better-rated within 1 mile (strictly higher rating, same category)
-        for p in similar_nearby:
-            pass  # placeholder, recomputed below from a broader sweep
-        better = []
-        sweep = Place.query.filter(
-            Place.id != place.id, Place.lat != 0,
+        bet_lat_lo, bet_lat_hi = place.lat - 0.02, place.lat + 0.02
+        bet_lng_lo, bet_lng_hi = place.lng - 0.025, place.lng + 0.025
+        sweep = db.session.query(*tup_cols).filter(
+            Place.id != place.id,
             Place.category_id == place.category_id,
             Place.rating > (place.rating or 0),
+            Place.lat.between(bet_lat_lo, bet_lat_hi),
+            Place.lng.between(bet_lng_lo, bet_lng_hi),
         ).limit(800).all()
-        for p in sweep:
-            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+        bet_scored = []
+        for pid, p_lat, p_lng, p_rating, _ in sweep:
+            d = _haversine_mi(place.lat, place.lng, p_lat, p_lng)
             if d <= 1.0:
-                p.distance_mi = d
-                better.append(p)
-        better.sort(key=lambda p: (-(p.rating or 0), p.distance_mi))
-        better_rated_1mi = better[:6]
+                bet_scored.append((-(p_rating or 0), d, pid))
+        bet_scored.sort()
+        bet_top = bet_scored[:6]
+        if bet_top:
+            bet_id_to_d = {pid: d for _, d, pid in bet_top}
+            order = [pid for _, _, pid in bet_top]
+            rows = Place.query.filter(Place.id.in_(order)).all()
+            rows.sort(key=lambda r: order.index(r.id))
+            for r in rows:
+                r.distance_mi = bet_id_to_d[r.id]
+            better_rated_1mi = rows
 
         # Reviewers also visited: top-rated other-category places within 8 mi
         # (a coarse "co-visit" stand-in derived from popularity, not real edges)
-        ra = []
-        for p in (cand.filter(Place.category_id != place.category_id,
-                              Place.rating >= 4.5).limit(2000).all()):
-            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+        ra_lat_lo, ra_lat_hi = place.lat - 0.15, place.lat + 0.15
+        ra_lng_lo, ra_lng_hi = place.lng - 0.20, place.lng + 0.20
+        ra_q = db.session.query(*tup_cols).filter(
+            Place.id != place.id,
+            Place.category_id != place.category_id,
+            Place.rating >= 4.5,
+            Place.lat.between(ra_lat_lo, ra_lat_hi),
+            Place.lng.between(ra_lng_lo, ra_lng_hi),
+        )
+        ra_scored = []
+        for pid, p_lat, p_lng, p_rating, p_rc in ra_q.limit(2000).all():
+            d = _haversine_mi(place.lat, place.lng, p_lat, p_lng)
             if d <= 8.0:
-                p.distance_mi = d
-                rel = (p.rating or 4.0) * math.log(max(p.review_count or 1, 1) + 2)
-                ra.append((rel, p))
-        ra.sort(key=lambda kv: -kv[0])
-        reviewers_also = [p for _, p in ra[:6]]
+                rel = (p_rating or 4.0) * math.log(max(p_rc or 1, 1) + 2)
+                ra_scored.append((-rel, d, pid))
+        ra_scored.sort()
+        ra_top = ra_scored[:6]
+        if ra_top:
+            ra_id_to_d = {pid: d for _, d, pid in ra_top}
+            order = [pid for _, _, pid in ra_top]
+            rows = Place.query.filter(Place.id.in_(order)).all()
+            rows.sort(key=lambda r: order.index(r.id))
+            for r in rows:
+                r.distance_mi = ra_id_to_d[r.id]
+            reviewers_also = rows
 
     # Same chain — independent of geography
     if place.chain_brand:
