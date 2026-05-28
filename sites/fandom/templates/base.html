@@ -13,6 +13,8 @@
   </style>
 </head>
 <body class="{% block body_class %}{% endblock %}" {% if wiki %}style="--accent: {{ wiki.accent }};"{% endif %}>
+{% include 'sprites_inline.html' %}
+
 
 <nav class="global-nav">
   <div class="gn-inner">
@@ -33,7 +35,7 @@
     <form action="{{ url_for('search_global') }}" method="get" class="gn-search">
       <input type="text" name="q" placeholder="Search Fandom..." value="{{ request.args.get('q','') }}">
       {% if wiki %}<input type="hidden" name="wiki" value="{{ wiki.slug }}">{% endif %}
-      <button type="submit">Search</button>
+      <button type="submit" aria-label="Search Fandom"><svg class="sprite-icon" width="14" height="14" aria-hidden="true"><use href="#sprite-wds-icons-magnifying-glass-small"/></svg> Search</button>
     </form>
     <div class="gn-userbar">
       {% if current_user.is_authenticated %}
