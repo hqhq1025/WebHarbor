@@ -13,21 +13,24 @@
       <a href="{{ url_for('standings') }}">Standings</a>
     </section>
     <section>
-      <h3>Social Impact</h3>
-      <a href="{{ url_for('news', category='Around the NBA') }}">Community</a>
-      <a href="{{ url_for('news', category='History') }}">History</a>
-      <a href="{{ url_for('news', category='Awards') }}">Awards</a>
+      <h3>NBA Official</h3>
+      <a href="{{ url_for('news', category='Around the NBA') }}">NBA Cares</a>
+      <a href="{{ url_for('news', category='History') }}">NBA Foundation</a>
+      <a href="{{ url_for('news', category='Around the NBA') }}">Jr. NBA / Jr. WNBA</a>
+      <a href="{{ url_for('news', category='Around the NBA') }}">NBA Communications</a>
+      <a href="{{ url_for('news', category='Awards') }}">Social Justice Coalition</a>
     </section>
     <section>
-      <h3>Affiliates</h3>
-      <a href="{{ url_for('news', category='Draft') }}">Draft</a>
+      <h3>Shop &amp; Tickets</h3>
       <a href="{{ url_for('shop') }}">NBA Store</a>
+      <a href="{{ url_for('shop') }}">Global Stores</a>
+      <a href="{{ url_for('shop') }}">NBA Auctions</a>
       <a href="{{ url_for('tickets') }}">Tickets</a>
       <a href="{{ url_for('teams') }}">Teams</a>
     </section>
   </div>
   <div class="footer-bottom">
-    <span>NBA.com-style local mirror. No live streaming, payment processing, or external authentication.</span>
+    <span>NBA.com-style local mirror. Privacy Policy &middot; Terms of Use &middot; Cookie Policy &middot; Accessibility. No live streaming, payment processing, or external authentication.</span>
     <div>{% for team in teams_nav %}<a href="{{ url_for('team_detail', slug=team.slug) }}">{{ team.abbreviation }}</a>{% endfor %}</div>
   </div>
 </footer>
