@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Attendees — {{ event.title }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('events') }}">Events</a><span>/</span>
+  <a href="{{ url_for('event_detail', event_id=event.id) }}">{{ event.title[:40] }}{% if event.title|length > 40 %}…{% endif %}</a><span>/</span>
+  <span>Attendees</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:30px">
+  <div>
+    <span class="badge badge-scarlet">{{ event.category }}</span>
+    <h1 style="font-size:30px;color:var(--scarlet);margin-top:10px;line-height:1.3">{{ event.title }}</h1>
+    <p style="font-family:sans-serif;font-size:14px;color:var(--gray);margin-bottom:24px">
+      {{ event.start_datetime.strftime('%A, %B %d, %Y') }} ·
+      {{ event.start_datetime.strftime('%I:%M %p') }}
+      {% if event.location %} · {{ event.location }}{% endif %}
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px">
+      <div style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid var(--scarlet);padding:18px;border-radius:6px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">RSVPs</div>
+        <div style="font-size:30px;font-weight:bold;color:var(--scarlet);margin-top:4px">{{ rsvps|length }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #16a34a;padding:18px;border-radius:6px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Total Seats Reserved</div>
+        <div style="font-size:30px;font-weight:bold;color:#16a34a;margin-top:4px">{{ total_seats }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #555;padding:18px;border-radius:6px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Cost</div>
+        <div style="font-size:22px;font-weight:bold;color:#555;margin-top:8px">{{ event.cost or 'Free' }}</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">RSVP List</h2>
+    {% if rsvps %}
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--gray-mid);font-family:sans-serif;font-size:14px">
+      <thead style="background:var(--gray-light);text-align:left">
+        <tr>
+          <th style="padding:10px 14px">#</th>
+          <th style="padding:10px 14px">Attendee</th>
+          <th style="padding:10px 14px">Email</th>
+          <th style="padding:10px 14px">Additional Guests</th>
+          <th style="padding:10px 14px">RSVPed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rsvps %}
+        <tr style="border-top:1px solid var(--gray-mid)">
+          <td style="padding:10px 14px;color:var(--gray)">{{ loop.index }}</td>
+          <td style="padding:10px 14px;font-weight:bold">{{ r.full_name }}</td>
+          <td style="padding:10px 14px;color:var(--gray)">{{ r.email }}</td>
+          <td style="padding:10px 14px">{{ r.guests or 0 }}</td>
+          <td style="padding:10px 14px;color:var(--gray)">{{ r.created_at.strftime('%b %d, %Y') if r.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="background:var(--gray-light);padding:30px;text-align:center;border-radius:6px;color:var(--gray)">No RSVPs yet. <a href="{{ url_for('event_detail', event_id=event.id) }}">Be the first to RSVP →</a></p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar" style="align-self:start">
+    <h3>RSVP to This Event</h3>
+    <form method="post" action="{{ url_for('event_rsvp', event_id=event.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" name="full_name" required>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="form-group">
+        <label>Additional Guests</label>
+        <input type="number" name="guests" value="0" min="0" max="6">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">RSVP Now</button>
+    </form>
+    <div style="border-top:1px solid var(--gray-mid);margin-top:18px;padding-top:14px">
+      <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline" style="width:100%;text-align:center">Back to event details</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

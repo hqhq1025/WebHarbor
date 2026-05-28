@@ -841,7 +841,24 @@ def event_detail(event_id):
         Event.id != event.id,
         Event.start_datetime >= datetime.utcnow()
     ).order_by(Event.start_datetime).limit(3).all()
-    return render_template('event_detail.html', event=event, related=related)
+    rsvp_count = EventRSVP.query.filter_by(event_id=event.id).count()
+    rsvp_guests = db.session.query(
+        db.func.coalesce(db.func.sum(EventRSVP.guests), 0)).filter_by(
+            event_id=event.id).scalar() or 0
+    return render_template('event_detail.html', event=event, related=related,
+                           rsvp_count=rsvp_count, rsvp_guests=rsvp_guests)
+
+
+@app.route('/events/<int:event_id>/attendees')
+def event_attendees(event_id):
+    event = db.session.get(Event, event_id)
+    if event is None:
+        abort(404)
+    rsvps = EventRSVP.query.filter_by(event_id=event.id).order_by(
+        EventRSVP.created_at).all()
+    total_seats = sum((r.guests or 0) + 1 for r in rsvps)
+    return render_template('event_attendees.html', event=event,
+                           rsvps=rsvps, total_seats=total_seats)
 
 
 @app.route('/research')
