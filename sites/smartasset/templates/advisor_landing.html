@@ -5,7 +5,10 @@
   <span class="tag">Free Service</span>
   <h1>Find a Financial Advisor</h1>
   <p>Get matched with up to 3 vetted fiduciary advisors who serve your area. Free, no obligation, and you choose who to talk to.</p>
-  <a class="btn-match" href="{{ url_for('advisor_match_start') }}">Take the Matching Quiz</a>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+    <a class="btn-match" href="{{ url_for('get_matched') }}">Get Matched in 3 Steps</a>
+    <a class="btn-link" href="{{ url_for('advisor_match_start') }}">Or take the full 7-step quiz</a>
+  </div>
 </div>
 
 <div class="section-title"><h2>Top Advisors on SmartAsset</h2></div>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Message Received | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('contact') }}">Contact</a> &rsaquo;
+  <span>Sent</span>
+</div>
+
+<h1>Message Received</h1>
+<p>Thanks, {{ last.name }} — we'll reply to <strong>{{ last.email }}</strong> within two business days.</p>
+
+<div class="card" style="max-width:560px;">
+  <h3 style="margin-top:0;">Your submission</h3>
+  <table class="table-compact">
+    <tr><th style="text-align:left;width:120px;">Ticket #</th><td>SA-{{ '%06d' % last.id }}</td></tr>
+    <tr><th style="text-align:left;">Name</th><td>{{ last.name }}</td></tr>
+    <tr><th style="text-align:left;">Email</th><td>{{ last.email }}</td></tr>
+    <tr><th style="text-align:left;">Topic</th><td>{{ last.topic }}</td></tr>
+    <tr>
+      <th style="text-align:left;vertical-align:top;">Message</th>
+      <td><pre style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ last.body }}</pre></td>
+    </tr>
+  </table>
+</div>
+
+<div class="card" style="margin-top:18px;max-width:560px;">
+  <h3>While you wait</h3>
+  <ul>
+    <li>Have a calculator question? <a href="{{ url_for('faq') }}">Check the FAQ</a>.</li>
+    <li>Ready to talk to an advisor? <a href="{{ url_for('get_matched') }}">Get matched in 3 steps</a>.</li>
+    <li>Or <a href="{{ url_for('contact') }}">send another message</a>.</li>
+  </ul>
+</div>
+{% endblock %}

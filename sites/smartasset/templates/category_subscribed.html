@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Subscribed to {{ cat.name }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('smartreads_index') }}">SmartReads</a> &rsaquo;
+  <a href="{{ url_for('category_page', slug=cat.slug) }}">{{ cat.name }}</a> &rsaquo;
+  <span>Subscribed</span>
+</div>
+
+<div class="card-hero">
+  <span class="tag">Subscribed</span>
+  <h1>{{ cat.name }} updates {{ 'already on file' if last.already else 'are on the way' }}</h1>
+  <p>
+    {% if last.already %}
+      <strong>{{ last.email }}</strong> was already subscribed to {{ cat.name }} updates.
+      No changes were made.
+    {% else %}
+      We'll email <strong>{{ last.email }}</strong> whenever we publish new {{ cat.name }} guides,
+      calculator updates, or rate alerts.
+    {% endif %}
+  </p>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h3>Manage your topics</h3>
+  {% if other_subs %}
+    <p class="muted">{{ last.email }} is also subscribed to:</p>
+    <ul>
+      {% for s in other_subs %}
+        <li>{{ s.category_slug }} <span class="muted">&middot; since {{ s.created_at.strftime('%b %d, %Y') }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">{{ cat.name }} is currently your only category subscription.</p>
+  {% endif %}
+  <p>
+    <a class="btn btn-sm" href="{{ url_for('newsletter_landing') }}">Add more topics &rsaquo;</a>
+    <a class="btn-link" href="{{ url_for('category_page', slug=cat.slug) }}">Back to {{ cat.name }}</a>
+  </p>
+</div>
+
+<div class="section-title"><h2>Recent {{ cat.name }} articles</h2></div>
+<div class="sa-grid sa-cols-3">
+  {% for a in recent_articles %}
+    <article class="article-card">
+      <a href="{{ url_for('article_detail', slug=a.slug) }}"><div class="hero">{{ cat.name }}</div></a>
+      <div class="body">
+        <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+        <div class="meta">{{ a.author.name }} &middot; {{ a.published_at.strftime('%b %d, %Y') }}</div>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

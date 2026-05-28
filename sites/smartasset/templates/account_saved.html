@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Saved Calculations | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('account') }}">My Account</a> &rsaquo;
+  <span>Saved Calculations</span>
+</div>
+
+<h1>Saved Calculations</h1>
+<p class="muted">Every calculation you save lives here. Open one to re-run it with the same inputs, or remove it from your account.</p>
+
+{% if just_saved %}
+  <div class="card" style="border-left:6px solid var(--sa-yellow);background:#fffaf0;margin-bottom:18px;">
+    <strong>Saved!</strong>
+    <p style="margin:6px 0;">
+      <strong>{{ just_saved.label or just_saved.calc_slug }}</strong>
+      &middot; <span class="muted">{{ just_saved.calc_slug }}</span>
+      &middot; <span class="muted">{{ just_saved.created_at.strftime('%b %d, %Y %H:%M UTC') }}</span>
+    </p>
+    {% if just_saved.summary %}<p>{{ just_saved.summary }}</p>{% endif %}
+    <a class="btn btn-sm" href="{{ url_for('calculator', slug=just_saved.calc_slug) }}">Reopen calculator &rsaquo;</a>
+  </div>
+{% endif %}
+
+{% if saved %}
+  <p class="muted">{{ saved|length }} saved calculation{{ '' if saved|length == 1 else 's' }} &middot; <a href="{{ url_for('account') }}">Back to account</a></p>
+  <div class="sa-grid sa-cols-2">
+    {% for s in saved %}
+      <div class="card">
+        <strong>{{ s.label or s.calc_slug }}</strong>
+        <div class="muted" style="font-size:.85rem;">
+          {{ s.calc_slug }} &middot; saved {{ s.created_at.strftime('%b %d, %Y') }}
+        </div>
+        {% if s.summary %}<p>{{ s.summary }}</p>{% endif %}
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a class="btn btn-sm" href="{{ url_for('calculator', slug=s.calc_slug) }}">Open &rsaquo;</a>
+          <form method="post" action="{{ url_for('delete_saved', sc_id=s.id) }}" style="display:inline-block;margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn-link" type="submit"
+                    onclick="return confirm('Remove this calculation?')">Remove</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <p>You haven't saved any calculations yet.</p>
+    <a class="btn" href="{{ url_for('calculators_index') }}">Browse calculators &rsaquo;</a>
+  </div>
+{% endif %}
+{% endblock %}

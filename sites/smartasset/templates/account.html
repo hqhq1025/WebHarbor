@@ -30,10 +30,13 @@
   </div>
 </div>
 
-<div class="section-title"><h2>Saved Calculations</h2></div>
+<div class="section-title">
+  <h2>Saved Calculations</h2>
+  {% if saved %}<a href="{{ url_for('account_saved') }}">View all {{ saved|length }} &rsaquo;</a>{% endif %}
+</div>
 {% if saved %}
   <div class="sa-grid sa-cols-2">
-    {% for s in saved %}
+    {% for s in saved[:4] %}
       <div class="card">
         <strong>{{ s.label or s.calc_slug }}</strong>
         <div class="muted" style="font-size:.85rem;">{{ s.calc_slug }} &middot; {{ s.created_at.strftime('%b %d, %Y') }}</div>
@@ -46,6 +49,9 @@
       </div>
     {% endfor %}
   </div>
+  {% if saved|length > 4 %}
+    <p style="margin-top:10px;"><a class="btn btn-sm" href="{{ url_for('account_saved') }}">See all {{ saved|length }} saved calculations &rsaquo;</a></p>
+  {% endif %}
 {% else %}
   <p class="muted">You haven't saved any calculations yet. <a href="{{ url_for('calculators_index') }}">Try a calculator &rsaquo;</a></p>
 {% endif %}

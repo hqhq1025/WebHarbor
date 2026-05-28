@@ -30,4 +30,17 @@
   {% endfor %}
   {% if page < pages %}<a href="?page={{ page + 1 }}">Next &raquo;</a>{% endif %}
 </div>
+
+<div class="card" style="margin-top:30px;background:#f6f9fb;border-left:6px solid var(--sa-yellow);">
+  <h3 style="margin-top:0;">Get {{ cat.name }} updates by email</h3>
+  <p class="muted">We'll send a short note when we publish new {{ cat.name|lower }} guides,
+     calculator updates, or rate alerts. About once a month, never more.</p>
+  <form method="post" action="{{ url_for('category_subscribe', slug=cat.slug) }}"
+        style="display:flex;gap:8px;flex-wrap:wrap;max-width:560px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="email" name="email" placeholder="your@email.com" required
+           style="flex:1;min-width:220px;padding:10px 12px;border:1px solid #ccc;border-radius:4px;">
+    <button class="btn btn-yellow" type="submit">Subscribe to {{ cat.name }}</button>
+  </form>
+</div>
 {% endblock %}

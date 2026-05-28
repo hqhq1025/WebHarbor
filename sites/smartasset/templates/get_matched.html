@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Get Matched with a Financial Advisor | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('advisor_landing') }}">Find Advisor</a> &rsaquo;
+  <span>Get Matched</span>
+</div>
+
+<div class="card-hero">
+  <span class="tag">Free Service</span>
+  <h1>Get Matched in 3 Steps</h1>
+  <p>Tell us how much you have to invest, your top goal, and where to reach you.
+     We'll show you up to 3 vetted fiduciary advisors who serve your area.</p>
+</div>
+
+<form method="post" action="{{ url_for('get_matched') }}" class="card" style="margin-top:18px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="wizard-step" style="border-bottom:1px solid #eee;padding-bottom:18px;margin-bottom:18px;">
+    <span class="muted">Step 1 of 3</span>
+    <h2>How much do you have to invest?</h2>
+    <p class="muted">Include all investable assets across retirement and taxable accounts.</p>
+    <div class="choice-grid">
+      {% for value, label in buckets %}
+        <label>
+          <input type="radio" name="investable_assets" value="{{ value }}"
+                 {% if form.get('investable_assets', '') == value %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="wizard-step" style="border-bottom:1px solid #eee;padding-bottom:18px;margin-bottom:18px;">
+    <span class="muted">Step 2 of 3</span>
+    <h2>What's your primary financial goal?</h2>
+    <div class="choice-grid">
+      {% for value, label in goals %}
+        <label>
+          <input type="radio" name="goal" value="{{ value }}"
+                 {% if form.get('goal', '') == value %}checked{% endif %}>
+          <span>{{ label }}</span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="wizard-step">
+    <span class="muted">Step 3 of 3</span>
+    <h2>Where should we send your matches?</h2>
+    <div class="field">
+      <label for="first_name">First name</label>
+      <input type="text" id="first_name" name="first_name"
+             value="{{ form.get('first_name', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email"
+             value="{{ form.get('email', '') }}" required>
+    </div>
+    <div class="field">
+      <label for="phone">Phone (optional)</label>
+      <input type="text" id="phone" name="phone"
+             value="{{ form.get('phone', '') }}">
+    </div>
+    <div class="field">
+      <label for="state">State</label>
+      <select id="state" name="state" required>
+        <option value="">— Select your state —</option>
+        {% for st in states %}
+          <option value="{{ st.abbr }}"
+                  {% if form.get('state', '') == st.abbr %}selected{% endif %}>
+            {{ st.name }} ({{ st.abbr }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-top:18px;">
+    <button class="btn btn-yellow" type="submit">Find My Matches &rsaquo;</button>
+    <a class="btn-link" href="{{ url_for('advisor_match_start') }}">
+      Prefer a longer 7-step quiz?
+    </a>
+  </div>
+</form>
+
+<div class="card" style="margin-top:24px;">
+  <h3>What happens after I submit?</h3>
+  <ol>
+    <li>We score every fiduciary advisor in your state on the goal you picked plus your asset minimums.</li>
+    <li>We show you up to 3 best matches with credentials, specialty, AUM and ratings.</li>
+    <li>Each match offers a free 30-minute introductory call — no obligation.</li>
+  </ol>
+</div>
+{% endblock %}

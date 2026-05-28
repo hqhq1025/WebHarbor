@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Subscription Confirmed | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('newsletter_landing') }}">Newsletter</a> &rsaquo;
+  <span>Confirmed</span>
+</div>
+
+<div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);">
+  <span class="tag" style="background:rgba(11,57,97,.12);color:var(--sa-blue);">Subscribed</span>
+  <h1 style="color:var(--sa-blue);">You're in.</h1>
+  <p style="color:var(--sa-blue);">
+    We'll email <strong>{{ email }}</strong> the SmartMoney Minute every Tuesday at 6 a.m. ET,
+    plus topic-specific issues for the categories you picked.
+  </p>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h2>Your topics</h2>
+  {% if chosen %}
+    <ul>
+      {% for slug, label in chosen %}
+        <li><strong>{{ label }}</strong> &middot; <span class="muted">{{ slug }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="muted">
+      {% if new_topic_count == 0 %}
+        You were already subscribed to all of these. No new topics added.
+      {% elif new_topic_count == chosen|length %}
+        All {{ new_topic_count }} topic{{ '' if new_topic_count == 1 else 's' }} just added to your account.
+      {% else %}
+        {{ new_topic_count }} new topic{{ '' if new_topic_count == 1 else 's' }} added; the rest were already on file.
+      {% endif %}
+    </p>
+  {% else %}
+    <p class="muted">No topics selected — you'll get the general weekly digest only.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h3>What's next</h3>
+  <ul>
+    <li>Your first newsletter arrives next Tuesday.</li>
+    <li>You can <a href="{{ url_for('newsletter_landing') }}">add or change topics</a> at any time.</li>
+    <li>Browse <a href="{{ url_for('smartreads_index') }}">SmartReads</a> while you wait.</li>
+  </ul>
+</div>
+{% endblock %}

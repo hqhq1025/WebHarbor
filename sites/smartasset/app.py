@@ -407,6 +407,14 @@ def inject_globals():
         "fmt_pct": fmt_pct,
         "now": datetime.utcnow,
         "calc_hub": CALC_HUB,
+        "newsletter_topics_global": [
+            ("investing",        "Investing & Markets"),
+            ("retirement",       "Retirement"),
+            ("taxes",            "Taxes"),
+            ("personal-finance", "Personal Finance"),
+            ("mortgage",         "Mortgage & Home Buying"),
+            ("banking",          "Banking & Savings"),
+        ],
     }
 
 
@@ -507,14 +515,31 @@ def save_calculation():
     sc = SavedCalculation(
         user_id=current_user.id,
         calc_slug=slug,
-        label=request.form.get("label", spec["title"]),
+        label=(request.form.get("label") or spec["title"])[:140],
         inputs_json=json.dumps(inputs),
         summary=summary,
     )
     db.session.add(sc)
     db.session.commit()
     flash("Calculation saved to your account.", "success")
-    return redirect(url_for("calculator", slug=slug, **inputs))
+    return redirect(url_for("account_saved", just_saved=sc.id))
+
+
+@app.route("/account/saved")
+@login_required
+def account_saved():
+    """Dedicated list page for saved calculations (also a save confirmation)."""
+    saved = (SavedCalculation.query.filter_by(user_id=current_user.id)
+             .order_by(SavedCalculation.created_at.desc()).all())
+    try:
+        just_saved_id = int(request.args.get("just_saved", "0"))
+    except ValueError:
+        just_saved_id = 0
+    just_saved = None
+    if just_saved_id:
+        just_saved = next((s for s in saved if s.id == just_saved_id), None)
+    return render_template("account_saved.html", saved=saved,
+                            just_saved=just_saved)
 
 
 @app.route("/share/<slug>")
@@ -754,6 +779,83 @@ def advisor_landing():
     return render_template("advisor_landing.html", top=top, states=states)
 
 
+# ─── 3-step quick advisor match (single-page form) ─────────
+GOAL_LABELS = [
+    ("retirement", "Retirement planning"),
+    ("growth",     "Wealth growth"),
+    ("taxes",      "Tax minimization"),
+    ("estate",     "Estate planning"),
+    ("education",  "Education savings"),
+    ("general",    "Comprehensive plan"),
+]
+
+ASSET_BUCKETS = [
+    ("50000",    "Less than $100k"),
+    ("250000",   "$100k – $500k"),
+    ("750000",   "$500k – $1M"),
+    ("2000000",  "$1M – $5M"),
+    ("7500000",  "$5M+"),
+]
+
+
+@app.route("/get-matched", methods=["GET", "POST"])
+def get_matched():
+    """Streamlined 3-step single-page advisor match: assets / goal / contact."""
+    states = State.query.order_by(State.name).all()
+    if request.method == "POST":
+        assets_raw = request.form.get("investable_assets", "").strip()
+        goal = request.form.get("goal", "").strip()
+        first_name = (request.form.get("first_name") or "").strip()[:60]
+        email = (request.form.get("email") or "").strip().lower()
+        phone = (request.form.get("phone") or "").strip()[:40]
+        state_abbr = (request.form.get("state") or "").strip().upper()[:2]
+        errors = []
+        if not assets_raw:
+            errors.append("Choose an investable-assets range.")
+        if goal not in {g[0] for g in GOAL_LABELS}:
+            errors.append("Choose a primary goal.")
+        if not first_name:
+            errors.append("First name is required.")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            errors.append("A valid email is required.")
+        if not state_abbr:
+            errors.append("Choose a state.")
+        if errors:
+            for e in errors:
+                flash(e, "danger")
+            return render_template("get_matched.html", states=states,
+                                    goals=GOAL_LABELS, buckets=ASSET_BUCKETS,
+                                    form=request.form)
+        try:
+            assets_int = int(re.sub(r"[^0-9]", "", assets_raw) or 0)
+        except ValueError:
+            assets_int = 0
+        wiz = {
+            "investable_assets": assets_raw,
+            "goal": goal,
+            "first_name": first_name,
+            "email": email,
+            "phone": phone,
+            "location": state_abbr,
+            "state": state_abbr,
+        }
+        session["wizard"] = wiz
+        matches = _match_advisors(wiz)
+        rec = AdvisorMatch(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            email=email, state_abbr=state_abbr,
+            investable_assets=assets_int, goal=goal, age=0,
+            marital_status="",
+            matched_ids=",".join(str(a.id) for a in matches),
+        )
+        db.session.add(rec)
+        db.session.commit()
+        return redirect(url_for("advisor_match_results"))
+    return render_template("get_matched.html", states=states,
+                            goals=GOAL_LABELS, buckets=ASSET_BUCKETS,
+                            form={})
+
+
 @app.route("/advisor/<slug>")
 def advisor_detail(slug):
     a = Advisor.query.filter_by(slug=slug).first_or_404()
@@ -932,36 +1034,98 @@ def search():
 # Newsletter, contact, static pages
 # ───────────────────────────────────────────────────────────
 
+NEWSLETTER_TOPICS = [
+    ("investing",        "Investing & Markets"),
+    ("retirement",       "Retirement"),
+    ("taxes",            "Taxes"),
+    ("personal-finance", "Personal Finance"),
+    ("mortgage",         "Mortgage & Home Buying"),
+    ("banking",          "Banking & Savings"),
+]
+NEWSLETTER_TOPIC_SET = {t[0] for t in NEWSLETTER_TOPICS}
+
+
 @app.route("/newsletter/subscribe", methods=["POST"])
 def newsletter_subscribe():
     email = (request.form.get("email") or "").strip().lower()
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         flash("Please provide a valid email address.", "danger")
         return redirect(request.referrer or url_for("index"))
-    if not Newsletter.query.filter_by(email=email).first():
+    # Topics: list of category-slug-style values (may be empty for footer form)
+    raw_topics = request.form.getlist("topics")
+    topics = [t for t in raw_topics if t in NEWSLETTER_TOPIC_SET]
+    is_new_email = not Newsletter.query.filter_by(email=email).first()
+    if is_new_email:
         db.session.add(Newsletter(email=email))
-        db.session.commit()
+    new_topic_count = 0
+    for slug in topics:
+        if not CategorySubscription.query.filter_by(
+                email=email, category_slug=slug).first():
+            db.session.add(CategorySubscription(email=email,
+                                                  category_slug=slug))
+            new_topic_count += 1
+    db.session.commit()
+    # If user picked topics, route to the thanks page that lists them
+    if topics:
+        session["last_newsletter"] = {"email": email, "topics": topics,
+                                        "new_topic_count": new_topic_count}
+        return redirect(url_for("newsletter_thanks"))
+    if is_new_email:
         flash("Subscribed to SmartMoney Minute.", "success")
     else:
         flash("You're already subscribed.", "info")
     return redirect(request.referrer or url_for("index"))
 
 
+@app.route("/newsletter/thanks")
+def newsletter_thanks():
+    last = session.get("last_newsletter", {})
+    if not last:
+        return redirect(url_for("newsletter_landing"))
+    topic_labels = dict(NEWSLETTER_TOPICS)
+    chosen = [(slug, topic_labels.get(slug, slug)) for slug in last.get("topics", [])]
+    return render_template("newsletter_thanks.html",
+                            email=last.get("email", ""),
+                            chosen=chosen,
+                            new_topic_count=last.get("new_topic_count", 0))
+
+
 @app.route("/contact", methods=["GET", "POST"])
 def contact():
     if request.method == "POST":
-        msg = ContactMessage(
-            name=(request.form.get("name") or "").strip(),
-            email=(request.form.get("email") or "").strip(),
-            topic=request.form.get("topic", "General"),
-            body=(request.form.get("body") or "").strip(),
-        )
+        name = (request.form.get("name") or "").strip()[:120]
+        email = (request.form.get("email") or "").strip()[:160]
+        topic = (request.form.get("topic") or "General question")[:80]
+        body = (request.form.get("body") or "").strip()[:4000]
+        errors = []
+        if not name:
+            errors.append("Please enter your name.")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email or ""):
+            errors.append("Please enter a valid email address.")
+        if not body:
+            errors.append("Message body cannot be empty.")
+        if errors:
+            for e in errors:
+                flash(e, "danger")
+            return render_template("contact.html",
+                                    form={"name": name, "email": email,
+                                           "topic": topic, "body": body})
+        msg = ContactMessage(name=name, email=email, topic=topic, body=body)
         db.session.add(msg)
         db.session.commit()
-        flash("Message received. We'll reply within 2 business days.",
-              "success")
+        session["last_contact"] = {"id": msg.id, "name": name,
+                                     "email": email, "topic": topic,
+                                     "body": body}
+        return redirect(url_for("contact_thanks"))
+    return render_template("contact.html", form={})
+
+
+@app.route("/contact/thanks")
+def contact_thanks():
+    last = session.get("last_contact", {})
+    if not last:
         return redirect(url_for("contact"))
-    return render_template("contact.html")
+    return render_template("contact_thanks.html", last=last)
 
 
 @app.route("/about")
@@ -1622,15 +1786,40 @@ def category_subscribe(slug):
     email = (request.form.get("email") or "").strip().lower()
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         flash("Please provide a valid email.", "danger")
-    elif CategorySubscription.query.filter_by(email=email,
-                                                category_slug=cat.slug).first():
-        flash(f"You're already subscribed to {cat.name}.", "info")
+        return redirect(url_for("category_page", slug=cat.slug))
+    existing = CategorySubscription.query.filter_by(
+        email=email, category_slug=cat.slug).first()
+    if existing:
+        already = True
     else:
         db.session.add(CategorySubscription(email=email,
                                               category_slug=cat.slug))
         db.session.commit()
-        flash(f"Subscribed to {cat.name} updates.", "success")
-    return redirect(url_for("category_page", slug=cat.slug))
+        already = False
+    session["last_category_sub"] = {"email": email, "slug": cat.slug,
+                                      "name": cat.name, "already": already}
+    return redirect(url_for("category_subscribed", slug=cat.slug))
+
+
+@app.route("/category/<slug>/subscribed")
+def category_subscribed(slug):
+    cat = Category.query.filter_by(slug=slug).first_or_404()
+    last = session.get("last_category_sub", {})
+    if not last or last.get("slug") != cat.slug:
+        return redirect(url_for("category_page", slug=cat.slug))
+    other_subs = []
+    if last.get("email"):
+        other_subs = (CategorySubscription.query
+                      .filter_by(email=last["email"])
+                      .filter(CategorySubscription.category_slug != cat.slug)
+                      .order_by(CategorySubscription.created_at.desc())
+                      .all())
+    return render_template("category_subscribed.html", cat=cat,
+                            last=last, other_subs=other_subs,
+                            recent_articles=(Article.query
+                                .filter_by(category_id=cat.id)
+                                .order_by(Article.published_at.desc())
+                                .limit(6).all()))
 
 
 @app.route("/smartreads/<slug>/comment/<int:comment_id>/reply",
