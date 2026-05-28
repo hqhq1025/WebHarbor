@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}BBC News{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 {# R7: per-page head block - SEO meta, OG, twitter:card, JSON-LD #}
@@ -28,7 +28,6 @@
 <body data-darkmode="{{ request.cookies.get('bbc_dark_mode', 'off') }}"
       data-highcontrast="{{ request.cookies.get('bbc_high_contrast', 'off') }}">
 {% include 'sprites_inline.html' %}
-
 
 {# R5: ARIA live region for breaking-news announcements. Empty by default; #}
 {# main.js writes the latest headline here so screen readers announce it.  #}
