@@ -10,11 +10,12 @@
     <h1>{{ journal_label }}</h1>
     <p class="lede">{{ articles|length }} Phys.org article{{ '' if articles|length == 1 else 's' }} cite this journal as the source.</p>
     {% if current_user.is_authenticated %}
-      <form method="post" action="/journal/{{ slug }}/follow" style="margin:8px 0 18px;">
+      <form method="post" action="/journal/{{ slug }}/follow" style="margin:8px 0 18px;display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn" type="submit">Follow journal</button>
       </form>
     {% endif %}
+    <a class="btn secondary" href="/journal/{{ slug }}/alerts" style="margin-left:6px;">Email alerts for new articles</a>
     <div class="article-grid">
       {% for a in articles %}
         <article class="card">

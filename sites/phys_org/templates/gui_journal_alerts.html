@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Email alerts — {{ journal_label }} — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="crumbs"><a href="/journals">Journals</a> / <a href="/journal/{{ slug }}">{{ journal_label }}</a> / Email alerts</div>
+    <h1>Email alerts: {{ journal_label }}</h1>
+    <p class="lede">Get notified when Phys.org publishes a new article citing <strong>{{ journal_label }}</strong>. Currently covering {{ article_count }} article{{ '' if article_count == 1 else 's' }} on the mirror.</p>
+
+    {% if subscribed %}
+      <div class="flash flash-info" style="margin-bottom:14px;">
+        You already have email alerts enabled for this journal.
+      </div>
+    {% endif %}
+
+    <form method="post" action="/journal/{{ slug }}/alerts" style="max-width:520px;padding:16px;border:1px solid #e6e9ee;border-radius:8px;background:#fafbfd;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label style="display:block;margin-bottom:10px;">
+        <div class="meta">Email address</div>
+        <input type="email" name="email" required placeholder="you@example.com" style="width:100%;padding:8px;">
+      </label>
+      <label style="display:block;margin-bottom:10px;">
+        <div class="meta">Cadence</div>
+        <select name="cadence" style="width:100%;padding:8px;">
+          <option value="daily">Daily — every new article</option>
+          <option value="weekly" selected>Weekly digest</option>
+          <option value="monthly">Monthly digest</option>
+        </select>
+      </label>
+      <button class="btn" type="submit">Enable alerts</button>
+      <a class="btn secondary" href="/journal/{{ slug }}" style="margin-left:6px;">Back to journal</a>
+    </form>
+
+    <p class="meta" style="margin-top:18px;">
+      Prefer broader topics? <a href="{{ url_for('gui_newsletter') }}">Subscribe to a Phys.org newsletter</a> instead.
+    </p>
+  </article>
+</div>
+{% endblock %}
