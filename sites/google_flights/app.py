@@ -551,6 +551,7 @@ def datefmt(value, fmt='%b %d, %Y'):
 # /reset because control_server respawns the worker.
 _AIRPORTS_BY_POPULARITY_CACHE: list = []
 _MULTI_CITY_GROUPS_CACHE: list = []
+_DATALIST_AIRPORTS_CACHE: list = []
 
 
 def _cached_airports_by_popularity():
@@ -559,6 +560,24 @@ def _cached_airports_by_popularity():
             Airport.query.order_by(Airport.is_popular.desc(), Airport.city).all()
         )
     return _AIRPORTS_BY_POPULARITY_CACHE
+
+
+def _cached_datalist_airports():
+    """Compact airport list used by every page's `<datalist id="airport-list">`.
+
+    The legacy code injected the full 8618-row airport catalogue into every
+    page, which produced a ~400KB datalist before any flight data was
+    rendered. Browser-native autocomplete only needs the popular subset to
+    drive the typeahead — users typing a non-popular IATA can still submit
+    it because the form input accepts free text. Cache resets when
+    /reset/<site> respawns the worker.
+    """
+    if not _DATALIST_AIRPORTS_CACHE:
+        _DATALIST_AIRPORTS_CACHE.extend(
+            Airport.query.filter_by(is_popular=True)
+            .order_by(Airport.city).all()
+        )
+    return _DATALIST_AIRPORTS_CACHE
 
 
 def _cached_multi_city_groups():
@@ -593,15 +612,25 @@ def _inject_airport_groups():
 # ROUTES — Static
 # ============================================================
 
-@app.route('/')
-def index():
-    # Popular departure cities
-    popular_origins = Airport.query.filter_by(is_popular=True, country='United States').limit(8).all()
-    # Featured deals: one is_best flight per destination CITY so multi-airport
-    # cities (London = LHR + LGW, Tokyo = HND + NRT) and per-date duplication
-    # (every JFK→LHR date carries an is_best flag) don't fill the grid with
-    # the same city image. Pick the lowest-id is_best per city via SQL so we
-    # don't have to scan thousands of rows in Python.
+_INDEX_DATA_CACHE = None
+
+
+def _cached_index_data():
+    """Featured deals + popular origins/destinations for `/`.
+
+    Every homepage hit ran two group-by subqueries (min(Flight.id) per dest
+    city, min(Airport.id) per non-US city), then triggered a chain of lazy
+    loads for ``flight.destination.city/image_url`` on 12 cards. None of
+    that data changes between resets, so cache the whole payload once.
+    """
+    global _INDEX_DATA_CACHE
+    if _INDEX_DATA_CACHE is not None:
+        return _INDEX_DATA_CACHE
+
+    popular_origins = (Airport.query
+                       .filter_by(is_popular=True, country='United States')
+                       .limit(8).all())
+
     first_id_per_city = (
         db.session.query(db.func.min(Flight.id))
         .join(Airport, Airport.id == Flight.destination_id)
@@ -627,8 +656,11 @@ def index():
             if len(featured) >= 12:
                 break
 
-    # Popular destinations — pick one airport per CITY so multi-airport cities
-    # (London = LHR + LGW, Tokyo = HND + NRT) don't render twice.
+    # Materialise destination attrs the template needs so we don't issue
+    # one lazy-load per card on every cached hit.
+    for f in featured:
+        _ = f.destination.city, f.destination.country, f.destination.image, f.destination.iata
+
     first_airport_per_city = (
         db.session.query(db.func.min(Airport.id))
         .filter(Airport.is_popular == True)
@@ -642,18 +674,43 @@ def index():
         .order_by(Airport.city)
         .limit(8).all()
     )
-    all_airports = _cached_airports_by_popularity()
 
+    _INDEX_DATA_CACHE = dict(
+        popular_origins=popular_origins,
+        popular_dests=popular_dests,
+        featured=featured,
+    )
+    return _INDEX_DATA_CACHE
+
+
+@app.route('/')
+def index():
+    data = _cached_index_data()
     return render_template('index.html',
-                           popular_origins=popular_origins,
-                           popular_dests=popular_dests,
-                           all_airports=all_airports,
-                           featured=featured)
+                           popular_origins=data['popular_origins'],
+                           popular_dests=data['popular_dests'],
+                           all_airports=_cached_datalist_airports(),
+                           featured=data['featured'])
+
+
+_EXPLORE_HTML_CACHE: dict = {}
+_EXPLORE_HTML_CACHE_MAX = 64
 
 
 @app.route('/explore')
 def explore():
     origin = request.args.get('origin', 'SEA').upper()
+    view = request.args.get('view', 'grid').lower()
+    if view not in ('grid', 'map'):
+        view = 'grid'
+    # The default "grid" view for a given origin issues one query per popular
+    # destination (~119 round trips) to find the cheapest flight on each
+    # route. Result is fully determined by (origin, view) and never changes
+    # between resets — cache the rendered HTML.
+    cache_key = (origin, view)
+    cached = _EXPLORE_HTML_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     origin_airport = Airport.query.filter_by(iata=origin).first()
     all_dests = Airport.query.filter_by(is_popular=True).all()
     flights_by_dest = {}
@@ -684,10 +741,7 @@ def explore():
             if f:
                 flights_by_dest[dest.iata] = f
 
-    all_airports = Airport.query.filter_by(is_popular=True).order_by(Airport.city).all()
-    view = request.args.get('view', 'grid').lower()
-    if view not in ('grid', 'map'):
-        view = 'grid'
+    all_airports = _cached_datalist_airports()
 
     # Pre-compute deterministic pin positions for the map view so the
     # template doesn't need an ord() filter (Jinja2 default env has none).
@@ -708,7 +762,7 @@ def explore():
         pin_positions[d.iata] = (round((bx + xoff) * 100, 1),
                                   round((by + yoff) * 100, 1))
 
-    return render_template('explore.html',
+    html = render_template('explore.html',
                            origin=origin,
                            origin_airport=origin_airport,
                            destinations=all_dests,
@@ -716,6 +770,11 @@ def explore():
                            all_airports=all_airports,
                            view=view,
                            pin_positions=pin_positions)
+    if len(_EXPLORE_HTML_CACHE) >= _EXPLORE_HTML_CACHE_MAX:
+        for k in list(_EXPLORE_HTML_CACHE)[:_EXPLORE_HTML_CACHE_MAX // 2]:
+            _EXPLORE_HTML_CACHE.pop(k, None)
+    _EXPLORE_HTML_CACHE[cache_key] = html
+    return html
 
 
 # Landmarks / place names that WebVoyager users sometimes type instead of an
@@ -986,7 +1045,7 @@ def flights_list():
     # If validation failed, short-circuit: render empty results with the errors so
     # the user sees the problem rather than getting unrelated rows.
     if validation_errors:
-        all_airports = _cached_airports_by_popularity()
+        all_airports = _cached_datalist_airports()
         return render_template('flights.html',
                                flights=[],
                                origin=origin,
@@ -1130,7 +1189,7 @@ def flights_list():
         airline_q = airline_q.filter(Flight.destination_id.in_(dest_ids))
     airline_options = sorted({row[0] for row in airline_q.limit(100).all()})
 
-    all_airports = _cached_airports_by_popularity()
+    all_airports = _cached_datalist_airports()
 
     return render_template('flights.html',
                            flights=flights,
@@ -1523,9 +1582,21 @@ def price_tracking():
     return render_template('price_tracking.html')
 
 
+_SEARCH_HTML_CACHE: dict = {}
+_SEARCH_HTML_CACHE_MAX = 256
+
+
 @app.route('/search')
 def search():
     q = request.args.get('q', '').strip()
+    # Search runs broad ``ilike '%q%'`` scans over Airport (8.6k rows) and
+    # Flight (1.5M rows) — ~150ms per cold hit. Read-only between resets, so
+    # cache the rendered HTML per query. Only cache for unauthenticated /
+    # GET-only paths because the view doesn't read any per-user state.
+    cache_key = q
+    cached = _SEARCH_HTML_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     results_flights = []
     results_airports = []
 
@@ -1612,10 +1683,16 @@ def search():
                     )
                 ).limit(20).all()
 
-    return render_template('search.html',
+    html = render_template('search.html',
                            q=q,
                            airports=results_airports,
                            flights=results_flights)
+    if len(_SEARCH_HTML_CACHE) >= _SEARCH_HTML_CACHE_MAX:
+        # Trim oldest half so the cache is bounded but warm.
+        for k in list(_SEARCH_HTML_CACHE)[:_SEARCH_HTML_CACHE_MAX // 2]:
+            _SEARCH_HTML_CACHE.pop(k, None)
+    _SEARCH_HTML_CACHE[cache_key] = html
+    return html
 
 
 # ============================================================
