@@ -135,6 +135,9 @@ pre, code { font-family: var(--font-mono); }
   box-shadow: 0 8px 24px rgba(1,4,9,0.85);
 }
 .gh-nav-dropdown:hover .gh-nav-dropdown-menu { display: block; }
+/* R10 dead-click fix: click on the trigger button toggles `.is-open` (set by
+   main.js) which keeps the menu visible without requiring hover. */
+.gh-nav-dropdown.is-open .gh-nav-dropdown-menu { display: block; }
 .gh-nav-dropdown-item {
   display: block; padding: 6px 12px; border-radius: 4px;
   color: var(--color-text); font-size: 13px;

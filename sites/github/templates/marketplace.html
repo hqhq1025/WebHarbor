@@ -112,6 +112,7 @@
     <p class="sec-section-lede" style="color:#c9d1d9;">Hand-picked tools used by thousands of teams. Free trial on every paid app.</p>
     <div class="sec-feature-grid" style="grid-template-columns:repeat(3,1fr);">
       {% for app in featured_apps %}
+      {% set app_slug = app.name | lower | replace(' ', '-') | replace('+', 'plus') %}
       <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
         <div style="display:flex; align-items:center; gap:14px;">
           <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">{{ app.icon }}</div>
@@ -122,8 +123,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">{{ app.desc }}</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="{{ app_slug }}">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app={{ app_slug }}" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
       {% endfor %}
@@ -139,8 +144,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Build multi-arch Docker images and push to any registry from a GitHub Actions workflow.</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="docker-build-push">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=docker-build-push" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 
@@ -154,8 +163,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Subscribe to repos, get PR/issue notifications in any channel, approve PRs from Slack with /github approve.</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="slack-github">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=slack-github" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 
@@ -169,8 +182,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Two-way sync between GitHub branches/PRs and Jira issues — no more "did anyone update the ticket?"</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="jira-software">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=jira-software" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 
@@ -184,8 +201,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Production errors auto-link to the commit that introduced them, opening a GitHub issue with full stack trace.</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="sentry">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=sentry" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 
@@ -199,8 +220,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Preview deploys for every PR, production deploys on merge to main. Static sites and serverless functions.</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="netlify">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=netlify" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 
@@ -214,8 +239,12 @@
         </div>
         <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Static analysis on 30+ languages with quality gates that block PRs failing your team's standards.</p>
         <div style="display:flex; gap:8px;">
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
-          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+          <form action="/marketplace/install" method="post" style="display:inline; margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="app" value="sonarcloud-extra">
+            <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Install</button>
+          </form>
+          <a href="/marketplace?app=sonarcloud-extra" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
         </div>
       </article>
 

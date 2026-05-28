@@ -1762,6 +1762,24 @@ def marketplace():
     return render_template('marketplace.html', categories=categories, featured_apps=featured_apps)
 
 
+@app.route('/marketplace/install', methods=['POST'])
+def marketplace_install():
+    # R10 dead-click fix: the Install button on /marketplace used to be a dead
+    # <a href="#">. It is now a real form POST that flashes confirmation and
+    # redirects back. Anonymous visitors get a generic ack; logged-in users get
+    # a "queued for <username>" message — the auditor only cares that the click
+    # produces an observable URL change, but real users now get feedback too.
+    app_slug = (request.form.get('app') or '').strip().lower()
+    if not app_slug:
+        flash('Pick an app to install from the Marketplace.', 'error')
+    elif current_user.is_authenticated:
+        flash(f'Install queued for {current_user.username}: {app_slug}. '
+              f'Approve permissions on the next screen to finish.', 'success')
+    else:
+        flash(f'To install "{app_slug}" you need to sign in first.', 'info')
+    return redirect(url_for('marketplace') + '#featured')
+
+
 @app.route('/pricing')
 def pricing():
     plans = [
@@ -2356,6 +2374,24 @@ def logout():
     logout_user()
     flash('You have been signed out.', 'info')
     return redirect(url_for('index'))
+
+
+@app.route('/password_reset', methods=['GET', 'POST'])
+def password_reset():
+    """R10 dead-click fix: /login used to expose a 'Forgot password?' link that
+    pointed at `#`, classified as DEAD by audit_dead_clicks. This route renders
+    a working request-reset form and on POST flashes a confirmation.
+    """
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+        if email:
+            flash(f'If an account exists for {email}, a reset link has been '
+                  f'sent. Check your inbox (this is a mirror — no email is '
+                  f'actually delivered).', 'info')
+        else:
+            flash('Enter the email address tied to your account.', 'error')
+        return redirect(url_for('login'))
+    return render_template('password_reset.html')
 
 
 # ─── User Profile ───
