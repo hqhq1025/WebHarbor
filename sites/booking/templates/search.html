@@ -122,6 +122,43 @@
 
                 {# ---- Star rating selector ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property type</h4>
+                    {# Real upstream booking.com `ht_id` property-type filter from harvest /searchresults Paris #}
+                    {% for code, label, cnt in [
+                        ('204','Hotels',806),
+                        ('201','Apartments',1320),
+                        ('220','Vacation Homes',5),
+                        ('213','Villas',4),
+                        ('208','Bed and Breakfasts',4),
+                        ('216','Guesthouses',1),
+                        ('203','Hostels',17),
+                        ('222','Homestays',8),
+                        ('214','Campgrounds',1)
+                    ] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="checkbox" name="ht_id" value="{{ code }}"
+                               {% if args.getlist('ht_id') and code in args.getlist('ht_id') %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Bed preference</h4>
+                    {% for v, label, cnt in [
+                        ('3','Double bed',1124),('5','Queen bed',939),('2','Twin beds',491),('6','King bed',300)
+                    ] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="checkbox" name="tdb" value="{{ v }}"
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                {# ---- Star rating selector ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property star rating</h4>
                     {% set cur_stars = args.get('min_stars','') %}
                     {% for s in [5,4,3,2,1] %}
