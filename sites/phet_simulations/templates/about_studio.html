@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}PhET Studio &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<h1 class="page-title">PhET Studio</h1>
+
+<section class="prose">
+  <p>PhET Studio is the in-browser authoring environment the project uses to
+     prototype, configure, and adapt our HTML5 simulations. Studio lets
+     simulation designers tweak parameters, accessibility wiring, and
+     translation strings without rebuilding the underlying source.</p>
+
+  <h2>Custom simulations</h2>
+  <p>Teachers, district teams, and research partners can request a custom
+     PhET simulation tailored to a specific curriculum or assessment.
+     Custom builds reuse the same accessibility, internationalization, and
+     research-based interaction patterns as the published library.</p>
+
+  <h2>Developer tooling</h2>
+  <p>The PhET libraries are open source under a Creative Commons license.
+     The development documentation covers the simulation architecture, the
+     <em>scenery</em> graphics layer, the <em>axon</em> reactive model layer,
+     and the simulation lifecycle from prototype through QA. Build a Custom
+     Sim using the same components our team uses every day.</p>
+
+  <h2>Get involved</h2>
+  <p>If you would like to collaborate on a Studio build or contribute to the
+     PhET codebase, write to us via the
+     <a href="{{ url_for('contact') }}">contact form</a>.</p>
+</section>
+{% endblock %}

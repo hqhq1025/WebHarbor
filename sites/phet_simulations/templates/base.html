@@ -33,9 +33,9 @@
         </div>
       </div>
       <div class="nav-item">
-        <a href="#">Studio</a>
+        <a href="{{ url_for('about_studio') }}">Studio</a>
         <div class="nav-dropdown">
-          <a href="#">PhET Studio</a>
+          <a href="{{ url_for('about_studio') }}">PhET Studio</a>
           <a href="#">Build a Custom Sim</a>
           <a href="#">Developer Docs</a>
         </div>
@@ -58,7 +58,7 @@
         </div>
       </div>
       <div class="nav-item">
-        <a href="#">Initiatives</a>
+        <a href="{{ url_for('initiatives') }}">Initiatives</a>
         <div class="nav-dropdown">
           <a href="{{ url_for('accessibility') }}">Accessibility</a>
           <a href="{{ url_for('translations') }}">Global PhET</a>

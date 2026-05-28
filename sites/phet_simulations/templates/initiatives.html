@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Initiatives &middot; {{ site_title }}{% endblock %}
+{% block content %}
+<h1 class="page-title">PhET Initiatives</h1>
+
+<section class="prose">
+  <p>PhET Initiatives extend our free interactive simulations with focused
+     programs that broaden access, equity, and research impact across STEM
+     learning.</p>
+
+  <h2>Accessibility</h2>
+  <p>The Inclusive Design initiative embeds keyboard navigation, screen
+     reader support, sound effects, and alternative input across every
+     HTML5 simulation. See the
+     <a href="{{ url_for('accessibility') }}">Accessibility</a> page for the
+     current feature matrix and ongoing studies.</p>
+
+  <h2>Global PhET</h2>
+  <p>Global PhET coordinates translation, regional partnerships, and
+     offline distribution so PhET simulations reach classrooms in low-
+     bandwidth and remote environments. Browse the
+     <a href="{{ url_for('translations') }}">translated simulations</a>
+     catalog for the {{ stats.languages }} supported languages.</p>
+
+  <h2>Data Fluency</h2>
+  <p>Data Fluency simulations and lesson plans help students reason about
+     uncertainty, evidence, distributions, and modeling — across math,
+     science, and social-studies contexts.</p>
+
+  <h2>DEIB in STEM Education</h2>
+  <p>Our diversity, equity, inclusion, and belonging program partners with
+     educators and researchers to embed culturally responsive practice in
+     simulation-based STEM learning, and to broaden participation in
+     science and mathematics.</p>
+
+  <h2>Research collaborations</h2>
+  <p>If you lead an education-research project that would benefit from
+     PhET partnership, write to us through the
+     <a href="{{ url_for('contact') }}">contact form</a>.</p>
+</section>
+{% endblock %}

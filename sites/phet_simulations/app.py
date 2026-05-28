@@ -732,6 +732,22 @@ def accessibility():
     return render_template("accessibility.html")
 
 
+@app.route("/about/studio")
+def about_studio():
+    return render_template("about_studio.html")
+
+
+@app.route("/initiatives")
+def initiatives():
+    stats = {
+        "simulations": Simulation.query.count(),
+        "languages": Language.query.count(),
+        "subjects": Subject.query.count(),
+        "activities": Activity.query.count(),
+    }
+    return render_template("initiatives.html", stats=stats)
+
+
 # ---------------------------------------------------------------------------
 # Routes — auth
 # ---------------------------------------------------------------------------
