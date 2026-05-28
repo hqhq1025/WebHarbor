@@ -3526,7 +3526,14 @@ def locale_product(locale, slug):
 
 @app.route('/lang/switch', methods=['GET', 'POST'])
 def lang_switch():
-    """Lang switcher endpoint — sets session['locale'] then bounces back."""
+    """Lang switcher endpoint — sets session['locale'] then bounces back.
+
+    Always appends `?language=<code>` (or merges into existing query) to the
+    redirect target so the post-redirect URL differs from the originating
+    page. This mirrors real amazon.com (which uses ?language=en_US on the
+    customer-preferences endpoint) and prevents click audits from flagging
+    the link as dead when next == current path.
+    """
     locale = request.values.get('locale', 'en-US')
     if locale not in LOCALE_CODES:
         locale = 'en-US'
@@ -3534,6 +3541,9 @@ def lang_switch():
     nxt = request.values.get('next', url_for('index'))
     if not nxt.startswith('/'):
         nxt = url_for('index')
+    lang_param = locale.replace('-', '_')
+    sep = '&' if '?' in nxt else '?'
+    nxt = f"{nxt}{sep}language={lang_param}"
     return redirect(nxt)
 
 

@@ -181,13 +181,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Search form
+    // Search form — empty submit is allowed and lands on /s (mirrors real
+    // amazon.com behavior of returning a generic browse page). Previous
+    // preventDefault made the magnifier button look "dead" to click audits
+    // when the input was empty, since no nav/dom-mutation fired.
     const searchForm = document.querySelector('.nav-search-form');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
-            const input = searchForm.querySelector('input');
-            if (!input.value.trim()) {
-                e.preventDefault();
+            const input = searchForm.querySelector('input[name="k"]');
+            if (input && !input.value.trim()) {
+                // Hint to backend this was an empty submit; /s still renders.
+                input.value = '';
             }
         });
     }
