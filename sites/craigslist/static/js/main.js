@@ -33,7 +33,6 @@
     });
     dots.forEach(function (dot) {
       dot.addEventListener("click", function (event) {
-        event.preventDefault();
         event.stopPropagation();
         show(Number(dot.getAttribute("data-gallery-index")) || 0);
       });
@@ -53,5 +52,15 @@
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("[data-gallery]").forEach(setupGallery);
     document.querySelectorAll(".top-selects").forEach(submitTopSelects);
+    document.querySelectorAll("[data-filter-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var layout = btn.closest(".search-shell") || document;
+        var aside = layout.querySelector(".modern-filters");
+        if (!aside) return;
+        var hidden = aside.style.display === "none";
+        aside.style.display = hidden ? "" : "none";
+        btn.setAttribute("aria-expanded", hidden ? "true" : "false");
+      });
+    });
   });
 }());

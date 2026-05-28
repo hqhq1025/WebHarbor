@@ -64,7 +64,7 @@
   <section class="search-command">
     <div class="search-title-row">
       <a class="search-back" href="{{ url_for('index') }}">{% if category %}{{ category.name }}{% else %}search craigslist{% endif %}</a>
-      <button class="filter-toggle" type="button" aria-label="toggle filters"><span class="icon icom-" aria-hidden="true"></span></button>
+      <button class="filter-toggle" type="button" aria-label="toggle filters" data-filter-toggle><span class="icon icom-" aria-hidden="true"></span></button>
     </div>
     <form class="main-search-box" method="get" action="{% if category %}{{ url_for('category_search', category_slug=category.slug) }}{% else %}{{ url_for('search') }}{% endif %}">
       <span class="search-glass icon icom-" aria-hidden="true"></span>
@@ -74,16 +74,29 @@
       <input type="hidden" name="max_price" value="{{ request.args.get('max_price', '') }}">
       <input type="hidden" name="view" value="{{ active_view }}">
       <button class="cl-icon-button cl-exec-search" type="submit" aria-label="search"><span class="icon icom-" aria-hidden="true"></span></button>
-      <button class="cl-icon-button cl-save-search" type="button" aria-label="save search"><span class="icon icom-" aria-hidden="true"></span></button>
+      {% if current_user.is_authenticated %}
+      <button class="cl-icon-button cl-save-search" type="submit" formaction="{{ url_for('save_search') }}" formmethod="post" aria-label="save search"><span class="icon icom-" aria-hidden="true"></span></button>
+      {% else %}
+      <a class="cl-icon-button cl-save-search" href="{{ url_for('login', next=request.full_path) }}" title="sign in to save searches" aria-label="save search"><span class="icon icom-" aria-hidden="true"></span></a>
+      {% endif %}
     </form>
     <span class="result-count">{% if listings %}1 - {{ listings|length }} of {{ listings|length }}{% else %}0 results{% endif %}</span>
   </section>
 
   <section class="search-tools">
+    {% set owner_arg = request.args.get('listed_by', 'all') %}
+    {% set owner_options = [('all', 'all'), ('owner', 'owner'), ('dealer' if is_for_sale else 'broker', purveyor_label)] %}
+    {% macro tab_url(value) -%}
+      {% if category -%}
+        {{ url_for('category_search', category_slug=category.slug, q=request.args.get('q', ''), area=request.args.get('area', ''), min_price=request.args.get('min_price', ''), max_price=request.args.get('max_price', ''), sort=request.args.get('sort', 'relevance'), has_image=request.args.get('has_image', ''), view=active_view, listed_by=value) }}
+      {%- else -%}
+        {{ url_for('search', q=request.args.get('q', ''), area=request.args.get('area', ''), min_price=request.args.get('min_price', ''), max_price=request.args.get('max_price', ''), sort=request.args.get('sort', 'relevance'), has_image=request.args.get('has_image', ''), view=active_view, listed_by=value) }}
+      {%- endif %}
+    {%- endmacro %}
     <div class="owner-tabs">
-      <button class="selected" type="button">all</button>
-      <button type="button">owner</button>
-      <button type="button">{{ purveyor_label }}</button>
+      {% for value, label in owner_options %}
+      <a class="cl-owner-tab{% if owner_arg == value %} selected{% endif %}" href="{{ tab_url(value) }}">{{ label }}</a>
+      {% endfor %}
     </div>
     <div class="view-buttons" aria-label="view mode">
       <a class="cl-view-button cl-search-view-mode-list{% if active_view == 'list' %} selected{% endif %}" href="{{ view_url('list') }}" title="list view"><span class="icon icom-" aria-hidden="true"></span></a>
@@ -103,9 +116,20 @@
         {% endfor %}
       </select>
     </form>
+    {% set quick_filter_targets = {
+      'price': '#cl-filter-price',
+      'beds': '#cl-filter-bedrooms',
+      'baths': '#cl-filter-bathrooms',
+      'type': '#cl-filter-type',
+      'furnished': '#cl-filter-furnished',
+      'sold by': '#cl-filter-sold-by',
+      'electric assist': '#cl-filter-electric-assist',
+      'condition': '#cl-filter-condition',
+      'posted today': '#cl-filter-posted-today'
+    } %}
     <div class="quick-filter-buttons">
       {% for label in quick_filters %}
-      <button type="button">{{ label }}</button>
+      <a class="cl-quick-filter" href="{{ quick_filter_targets.get(label, '#cl-filter-' + label.replace(' ', '-')) }}">{{ label }}</a>
       {% endfor %}
     </div>
   </section>
@@ -115,7 +139,7 @@
       <form method="get" action="{% if category %}{{ url_for('category_search', category_slug=category.slug) }}{% else %}{{ url_for('search') }}{% endif %}">
         <label class="check"><input type="checkbox" name="title_only" value="1"> search titles only</label>
         <label class="check"><input type="checkbox" name="has_image" value="1" {% if request.args.get('has_image') == '1' %}checked{% endif %}> has image</label>
-        <label class="check"><input type="checkbox" name="posted_today" value="1"> posted today</label>
+        <label class="check" id="cl-filter-posted-today"><input type="checkbox" name="posted_today" value="1"> posted today</label>
         <label class="check"><input type="checkbox" name="hide_duplicates" value="1"> hide duplicates</label>
 
         {% if is_housing %}
@@ -127,7 +151,7 @@
         <a class="use-map" href="{{ view_url('map') }}">use map...</a>
         {% endif %}
 
-        <label class="filter-heading">price</label>
+        <label class="filter-heading" id="cl-filter-price">price</label>
         {% if is_for_sale %}
         <label class="check"><input type="checkbox" name="free" value="1"> free</label>
         {% endif %}
@@ -332,7 +356,7 @@
             {% if photos|length > 1 %}
             <div class="photo-dots" data-gallery-dots>
               {% for photo in photos %}
-              <button class="{% if loop.first %}active{% endif %}" type="button" data-gallery-index="{{ loop.index0 }}" aria-label="show photo {{ loop.index }}"></button>
+              <a class="{% if loop.first %}active{% endif %}" href="#listing-{{ listing.id }}" data-gallery-index="{{ loop.index0 }}" aria-label="show photo {{ loop.index }}"></a>
               {% endfor %}
             </div>
             {% endif %}
