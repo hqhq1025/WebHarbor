@@ -124,15 +124,17 @@
         </div>
       </details>
 
-      {# ---- Language (display-only — real Coursera shows this; mirror DB has English-only, so the popover surfaces the choice but the only value is English) ---- #}
+      {# ---- Language (display-only — real Coursera shows this; mirror DB has English-only, so the popover surfaces the full real choice set but only English yields results) ---- #}
       <details class="filter-pill">
         <summary>Language <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
         <div class="filter-popover">
           <h3>Language</h3>
+          {% for code, label in [('en','English'),('es','Spanish'),('fr','French'),('pt','Portuguese'),('ar','Arabic'),('zh','Chinese (China)'),('zh-tw','Chinese (Taiwan)'),('de','German'),('it','Italian'),('ja','Japanese'),('ko','Korean'),('nl','Dutch'),('pl','Polish'),('ru','Russian'),('tr','Turkish'),('uk','Ukrainian'),('vi','Vietnamese'),('th','Thai'),('id','Indonesian'),('hi','Hindi')] %}
           <label class="fp-radio">
-            <input type="radio" name="lang" value="en" checked>
-            English
+            <input type="radio" name="lang" value="{{ code }}" {% if code == 'en' %}checked{% endif %}>
+            {{ label }}
           </label>
+          {% endfor %}
           <div class="fp-footer">
             <a href="/search?query={{ q|urlencode }}" class="fp-clear">Clear</a>
             <button type="submit" class="btn-primary fp-view">View</button>
