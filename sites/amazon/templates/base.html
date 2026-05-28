@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
     <meta name="csrf-token" content="{{ csrf_token_value }}">
     <title>{% block title %}Amazon.com. Spend less. Smile more.{% endblock %}</title>
 
@@ -63,7 +64,7 @@
       main{min-height:60vh}
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23232f3e'/><text x='16' y='24' text-anchor='middle' font-size='22' fill='%23febd69'>a</text></svg>">
+<rect width='32' height='32' rx='4' fill='%23232f3e'/><text x='16' y='24' text-anchor='middle' font-size='22' fill='%23febd69'>a</text></svg>">
 </head>
 <body>
     {# R7 — skip link for keyboard / screen-reader accessibility (WCAG 2.4.1). #}
