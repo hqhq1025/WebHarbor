@@ -986,6 +986,43 @@ def search():
     # Panel visibility: only show for bio / fact-lookup tasks.
     show_panel = should_show_panel(topic, q)
 
+    # Vertical-specific card data: pull from real DB tables so the
+    # images / videos / news / scholar tabs don't have to invent props.
+    # No fabrication — when the q has no matching row we fall back to
+    # the highest-id rows so the tab still renders an actual grid
+    # (matches real Google's "suggested for you" behaviour).
+    image_cards = []
+    video_cards = []
+    scholar_papers = []
+    if vertical == 'images':
+        qlike = f'%{q.lower()}%'
+        image_cards = (ImageCard.query
+                       .filter(func.lower(ImageCard.query_text).like(qlike))
+                       .limit(24).all())
+        if not image_cards:
+            image_cards = ImageCard.query.order_by(func.random()).limit(24).all()
+    elif vertical == 'videos':
+        qlike = f'%{q.lower()}%'
+        video_cards = (VideoCard.query
+                       .filter(db.or_(
+                           func.lower(VideoCard.title).like(qlike),
+                           func.lower(VideoCard.description).like(qlike),
+                           func.lower(VideoCard.channel).like(qlike),
+                       )).limit(24).all())
+        if not video_cards:
+            video_cards = VideoCard.query.order_by(func.random()).limit(24).all()
+    elif vertical == 'scholar':
+        qlike = f'%{q.lower()}%'
+        scholar_papers = (ScholarPaper.query
+                          .filter(db.or_(
+                              func.lower(ScholarPaper.title).like(qlike),
+                              func.lower(ScholarPaper.abstract).like(qlike),
+                          )).order_by(desc(ScholarPaper.citations)).limit(16).all())
+        if not scholar_papers:
+            scholar_papers = (ScholarPaper.query
+                              .order_by(desc(ScholarPaper.citations))
+                              .limit(16).all())
+
     # Pagination: 10 results per page (Google default). Always show 10 page
     # links if total results suggest it — synthetic but matches real Google.
     per_page = 10
@@ -1007,6 +1044,9 @@ def search():
         answer_token=answer_token,
         knowledge_panel=knowledge_panel,
         show_panel=show_panel,
+        image_cards=image_cards,
+        video_cards=video_cards,
+        scholar_papers=scholar_papers,
         total_pages=total_pages, has_prev=has_prev, has_next=has_next, per_page=per_page,
     )
 

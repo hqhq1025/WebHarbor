@@ -2193,3 +2193,58 @@ input, textarea, select {
     border-top: 1px solid #ebebeb;
 }
 .home-lang-more { font-weight: 500; }
+
+/* ----- Image / Video filter bar (search_images / search_videos) ----- */
+.image-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    padding: 8px 28px 4px;
+    border-bottom: 1px solid #ebebeb;
+    margin-bottom: 8px;
+}
+.image-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.image-filter-label {
+    font-size: 12px;
+    color: #5f6368;
+    font-weight: 500;
+    margin-right: 2px;
+}
+.img-caption-title {
+    font-weight: 500;
+    color: #202124;
+}
+.img-caption-meta {
+    color: #5f6368;
+    font-size: 11px;
+    margin-top: 2px;
+}
+.img-caption-license {
+    color: #1a73e8;
+    font-size: 11px;
+    margin-top: 2px;
+}
+.video-thumb-card {
+    background: #1a1a1a;
+    aspect-ratio: 16/9;
+    width: 240px;
+    flex: 0 0 240px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.video-thumb-bg {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.video-thumb-play {
+    color: rgba(255,255,255,.8);
+    font-size: 36px;
+}

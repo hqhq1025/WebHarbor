@@ -4,23 +4,49 @@
 {% block header %}{{ serp_header(q, 'shopping') }}{% endblock %}
 
 {% block content %}
-<div class="images-grid" style="padding:30px 28px;">
-    {% if topic %}
-        {% set imgs = topic.get_images() %}
-        {% for r in results %}
-        <div class="image-card">
-            <img loading="lazy" decoding="async" src="{{ imgs[loop.index0 % imgs|length] if imgs else '' }}" alt="{{ r.title }}"
-                 onerror="this.style.display='none'">
-            <div class="img-caption">
-                <strong>{{ r.title[:40] }}</strong><br>
-                ${{ (19 + loop.index * 7) }}.99 · {{ r.display_url }}
-            </div>
-        </div>
-        {% endfor %}
-    {% else %}
-    <div style="grid-column:1/-1; padding:60px; text-align:center; color: var(--color-text-tertiary);">
-        No shopping results for "{{ q }}".
-    </div>
-    {% endif %}
+<div class="serp-tools" style="padding: 12px 28px;">
+    About {{ result_count|fmt_count }} results ({{ search_time }} seconds)
 </div>
+
+{# --- Real Shopping requires a Merchant Center listings index, which
+   this mirror does not maintain. Rather than fabricate prices we
+   surface the matching topic + a "Shopping is not indexed" notice
+   and link out to known-good web SERPs / related queries instead. -- #}
+<div class="vertical-landing-notice" style="margin: 0 28px 18px;">
+    <strong>Shopping listings are not indexed in this mirror.</strong>
+    Prices, sellers and stock data require a Merchant Center feed —
+    not part of the dataset. Try the web SERP for retailer pages,
+    or use the related searches below.
+    <div style="margin-top:8px;">
+        <a class="chip" href="{{ url_for('search', q=q, tbm='all') }}">Open web SERP for "{{ q }}"</a>
+        <a class="chip" href="{{ url_for('search', q=q + ' buy', tbm='all') }}">"{{ q }} buy"</a>
+        <a class="chip" href="{{ url_for('search', q=q + ' review', tbm='all') }}">"{{ q }} review"</a>
+    </div>
+</div>
+
+{% if topic %}
+<div class="related-block" style="padding: 0 28px 30px;">
+    <div class="related-header">Topic snapshot: {{ topic.name }}</div>
+    <p style="color: var(--color-text-secondary); font-size: 14px; padding: 0 14px;">
+        {{ (topic.summary or '')[:240] }}{% if topic.summary and topic.summary|length > 240 %}…{% endif %}
+    </p>
+    <div style="padding: 8px 14px;">
+        <a class="chip" href="{{ url_for('topic_detail', slug=topic.slug) }}">Open {{ topic.name }} →</a>
+    </div>
+</div>
+{% endif %}
+
+{% if related %}
+<div class="related-block" style="padding: 0 28px 40px;">
+    <div class="related-header">Related searches</div>
+    <div class="related-grid">
+        {% for rq in related %}
+        <a class="related-item" href="{{ url_for('search', q=rq.term, tbm='all') }}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#70757a"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <span>{{ rq.term }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

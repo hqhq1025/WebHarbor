@@ -4,30 +4,84 @@
 {% block header %}{{ serp_header(q, 'images') }}{% endblock %}
 
 {% block content %}
-<div class="serp-tools" style="padding-left:180px;">
+{# --- Filter bar (color / size / type / license) — wired to /search?...
+   ?-encoded query string so each chip is a real navigation. ------------ #}
+<div class="image-filter-bar" aria-label="Refine image search">
+    <div class="image-filter-group">
+        <span class="image-filter-label">Color:</span>
+        {% for c in ['any','red','blue','green','yellow','black','white'] %}
+        <a class="chip" href="{{ url_for('search', q=q, tbm='images', color=c) }}">{{ c|capitalize }}</a>
+        {% endfor %}
+    </div>
+    <div class="image-filter-group">
+        <span class="image-filter-label">Size:</span>
+        {% for s in ['any','large','medium','icon'] %}
+        <a class="chip" href="{{ url_for('search', q=q, tbm='images', isz=s) }}">{{ s|capitalize }}</a>
+        {% endfor %}
+    </div>
+    <div class="image-filter-group">
+        <span class="image-filter-label">Type:</span>
+        {% for t in ['any','photo','clipart','animated','gif'] %}
+        <a class="chip" href="{{ url_for('search', q=q, tbm='images', itype=t) }}">{{ t|capitalize }}</a>
+        {% endfor %}
+    </div>
+    <div class="image-filter-group">
+        <span class="image-filter-label">Usage:</span>
+        <a class="chip" href="{{ url_for('r4_image_usage_rights') if 'r4_image_usage_rights' else '/' }}">Creative Commons</a>
+        <a class="chip" href="{{ url_for('search', q=q, tbm='images', usage='commercial') }}">Commercial reuse</a>
+    </div>
+</div>
+
+<div class="serp-tools" style="padding: 4px 28px 12px;">
     About {{ result_count|fmt_count }} results ({{ search_time }} seconds)
 </div>
 
+{# --- Image grid: prefer real ImageCard rows (24 distinct query_text rows
+   with source_url, source_domain, dims, license), fall back to topic
+   results' inline image fields when q doesn't index ImageCard. -------- #}
 {% set imgs = [] %}
-{% if topic %}
+{% if image_cards %}
+    {% for c in image_cards %}
+        {% set _ = imgs.append({
+            'src': c.source_url,
+            'alt': c.alt or c.title,
+            'title': c.title,
+            'domain': c.source_domain,
+            'dims': c.dims,
+            'license': c.license_label or c.license,
+            'href': url_for('r4_image_preview', img_id=c.id),
+        }) %}
+    {% endfor %}
+{% elif topic %}
     {% for im in topic.get_images() %}
-        {% set _ = imgs.append((im, topic.name)) %}
+        {% set _ = imgs.append({
+            'src': im, 'alt': topic.name, 'title': topic.name,
+            'domain': '', 'dims': '', 'license': '',
+            'href': url_for('search', q=topic.name, tbm='images'),
+        }) %}
     {% endfor %}
     {% for r in results %}
-        {% if r.image %}{% set _ = imgs.append((r.image, r.title)) %}{% endif %}
+        {% if r.image %}{% set _ = imgs.append({
+            'src': r.image, 'alt': r.title, 'title': r.title,
+            'domain': r.display_url, 'dims': '', 'license': '',
+            'href': r.external_path or url_for('url_redirect', q=r.url),
+        }) %}{% endif %}
     {% endfor %}
 {% endif %}
 
 <div class="images-grid">
     {% if imgs %}
-        {% for img, alt in imgs %}
-        <a class="image-card" href="{{ url_for('search', q=alt, tbm='images') }}">
-            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ alt }}" onerror="this.parentElement.style.display='none'">
-            <div class="img-caption">{{ alt }}</div>
+        {% for img in imgs %}
+        <a class="image-card" href="{{ img.href }}" title="{{ img.title }}">
+            <img loading="lazy" decoding="async" src="{{ img.src }}" alt="{{ img.alt }}"
+                 onerror="this.parentElement.style.display='none'">
+            <div class="img-caption">
+                <div class="img-caption-title">{{ img.title }}</div>
+                {% if img.domain %}<div class="img-caption-meta">{{ img.domain }}{% if img.dims %} · {{ img.dims }}{% endif %}</div>{% endif %}
+                {% if img.license %}<div class="img-caption-license">{{ img.license }}</div>{% endif %}
+            </div>
         </a>
         {% endfor %}
-        {# Pad with other topics' images for richness #}
-        {% set more = nav_verticals %}
     {% else %}
         <div style="grid-column: 1/-1; padding: 60px; text-align:center; color: var(--color-text-tertiary);">
             No images to show. <a href="{{ url_for('search', q='Paris', tbm='images') }}">Try Paris</a>
