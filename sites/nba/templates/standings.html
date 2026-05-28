@@ -39,7 +39,7 @@
   <section class="standings-controls">
     <h1>NBA 2025-26 Regular Season Standings</h1>
     <form class="standings-selects" method="get">
-      <label>Season<select name="season"><option>2025-26</option></select></label>
+      <label>Season<select name="season"><option selected>2025-26</option><option>2024-25</option><option>2023-24</option><option>2022-23</option><option>2021-22</option><option>2020-21</option><option>2019-20</option><option>2018-19</option><option>2017-18</option><option>2016-17</option><option>2015-16</option></select></label>
       <label>Group By<select name="view"><option value="conference" {% if view == 'conference' %}selected{% endif %}>Conference</option><option value="division" {% if view == 'division' %}selected{% endif %}>Division</option></select></label>
       <label>Section<select name="section"><option value="overall" {% if section == 'overall' %}selected{% endif %}>Overall</option><option value="streaks" {% if section == 'streaks' %}selected{% endif %}>Streaks</option><option value="margins" {% if section == 'margins' %}selected{% endif %}>Margins & Stats</option></select></label>
       <button type="submit">Apply</button>
