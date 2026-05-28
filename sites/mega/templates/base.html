@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon.png') }}">
   <title>{% block title %}MEGA{% endblock %}</title>
-  <link rel="icon" href="{{ url_for('static', filename='images/logo-mega.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mega.css') }}">
 </head>
 <body>
   <header class="topbar">
@@ -62,7 +62,7 @@
   <footer class="footer">
     <div>
       <strong>MEGA</strong>
-      <p>Encrypted storage, sharing, VPN, password management, and object storage — offline mirror site, not affiliated with MEGA.</p>
+      <p>Encrypted cloud storage, sharing, VPN, password management, and S4 object storage — built around end-to-end encryption since 2013, from Auckland, New Zealand.</p>
     </div>
     <div class="footer-links">
       <a href="{{ url_for('product_page', slug='security') }}">Security</a>
