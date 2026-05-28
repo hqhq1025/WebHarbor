@@ -1930,3 +1930,17 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* Attribution: shrink so it doesn't overlap the legend. */
 .leaflet-control-attribution { font-size: 10px !important; opacity: 0.85; }
+
+/* Hover tooltips on map markers — small dark chip above the pin. */
+.gm-marker-tooltip {
+    background: rgba(32,33,36,0.92) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font: 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25) !important;
+}
+.gm-marker-tooltip::before {
+    border-top-color: rgba(32,33,36,0.92) !important;
+}

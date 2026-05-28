@@ -157,13 +157,18 @@
             for (var j = f; j < 5; j++) stars += '☆';
         }
         var link = m.slug ? ('/place/' + encodeURIComponent(m.slug)) : '';
+        var dirLink = m.name ? ('/directions?to=' + encodeURIComponent(m.name)) : '';
         return '' +
             '<div class="gm-popup">' +
                 '<div class="gm-popup-name">' + (link ? '<a href="' + link + '">' + escapeHtml(m.name) + '</a>' : escapeHtml(m.name)) + '</div>' +
                 (m.cat ? '<div class="gm-popup-cat">' + escapeHtml(m.cat) + '</div>' : '') +
                 (m.rating ? '<div class="gm-popup-rating"><span style="color:#fbbc04;">' + stars + '</span> ' + Number(m.rating).toFixed(1) + (m.reviews ? ' (' + Number(m.reviews).toLocaleString() + ')' : '') + '</div>' : '') +
                 (m.addr ? '<div class="gm-popup-addr">' + escapeHtml(m.addr) + '</div>' : '') +
-                (link ? '<div class="gm-popup-actions"><a href="' + link + '">View details &rarr;</a></div>' : '') +
+                '<div class="gm-popup-actions">' +
+                    (link ? '<a href="' + link + '">View details</a>' : '') +
+                    (link && dirLink ? '&nbsp;·&nbsp;' : '') +
+                    (dirLink ? '<a href="' + dirLink + '">Directions</a>' : '') +
+                '</div>' +
             '</div>';
     }
 
@@ -235,7 +240,35 @@
             if (m.lat == null || m.lng == null) return;
             var mk = L.marker([m.lat, m.lng], { icon: markerIconForRole(m.role, m.focus) });
             mk.bindPopup(popupHTML(m), { maxWidth: 260, minWidth: 200 });
+            // Hover tooltip — name + rating, like real Google Maps.
+            var tipParts = [escapeHtml(m.name || '')];
+            if (m.rating) tipParts.push('★ ' + Number(m.rating).toFixed(1));
+            mk.bindTooltip(tipParts.join(' · '), {
+                direction: 'top', offset: [0, -8], opacity: 0.92,
+                className: 'gm-marker-tooltip'
+            });
             mk.addTo(markerGroup);
+        });
+
+        // Scale bar — real distance scale in bottom-left mirrors google.com/maps.
+        L.control.scale({ position: 'bottomleft', metric: true, imperial: true, maxWidth: 140 }).addTo(map);
+
+        // "What's here?" — right-click anywhere shows a popup with coords.
+        map.on('contextmenu', function (e) {
+            var lat = e.latlng.lat.toFixed(5);
+            var lng = e.latlng.lng.toFixed(5);
+            var html =
+                '<div class="gm-popup">' +
+                    '<div class="gm-popup-name">Dropped pin</div>' +
+                    '<div class="gm-popup-cat">' + lat + ', ' + lng + '</div>' +
+                    '<div class="gm-popup-actions">' +
+                        '<a href="/directions?to=' + lat + ',' + lng + '">Directions to here</a>' +
+                    '</div>' +
+                '</div>';
+            L.popup({ maxWidth: 240 })
+                .setLatLng(e.latlng)
+                .setContent(html)
+                .openOn(map);
         });
 
         // If the directions page passed an origin+destination, draw a polyline
