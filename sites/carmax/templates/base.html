@@ -18,13 +18,12 @@
     <div class="container">
       <a class="logo" href="{{ url_for('index') }}">Car<span class="accent">Max</span></a>
       <nav>
-        <a href="{{ url_for('cars_index') }}">Shop</a>
+        <a href="{{ url_for('cars_index') }}">Cars for Sale</a>
+        <a href="{{ url_for('sell_my_car') }}">Sell/Trade-In</a>
+        <a href="{{ url_for('financing') }}">Finance</a>
+        <a href="{{ url_for('research_index') }}">Research &amp; Reviews</a>
         <a href="{{ url_for('shop_price_drops') }}">Price drops</a>
-        <a href="{{ url_for('sell_my_car') }}">Sell / trade</a>
-        <a href="{{ url_for('trade_in_index') }}">Trade-in</a>
-        <a href="{{ url_for('financing') }}">Financing</a>
-        <a href="{{ url_for('research_index') }}">Research</a>
-        <a href="{{ url_for('stores_index') }}">Stores</a>
+        <a href="{{ url_for('stores_index') }}">Find a Store</a>
         <a href="{{ url_for('articles_index') }}">Articles</a>
       </nav>
       <div class="user-tools">
@@ -105,8 +104,12 @@
           <a href="{{ url_for('register') }}">Create account</a>
         {% endif %}
         <a href="/about">About CarMax</a>
-        <a href="/about/our-promise">The CarMax Promise</a>
+        <a href="/about/our-promise">Why CarMax</a>
         <a href="/careers">Careers</a>
+        <a href="/about">Supplier inclusion</a>
+        <a href="/about">Social Community Guidelines</a>
+        <a href="/terms">Responsible Disclosure</a>
+        <a href="/about">Accessibility</a>
         <a href="tel:{{ BRAND_PHONE }}">{{ BRAND_PHONE }}</a>
       </div>
     </div>
