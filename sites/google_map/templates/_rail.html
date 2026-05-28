@@ -1,7 +1,13 @@
 <aside class="left-rail" role="navigation" aria-label="Primary">
-    <a href="{{ url_for('index') }}" class="rail-item {% if request.endpoint == 'index' %}active{% endif %}" title="Home">
+    {# Rail hamburger — opens the global "Maps" drawer (mirrors real Google
+       Maps top-left hamburger). Was previously an <a href="/"> labelled
+       "Home" which dead-clicked on the homepage; now it's a real drawer
+       toggle, and the drawer itself contains a "Home" link. #}
+    <button type="button" class="rail-item rail-menu-btn"
+            data-action="open-drawer" title="Menu"
+            aria-haspopup="true" aria-expanded="false" aria-controls="gm-drawer">
         <span class="material-icons-outlined icon">menu</span>
-    </a>
+    </button>
     {% if current_user.is_authenticated %}
         <a href="{{ url_for('saved_page') }}" class="rail-item {% if request.endpoint == 'saved_page' %}active{% endif %}" title="Saved">
             <span class="material-icons-outlined icon">bookmark</span>
