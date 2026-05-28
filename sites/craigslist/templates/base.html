@@ -36,6 +36,16 @@
       <a class="header-action fave-action" href="{{ url_for('saved') }}"><span aria-hidden="true"></span><small>faves{% if saved_count() %} {{ saved_count() }}{% endif %}</small></a>
     </div>
   </header>
+  <nav class="global-cats" aria-label="categories" style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;padding:6px 14px;border-bottom:1px solid #ddd;background:#f7f7f7;">
+    <a href="/search/ccc">community</a>
+    <a href="/search/hhh">housing</a>
+    <a href="/search/sss">for sale</a>
+    <a href="/search/jjj">jobs</a>
+    <a href="/search/bbb">services</a>
+    <a href="{{ url_for('discussion_forums') }}">discussion forums</a>
+    <a href="/search/ggg">gigs</a>
+    <a href="/search/rrr">resumes</a>
+  </nav>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -53,13 +63,13 @@
 
   <footer class="footer">
     <nav class="footer-links" aria-label="footer">
-      <a href="{{ url_for('search') }}">help</a>
-      <a href="{{ url_for('search') }}">safety</a>
-      <a href="{{ url_for('search') }}">privacy</a>
-      <a href="{{ url_for('search') }}">terms</a>
-      <a href="{{ url_for('search') }}">about</a>
-      <a href="{{ url_for('search') }}">app</a>
-      <a href="{{ url_for('search') }}">sitemap</a>
+      <a href="{{ url_for('about_help_index') }}">help</a>
+      <a href="{{ url_for('safety') }}">safety</a>
+      <a href="{{ url_for('about_privacy') }}">privacy</a>
+      <a href="{{ url_for('about_terms') }}">terms</a>
+      <a href="{{ url_for('about') }}">about</a>
+      <a href="{{ url_for('about_apps') }}">app</a>
+      <a href="{{ url_for('about_help_index') }}">sitemap</a>
     </nav>
     <div class="copyright">&copy; 2026 craigslist</div>
   </footer>
