@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon.png') }}">
   <title>{% block title %}SmartAsset | Empowering You to Make Smart Financial Decisions{% endblock %}</title>
   <meta name="description" content="{% block description %}SmartAsset's free tools and articles help you make smarter financial decisions — from mortgages and retirement to taxes and advisors.{% endblock %}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
-  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.svg') }}" type="image/svg+xml">
 </head>
 <body>
 <header class="sa-header">
