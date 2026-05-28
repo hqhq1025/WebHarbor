@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}BBC News{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000' width='100' height='100'/%3E%3Ctext x='50' y='68' font-family='Arial Black' font-size='40' fill='white' text-anchor='middle' font-weight='900'%3EBBC%3C/text%3E%3C/svg%3E">
-    {# R7: per-page head block - SEO meta, OG, twitter:card, JSON-LD #}
+{# R7: per-page head block - SEO meta, OG, twitter:card, JSON-LD #}
     {% block head %}{% endblock %}
     {# R5: BBC Reith fallback chain. We declare a hosted @font-face stub so #}
     {# the local CSS variable --font-reith picks up Reith if the network has #}
@@ -27,6 +27,8 @@
 </head>
 <body data-darkmode="{{ request.cookies.get('bbc_dark_mode', 'off') }}"
       data-highcontrast="{{ request.cookies.get('bbc_high_contrast', 'off') }}">
+{% include 'sprites_inline.html' %}
+
 
 {# R5: ARIA live region for breaking-news announcements. Empty by default; #}
 {# main.js writes the latest headline here so screen readers announce it.  #}
@@ -315,7 +317,7 @@
                 <span aria-hidden="true">·</span>
                 <a href="{{ url_for('accessibility_page') }}">Accessibility</a>
             </nav>
-            <p>Copyright © {{ current_year }} BBC. The BBC is not responsible for the content of external sites. This is a learning mirror — no content is real BBC output.</p>
+            <p>Copyright © {{ current_year }} BBC. The BBC is not responsible for the content of external sites. Read about our approach to external linking.</p>
         </div>
     </div>
 </footer>
