@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon.png') }}">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}Coursera | Degrees, Certificates, & Free Online Courses{% endblock %}</title>
 {# ─── R7 SEO: Open Graph + Twitter card defaults (pages can override) ─── #}
@@ -70,7 +71,7 @@
     </a>
     <div class="nav-explore">
       <div class="nav-dropdown">
-        <button class="nav-explore-btn" type="button">Explore <span aria-hidden="true">&#x25BE;</span></button>
+        <button class="nav-explore-btn" type="button" data-testid="megamenu-explore-button">Explore <span aria-hidden="true">&#x25BE;</span></button>
         <div class="nav-dropdown-menu">
           <div class="dropdown-section">
             <div class="dropdown-col">
@@ -106,6 +107,15 @@
           </div>
         </div>
       </div>
+    </div>
+    {# Primary nav — real upstream Coursera top bar:
+       Online Degrees / Find Career / For Enterprise / For Universities (+ Log In / Join for Free).
+       Sourced from harvest _buttons.jsonl ("Degrees", "Explore", "Join for Free", "Log In") + nav hint. #}
+    <div class="nav-primary-links">
+      <a href="{{ url_for('degrees') }}" class="nav-link">Online Degrees</a>
+      <a href="{{ url_for('careers') }}" class="nav-link">Find Career</a>
+      <a href="{{ url_for('business') }}" class="nav-link">For Enterprise</a>
+      <a href="{{ url_for('for_universities') }}" class="nav-link">For Universities</a>
     </div>
     <form class="nav-search" action="/search" method="get" role="search">
       <input type="text" name="query" placeholder="What do you want to learn?" value="{{ request.args.get('query') or request.args.get('q', '') }}" aria-label="Search">
@@ -149,52 +159,67 @@
 </nav>
 
 <footer class="site-footer">
+  {# Footer columns derived from harvest _footer_links.jsonl —
+     real coursera.com bundles: Popular AI Content / Popular Programs /
+     Popular Skills / Popular Career Resources / Coursera. #}
   <div class="footer-inner">
     <div class="footer-col">
-      <h4>Skills</h4>
-      <a href="{{ url_for('skill_detail', slug='python') }}">Python Skills</a>
-      <a href="{{ url_for('skill_detail', slug='excel') }}">Excel Skills</a>
-      <a href="{{ url_for('skill_detail', slug='data-analysis') }}">Data Analysis</a>
-      <a href="{{ url_for('skill_detail', slug='machine-learning') }}">Machine Learning</a>
-      <a href="{{ url_for('skill_detail', slug='cybersecurity') }}">Cybersecurity</a>
-      <a href="{{ url_for('skill_detail', slug='project-management') }}">Project Management</a>
+      <h4>Popular AI Content</h4>
+      <a href="/search?query=artificial%20intelligence">Artificial Intelligence (AI)</a>
+      <a href="/search?query=machine%20learning">Machine Learning</a>
+      <a href="/search?query=prompt%20engineering">Prompt Engineering</a>
+      <a href="/search?query=generative%20ai">Generative AI</a>
+      <a href="/search?query=ai%20product%20manager">AI Product Manager</a>
+      <a href="/search?query=ai%20essentials">AI Essentials Specialization</a>
+      <a href="/search?query=deep%20learning">Deep Learning Specialization</a>
     </div>
     <div class="footer-col">
-      <h4>Professional Certificates</h4>
+      <h4>Popular Programs</h4>
       <a href="{{ url_for('professional_certificates') }}">Google Career Certificates</a>
-      <a href="{{ url_for('professional_certificates') }}">IBM Certificates</a>
-      <a href="{{ url_for('professional_certificates') }}">Meta Certificates</a>
-      <a href="{{ url_for('professional_certificates') }}">All Certificates</a>
-      <a href="/search?type=Professional+Certificate">Browse Certificates</a>
+      <a href="/search?query=google%20cybersecurity">Google Cybersecurity Certificate</a>
+      <a href="/search?query=google%20data%20analytics">Google Data Analytics Certificate</a>
+      <a href="/search?query=google%20it%20support">Google IT Support Certificate</a>
+      <a href="/search?query=google%20project%20management">Google Project Management Certificate</a>
+      <a href="/search?query=google%20ux%20design">Google UX Design Certificate</a>
+      <a href="/search?query=ibm%20data%20science">IBM Data Science Certificate</a>
+      <a href="/search?query=intuit%20bookkeeping">Intuit Bookkeeping Certificate</a>
     </div>
     <div class="footer-col">
-      <h4>Courses &amp; Specializations</h4>
-      <a href="/search?type=Course">Courses</a>
-      <a href="/search?type=Specialization">Specializations</a>
-      <a href="/search?type=Guided+Project">Guided Projects</a>
-      <a href="/search?free=1">Free Courses</a>
-      <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a>
-      <a href="{{ url_for('degrees') }}">Online Degrees</a>
+      <h4>Popular Skills</h4>
+      <a href="/search?query=accounting">Accounting</a>
+      <a href="/search?query=cybersecurity">Cybersecurity</a>
+      <a href="/search?query=data%20analytics">Data Analytics</a>
+      <a href="/search?query=digital%20marketing">Digital Marketing</a>
+      <a href="/search?query=human%20resources">Human Resources (HR)</a>
+      <a href="/search?query=microsoft%20excel">Microsoft Excel</a>
+      <a href="/search?query=project%20management">Project Management</a>
+      <a href="/search?query=python">Python</a>
+      <a href="/search?query=sql">SQL</a>
+    </div>
+    <div class="footer-col">
+      <h4>Popular Career Resources</h4>
+      <a href="{{ url_for('careers') }}">Career Aptitude Test</a>
+      <a href="{{ url_for('careers') }}">High-Income Skills to Learn</a>
+      <a href="{{ url_for('careers') }}">How to Learn Artificial Intelligence</a>
+      <a href="{{ url_for('careers') }}">CAPM Certification Requirements</a>
+      <a href="{{ url_for('careers') }}">PMP Certification Requirements</a>
+      <a href="{{ url_for('careers') }}">CompTIA A+ Certification Requirements</a>
+      <a href="{{ url_for('careers') }}">CompTIA Security+ Certification Requirements</a>
+      <a href="{{ url_for('careers') }}">Essential IT Certifications</a>
+      <a href="{{ url_for('careers') }}">Popular Cybersecurity Certifications</a>
     </div>
     <div class="footer-col">
       <h4>Coursera</h4>
+      <a href="{{ url_for('index') }}">About</a>
+      <a href="{{ url_for('partners') }}">Partners</a>
       <a href="{{ url_for('careers') }}">Careers</a>
       <a href="{{ url_for('blog') }}">Blog</a>
       <a href="{{ url_for('help_center') }}">Help Center</a>
+      <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a>
+      <a href="{{ url_for('professional_certificates') }}">Professional Certificates</a>
       <a href="{{ url_for('mobile') }}">Mobile App</a>
-      <a href="{{ url_for('partners') }}">Partners</a>
       <a href="{{ url_for('for_universities') }}">For Universities</a>
       <a href="{{ url_for('for_government') }}">For Governments</a>
-    </div>
-    <div class="footer-col">
-      <h4>Career Resources</h4>
-      <a href="{{ url_for('business') }}">For Business</a>
-      <a href="{{ url_for('for_teams') }}">For Teams</a>
-      <a href="{{ url_for('partners') }}">For Universities</a>
-      <a href="{{ url_for('partners') }}">Partners</a>
-      {% for slug, name in nav_categories[:3] %}
-      <a href="{{ url_for('browse', category_slug=slug) }}">{{ name }}</a>
-      {% endfor %}
     </div>
   </div>
   <div class="footer-brand-row">
