@@ -782,33 +782,45 @@ def handle_boardgamegeek(routes: dict[str, dict[str, Any]]) -> tuple[int, int]:
 
         for bgg_id, rec in merged.items():
             db_updates = {k: v for k, v in rec.items() if k != 'slug' and v is not None}
-            if _row_exists(conn, 'games', {'bgg_id': bgg_id}):
+            cur = conn.execute(
+                'SELECT image_filename FROM games WHERE bgg_id=?',
+                (bgg_id,)).fetchone()
+            if cur is not None:
+                # Preserve existing local cover thumbnails (`<id>_cover.jpg`).
+                # The template renders image_filename via url_for('static',
+                # filename='images/' + g.image_filename), so a https:// value
+                # would break in-place rendering. Only fill when NULL/empty
+                # or when current value already points off-site.
+                cur_img = cur[0]
+                if cur_img and not cur_img.lower().startswith('http'):
+                    db_updates.pop('image_filename', None)
                 upd += _set_fields(conn, 'games', {'bgg_id': bgg_id}, db_updates)
-            else:
-                name = rec.get('name')
-                slug = rec.get('slug') or (
-                    re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')[:200]
-                    if name else None)
-                if not name or not slug:
-                    continue
-                new_id = _next_id(conn, 'games')
-                cols = ['id', 'bgg_id', 'name', 'slug']
-                vals: list[Any] = [new_id, bgg_id, name, slug]
-                for c in ('short_description', 'image_filename', 'avg_rating',
-                          'num_ratings', 'minplayers', 'maxplayers', 'minage'):
-                    v = rec.get(c)
-                    if v is not None:
-                        cols.append(c)
-                        vals.append(v)
-                # Mark as a boardgame subtype so existing browse pages can
-                # surface it without further enrichment.
-                cols.append('subtype')
-                vals.append('boardgame')
-                ph = ', '.join('?' * len(cols))
-                conn.execute(
-                    f'INSERT INTO games ({", ".join(cols)}) VALUES ({ph})',
-                    vals)
-                ins += 1
+                continue
+            # INSERT new game
+            name = rec.get('name')
+            slug = rec.get('slug') or (
+                re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')[:200]
+                if name else None)
+            if not name or not slug:
+                continue
+            new_id = _next_id(conn, 'games')
+            cols = ['id', 'bgg_id', 'name', 'slug']
+            vals: list[Any] = [new_id, bgg_id, name, slug]
+            for c in ('short_description', 'image_filename', 'avg_rating',
+                      'num_ratings', 'minplayers', 'maxplayers', 'minage'):
+                v = rec.get(c)
+                if v is not None:
+                    cols.append(c)
+                    vals.append(v)
+            # Mark as a boardgame subtype so existing browse pages can
+            # surface it without further enrichment.
+            cols.append('subtype')
+            vals.append('boardgame')
+            ph = ', '.join('?' * len(cols))
+            conn.execute(
+                f'INSERT INTO games ({", ".join(cols)}) VALUES ({ph})',
+                vals)
+            ins += 1
         conn.commit()
     finally:
         conn.close()
