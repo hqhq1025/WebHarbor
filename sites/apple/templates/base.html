@@ -168,7 +168,10 @@
                 <li class="gn-item"><a href="{{ url_for('ipad') }}" class="gn-link">iPad</a></li>
                 <li class="gn-item"><a href="{{ url_for('iphone') }}" class="gn-link">iPhone</a></li>
                 <li class="gn-item"><a href="{{ url_for('watch') }}" class="gn-link">Watch</a></li>
+                <li class="gn-item"><a href="{{ url_for('vision_pro') }}" class="gn-link">Vision</a></li>
                 <li class="gn-item"><a href="{{ url_for('airpods') }}" class="gn-link">AirPods</a></li>
+                <li class="gn-item"><a href="{{ url_for('apple_music') }}" class="gn-link">TV &amp; Home</a></li>
+                <li class="gn-item"><a href="{{ url_for('apple_music') }}" class="gn-link">Entertainment</a></li>
                 <li class="gn-item"><a href="{{ url_for('accessories') }}" class="gn-link">Accessories</a></li>
                 <li class="gn-item"><a href="{{ url_for('support') }}" class="gn-link">Support</a></li>
                 <li class="gn-item gn-search">
@@ -291,31 +294,51 @@
                         <li><a href="{{ url_for('ipad') }}">iPad</a></li>
                         <li><a href="{{ url_for('iphone') }}">iPhone</a></li>
                         <li><a href="{{ url_for('watch') }}">Watch</a></li>
+                        <li><a href="{{ url_for('vision_pro') }}">Vision</a></li>
                         <li><a href="{{ url_for('airpods') }}">AirPods</a></li>
+                        <li><a href="{{ url_for('apple_music') }}">TV &amp; Home</a></li>
+                        <li><a href="{{ url_for('apple_music') }}">AirTag</a></li>
                         <li><a href="{{ url_for('accessories') }}">Accessories</a></li>
+                        <li><a href="{{ url_for('shop_refurbished') }}">Gift Cards</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Apple Wallet</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#" aria-disabled="true">Wallet</a></li>
+                        <li><a href="{{ url_for('apple_card_application') }}">Apple&nbsp;Card</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;Pay</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;Cash</a></li>
                     </ul>
                 </div>
                 <div class="footer-column">
                     <h3 class="footer-column-title">Account</h3>
                     <ul class="footer-column-list">
-                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Manage Your Apple ID</a></li>
-                        <li><a href="{{ url_for('bag') }}">Shopping Bag</a></li>
-                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Order Status</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Manage Your Apple Account</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Apple Store Account</a></li>
+                        <li><a href="#" aria-disabled="true">iCloud.com</a></li>
                     </ul>
                     <h3 class="footer-column-title">Entertainment</h3>
                     <ul class="footer-column-list">
-                        <li><a href="#" aria-disabled="true">Apple One</a></li>
-                        <li><a href="#" aria-disabled="true">Apple TV+</a></li>
-                        <li><a href="{{ url_for('apple_music') }}">Apple Music</a></li>
-                        <li><a href="#" aria-disabled="true">Apple Arcade</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;One</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;TV+</a></li>
+                        <li><a href="{{ url_for('apple_music') }}">Apple&nbsp;Music</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;Arcade</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;Fitness+</a></li>
+                        <li><a href="#" aria-disabled="true">Apple&nbsp;News+</a></li>
+                        <li><a href="#" aria-disabled="true">Apple Podcasts</a></li>
                     </ul>
                 </div>
                 <div class="footer-column">
                     <h3 class="footer-column-title">Apple Store</h3>
                     <ul class="footer-column-list">
-                        <li><a href="{{ url_for('shop') }}">Find a Store</a></li>
+                        <li><a href="{{ url_for('retail_index') }}">Find a Store</a></li>
                         <li><a href="#" aria-disabled="true">Genius Bar</a></li>
-                        <li><a href="#" aria-disabled="true">Today at Apple</a></li>
+                        <li><a href="{{ url_for('today_at_apple_index') }}">Today at Apple</a></li>
+                        <li><a href="#" aria-disabled="true">Group Reservations</a></li>
+                        <li><a href="#" aria-disabled="true">Apple Camp</a></li>
+                        <li><a href="#" aria-disabled="true">Apple Store App</a></li>
+                        <li><a href="{{ url_for('shop_refurbished') }}">Certified Refurbished</a></li>
                         <li><a href="{{ url_for('trade_in') }}">Apple Trade In</a></li>
                         <li><a href="#" aria-disabled="true">Financing</a></li>
                         <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Order Status</a></li>
@@ -323,21 +346,42 @@
                     </ul>
                 </div>
                 <div class="footer-column">
-                    <h3 class="footer-column-title">Apple Values</h3>
+                    <h3 class="footer-column-title">For Business</h3>
                     <ul class="footer-column-list">
-                        <li><a href="/accessibility">Accessibility</a></li>
-                        <li><a href="/education-pricing">Education</a></li>
-                        <li><a href="/environment">Environment</a></li>
-                        <li><a href="#">Inclusion and Diversity</a></li>
-                        <li><a href="#">Privacy</a></li>
-                        <li><a href="#">Supply Chain</a></li>
+                        <li><a href="{{ url_for('business_quote') }}">Apple and Business</a></li>
+                        <li><a href="{{ url_for('business_quote') }}">Shop for Business</a></li>
+                    </ul>
+                    <h3 class="footer-column-title">For Education</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="{{ url_for('education_eligibility') }}">Apple and Education</a></li>
+                        <li><a href="{{ url_for('education_eligibility') }}">Shop for K-12</a></li>
+                        <li><a href="{{ url_for('education_eligibility') }}">Shop for College</a></li>
+                    </ul>
+                    <h3 class="footer-column-title">For Healthcare</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#" aria-disabled="true">Apple in Healthcare</a></li>
+                        <li><a href="{{ url_for('watch') }}">Health on Apple Watch</a></li>
+                        <li><a href="#" aria-disabled="true">Health Records on iPhone</a></li>
+                    </ul>
+                    <h3 class="footer-column-title">For Government</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#" aria-disabled="true">Shop for Government</a></li>
+                        <li><a href="#" aria-disabled="true">Shop for Veterans and Military</a></li>
                     </ul>
                 </div>
                 <div class="footer-column">
+                    <h3 class="footer-column-title">Apple Values</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#">Accessibility</a></li>
+                        <li><a href="{{ url_for('education_eligibility') }}">Education</a></li>
+                        <li><a href="#">Environment</a></li>
+                        <li><a href="#">Inclusion and Diversity</a></li>
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Racial Equity and Justice</a></li>
+                        <li><a href="#">Supply Chain</a></li>
+                    </ul>
                     <h3 class="footer-column-title">About Apple</h3>
                     <ul class="footer-column-list">
-                        <li><a href="/about">About Apple</a></li>
-                        <li><a href="/business">Apple at Work</a></li>
                         <li><a href="#">Newsroom</a></li>
                         <li><a href="#">Apple Leadership</a></li>
                         <li><a href="#">Career Opportunities</a></li>
