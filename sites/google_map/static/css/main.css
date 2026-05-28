@@ -1850,3 +1850,83 @@ img { max-width: 100%; height: auto; display: block; }
     color: inherit; font: inherit; width: 100%;
     display: flex; flex-direction: column; align-items: center;
 }
+
+/* ---------- Real Leaflet map host (replaces .map-canvas mock) ---------- */
+/* When Leaflet boots, leaflet-init.js hides .map-canvas-fallback. The host
+   takes the full .map-canvas area and Leaflet manages its own tiles. */
+.leaflet-host {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+/* Suppress the CSS gradient blob on .map-canvas when leaflet has mounted —
+   it would bleed through the tile background and look messy. */
+.map-canvas:has(.leaflet-host) {
+    background: #e5e3df;
+}
+.map-canvas:has(.leaflet-host)::before,
+.map-canvas:has(.leaflet-host)::after { content: none; }
+
+/* Ensure attribution + chrome stay above the tiles. */
+.main-map .map-controls,
+.main-map .map-typeswitch,
+.main-map .map-layers,
+.main-map .map-status-pill,
+.main-map .map-active-layers,
+.main-map .map-legend,
+.main-map .map-account { z-index: 600; }
+
+/* Custom div-icon markers */
+.gm-marker { background: transparent !important; border: 0 !important; }
+.gm-pin {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #ea4335; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.gm-pin-poi { background: #ea4335; }
+.gm-pin-focus {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #1a73e8; border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+}
+.gm-pin-origin, .gm-pin-dest {
+    width: 26px; height: 30px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: #34a853; color: #fff;
+    font: 600 13px/30px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-align: center;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.gm-pin-dest { background: #c5221f; }
+
+/* "You are here" pulse */
+.gm-marker-locate .gm-locate-pulse {
+    position: absolute; left: 0; top: 0;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(26,115,232,0.25);
+    animation: gm-pulse 1.4s ease-out infinite;
+}
+.gm-marker-locate .gm-locate-dot {
+    position: absolute; left: 8px; top: 8px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #1a73e8; border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+@keyframes gm-pulse {
+    0%   { transform: scale(0.4); opacity: 0.7; }
+    100% { transform: scale(2.2); opacity: 0;   }
+}
+
+/* Popup content */
+.leaflet-popup-content .gm-popup { font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-width: 180px; }
+.gm-popup-name a { color: #1a73e8; text-decoration: none; font-weight: 500; }
+.gm-popup-name a:hover { text-decoration: underline; }
+.gm-popup-cat { color: #5f6368; font-size: 12px; margin: 2px 0 4px; }
+.gm-popup-rating { font-size: 12px; margin-bottom: 4px; }
+.gm-popup-addr { color: #5f6368; font-size: 12px; margin-bottom: 6px; }
+.gm-popup-actions a { color: #1a73e8; font-size: 12px; text-decoration: none; }
+.gm-popup-actions a:hover { text-decoration: underline; }
+
+/* Attribution: shrink so it doesn't overlap the legend. */
+.leaflet-control-attribution { font-size: 10px !important; opacity: 0.85; }

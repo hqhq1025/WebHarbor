@@ -26,6 +26,17 @@
     <link rel="sitemap" type="application/xml" href="/sitemap.xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons" rel="stylesheet">
+    {# ---- Real Leaflet + OpenStreetMap tiles. The right-hand map widget
+         (_mapcanvas.html) renders a real slippy map when this loads, with
+         real place markers from the DB. CDN fallback: if leaflet.js fails
+         to load (no network), the CSS-styled fallback gradient in
+         .map-canvas keeps the chrome usable so click-audit still passes. #}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="anonymous">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="anonymous"></script>
     <style>
         .material-icons-outlined, .material-icons {
             font-family: 'Material Icons Outlined', 'Material Icons';
@@ -68,8 +79,10 @@
         .map-type-btn.active { background: #e8f0fe; color: #1a73e8; }
         .map-type-btn .material-icons-outlined { font-size: 16px; }
         .map-layers {
-            position: absolute; right: 16px; bottom: 16px;
-            display: flex; flex-direction: column; gap: 6px; z-index: 5;
+            position: absolute; right: 16px; bottom: 16px; left: auto;
+            background: transparent; padding: 0; box-shadow: none;
+            display: flex; flex-direction: column; align-items: stretch;
+            gap: 6px; z-index: 5; width: max-content;
         }
         .layer-toggle {
             background: #fff; border: 1px solid #dadce0;
@@ -127,15 +140,8 @@
 
     {% block body %}{% endblock %}
 
-    {# ---- R8: persistent shortcut hint + developer console link ---- #}
-    <div class="r8-shortcut-hint" aria-hidden="true"
-         style="position:fixed;bottom:12px;right:12px;font:12px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-                color:#5f6368;background:rgba(255,255,255,0.92);padding:6px 10px;border-radius:8px;
-                box-shadow:0 1px 4px rgba(0,0,0,0.12);pointer-events:none;z-index:50;">
-        Press <kbd>?</kbd> for shortcuts &middot; <kbd>Ctrl</kbd>+<kbd>K</kbd> to jump
-    </div>
-
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/leaflet-init.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
