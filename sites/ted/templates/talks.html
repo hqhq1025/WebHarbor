@@ -29,5 +29,22 @@
       <p>No talks matched those filters.</p>
     {% endfor %}
   </div>
+  {% if n_pages and n_pages > 1 %}
+  <nav class="pagination" aria-label="Talks pages">
+    {% set base_args = {} %}
+    {% if topic %}{% set _ = base_args.update({'topic': topic}) %}{% endif %}
+    {% if event %}{% set _ = base_args.update({'event': event}) %}{% endif %}
+    {% if max_minutes %}{% set _ = base_args.update({'max_minutes': max_minutes}) %}{% endif %}
+    {% if sort %}{% set _ = base_args.update({'sort': sort}) %}{% endif %}
+    {% if page > 1 %}<a href="{{ url_for('talks', page=page-1, **base_args) }}">Prev</a>{% endif %}
+    {% set start_p = [1, page-2]|max %}
+    {% set end_p = [n_pages, page+2]|min %}
+    {% for p in range(start_p, end_p + 1) %}
+      <a href="{{ url_for('talks', page=p, **base_args) }}"{% if p == page %} class="active"{% endif %}>{{ p }}</a>
+    {% endfor %}
+    {% if page < n_pages %}<a href="{{ url_for('talks', page=page+1, **base_args) }}">Next</a>{% endif %}
+    <span class="pagination-info">{{ total }} talks - page {{ page }}/{{ n_pages }}</span>
+  </nav>
+  {% endif %}
 </section>
 {% endblock %}

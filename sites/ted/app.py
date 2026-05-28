@@ -502,11 +502,12 @@ def scored_talks(query, talks):
         return list(talks)
     ranked = []
     for talk in talks:
-        text = " ".join([talk.title, talk.speaker, talk.event, talk.description,
-                         talk.transcript, " ".join(talk.topics)]).lower()
+        text = " ".join([talk.title or "", talk.speaker or "", talk.event or "",
+                         talk.description or "", talk.transcript or "",
+                         " ".join(talk.topics or [])]).lower()
         score = sum(1 for token in tokens if token in text)
         if score:
-            ranked.append((score, talk.views, talk))
+            ranked.append((score, talk.views or 0, talk))
     return [talk for _, _, talk in sorted(ranked, key=lambda item: (-item[0], -item[1]))]
 
 
@@ -832,12 +833,15 @@ def index():
                            next_conf=next_conf)
 
 
+_TALKS_PAGE_SIZE = 24
+
 @app.route("/talks")
 def talks():
     topic = request.args.get("topic", "").lower()
     event = request.args.get("event", "")
     max_minutes = request.args.get("max_minutes", type=int)
     sort = request.args.get("sort", "newest")
+    page = max(1, request.args.get("page", 1, type=int))
     query = Talk.query
     if event:
         query = query.filter(Talk.event == event)
@@ -851,9 +855,15 @@ def talks():
         items = [talk for talk in items if topic in [t.lower() for t in talk.topics]]
     if max_minutes:
         items = [talk for talk in items if talk.minutes <= max_minutes]
+    total = len(items)
+    n_pages = max(1, (total + _TALKS_PAGE_SIZE - 1) // _TALKS_PAGE_SIZE)
+    page = min(page, n_pages)
+    start = (page - 1) * _TALKS_PAGE_SIZE
+    items = items[start:start + _TALKS_PAGE_SIZE]
     events = [row[0] for row in db.session.query(Talk.event).distinct().order_by(Talk.event).all()]
     return render_template("talks.html", talks=items, topic=topic, event=event,
-                           max_minutes=max_minutes, events=events, sort=sort)
+                           max_minutes=max_minutes, events=events, sort=sort,
+                           page=page, n_pages=n_pages, total=total)
 
 
 @app.route("/search")
