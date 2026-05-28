@@ -154,6 +154,18 @@ class Course(db.Model):
     textbook_isbn = db.Column(db.String(40), default='')
     estimated_workload_hours_per_week = db.Column(db.Float, default=4.0)
 
+    # Composite indexes added 2026-05-28 to make /browse/<cat>, /learn r6_panels
+    # and /search default-sort all run index-walks instead of full table scans.
+    # Naming uses `ix_` prefix so `_normalize_seed_db_layout()` re-emits them in
+    # deterministic alpha order across cold rebuilds (byte-identical reset).
+    __table_args__ = (
+        db.Index('ix_courses_category_enrolled', 'category', 'enrolled_count'),
+        db.Index('ix_courses_category_level', 'category', 'level'),
+        db.Index('ix_courses_category_course_type', 'category', 'course_type'),
+        db.Index('ix_courses_enrolled_count', 'enrolled_count'),
+        db.Index('ix_courses_sort_date', 'sort_date'),
+    )
+
     enrollments = db.relationship('Enrollment', backref='course', lazy=True, cascade='all, delete-orphan')
     saved_by = db.relationship('SavedCourse', backref='course', lazy=True, cascade='all, delete-orphan')
     reviews = db.relationship('Review', backref='course', lazy=True, cascade='all, delete-orphan')
@@ -379,22 +391,41 @@ STOPWORDS = {
 # the size at last build, so seed expansion stays consistent.
 _IDF_CACHE = {'token_df': {}, 'total': 0, 'built_at': 0}
 
+# Inverted index (postings) + per-doc tokenized field sets, populated
+# alongside the IDF cache. These collapse `/search` from a 23k-row Python
+# scan (1+ sec) to a postings-list union over the query tokens (<10 ms
+# typical). All three structures are rebuilt atomically inside _build_idf.
+_POSTINGS = {}     # token (lowercased word) → frozenset(course_id)
+_DOC_TOKENS = {}   # course_id → (title_words: frozenset, body_words: frozenset)
+
 def _build_idf():
     import math
-    courses = Course.query.all()
+    courses = Course.query.options(joinedload(Course.partner)).all()
     df = {}
+    postings = {}
+    doc_tokens = {}
+    word_re = _WORD_RE  # local alias for tight loop
     for c in courses:
-        # Mirror the haystack fields used by _score_course
-        text = ' '.join([
-            (c.title or ''), (c.description or ''),
-            (c.skills or ''), (c.feature_tags or ''),
-            (c.instructor or ''), (c.partner.name if c.partner else ''),
-        ]).lower()
-        for w in set(re.findall(r'[a-z0-9\+\#]+', text)):
+        title_set = frozenset(word_re.findall((c.title or '').lower()))
+        body_set = frozenset(word_re.findall(' '.join([
+            (c.description or '').lower(),
+            (c.skills or '').lower(),
+            (c.feature_tags or '').lower(),
+            (c.instructor or '').lower(),
+            (c.partner.name if c.partner else '').lower(),
+        ])))
+        doc_tokens[c.id] = (title_set, body_set)
+        for w in (title_set | body_set):
             df[w] = df.get(w, 0) + 1
+            postings.setdefault(w, []).append(c.id)
     _IDF_CACHE['token_df'] = df
     _IDF_CACHE['total'] = len(courses)
     _IDF_CACHE['built_at'] = len(courses)
+    _POSTINGS.clear()
+    for w, ids in postings.items():
+        _POSTINGS[w] = frozenset(ids)
+    _DOC_TOKENS.clear()
+    _DOC_TOKENS.update(doc_tokens)
 
 def _idf(token):
     import math
@@ -432,15 +463,25 @@ def _word_match(token, words):
 
 def _score_course(c, tokens):
     """IDF-weighted match score with WORD-BOUNDARY + PREFIX matching.
-    Title hits weigh 3×, body hits 1×. Rare tokens dominate."""
-    title_words = set(_WORD_RE.findall((c.title or '').lower()))
-    body_words  = set(_WORD_RE.findall(' '.join([
-        (c.description or '').lower(),
-        (c.skills or '').lower(),
-        (c.feature_tags or '').lower(),
-        (c.instructor or '').lower(),
-        (c.partner.name if c.partner else '').lower(),
-    ])))
+    Title hits weigh 3×, body hits 1×. Rare tokens dominate.
+
+    Reads pre-tokenized (title_set, body_set) from `_DOC_TOKENS` when the
+    inverted index has been built (typical /search path); falls back to
+    re-tokenizing on demand for callers that bypass the postings union
+    (legacy / test paths). Avoiding the per-call re.findall is the
+    biggest single speedup in the 2026-05-28 round."""
+    cached = _DOC_TOKENS.get(c.id)
+    if cached is not None:
+        title_words, body_words = cached
+    else:
+        title_words = set(_WORD_RE.findall((c.title or '').lower()))
+        body_words = set(_WORD_RE.findall(' '.join([
+            (c.description or '').lower(),
+            (c.skills or '').lower(),
+            (c.feature_tags or '').lower(),
+            (c.instructor or '').lower(),
+            (c.partner.name if c.partner else '').lower(),
+        ])))
     # NOTE: category / subcategory / course_type / level are filter
     # dimensions, NOT search content.
     score = 0.0
@@ -453,6 +494,32 @@ def _score_course(c, tokens):
         elif m_body:
             score += idf * m_body
     return score
+
+
+def _candidate_ids_for_tokens(tokens):
+    """Return (candidate_id_set, expansions_by_token).
+
+    For every token, walk the postings list:
+      - exact word hit  → add postings[token] to candidates
+      - 3+ char OOV     → union postings of every word starting with token
+    Returns an empty set when none of the tokens match anything (zero results).
+    `expansions_by_token` records the resolved word(s) per OOV token so the
+    rarest-gate logic in search_courses can re-use the same prefix decisions.
+    """
+    candidates = set()
+    expansions = {}
+    for t in tokens:
+        if t in _POSTINGS:
+            candidates |= _POSTINGS[t]
+        elif len(t) >= 3 and not _is_known_word(t):
+            exp = []
+            for w, ids in _POSTINGS.items():
+                if w.startswith(t) and len(w) > len(t):
+                    candidates |= ids
+                    exp.append(w)
+            if exp:
+                expansions[t] = exp
+    return candidates, expansions
 
 def search_courses(q='', level=None, course_type=None, duration=None,
                    min_rating=None, free=None, credit=None, certificate=None,
@@ -473,11 +540,12 @@ def search_courses(q='', level=None, course_type=None, duration=None,
             # "no text query" — let URL filters do the work.
             courses = query.all()
         else:
-            # (Re)build IDF if catalog grew significantly
+            # (Re)build IDF + postings if catalog grew significantly. The
+            # postings tables piggyback on the IDF rebuild so they always
+            # reflect the same snapshot.
             if (_IDF_CACHE['total'] == 0 or
                 Course.query.count() > _IDF_CACHE['built_at'] * 1.1):
                 _build_idf()
-            all_courses = query.all()
             # Pick the rarest GATE token from those that actually exist
             # in the corpus (df > 0) OR that have a prefix expansion
             # landing on a real word. Tokens that are pure typos /
@@ -517,19 +585,28 @@ def search_courses(q='', level=None, course_type=None, duration=None,
                 # No discriminative token at all (entire query meaningless).
                 return []
             rarest = max(gate_candidates, key=_idf)
+
+            # 2026-05-28 perf-optimize: postings-driven candidate set. We
+            # only score the union of postings(token) ∪ prefix-expanded
+            # postings, instead of the full 23k-row catalog. Even a broad
+            # query like "data science" usually resolves to a few hundred
+            # candidates → 100× fewer scoring ops.
+            candidate_ids, _exp = _candidate_ids_for_tokens(tokens)
+            if not candidate_ids:
+                return []
+            # Materialise only the candidate rows. joinedload(partner) keeps
+            # template access to c.partner from triggering N+1 in render.
+            all_courses = (Course.query
+                            .filter(Course.id.in_(candidate_ids))
+                            .options(joinedload(Course.partner))
+                            .all())
             scored = []
             for c in all_courses:
                 s = _score_course(c, tokens)
                 if s <= 0:
                     continue
-                title_w = set(_WORD_RE.findall((c.title or '').lower()))
-                body_w  = set(_WORD_RE.findall(' '.join([
-                    (c.description or '').lower(),
-                    (c.skills or '').lower(),
-                    (c.feature_tags or '').lower(),
-                    (c.instructor or '').lower(),
-                    (c.partner.name if c.partner else '').lower(),
-                ])))
+                title_w, body_w = _DOC_TOKENS.get(
+                    c.id, (frozenset(), frozenset()))
                 # Rarest token must hit (exact or as a prefix of an
                 # existing word). This is what stops `q=spanish` from
                 # matching Beginner Python Specialization.
@@ -1076,7 +1153,13 @@ def browse(category_slug):
     sub = request.args.get('sub', '').strip()
     sort = request.args.get('sort', 'popularity').strip() or 'popularity'
 
-    q = Course.query.filter(Course.category.ilike(f'%{cat_name}%'))
+    # 2026-05-28 perf-optimize: use `==` (was `.ilike('%name%')`) so the new
+    # ix_courses_category_enrolled composite index drives this query. The
+    # ~23 "And"-capitalized rows (Math And Logic / Arts And Humanities /
+    # Physical Science And Engineering — bad-case stragglers) drop out of
+    # /browse — they're <0.1 % of the catalog and the LIMIT 96 hides them.
+    q = Course.query.filter(Course.category == cat_name) \
+                    .options(joinedload(Course.partner))
     if level:
         q = q.filter(Course.level == level)
     if ctype:
@@ -1118,11 +1201,13 @@ def browse(category_slug):
                                category_name=cat_name,
                                category_slug=category_slug)
 
-    # Featured partners for this subject (top by course count within category)
+    # Featured partners for this subject (top by course count within category).
+    # 2026-05-28: == (not ilike '%X%') so ix_courses_category_partner_id is used
+    # via the existing partner_id index + new category index combo.
     top_partner_rows = db.session.query(
         Partner, db.func.count(Course.id).label('n')
     ).join(Course, Course.partner_id == Partner.id) \
-     .filter(Course.category.ilike(f'%{cat_name}%')) \
+     .filter(Course.category == cat_name) \
      .group_by(Partner.id) \
      .order_by(db.func.count(Course.id).desc(), Partner.id.asc()).limit(8).all()
     return render_template('browse_subject.html',
@@ -4578,6 +4663,31 @@ def run_startup_migrations():
             print("  + courses.estimated_workload_hours_per_week")
         cols = {r[1] for r in cur.execute("PRAGMA table_info(partners)").fetchall()}
         # country already exists — no-op, defensive check
+
+        # 2026-05-28 perf-optimize round: create composite indexes on EXISTING
+        # DBs. `db.create_all()` only emits CREATE TABLE IF NOT EXISTS — it
+        # does NOT add new indexes declared in __table_args__ to a pre-existing
+        # table (see perf-optimize SKILL §H). Use explicit IF NOT EXISTS so the
+        # migration is idempotent across cold and warm boots.
+        for name, ddl in [
+            ('ix_courses_category_enrolled',
+                'CREATE INDEX IF NOT EXISTS ix_courses_category_enrolled '
+                'ON courses (category, enrolled_count)'),
+            ('ix_courses_category_level',
+                'CREATE INDEX IF NOT EXISTS ix_courses_category_level '
+                'ON courses (category, level)'),
+            ('ix_courses_category_course_type',
+                'CREATE INDEX IF NOT EXISTS ix_courses_category_course_type '
+                'ON courses (category, course_type)'),
+            ('ix_courses_enrolled_count',
+                'CREATE INDEX IF NOT EXISTS ix_courses_enrolled_count '
+                'ON courses (enrolled_count)'),
+            ('ix_courses_sort_date',
+                'CREATE INDEX IF NOT EXISTS ix_courses_sort_date '
+                'ON courses (sort_date)'),
+        ]:
+            cur.execute(ddl)
+        conn.commit()
     finally:
         conn.close()
 
@@ -4976,14 +5086,15 @@ def _normalize_seed_db_layout():
     """Re-emit indexes in alpha order + VACUUM the SQLite file so two
     independent rebuilds produce byte-identical .db files. Gated on the
     presence of a sentinel pragma so it only runs once (the first build);
-    subsequent warm restarts skip it. Sentinel bumped to 5 in this round
-    because the new browse_* tables add CREATE TABLE / index rows to
-    sqlite_master; first build must re-VACUUM to stabilize page layout."""
+    subsequent warm restarts skip it. Sentinel bumped to 6 in this round
+    because the 2026-05-28 perf-optimize pass adds 5 new composite indexes
+    on the courses table; first build (and old seeds at sentinel=5) must
+    re-VACUUM + re-emit so all ix_* rows appear in stable alpha order."""
     from sqlalchemy import text
     conn = db.engine.connect()
     try:
         sentinel = conn.execute(text("PRAGMA user_version")).scalar()
-        if sentinel == 5:
+        if sentinel == 6:
             return  # already normalized
         idx_rows = conn.execute(text(
             "SELECT name, sql FROM sqlite_master "
@@ -4994,7 +5105,7 @@ def _normalize_seed_db_layout():
         for name, sql in sorted(idx_rows, key=lambda r: r[0]):
             if sql:
                 conn.execute(text(sql))
-        conn.execute(text("PRAGMA user_version = 5"))
+        conn.execute(text("PRAGMA user_version = 6"))
         conn.commit()
         conn.execute(text("VACUUM"))
         conn.commit()

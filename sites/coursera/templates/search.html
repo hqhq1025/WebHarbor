@@ -187,7 +187,8 @@
               <span class="result-skills-label">Skills you'll gain:</span>
               {{ _sk[:6]|join(', ') }}{% if _sk|length > 6 %}, +{{ _sk|length - 6 }} more{% endif %}
             {% else %}
-              {{ c.description[:100] }}{% if c.description|length > 100 %}...{% endif %}
+              {% set _desc = c.description or '' %}
+              {{ _desc[:100] }}{% if _desc|length > 100 %}...{% endif %}
             {% endif %}
           </p>
           <div class="result-meta-line">
