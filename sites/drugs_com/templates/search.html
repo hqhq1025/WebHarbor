@@ -136,6 +136,21 @@
         </select>
       </div>
 
+      {# Search source — real upstream drugs.com `sources[]` filter from harvest /alpha/ pages #}
+      <div class="filter-group">
+        <label for="filter-source">Search source</label>
+        <select id="filter-source" name="sources">
+          <option value="">All</option>
+          <option value="consumer">Consumer</option>
+          <option value="professional">Professional</option>
+          <option value="drugimages">Pill ID</option>
+          <option value="interactions">Interactions</option>
+          <option value="newsandalerts">News and alerts</option>
+          <option value="cg">Care notes</option>
+          <option value="natural">Natural products</option>
+        </select>
+      </div>
+
       <button type="submit" class="btn btn-primary btn-block">Apply filters</button>
       <a class="btn btn-outline btn-block" href="{{ url_for('search', q=q) }}">Reset filters</a>
     </form>
