@@ -10,10 +10,11 @@
     <h1>{{ label }}</h1>
     <p class="lede">Phys.org's ongoing coverage of {{ label }}.</p>
     {% if current_user.is_authenticated %}
-      <form method="post" action="/topic/{{ slug }}/follow" style="margin:8px 0 18px;">
+      <form method="post" action="/topic/{{ slug }}/follow" style="margin:8px 0 6px;display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn {{ 'secondary' if following else '' }}" type="submit">{{ 'Unfollow topic' if following else 'Follow topic' }}</button>
+        <button class="btn {{ 'secondary' if following else '' }}" type="submit">{{ 'Unfollow topic' if following else 'Subscribe to topic' }}</button>
       </form>
+      <a class="btn secondary" href="{{ url_for('gui_following') }}" style="margin-left:6px;">My subscriptions</a>
     {% endif %}
     <p class="meta">{{ articles|length }} article{{ '' if articles|length == 1 else 's' }} match this topic.</p>
     <div class="article-grid">

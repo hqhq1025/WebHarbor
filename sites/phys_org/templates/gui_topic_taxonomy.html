@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Topic taxonomy — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="crumbs"><a href="/topics">Topics</a> / Taxonomy</div>
+    <h1>Topic taxonomy</h1>
+    <p class="lede">All {{ total_topics }} Phys.org topics, grouped by parent research area.</p>
+
+    <p class="meta">Looking for a flat list? <a href="/topics">Browse topics A–Z</a>.</p>
+
+    <div class="taxonomy-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;margin-top:14px;">
+      {% for g in groups %}
+        <section class="taxonomy-card" style="border:1px solid #e6e9ee;border-radius:6px;padding:14px;background:#fbfcfd;">
+          <h2 style="margin:0 0 8px;font-size:18px;">
+            <a href="{{ url_for('category', slug=g.cat_slug) }}">{{ g.cat_name }}</a>
+            <span class="meta" style="font-size:12px;">({{ g.topics|length }})</span>
+          </h2>
+          <ul style="list-style:none;padding:0;margin:0;">
+            {% for t in g.topics %}
+              <li style="padding:3px 0;"><a href="/topic/{{ t.slug }}">{{ t.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  </article>
+</div>
+{% endblock %}

@@ -3,6 +3,7 @@
 {% block content %}
 <h1>Phys.org Topics</h1>
 <p class="lede">Browse the long-running threads our newsroom keeps tracking.</p>
+<p class="meta"><a href="/topic-taxonomy">View topics grouped by parent category →</a></p>
 <div class="topic-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
   {% for slug, label, cat in topics %}
     <a href="/topic/{{ slug }}" class="topic-card" style="display:block;padding:16px;border:1px solid #ddd;border-radius:6px;text-decoration:none;color:inherit;">
