@@ -80,7 +80,7 @@
       <a class="cl-icon-button cl-save-search" href="{{ url_for('login', next=request.full_path) }}" title="sign in to save searches" aria-label="save search"><span class="icon icom-" aria-hidden="true"></span></a>
       {% endif %}
     </form>
-    <span class="result-count">{% if listings %}1 - {{ listings|length }} of {{ listings|length }}{% else %}0 results{% endif %}</span>
+    <span class="result-count">{% if total is defined and total %}{{ (page-1)*per_page + 1 }} - {{ (page-1)*per_page + listings|length }} of {{ total }}{% elif listings %}1 - {{ listings|length }} of {{ listings|length }}{% else %}0 results{% endif %}</span>
   </section>
 
   <section class="search-tools">
@@ -382,6 +382,26 @@
           </li>
           {% endfor %}
         </ul>
+        {% endif %}
+
+        {% if total is defined and total and total > per_page %}
+        {% set last_page = ((total - 1) // per_page) + 1 %}
+        {% set base_args = request.args.to_dict() %}
+        {% set _ = base_args.pop('s', None) %}{% set _ = base_args.pop('page', None) %}
+        {% set base_url = request.path + '?' + base_args|urlencode if base_args else request.path + '?' %}
+        <nav class="cl-paginator" role="navigation" aria-label="search results pagination">
+          <span class="cl-page-summary">page {{ page }} of {{ last_page }}</span>
+          {% if page > 1 %}
+          <a class="cl-page-prev" rel="prev" href="{{ base_url }}{% if base_args %}&amp;{% endif %}s={{ (page - 2) * per_page }}">&lt; prev</a>
+          {% else %}
+          <span class="cl-page-prev disabled" aria-disabled="true">&lt; prev</span>
+          {% endif %}
+          {% if page < last_page %}
+          <a class="cl-page-next" rel="next" href="{{ base_url }}{% if base_args %}&amp;{% endif %}s={{ page * per_page }}">next &gt;</a>
+          {% else %}
+          <span class="cl-page-next disabled" aria-disabled="true">next &gt;</span>
+          {% endif %}
+        </nav>
         {% endif %}
       {% else %}
       <div class="empty">no results matched this search</div>

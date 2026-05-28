@@ -36,6 +36,7 @@ from flask_login import (
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
 from sqlalchemy import or_, and_, func, desc
+from sqlalchemy.orm import defer
 
 BASE_DIR = Path(__file__).parent
 DB_DIR = BASE_DIR / "instance"
@@ -799,6 +800,20 @@ def search_global():
             w = Wiki.query.filter_by(slug=wiki_slug).first()
             if w:
                 base = base.filter(Article.wiki_id == w.id)
+        # perf: pre-filter at SQL so we don't materialize all ~1.2k articles
+        # (with ~600B content each) per search. Any term must match
+        # title / slug / summary / content. Python scoring then ranks.
+        if terms:
+            any_term = []
+            for t in terms:
+                like = f'%{t}%'
+                any_term.append(or_(
+                    Article.title.ilike(like),
+                    Article.slug.ilike(like),
+                    Article.summary.ilike(like),
+                    Article.content.ilike(like),
+                ))
+            base = base.filter(or_(*any_term))
         cands = base.all()
         scored = []
         for a in cands:
@@ -1860,6 +1875,19 @@ with app.app_context():
     seed_database()
     seed_benchmark_users()
     seed_phase2_all()
+    # perf: indexes for hot list/sort columns. Hub uses view_count DESC;
+    # article lookups go via (wiki_id, slug). CREATE INDEX IF NOT EXISTS so
+    # byte-id reseeds stay clean.
+    from sqlalchemy import text as _text
+    _conn = db.engine.connect()
+    _conn.execute(_text("CREATE INDEX IF NOT EXISTS ix_articles_view_count "
+                        "ON articles(view_count DESC)"))
+    _conn.execute(_text("CREATE INDEX IF NOT EXISTS ix_articles_wiki_slug "
+                        "ON articles(wiki_id, slug)"))
+    _conn.execute(_text("CREATE INDEX IF NOT EXISTS ix_articles_wiki_view "
+                        "ON articles(wiki_id, view_count DESC)"))
+    _conn.commit()
+    _conn.close()
 
 
 if __name__ == "__main__":

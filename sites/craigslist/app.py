@@ -410,6 +410,33 @@ def filter_listings(category_slug=None):
     return listings
 
 
+# --- perf: per-page slicer so /search and /search/<cat> never render
+# thousands of rows. Real craigslist paginates at 120 per page using ?s=N
+# (start offset). We accept both ?page=N and ?s=N.
+LISTINGS_PER_PAGE = 120
+
+
+def paginate_listings(listings):
+    """Slice the full sorted list. Returns (page_items, page, per_page, total).
+    Uses ?s=<start> (craigslist-native) or ?page=<N> (1-indexed)."""
+    total = len(listings)
+    per_page = LISTINGS_PER_PAGE
+    try:
+        s = int(request.args.get("s", "0") or 0)
+    except (TypeError, ValueError):
+        s = 0
+    try:
+        page_arg = int(request.args.get("page", "0") or 0)
+    except (TypeError, ValueError):
+        page_arg = 0
+    if page_arg > 0:
+        start = max(0, (page_arg - 1) * per_page)
+    else:
+        start = max(0, s)
+    page = (start // per_page) + 1
+    return listings[start:start + per_page], page, per_page, total
+
+
 @app.context_processor
 def inject_globals():
     def saved_count():
@@ -431,10 +458,15 @@ def inject_globals():
 def index():
     featured = Listing.query.filter(Listing.image != "", Listing.status == "active").order_by(Listing.posted_at.desc()).limit(8).all()
     recent = Listing.query.filter_by(status="active").order_by(Listing.posted_at.desc()).limit(12).all()
-    counts = {
-        category.slug: Listing.query.filter_by(category_slug=category.slug, status="active").count()
-        for category in Category.query.all()
-    }
+    # perf: a single GROUP BY beats 34 per-category COUNT queries.
+    rows = db.session.query(
+        Listing.category_slug, db.func.count(Listing.id)
+    ).filter(Listing.status == "active").group_by(Listing.category_slug).all()
+    counts = {slug: n for slug, n in rows}
+    # Backfill zero for any category with no listings so the template's
+    # dict lookup never KeyErrors.
+    for category in Category.query.all():
+        counts.setdefault(category.slug, 0)
     return render_template("index.html", featured=featured, recent=recent, counts=counts)
 
 
@@ -445,26 +477,30 @@ def favicon():
 
 @app.route("/search")
 def search():
-    listings = filter_listings()
+    listings_all = filter_listings()
+    page_items, page, per_page, total = paginate_listings(listings_all)
     return render_template(
         "search.html",
-        listings=listings,
+        listings=page_items,
         category=None,
         query=request.args.get("q", "").strip(),
         areas=["san francisco", "east bay", "south bay", "peninsula", "north bay", "santa cruz"],
+        page=page, per_page=per_page, total=total,
     )
 
 
 @app.route("/search/<category_slug>")
 def category_search(category_slug):
     category = Category.query.filter_by(slug=category_slug).first_or_404()
-    listings = filter_listings(category_slug)
+    listings_all = filter_listings(category_slug)
+    page_items, page, per_page, total = paginate_listings(listings_all)
     return render_template(
         "search.html",
-        listings=listings,
+        listings=page_items,
         category=category,
         query=request.args.get("q", "").strip(),
         areas=["san francisco", "east bay", "south bay", "peninsula", "north bay", "santa cruz"],
+        page=page, per_page=per_page, total=total,
     )
 
 
@@ -1237,6 +1273,19 @@ with app.app_context():
     seed_database(BASE_DIR, db, Category, Listing)
     seed_benchmark_users(db, User, Listing, SavedListing, SavedSearch, Message)
     seed_forum_content(db, ForumThread, ForumReply, User)
+    # perf: ensure indexes that hot list/search queries depend on. Idempotent
+    # CREATE INDEX IF NOT EXISTS so byte-id reseeds stay clean.
+    conn = db.engine.connect()
+    conn.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_listings_status_posted_at "
+        "ON listings(status, posted_at DESC)"
+    ))
+    conn.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_listings_status_category_slug "
+        "ON listings(status, category_slug)"
+    ))
+    conn.commit()
+    conn.close()
     if fresh_seed:
         # Normalize index order + VACUUM so rebuilds on different machines match
         # byte-for-byte. See harden-env/gotchas.md §2.

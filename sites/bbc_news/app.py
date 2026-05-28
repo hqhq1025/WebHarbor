@@ -30,6 +30,7 @@ from flask_login import (
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
 from sqlalchemy import or_, and_, func
+from sqlalchemy.orm import defer
 
 BASE_DIR = Path(__file__).parent
 DB_DIR = BASE_DIR / "instance"
@@ -941,6 +942,19 @@ def get_article_or_404(slug):
     return a
 
 
+# --- perf: list-page queries should not pull heavyweight columns
+# (`body` ~3KB/row, `gallery_full_json` can be much larger). Detail templates
+# are the only consumers of these; list/section/index/search templates only
+# touch summary, headline, hero_image, etc. Defer keeps the SQL row narrow
+# without breaking lazy access on the rare row that needs it.
+_DEFERRED_ARTICLE_COLS = (Article.body, Article.gallery_full_json)
+
+
+def _list_query():
+    """Article.query with heavyweight columns deferred. Use for list pages."""
+    return Article.query.options(*[defer(c) for c in _DEFERRED_ARTICLE_COLS])
+
+
 def get_category_or_404(slug):
     c = Category.query.filter_by(slug=slug).first()
     if not c:
@@ -957,9 +971,9 @@ def articles_for_category(slug, limit=None):
     child_slugs = [c.slug for c in Category.query.filter_by(parent_slug=slug).all()]
     if child_slugs:
         child_ids = [c.id for c in Category.query.filter(Category.slug.in_(child_slugs + [slug])).all()]
-        q = Article.query.filter(Article.category_id.in_(child_ids))
+        q = _list_query().filter(Article.category_id.in_(child_ids))
     else:
-        q = Article.query.filter_by(category_id=cat.id)
+        q = _list_query().filter_by(category_id=cat.id)
     q = q.order_by(Article.published_at.desc())
     if limit:
         q = q.limit(limit)
@@ -976,14 +990,14 @@ def new_digest_number():
 
 @app.route("/")
 def index():
-    featured = Article.query.filter_by(is_featured=True).order_by(Article.published_at.desc()).limit(6).all()
+    featured = _list_query().filter_by(is_featured=True).order_by(Article.published_at.desc()).limit(6).all()
     if not featured:
-        featured = Article.query.order_by(Article.published_at.desc()).limit(6).all()
+        featured = _list_query().order_by(Article.published_at.desc()).limit(6).all()
     top_story = featured[0] if featured else None
     secondary = featured[1:6] if len(featured) > 1 else []
 
-    latest = Article.query.order_by(Article.published_at.desc()).limit(12).all()
-    must_read = Article.query.order_by(func.random()).limit(5).all()
+    latest = _list_query().order_by(Article.published_at.desc()).limit(12).all()
+    must_read = _list_query().order_by(func.random()).limit(5).all()
 
     # Per-category strips
     world_items = articles_for_category("world", limit=4)
@@ -1046,7 +1060,7 @@ def section_page(slug):
         if region_name:
             conds.append(Article.region == region_name)
             conds.append(Article.subsection.ilike(f"%{region_name}%"))
-        q = Article.query.filter(or_(*conds))
+        q = _list_query().filter(or_(*conds))
     else:
         conds = [
             Article.category_id == cat.id,
@@ -1055,7 +1069,7 @@ def section_page(slug):
         if region_name:
             conds.append(Article.region == region_name)
             conds.append(Article.subsection.ilike(f"%{region_name}%"))
-        q = Article.query.filter(or_(*conds))
+        q = _list_query().filter(or_(*conds))
 
     # Subsection/region/tag filters (optional)
     subsection = (request.args.get("subsection") or "").strip()
@@ -1323,32 +1337,60 @@ def search():
     page = max(1, int(request.args.get("page", 1)))
     per_page = 20
 
-    query_obj = Article.query
-    query_obj = _apply_article_filters(query_obj)
-    candidates = query_obj.all()
-
+    # Pre-filter at SQL level: any non-stopword token must appear in at least
+    # one searchable text column. This avoids materializing all ~1.3k Article
+    # rows (each with ~3KB body) into Python before scoring.
+    tokens = []
     if q:
         tokens = [t.lower() for t in re.findall(r'[a-z0-9]+', q.lower())
                   if t and t not in STOPWORDS and len(t) >= 2]
-        if tokens:
-            min_required = max(1, len(tokens) // 2)
-            scored = []
-            for a in candidates:
-                if scope == "headline":
-                    haystack = (a.headline or '').lower()
-                    s = sum(1 for t in tokens if t in haystack)
-                elif scope == "body":
-                    haystack = (a.body or '').lower()
-                    s = sum(1 for t in tokens if t in haystack)
-                else:
-                    s = _score_article(a, tokens)
-                if s >= min_required:
-                    scored.append((s, a))
-            scored.sort(key=lambda x: (-x[0],
-                                       -(x[1].published_at.timestamp() if x[1].published_at else 0)))
-            results = [a for _, a in scored]
+
+    query_obj = Article.query
+    query_obj = _apply_article_filters(query_obj)
+
+    if tokens:
+        if scope == "headline":
+            text_cols = [Article.headline]
+        elif scope == "body":
+            text_cols = [Article.body]
         else:
-            results = candidates
+            text_cols = [Article.headline, Article.subtitle, Article.summary,
+                         Article.body, Article.author, Article.topics_json,
+                         Article.feature_tags, Article.subsection,
+                         Article.section_slug, Article.region, Article.location]
+        any_token = []
+        for t in tokens:
+            like = f'%{t}%'
+            any_token.append(or_(*[c.ilike(like) for c in text_cols]))
+        query_obj = query_obj.filter(or_(*any_token))
+
+    # Defer body when caller didn't ask for body-scope search — body is the
+    # heaviest column and scoring on it only when scope demands it cuts
+    # bytes-from-disk roughly 80%.
+    if scope != "body":
+        query_obj = query_obj.options(*[defer(c) for c in _DEFERRED_ARTICLE_COLS])
+    else:
+        query_obj = query_obj.options(defer(Article.gallery_full_json))
+
+    candidates = query_obj.all()
+
+    if q and tokens:
+        min_required = max(1, len(tokens) // 2)
+        scored = []
+        for a in candidates:
+            if scope == "headline":
+                haystack = (a.headline or '').lower()
+                s = sum(1 for t in tokens if t in haystack)
+            elif scope == "body":
+                haystack = (a.body or '').lower()
+                s = sum(1 for t in tokens if t in haystack)
+            else:
+                s = _score_article(a, tokens)
+            if s >= min_required:
+                scored.append((s, a))
+        scored.sort(key=lambda x: (-x[0],
+                                   -(x[1].published_at.timestamp() if x[1].published_at else 0)))
+        results = [a for _, a in scored]
     else:
         results = candidates
 
@@ -1368,7 +1410,7 @@ def search():
 def latest_page():
     page = max(1, int(request.args.get("page", 1)))
     per_page = 25
-    q = Article.query.order_by(Article.published_at.desc())
+    q = _list_query().order_by(Article.published_at.desc())
     total = q.count()
     articles = q.offset((page - 1) * per_page).limit(per_page).all()
     return render_template("latest.html", articles=articles, total=total, page=page, per_page=per_page)
@@ -1376,8 +1418,8 @@ def latest_page():
 
 @app.route("/live")
 def live_page():
-    live_articles = Article.query.filter_by(is_live=True).all()
-    breaking = Article.query.filter_by(is_breaking=True).order_by(Article.published_at.desc()).limit(10).all()
+    live_articles = _list_query().filter_by(is_live=True).all()
+    breaking = _list_query().filter_by(is_breaking=True).order_by(Article.published_at.desc()).limit(10).all()
     return render_template("live.html", live=live_articles, breaking=breaking)
 
 
@@ -4757,6 +4799,30 @@ def _ensure_gallery_full_column():
         conn.close()
 
 
+def _ensure_perf_indexes():
+    """Idempotent: add indexes covering the hot ORDER BY / filter columns
+    that hot list pages depend on (homepage, /latest, /section/<>, /search).
+    `published_at DESC` is the dominant sort key. `is_featured` / `is_live`
+    / `is_breaking` are used as filters on the homepage and live pages.
+    CREATE INDEX IF NOT EXISTS is safe to call on every startup."""
+    import sqlite3 as _sqlite3
+    db_path = os.path.join(BASE_DIR, "instance", "bbc_news.db")
+    if not os.path.exists(db_path):
+        return
+    conn = _sqlite3.connect(db_path)
+    cur = conn.cursor()
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_articles_published_at "
+                    "ON articles(published_at DESC)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_articles_is_featured "
+                    "ON articles(is_featured)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_articles_category_id "
+                    "ON articles(category_id)")
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # --- GUI deepen module (25+ visual pages: sport hubs / weather / iPlayer /
 #     Sounds / longform / nations / business markets / topics). No DB writes,
 #     so the byte-identical reset invariant is preserved.
@@ -4769,6 +4835,7 @@ with app.app_context():
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    _ensure_perf_indexes()
 
 
 if __name__ == "__main__":
