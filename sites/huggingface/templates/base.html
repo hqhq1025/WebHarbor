@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     {# Snapshot date — exposed as meta so agents can read it without a visible UI banner. #}
     {% if mirror_now is defined and mirror_now %}
@@ -32,7 +33,6 @@
       .gn-nav { min-width: 0; flex-shrink: 1; flex-wrap: wrap; }
       .gn-auth { min-width: 0; flex-shrink: 0; }
     </style>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤗%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 {# R7: accessibility skip-link — the first focusable element on every page. #}
@@ -101,7 +101,6 @@
 <main id="main-content" role="main">
 {% block content %}{% endblock %}
 </main>
-
 
 <footer class="footer">
     <div class="container-wide">
