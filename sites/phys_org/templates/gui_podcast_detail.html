@@ -23,7 +23,7 @@
     <ul class="episode-list" style="list-style:none;padding:0;">
       {% for ep in episodes %}
         <li style="border-top:1px solid #eee;padding:12px 0;">
-          <h3 style="margin:0 0 4px;">{{ ep.title }}</h3>
+          <h3 style="margin:0 0 4px;"><a href="/podcast/{{ slug }}/episode/{{ ep.n }}">{{ ep.title }}</a></h3>
           <div class="meta">Episode {{ ep.n }} · {{ ep.minutes }} min · Guest: {{ ep.guest }} · {{ ep.published_at.strftime('%b %d, %Y') }}</div>
         </li>
       {% endfor %}

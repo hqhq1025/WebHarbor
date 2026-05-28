@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Episode {{ episode.n }} — {{ podcast_title }} — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="crumbs"><a href="/podcasts">Podcasts</a> / <a href="/podcast/{{ podcast_slug }}">{{ podcast_title }}</a> / Episode {{ episode.n }}</div>
+
+    <div style="display:flex;gap:18px;align-items:flex-start;">
+      <img loading="lazy" decoding="async" src="/static-gen/podcast/{{ podcast_slug }}.svg" alt="" style="width:160px;height:160px;border-radius:8px;flex:0 0 auto;">
+      <div>
+        <h1 style="margin:0;">{{ episode.title }}</h1>
+        <div class="meta">
+          Episode {{ episode.n }} · {{ episode.minutes }} min ·
+          Guest: <strong>{{ episode.guest }}</strong> ·
+          {{ episode.published_at.strftime('%b %d, %Y') }}
+        </div>
+        <p class="lede" style="margin-top:8px;">{{ episode.show_notes }}</p>
+        {% if current_user.is_authenticated %}
+          <form method="post" action="/podcast/{{ podcast_slug }}/follow" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn secondary" type="submit">Follow this podcast</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <section style="margin-top:24px;">
+      <h2>Transcript excerpt</h2>
+      <pre style="background:#f6f8fa;padding:12px;border-radius:6px;white-space:pre-wrap;font-family:Menlo,Consolas,monospace;font-size:13px;">{{ episode.transcript_excerpt }}</pre>
+    </section>
+
+    <section style="margin-top:18px;">
+      <h2>Listen</h2>
+      <ul style="list-style:none;padding:0;margin:0;display:flex;gap:12px;flex-wrap:wrap;">
+        <li><a class="btn secondary" href="/podcast/{{ podcast_slug }}">All episodes</a></li>
+        <li><a class="btn secondary" href="/podcasts">All podcasts</a></li>
+      </ul>
+    </section>
+  </article>
+</div>
+{% endblock %}

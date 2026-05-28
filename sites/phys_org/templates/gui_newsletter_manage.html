@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Manage newsletter subscriptions — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="crumbs"><a href="{{ url_for('gui_newsletter') }}">Newsletters</a> / Manage</div>
+    <h1>Manage newsletter subscriptions</h1>
+    <p class="lede">Toggle which Phys.org newsletters land in your inbox. Tick all you want, untick the rest, then save.</p>
+
+    <form method="post" action="/newsletter/manage" style="max-width:680px;padding:16px;border:1px solid #e6e9ee;border-radius:8px;background:#fafbfd;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <ul style="list-style:none;padding:0;margin:0;">
+        {% for slug, title, blurb, cadence in newsletters %}
+          <li style="padding:10px 0;border-bottom:1px solid #eaecef;">
+            <label style="display:flex;gap:10px;align-items:flex-start;">
+              <input type="checkbox" name="newsletters" value="{{ slug }}"
+                     {% if slug in my_subs %}checked{% endif %}
+                     style="margin-top:4px;">
+              <span>
+                <strong>{{ title }}</strong>
+                <span class="meta" style="margin-left:6px;">{{ cadence }}</span>
+                <div style="font-size:13px;color:#444;margin-top:2px;">{{ blurb }}</div>
+              </span>
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+      <div style="margin-top:14px;display:flex;gap:10px;">
+        <button class="btn" type="submit">Save subscriptions</button>
+        <a class="btn secondary" href="{{ url_for('gui_newsletter') }}">Cancel</a>
+      </div>
+    </form>
+
+    <p class="meta" style="margin-top:14px;">
+      Need per-journal alerts instead? Open any journal page and click <em>Email alerts for new articles</em>.
+    </p>
+  </article>
+</div>
+{% endblock %}

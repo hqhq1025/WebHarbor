@@ -3,6 +3,9 @@
 {% block content %}
 <h1>Phys.org Newsletters</h1>
 <p class="lede">Subscribe to a daily, weekly or beat-specific digest.</p>
+{% if current_user.is_authenticated %}
+<p class="meta"><a href="/newsletter/manage">Manage all my subscriptions →</a></p>
+{% endif %}
 <div class="newsletter-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
   {% for slug, title, blurb, cadence in newsletters %}
     <div class="newsletter-card" style="border:1px solid #ddd;border-radius:6px;padding:14px;">
