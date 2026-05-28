@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
   <title>{% block title %}GitHub: Let's build from here{% endblock %}</title>
   <meta name="description" content="GitHub is where over 100 million developers shape the future of software, together.">
-  <link rel="icon" href="/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/main.css">
+<link rel="stylesheet" href="/static/css/main.css">
   <style>
     /* R7 — horizontal-overflow safety net (gotcha #43): prevent header/footer
        chip rows or wide tables from causing body to overflow viewport. */
