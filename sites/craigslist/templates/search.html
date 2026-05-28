@@ -164,6 +164,38 @@
         {% endif %}
         <label class="check"><input type="checkbox" name="cryptocurrency_ok"> cryptocurrency ok</label>
         <label class="check"><input type="checkbox" name="delivery_available"> delivery available</label>
+        {# cars+trucks (cta) options — real upstream craigslist `cl-search-filters-panel` from harvest #}
+        {% if category and category.slug in ['cta','cto','ctd','cars-trucks','cars+trucks'] %}
+        <label class="filter-heading">condition</label>
+        {% for v, l in [(10,'new'),(20,'like new'),(30,'excellent'),(40,'good'),(50,'fair'),(60,'salvage')] %}
+        <label class="check"><input type="checkbox" name="condition" value="{{ v }}"> {{ l }}</label>
+        {% endfor %}
+        <label class="filter-heading">title status</label>
+        {% for v, l in [(1,'clean'),(2,'salvage'),(3,'rebuilt'),(4,'parts only'),(5,'lien'),(6,'missing')] %}
+        <label class="check"><input type="checkbox" name="auto_title_status" value="{{ v }}"> {{ l }}</label>
+        {% endfor %}
+        <label class="filter-heading">body type</label>
+        <select name="auto_bodytype" class="full-input">
+          <option value="">any</option>
+          {% for v, l in [(8,'sedan'),(10,'SUV'),(3,'coupe'),(2,'convertible'),(4,'hatchback'),(5,'minivan'),(7,'pickup'),(9,'truck'),(11,'wagon'),(12,'van'),(1,'bus'),(6,'offroad'),(13,'other')] %}
+          <option value="{{ v }}">{{ l }}</option>
+          {% endfor %}
+        </select>
+        <label class="filter-heading">fuel</label>
+        <select name="auto_fuel_type" class="full-input">
+          <option value="">any</option>
+          {% for v, l in [(1,'gas'),(2,'diesel'),(3,'hybrid'),(4,'electric'),(6,'other')] %}
+          <option value="{{ v }}">{{ l }}</option>
+          {% endfor %}
+        </select>
+        <label class="filter-heading">transmission</label>
+        <select name="auto_transmission" class="full-input">
+          <option value="">any</option>
+          {% for v, l in [(1,'manual'),(2,'automatic'),(3,'other')] %}
+          <option value="{{ v }}">{{ l }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
         <button class="filter-disclosure" type="button"><span aria-hidden="true"></span>language of posting</button>
         {% endif %}
 
