@@ -106,17 +106,35 @@
 
         <details class="filter-group">
           <summary>Locale</summary>
-          <ul style="max-height: 180px; overflow-y: auto;">
-            {% for l in languages[:25] %}
-              <li>
-                <label>
-                  <input type="checkbox" name="language" value="{{ l.code }}"
-                    {% if l.code == language %}checked{% endif %}>
-                  {{ l.name }}
-                </label>
-              </li>
+          {# Real upstream phet.colorado.edu /simulations/filter Locale select — 100 options from harvest #}
+          <select name="language" class="form-field" style="width:100%;">
+            <option value="">Any language</option>
+            {% for code, name in [
+              ("en","English"),("en_CA","English (Canada)"),("en_GB","English (United Kingdom)"),
+              ("es","español"),("es_CO","español (Colombia)"),("es_ES","español (España)"),
+              ("es_MX","español (México)"),("es_PE","español (Perú)"),("es_UY","español (Uruguay)"),
+              ("fr","français"),("de","Deutsch"),("it","italiano"),("nl","Nederlands"),
+              ("pt","Português"),("pt_BR","português (Brasil)"),("ru","Русский"),
+              ("zh","中文"),("ja","日本語"),("ko","한국말"),("ar","العربية"),("ar_SA","العربية (السعودية)"),
+              ("tr","Türkçe"),("pl","Polski"),("sv","Svenska"),("fi","suomi"),("da","dansk"),
+              ("nb","Norwegian Bokmål"),("nn","Norsk nynorsk"),("cs","čeština"),("sk","slovenčina"),
+              ("hu","magyar"),("ro","Română"),("bg","български език"),("uk","Українська"),
+              ("el","Ελληνικά"),("he","עברית"),("hi","हिंदी"),("th","ไทย"),("vi","Tiếng Việt"),
+              ("id","Bahasa Indonesia"),("ms","Bahasa Malaysia"),("tl","Wikang Tagalog"),
+              ("sw","Kiswahili"),("af","Afrikaans"),("zu","isiZulu"),("xh","isiXhosa"),
+              ("ha","Hausa"),("yo","Yorùbá"),("am","አማርኛ"),("om","Afaan Oromoo"),
+              ("ca","Català"),("eu","euskara"),("gl","galego"),("ga","Gaeilge"),("cy","Cymraeg"),
+              ("is","Íslenska"),("mt","Malti"),("sq","Shqip"),("sr","српски језик"),("hr","Hrvatski"),
+              ("bs","bosanski jezik"),("sl","slovenščina"),("mk","македонски јазик"),
+              ("ka","ქართული ენა"),("hy","Հայերեն"),("be","беларуская мова"),("kk","қазақ тілі"),
+              ("uz","Ўзбек тили"),("mn","Монгол хэл"),("ur","اردو"),("fa","فارسی"),
+              ("lv","latviešu valoda"),("lt","lietuvių kalba"),("et","eesti"),("mi","reo Māori"),
+              ("ht","Kreyòl ayisyen"),("ku_TR","Kurmancî"),("oc","occitan"),("br","brezhoneg")
+            ] %}
+            <option value="{{ code }}" {% if code == language %}selected{% endif %}>{{ name }}</option>
             {% endfor %}
-          </ul>
+          </select>
+        </details>
         </details>
 
         <button type="submit" class="filter-clear" style="background: var(--phet-magenta); color: #fff; border: 0;">Apply</button>
