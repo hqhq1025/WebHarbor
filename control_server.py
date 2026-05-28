@@ -30,7 +30,7 @@ SITES = [
     'imdb', 'recreation_gov', 'carmax', 'phys_org', 'discogs', 'compass', 'osu', 'craigslist', 'ted', 'nba', 'mega', 'boardgamegeek',
     'apartments_com',
     'smartasset',
-    'eventbrite', 'mayo_clinic', 'fandom',
+    'eventbrite', 'mayo_clinic', 'fandom', 'versus',
 ]
 BASE_PORT = 40000
 WEBSYN_DIR = '/opt/WebSyn'
