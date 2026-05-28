@@ -478,6 +478,7 @@ with app.app_context():
     seed_database()
     seed_benchmark_users()
     seed_extra()
+    seed_priorities()
 
 
 if __name__ == '__main__':

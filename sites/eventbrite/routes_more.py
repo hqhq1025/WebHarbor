@@ -1384,4 +1384,166 @@ def seed_extra():
     db.session.commit()
 
 
+# ─── Priority seeders (reviews / invites / category-subs / org-email-subs /
+#     newsletter). Each is gated by its own table's row count so this stays
+#     idempotent and byte-identical across /reset. ─────────────────────────────
+
+_REVIEW_BODIES = [
+    ('Genuinely one of the best events I\'ve been to this year. The lineup delivered and the venue felt intimate without being cramped.', 5),
+    ('Easy entry, clear signage, friendly staff. The opener was a pleasant surprise.', 5),
+    ('Sound was excellent and the crowd was into it. Will absolutely come back next time.', 5),
+    ('Worth the ticket. A bit of a wait at the bar but everything else was smooth.', 4),
+    ('Speakers were sharp and the Q&A actually got into the weeds. Great use of an evening.', 5),
+    ('I had high hopes and they were met. The food pairings made it for me.', 5),
+    ('Great atmosphere. Pacing was a touch slow in the middle but ended strong.', 4),
+    ('Check-in was instant and the staff were warmly welcoming. Loved the after-hours mingling.', 5),
+    ('Good event overall — I would mention the venue runs a little warm so dress light.', 4),
+    ('A solid showing. The headliner alone was worth the price of admission.', 5),
+    ('Very well organized. Real attention to detail from the program to the goody bag.', 5),
+    ('Fun, friendly, and a good mix of people. Made several new connections.', 4),
+    ('Decent night out, though I wish the set lists ran a bit longer. Still recommend.', 3),
+    ('Loved the curation. Each act fit the vibe and the venue choice was perfect.', 5),
+    ('Was hesitant to buy but glad I did. The Q&A alone was worth coming for.', 5),
+]
+
+
+def seed_priorities():
+    """Seed sample rows for the priority-flow tables (reviews, invites,
+    category_subscriptions, org_email_subs, newsletter, reports). Each table
+    is gated by its own row count to stay idempotent."""
+    today = datetime(2026, 5, 27, 12, 0, 0)
+    r = _seeded_random('eb-priorities')
+
+    benchmark_users = User.query.filter(User.email.like('%@test.com')).order_by(User.id).all()
+
+    # 1) Reviews on past events that the benchmark users attended.
+    if Review.query.count() == 0 and benchmark_users:
+        # Pick past confirmed orders, leave a review per ~70% of them.
+        past_orders = (Order.query
+                       .filter(Order.user_id.in_([u.id for u in benchmark_users]),
+                               Order.status == 'confirmed')
+                       .join(Event, Event.id == Order.event_id)
+                       .filter(Event.start_dt < today)
+                       .order_by(Order.created_at.desc())
+                       .limit(30).all())
+        seen_pairs = set()
+        for o in past_orders:
+            if r.random() < 0.30:
+                continue
+            pair = (o.user_id, o.event_id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            body, rating = r.choice(_REVIEW_BODIES)
+            db.session.add(Review(
+                user_id=o.user_id, event_id=o.event_id,
+                rating=rating, body=body,
+                created_at=o.event.start_dt + timedelta(days=r.randint(1, 9)),
+            ))
+
+    # 2) Category subscriptions — every benchmark user subscribes to 2-3 of
+    #    their interest categories.
+    if CategorySubscription.query.count() == 0:
+        for u in benchmark_users:
+            interests = u.get_interests() or ['music']
+            picks = interests[:r.choice([2, 3])]
+            for cat in picks:
+                if cat in CAT_MAP:
+                    db.session.add(CategorySubscription(
+                        user_id=u.id, category_slug=cat,
+                        city_slug=r.choice(['', u.city.lower().replace(' ', '-')
+                                             if u.city else '']),
+                        created_at=today - timedelta(days=r.randint(2, 80)),
+                    ))
+
+    # 3) Organizer email subscriptions — sprinkle across verified orgs.
+    if OrganizerEmailSubscription.query.count() == 0:
+        verified_orgs = Organizer.query.filter_by(verified=True).order_by(Organizer.id).limit(10).all()
+        if not verified_orgs:
+            verified_orgs = Organizer.query.order_by(Organizer.id).limit(10).all()
+        sample_emails = [
+            'fan.lila@example.com', 'jules.t@example.com', 'mike.b@example.com',
+            'priya.s@example.com', 'nora.r@example.com', 'kai.l@example.com',
+            'wren.k@example.com', 'sam.h@example.com',
+        ]
+        for o in verified_orgs[:6]:
+            n = r.choice([1, 2, 3])
+            for em in r.sample(sample_emails, k=n):
+                db.session.add(OrganizerEmailSubscription(
+                    user_id=None, organizer_id=o.id, email=em,
+                    created_at=today - timedelta(days=r.randint(1, 45)),
+                ))
+        # plus one each from a benchmark user
+        for u in benchmark_users[:2]:
+            o = r.choice(verified_orgs)
+            db.session.add(OrganizerEmailSubscription(
+                user_id=u.id, organizer_id=o.id, email=u.email,
+                created_at=today - timedelta(days=r.randint(1, 30)),
+            ))
+
+    # 4) Newsletter signups.
+    if NewsletterSignup.query.count() == 0:
+        seed_emails = [
+            'reader1@example.com', 'reader2@example.com', 'jules.t@example.com',
+            'priya.s@example.com', 'nora.r@example.com', 'kai.l@example.com',
+            'wren.k@example.com', 'sam.h@example.com', 'mike.b@example.com',
+            'fan.lila@example.com', 'tobi.o@example.com', 'devon.r@example.com',
+        ]
+        for em in seed_emails:
+            db.session.add(NewsletterSignup(
+                email=em, created_at=today - timedelta(days=r.randint(1, 60)),
+            ))
+
+    # 5) Invites — each benchmark user has invited friends to ~1-2 upcoming
+    #    events they saved.
+    if Invite.query.count() == 0:
+        invite_msgs = [
+            'Come hang with me — should be a fun night.',
+            'Booked this one and grabbing a group. Join?',
+            'Was hoping you\'d be in for this — let me know!',
+            'Heard good things about the lineup. Want to come along?',
+            '',
+        ]
+        contact_pool = [
+            'friend1@example.com', 'friend2@example.com', 'pal@example.com',
+            'crew.alex@example.com', 'crew.jay@example.com', 'crew.sam@example.com',
+        ]
+        for u in benchmark_users:
+            saved = (SavedEvent.query.filter_by(user_id=u.id)
+                                   .order_by(SavedEvent.id.asc()).limit(8).all())
+            if not saved: continue
+            picks = r.sample(saved, k=min(len(saved), r.choice([1, 2])))
+            for s in picks:
+                recipients = r.sample(contact_pool, k=r.choice([2, 3]))
+                db.session.add(Invite(
+                    user_id=u.id, event_id=s.event_id,
+                    recipient_emails=json.dumps(recipients),
+                    message=r.choice(invite_msgs),
+                    created_at=today - timedelta(days=r.randint(1, 30)),
+                ))
+
+    # 6) Reports — a small handful of benign event/organizer reports so the
+    #    table isn't empty.
+    if Report.query.count() == 0:
+        evs = Event.query.order_by(Event.id).limit(40).all()
+        orgs = Organizer.query.order_by(Organizer.id).limit(40).all()
+        if evs and orgs:
+            samples = [
+                ('event',     evs[3].id,  'spam',       'Promo links in the description look like spam.'),
+                ('event',     evs[11].id, 'inaccurate', 'Event description says doors at 7, marketing says 6.'),
+                ('event',     evs[24].id, 'other',      'Refund policy seems inconsistent with the FAQ.'),
+                ('organizer', orgs[2].id, 'spam',       'Repeated promotional emails after I unsubscribed.'),
+                ('organizer', orgs[7].id, 'other',      'Cancelled an event without notifying ticket holders.'),
+            ]
+            for (tt, tid, reason, body) in samples:
+                db.session.add(Report(
+                    user_id=None, target_type=tt, target_id=tid,
+                    reason=reason, body=body,
+                    contact_email='reporter@example.com',
+                    created_at=today - timedelta(days=r.randint(1, 30)),
+                ))
+
+    db.session.commit()
+
+
 # Hook into module-level seed. Called from app.py via:  seed_extra()

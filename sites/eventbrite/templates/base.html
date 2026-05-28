@@ -55,6 +55,17 @@
 {% block content %}{% endblock %}
 
 <footer class="eb-footer">
+  <div class="eb-footer-inner" style="border-bottom:1px solid #3d2c66;padding-bottom:24px;margin-bottom:24px;display:block;">
+    <div style="max-width:560px;">
+      <h4>Sign up for the Eventbrite weekly digest</h4>
+      <p style="color:#a297c4;font-size:13px;margin:6px 0 12px;">Curated event picks delivered every Friday morning.</p>
+      <form action="{{ url_for('newsletter_signup') }}" method="POST" style="display:flex;gap:8px;">
+        <input type="email" name="email" required placeholder="you@example.com"
+               style="flex:1;padding:10px;border:1px solid #3d2c66;background:#1E0A3C;color:#fff;border-radius:4px;">
+        <button class="btn btn-primary" type="submit" style="padding:10px 20px;">Subscribe</button>
+      </form>
+    </div>
+  </div>
   <div class="eb-footer-inner">
     <div>
       <h4>Use Eventbrite</h4>

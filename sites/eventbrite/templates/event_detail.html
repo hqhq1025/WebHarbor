@@ -200,7 +200,7 @@
       {% endif %}
 
       {% if current_user.is_authenticated %}
-      <div class="eb-detail-section">
+      <div class="eb-detail-section" id="review">
         <h2>Leave a review</h2>
         <form method="POST" action="{{ url_for('submit_review', slug=ev.slug) }}">
           <div class="eb-form-row">
