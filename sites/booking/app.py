@@ -284,6 +284,13 @@ class Property(db.Model):
         db.Index('ix_property_city_id_price', 'city_id', 'price_per_night'),
         db.Index('ix_property_city_id_stars_desc', 'city_id', 'stars'),
         db.Index('ix_property_dest_category', 'dest_category'),
+        # 2026-05-28: composite indexes for the homepage queries.
+        # /  -> filter is_featured + ORDER BY rating; filter is_genius_deal
+        #       + ORDER BY discount_percent. Without these indexes both queries
+        #       scan the full 27k Property table on every request (~50ms each).
+        db.Index('ix_property_is_featured_rating', 'is_featured', 'rating'),
+        db.Index('ix_property_is_genius_deal_discount',
+                 'is_genius_deal', 'discount_percent'),
     )
 
     reviews = db.relationship('Review', backref='property', lazy=True, cascade='all, delete-orphan')
@@ -1185,9 +1192,7 @@ def index():
     featured = Property.query.filter_by(is_featured=True).order_by(Property.rating.desc()).limit(6).all()
     trending_cities = City.query.order_by(City.average_rating.desc()).limit(8).all()
     genius_deals = Property.query.filter_by(is_genius_deal=True).order_by(Property.discount_percent.desc()).limit(4).all()
-    all_cities = City.query.all()
-    dest_categories = DestCategory.query.all()
-    property_types = PropertyType.query.all()
+    all_cities, dest_categories, property_types = _index_static_lookups()
     return render_template(
         'index.html',
         featured=featured,
@@ -1197,6 +1202,23 @@ def index():
         dest_categories=dest_categories,
         property_types=property_types,
     )
+
+
+# Perf: cache the three "all rows from a small lookup table" queries that
+# every / hit re-runs. These tables aren't mutated at runtime so a simple
+# module cache is safe; /reset/<site> restarts the worker and wipes it.
+_INDEX_STATIC_LOOKUPS = None
+
+
+def _index_static_lookups():
+    global _INDEX_STATIC_LOOKUPS
+    if _INDEX_STATIC_LOOKUPS is None:
+        _INDEX_STATIC_LOOKUPS = (
+            City.query.all(),
+            DestCategory.query.all(),
+            PropertyType.query.all(),
+        )
+    return _INDEX_STATIC_LOOKUPS
 
 
 @app.route('/stays')
@@ -6721,6 +6743,24 @@ else:
         seed_database()
         seed_benchmark_users()
         _normalize_seed_db_layout()
+        # Perf 2026-05-28: Ensure the two composite indexes that accelerate
+        # the homepage filter+sort patterns exist on the running instance DB.
+        # `db.create_all()` skips the existing table, so __table_args__ Index
+        # entries added after the seed file was first built would otherwise be
+        # silently dropped. checkfirst=True keeps this idempotent and safe to
+        # ship as a normal app.py change. instance_seed/*.db is intentionally
+        # NOT modified — byte-id reset semantics are preserved.
+        try:
+            db.Index('ix_property_is_featured_rating',
+                     Property.is_featured, Property.rating).create(
+                db.engine, checkfirst=True)
+            db.Index('ix_property_is_genius_deal_discount',
+                     Property.is_genius_deal, Property.discount_percent).create(
+                db.engine, checkfirst=True)
+            db.session.execute(db.text('ANALYZE'))
+            db.session.commit()
+        except Exception as _e:
+            print(f'[perf] booking index ensure failed: {_e}')
 
 
 # --- perf: long-term cache for /static/ assets (added 2026-05-27) ---

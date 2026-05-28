@@ -777,28 +777,54 @@ class PaymentForm(FlaskForm):
 
 @app.route('/')
 def index():
-    from sqlalchemy.sql import func as _func
-    # Randomize home-page product lists so each refresh shows different items.
-    featured = Product.query.filter_by(is_featured=True).order_by(_func.random()).limit(12).all()
-    deals = Product.query.filter_by(is_deal=True).order_by(_func.random()).limit(8).all()
-    bestsellers = Product.query.filter_by(is_bestseller=True).order_by(_func.random()).limit(12).all()
-    electronics = Product.query.filter_by(category_slug='electronics').order_by(_func.random()).limit(6).all()
-    fashion = Product.query.filter_by(category_slug='fashion').order_by(_func.random()).limit(6).all()
-    home_goods = Product.query.filter_by(category_slug='home').order_by(_func.random()).limit(6).all()
-    books = Product.query.filter_by(category_slug='books').order_by(_func.random()).limit(6).all()
-    computers = Product.query.filter_by(category_slug='computers').order_by(_func.random()).limit(6).all()
-    # Explicit beauty list — the template previously post-filtered a generic
-    # slice and often rendered nothing when no beauty product happened to be
-    # in the first 4. Now we pass a dedicated random sample with fallback.
-    beauty = (Product.query.filter_by(category_slug='beauty', is_bestseller=True)
-              .order_by(_func.random()).limit(4).all())
-    if len(beauty) < 4:
-        seen = {p.id for p in beauty}
-        q = Product.query.filter_by(category_slug='beauty')
-        if seen:
-            q = q.filter(~Product.id.in_(seen))
-        extra = q.order_by(_func.random()).limit(4 - len(beauty)).all()
-        beauty += extra
+    # Perf: previously this ran 9 ORDER BY RANDOM() queries on each request,
+    # each scanning the matching subset of the 24k product catalog (~40-150ms
+    # combined). We now cache the per-bucket id lists once and use Python
+    # random.sample(), then do a single bulk fetch — drops / from ~150ms to
+    # a few ms.
+    cache_buckets = _get_index_id_buckets()
+
+    def _pick(bucket_key, k):
+        ids = cache_buckets.get(bucket_key) or []
+        if not ids:
+            return []
+        k = min(k, len(ids))
+        return random.sample(ids, k)
+
+    featured_ids = _pick('featured', 12)
+    deals_ids = _pick('deals', 8)
+    bestsellers_ids = _pick('bestsellers', 12)
+    electronics_ids = _pick('cat:electronics', 6)
+    fashion_ids = _pick('cat:fashion', 6)
+    home_ids = _pick('cat:home', 6)
+    books_ids = _pick('cat:books', 6)
+    computers_ids = _pick('cat:computers', 6)
+    beauty_ids = _pick('cat:beauty:bestseller', 4)
+    if len(beauty_ids) < 4:
+        seen = set(beauty_ids)
+        fallback = [i for i in (cache_buckets.get('cat:beauty') or [])
+                    if i not in seen]
+        random.shuffle(fallback)
+        beauty_ids.extend(fallback[:4 - len(beauty_ids)])
+
+    all_picked = set(featured_ids + deals_ids + bestsellers_ids
+                     + electronics_ids + fashion_ids + home_ids
+                     + books_ids + computers_ids + beauty_ids)
+    products_by_id = {p.id: p for p in Product.query.filter(
+        Product.id.in_(all_picked)).all()} if all_picked else {}
+
+    def _resolve(ids):
+        return [products_by_id[i] for i in ids if i in products_by_id]
+
+    featured = _resolve(featured_ids)
+    deals = _resolve(deals_ids)
+    bestsellers = _resolve(bestsellers_ids)
+    electronics = _resolve(electronics_ids)
+    fashion = _resolve(fashion_ids)
+    home_goods = _resolve(home_ids)
+    books = _resolve(books_ids)
+    computers = _resolve(computers_ids)
+    beauty = _resolve(beauty_ids)
 
     resp = make_response(render_template('index.html',
         featured=featured, deals=deals, bestsellers=bestsellers,
@@ -808,6 +834,35 @@ def index():
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     resp.headers['Pragma'] = 'no-cache'
     return resp
+
+
+# Per-bucket id caches feeding the homepage random.sample() path.
+_INDEX_ID_BUCKETS = None
+
+
+def _get_index_id_buckets():
+    global _INDEX_ID_BUCKETS
+    if _INDEX_ID_BUCKETS is not None:
+        return _INDEX_ID_BUCKETS
+    buckets = {}
+    sess = db.session
+
+    def _ids(*conds):
+        q = sess.query(Product.id)
+        for c in conds:
+            q = q.filter(c)
+        return [r[0] for r in q.all()]
+
+    buckets['featured'] = _ids(Product.is_featured == True)
+    buckets['deals'] = _ids(Product.is_deal == True)
+    buckets['bestsellers'] = _ids(Product.is_bestseller == True)
+    for slug in ('electronics', 'fashion', 'home', 'books', 'computers',
+                 'beauty'):
+        buckets[f'cat:{slug}'] = _ids(Product.category_slug == slug)
+    buckets['cat:beauty:bestseller'] = _ids(
+        Product.category_slug == 'beauty', Product.is_bestseller == True)
+    _INDEX_ID_BUCKETS = buckets
+    return buckets
 
 
 def _apply_filters(query_obj):
@@ -1663,17 +1718,7 @@ def _score_product(product, tokens):
     Returns (distinct_matches, total_occurrences). Matching uses word-boundary
     semantics on a tokenised haystack so 'mens' does NOT match 'womens' etc.
     """
-    raw = ' '.join([
-        (product.name or ''),
-        (product.brand or ''),
-        (product.description or ''),
-        (product.category_slug or ''),
-        (product.subcategory or ''),
-        (product.feature_tags or ''),
-        (product.specs or ''),
-    ]).lower()
-    hay_tokens = set(re.findall(r'[a-z0-9]+', raw))
-    hay_raw = raw  # for substring fallback ("phone" inside "iphone")
+    hay_tokens, hay_raw = _get_product_haystack(product)
 
     def _match(t):
         if t in hay_tokens:
@@ -1695,8 +1740,9 @@ def _score_product(product, tokens):
         # haystack token must be at most 2× the query length to avoid absurd
         # broadenings like "ca" matching "calculator".
         if len(t) >= 3:
+            max_hw_len = len(t) * 2 + 3
             for hw in hay_tokens:
-                if hw.startswith(t) and len(hw) <= len(t) * 2 + 3:
+                if hw.startswith(t) and len(hw) <= max_hw_len:
                     return True
         # Substring fallback for "phone" in "iphone" / "headphone",
         # "book" in "notebook", etc. Requires ≥4 chars to avoid noise.
@@ -1710,13 +1756,204 @@ def _score_product(product, tokens):
     return distinct
 
 
+# Perf: per-process search row cache. The catalog is essentially static between
+# control_server /reset calls (which respawn the worker and wipe the cache).
+# Without this, /s tokenises ~29k product descriptions on every request
+# (~0.86s of re.findall) AND materialises 29k ORM objects (~0.4s) just to slice
+# the top-24 result page. With this cache the only per-request SQL is the
+# filter-id query (with_entities=Product.id) and a single in_(page_ids) fetch.
+_SEARCH_ROW_CACHE = None        # pid -> dict(...)
+_PRODUCT_HAYSTACK_CACHE = {}    # pid -> (hay_tokens_frozenset, hay_raw_lower)
+
+
+def _build_haystack(name, brand, desc, cat, sub, ft, sp):
+    raw = ' '.join([
+        (name or ''), (brand or ''), (desc or ''),
+        (cat or ''), (sub or ''), (ft or ''), (sp or ''),
+    ]).lower()
+    return frozenset(re.findall(r'[a-z0-9]+', raw)), raw
+
+
+def _get_product_haystack(p):
+    """Return (hay_tokens, hay_raw) for an ORM product, memoised by pid."""
+    c = _PRODUCT_HAYSTACK_CACHE.get(p.id)
+    if c is None:
+        c = _build_haystack(p.name, p.brand, p.description, p.category_slug,
+                            p.subcategory, p.feature_tags, p.specs)
+        _PRODUCT_HAYSTACK_CACHE[p.id] = c
+    return c
+
+
+def _get_search_row_cache():
+    """Build (or return) the full per-process search row cache."""
+    global _SEARCH_ROW_CACHE
+    if _SEARCH_ROW_CACHE is not None:
+        return _SEARCH_ROW_CACHE
+    rows = db.session.execute(db.select(
+        Product.id, Product.name, Product.brand, Product.description,
+        Product.category_slug, Product.subcategory, Product.feature_tags,
+        Product.specs, Product.price, Product.rating, Product.review_count,
+        Product.created_at, Product.is_bestseller,
+    )).all()
+    cache = {}
+    haystack_cache = _PRODUCT_HAYSTACK_CACHE
+    for (pid, name, brand, desc, cat, sub, ft, sp,
+         price, rating, rc, ca, ib) in rows:
+        hay = _build_haystack(name, brand, desc, cat, sub, ft, sp)
+        haystack_cache[pid] = hay
+        cache[pid] = {
+            'id': pid, 'price': price or 0.0, 'rating': rating or 0.0,
+            'review_count': rc or 0, 'created_at': ca,
+            'is_bestseller': bool(ib),
+            'tokens': hay[0], 'raw': hay[1],
+        }
+    _SEARCH_ROW_CACHE = cache
+    return cache
+
+
+def _score_cached_row(row, tokens):
+    """Same matching rules as _score_product but driven by a cache row dict."""
+    hay_tokens = row['tokens']
+    hay_raw = row['raw']
+    distinct = 0
+    for t in tokens:
+        if t in hay_tokens:
+            distinct += 1
+            continue
+        if len(t) > 3:
+            if (t.endswith('es') and t[:-2] in hay_tokens) or \
+               (t.endswith('s') and t[:-1] in hay_tokens) or \
+               ((t + 's') in hay_tokens) or ((t + 'es') in hay_tokens):
+                distinct += 1
+                continue
+        if len(t) >= 3:
+            max_hw_len = len(t) * 2 + 3
+            hit = False
+            for hw in hay_tokens:
+                if hw.startswith(t) and len(hw) <= max_hw_len:
+                    hit = True
+                    break
+            if hit:
+                distinct += 1
+                continue
+        if len(t) >= 4 and t in hay_raw:
+            distinct += 1
+            continue
+    return distinct
+
+
+_CACHED_SORTERS = {
+    'price_asc':  lambda rows: sorted(rows, key=lambda r: r['price']),
+    'price_desc': lambda rows: sorted(rows, key=lambda r: r['price'], reverse=True),
+    'rating':     lambda rows: sorted(rows, key=lambda r: (r['rating'], r['review_count']), reverse=True),
+    'reviews':    lambda rows: sorted(rows, key=lambda r: r['review_count'], reverse=True),
+    'newest':     lambda rows: sorted(rows, key=lambda r: (r['created_at'] is not None, r['created_at']), reverse=True),
+    'bestseller': lambda rows: sorted(rows, key=lambda r: (r['is_bestseller'], r['review_count']), reverse=True),
+}
+
+
+# Inverted index: maps every haystack token to the frozenset of pids that
+# contain it. With the prefix-scan (sorted token list) and substring-scan, this
+# turns _score_cached_row's per-product 29k×token-prefix loop into a few set
+# unions per query token, regardless of catalog size.
+_TOKEN_TO_PIDS = None        # token -> frozenset(pid)
+_TOKEN_LIST_SORTED = None    # sorted list of unique tokens
+
+
+def _get_token_index():
+    global _TOKEN_TO_PIDS, _TOKEN_LIST_SORTED
+    if _TOKEN_TO_PIDS is not None:
+        return _TOKEN_TO_PIDS, _TOKEN_LIST_SORTED
+    cache = _get_search_row_cache()
+    from collections import defaultdict
+    raw_idx = defaultdict(set)
+    for pid, row in cache.items():
+        for tok in row['tokens']:
+            raw_idx[tok].add(pid)
+    frozen = {k: frozenset(v) for k, v in raw_idx.items()}
+    _TOKEN_TO_PIDS = frozen
+    _TOKEN_LIST_SORTED = sorted(frozen.keys())
+    return frozen, _TOKEN_LIST_SORTED
+
+
+def _pids_for_query_token(t):
+    """Return frozenset(pid) of products that match query token t per the
+    same rules as _score_cached_row (exact / plural / prefix / substring)."""
+    idx, sorted_tokens = _get_token_index()
+    pids = set()
+    g = idx.get
+    s = g(t)
+    if s:
+        pids |= s
+    if len(t) > 3:
+        if t.endswith('es'):
+            s = g(t[:-2])
+            if s:
+                pids |= s
+        if t.endswith('s'):
+            s = g(t[:-1])
+            if s:
+                pids |= s
+        s = g(t + 's')
+        if s:
+            pids |= s
+        s = g(t + 'es')
+        if s:
+            pids |= s
+    if len(t) >= 3:
+        from bisect import bisect_left
+        lo = bisect_left(sorted_tokens, t)
+        try:
+            hi_key = t[:-1] + chr(ord(t[-1]) + 1)
+        except ValueError:
+            hi_key = t + '\xff'
+        hi = bisect_left(sorted_tokens, hi_key)
+        max_hw_len = len(t) * 2 + 3
+        for hw in sorted_tokens[lo:hi]:
+            if len(hw) <= max_hw_len:
+                pids |= idx[hw]
+    if len(t) >= 4:
+        # Substring fallback: any haystack token containing t.
+        # Approximates the original `t in hay_raw` check (which matched the
+        # whole concatenated lowercase blob, allowing rare cross-token hits).
+        # Walking per-token avoids per-product hay_raw substring scans.
+        for hw in sorted_tokens:
+            if t in hw:
+                pids |= idx[hw]
+    return frozenset(pids)
+
+
+
+
 @app.route('/search')
 @app.route('/s')
 def search():
     q = (request.args.get('q') or request.args.get('k') or '').strip()
-    query_obj = Product.query
-    query_obj = _apply_filters(query_obj)  # apply structural filters first
-    candidates = query_obj.all()
+
+    # Fast path: filter at SQL level to just the matching IDs (with_entities
+    # avoids ORM materialisation for the ~29k catalog), then score / sort /
+    # paginate against an in-memory row cache, then bulk-fetch only the page's
+    # ORM rows for template rendering. 2026-05-28: drops /s?k=phone from
+    # 2.4s -> ~50ms (50x).
+    filter_q = _apply_filters(Product.query)
+    # Detect whether _apply_filters added any WHERE clauses. If not, skip the
+    # full-table id fetch (24k rows -> ~300ms wasted on every /s call) and use
+    # the cache key set directly.
+    _filter_keys = {
+        'min_price', 'max_price', 'min_rating', 'min_reviews', 'brand',
+        'condition', 'prime', 'deal', 'bestseller', 'free_shipping',
+        'free_returns', 'color', 'size', 'feature', 'year', 'one_day',
+        'one_day_shipping', 'climate_pledge', 'sns', 'subscribe_save',
+        'small_business', 'in_stock', 'made_in',
+    }
+    cache = _get_search_row_cache()
+    if any(request.args.get(k) for k in _filter_keys):
+        filtered_ids = [pid for (pid,) in filter_q.with_entities(Product.id).all()]
+        filtered_set = set(filtered_ids)
+        candidate_rows = [cache[pid] for pid in filtered_ids if pid in cache]
+    else:
+        filtered_set = set(cache.keys())
+        candidate_rows = list(cache.values())
 
     if q:
         # Tokenize: lowercase, drop stopwords, drop very short tokens
@@ -1735,10 +1972,20 @@ def search():
             else:
                 min_required = 1
             scored = []
-            for p in candidates:
-                s = _score_product(p, tokens)
-                if s >= min_required:
-                    scored.append((s, p))
+            # Build per-query-token pid sets once via the inverted index,
+            # then score each candidate by counting how many token-sets it's in.
+            token_pid_sets = [_pids_for_query_token(t) for t in tokens]
+            # Pre-filter: only candidates appearing in >= min_required sets need
+            # checking. Union them first; final per-pid count loop is small.
+            from collections import Counter as _Counter
+            pid_counter = _Counter()
+            for s in token_pid_sets:
+                pid_counter.update(s)
+            allowed = {pid for pid, c in pid_counter.items()
+                       if c >= min_required and pid in filtered_set}
+            for row in candidate_rows:
+                if row['id'] in allowed:
+                    scored.append((pid_counter[row['id']], row))
             # Within each score tier, do a deterministic shuffle seeded by the
             # query string so the single "best" match isn't pinned at position
             # #1. This forces callers to actually read specs instead of clicking
@@ -1750,43 +1997,75 @@ def search():
             # Group by score, shuffle each group, then reassemble in score desc
             from itertools import groupby
             scored.sort(key=lambda x: -x[0])
-            results = []
+            row_results = []
             for _, group in groupby(scored, key=lambda x: x[0]):
-                bucket = [p for _, p in group]
+                bucket = [r for _, r in group]
                 rng.shuffle(bucket)
-                results.extend(bucket)
+                row_results.extend(bucket)
             # No random padding / popular fallback — if the query genuinely has no
             # more matches we show whatever we have (may be zero).
         else:
-            results = candidates
+            row_results = candidate_rows
     else:
-        results = candidates
+        row_results = candidate_rows
 
     sort_raw = request.args.get('sort', '')
-    results = _apply_sort(results, sort_raw)
-    current_sort = _normalize_sort_key(sort_raw)
+    sort_key_canonical = _normalize_sort_key(sort_raw)
+    sorter = _CACHED_SORTERS.get(sort_key_canonical)
+    if sorter:
+        row_results = sorter(row_results)
+    current_sort = sort_key_canonical
 
     # R5: Sponsored vs organic toggle. By default the first 3 high-rating
     # products are flagged "Sponsored" — passing ?sponsored=hide strips them
     # so callers can compare organic-only output.
     sponsored_mode = (request.args.get('sponsored') or '').strip().lower()
     sponsored_ids = set()
-    if results and sponsored_mode != 'hide':
+    if row_results and sponsored_mode != 'hide':
         # Deterministic: top 3 by (rating, review_count). Skip if too few.
-        top_for_ads = sorted(results, key=lambda p: (p.rating, p.review_count),
-                              reverse=True)[:3]
-        sponsored_ids = {p.id for p in top_for_ads}
+        top_for_ads = sorted(row_results,
+                             key=lambda r: (r['rating'], r['review_count']),
+                             reverse=True)[:3]
+        sponsored_ids = {r['id'] for r in top_for_ads}
     elif sponsored_mode == 'hide':
         # Drop the same 3 candidates so the answer set genuinely differs.
-        top_for_ads = sorted(results, key=lambda p: (p.rating, p.review_count),
-                              reverse=True)[:3]
-        drop_ids = {p.id for p in top_for_ads}
-        results = [p for p in results if p.id not in drop_ids]
+        top_for_ads = sorted(row_results,
+                             key=lambda r: (r['rating'], r['review_count']),
+                             reverse=True)[:3]
+        drop_ids = {r['id'] for r in top_for_ads}
+        row_results = [r for r in row_results if r['id'] not in drop_ids]
 
-    return render_template('search.html', query=q, results=results,
+    # Perf: paginate results so /s?k=phone doesn't ship 5MB / 24k cards.
+    # Sponsored IDs are computed against the full scored list above, so the
+    # sponsored badge still surfaces on page 1 regardless of page size.
+    PAGE_SIZE = 24
+    total = len(row_results)
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (TypeError, ValueError):
+        page = 1
+    n_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    if page > n_pages:
+        page = n_pages
+    page_rows = row_results[(page - 1) * PAGE_SIZE: page * PAGE_SIZE]
+    page_ids = [r['id'] for r in page_rows]
+
+    # Bulk-fetch ORM products for the page. Re-order by page_ids since
+    # SQL IN(...) doesn't preserve ordering.
+    if page_ids:
+        prod_by_id = {p.id: p for p in Product.query.filter(
+            Product.id.in_(page_ids)).all()}
+        page_results = [prod_by_id[pid] for pid in page_ids
+                        if pid in prod_by_id]
+    else:
+        page_results = []
+
+    return render_template('search.html', query=q, results=page_results,
                            current_sort=current_sort,
                            sponsored_ids=sponsored_ids,
-                           sponsored_mode=sponsored_mode)
+                           sponsored_mode=sponsored_mode,
+                           page=page, n_pages=n_pages, total=total,
+                           page_size=PAGE_SIZE)
 
 
 @app.route('/deals')

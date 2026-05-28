@@ -114,9 +114,9 @@
     <div class="results-main">
         <div class="results-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             {% if query %}
-            <h1>{{ results|length }} results for <em>"{{ query }}"</em></h1>
+            <h1>{{ total if total is defined else results|length }} results for <em>"{{ query }}"</em></h1>
             {% else %}
-            <h1>{{ results|length }} results</h1>
+            <h1>{{ total if total is defined else results|length }} results</h1>
             {% endif %}
             <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
                 {# R5: sponsored toggle #}
@@ -196,6 +196,44 @@
             {% endif %}
             {% endfor %}
         </div>
+
+        {% if n_pages is defined and n_pages > 1 %}
+        {%- set qs_dict = request.args.to_dict() -%}
+        {%- set _ = qs_dict.pop('page', None) -%}
+        {%- set base_qs = qs_dict.items()|map('join', '=')|join('&') -%}
+        {%- set base_link = '?' ~ base_qs ~ ('&' if base_qs else '') -%}
+        <nav class="results-pagination" aria-label="Search results pages"
+             style="display:flex;gap:6px;justify-content:center;align-items:center;margin:24px 0;flex-wrap:wrap">
+            {% if page > 1 %}
+            <a href="{{ base_link }}page={{ page - 1 }}" class="page-link" rel="prev">&lsaquo; Prev</a>
+            {% else %}
+            <span class="page-link disabled" aria-disabled="true" style="opacity:.4">&lsaquo; Prev</span>
+            {% endif %}
+            {%- set window_start = [1, page - 2]|max -%}
+            {%- set window_end = [n_pages, page + 2]|min -%}
+            {% if window_start > 1 %}
+            <a href="{{ base_link }}page=1" class="page-link">1</a>
+            {% if window_start > 2 %}<span class="page-ellipsis">…</span>{% endif %}
+            {% endif %}
+            {% for p in range(window_start, window_end + 1) %}
+            {% if p == page %}
+            <span class="page-link active" aria-current="page" style="font-weight:700;background:#febd69;padding:6px 10px;border-radius:4px">{{ p }}</span>
+            {% else %}
+            <a href="{{ base_link }}page={{ p }}" class="page-link" style="padding:6px 10px">{{ p }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if window_end < n_pages %}
+            {% if window_end < n_pages - 1 %}<span class="page-ellipsis">…</span>{% endif %}
+            <a href="{{ base_link }}page={{ n_pages }}" class="page-link">{{ n_pages }}</a>
+            {% endif %}
+            {% if page < n_pages %}
+            <a href="{{ base_link }}page={{ page + 1 }}" class="page-link" rel="next">Next &rsaquo;</a>
+            {% else %}
+            <span class="page-link disabled" aria-disabled="true" style="opacity:.4">Next &rsaquo;</span>
+            {% endif %}
+            <span style="font-size:12px;color:#565959;margin-left:10px">Page {{ page }} of {{ n_pages }} &middot; {{ total }} results</span>
+        </nav>
+        {% endif %}
     </div>
 </div>
 
