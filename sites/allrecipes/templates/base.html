@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Allrecipes{% endblock %} | Recipes, How-Tos, Videos and More</title>
 
@@ -46,6 +48,8 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+{% include 'sprites_inline.html' %}
+
     <!-- Skip-to-content link for keyboard / screen-reader users (R5 a11y) -->
     <a class="skip-link" href="#main-content">Skip to content</a>
     {# R7: language banner — visible only on /lang/<x>/ paths so it doesn't pollute the default English UX. #}
@@ -92,10 +96,15 @@
         </nav>
         <div class="nav-categories" id="nav-categories" aria-label="Recipe categories">
             <div class="nav-categories-inner">
-                <a href="{{ url_for('all_recipes') }}" {% if request.endpoint == 'all_recipes' %}class="active"{% endif %}>All Recipes</a>
+                <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>Home</a>
                 <a href="{{ url_for('meals_hub') }}" {% if request.endpoint == 'meals_hub' %}class="active"{% endif %}>Meals</a>
                 <a href="{{ url_for('ingredients_hub') }}" {% if request.endpoint == 'ingredients_hub' %}class="active"{% endif %}>Ingredients</a>
                 <a href="{{ url_for('cuisines_hub') }}" {% if request.endpoint == 'cuisines_hub' %}class="active"{% endif %}>Cuisines</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('recipe_box') }}" {% if request.endpoint == 'recipe_box' %}class="active"{% endif %}>Recipe Box</a>
+                {% endif %}
+                <a href="{{ url_for('newsletter') }}" {% if request.endpoint == 'newsletter' %}class="active"{% endif %}>Newsletter</a>
+                <a href="{{ url_for('all_recipes') }}" {% if request.endpoint == 'all_recipes' %}class="active"{% endif %}>All Recipes</a>
                 <a href="{{ url_for('category_page', slug='dinner') }}" {% if request.path == '/category/dinner' %}class="active"{% endif %}>Dinners</a>
                 <a href="{{ url_for('category_page', slug='breakfast') }}" {% if request.path == '/category/breakfast' %}class="active"{% endif %}>Breakfast</a>
                 <a href="{{ url_for('category_page', slug='desserts') }}" {% if request.path == '/category/desserts' %}class="active"{% endif %}>Desserts</a>
@@ -104,9 +113,8 @@
                 <a href="{{ url_for('diets_hub') }}" {% if request.endpoint == 'diets_hub' or request.path.startswith('/diet/') %}class="active"{% endif %}>Diets</a>
                 <a href="{{ url_for('occasions') }}" {% if request.path == '/occasions' or request.path.startswith('/occasion/') %}class="active"{% endif %}>Occasions</a>
                 <a href="{{ url_for('collections_hub') }}" {% if request.endpoint in ['collections_hub','collection_page'] %}class="active"{% endif %}>Collections</a>
-                <a href="{{ url_for('articles_hub') }}" {% if request.endpoint in ['articles_hub','article_detail'] %}class="active"{% endif %}>Articles</a>
+                <a href="{{ url_for('articles_hub') }}" {% if request.endpoint in ['articles_hub','article_detail'] %}class="active"{% endif %}>Kitchen Tips</a>
                 <a href="{{ url_for('community') }}" {% if request.endpoint in ['community','author_page','authors_hub'] %}class="active"{% endif %}>Community</a>
-                <a href="{{ url_for('newsletter') }}" {% if request.endpoint == 'newsletter' %}class="active"{% endif %}>Newsletter</a>
                 <a href="{{ url_for('about') }}" {% if request.path.startswith('/about') %}class="active"{% endif %}>About</a>
             </div>
         </div>
@@ -180,7 +188,10 @@
             </div>
             <div class="footer-section">
                 <h3>About</h3>
-                <a href="{{ url_for('about') }}">About Allrecipes</a>
+                <a href="{{ url_for('about') }}">About Us</a>
+                <a href="{{ url_for('about') }}">Editorial Process</a>
+                <a href="{{ url_for('about') }}">Product Vetting</a>
+                <a href="{{ url_for('about') }}">Contact</a>
                 <a href="{{ url_for('about_allstars') }}">The Allrecipes Allstars</a>
                 <a href="{{ url_for('occasions') }}">Occasions</a>
                 <a href="{{ url_for('newsletter') }}">Newsletter</a>
