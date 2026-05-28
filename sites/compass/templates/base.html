@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
   <title>{% block title %}Compass — Find Real Estate, Homes for Sale, Apartments & Houses{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/compass.css') }}">
-  <link rel="icon" href="{{ url_for('static', filename='icons/compass_logo.svg') }}" type="image/svg+xml">
 </head>
 <body>
 <header class="cx-nav">
@@ -13,15 +13,15 @@
     <a class="cx-logo" href="{{ url_for('index') }}" aria-label="Compass">
       <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/compass_logo.svg') }}" alt="Compass">
     </a>
-    <nav class="cx-nav-links">
+    {# Primary nav — real upstream compass.com top bar:
+       Buy / Rent / Sell / Real Estate Agents / About (+ Register/Sign In).
+       Sourced from harvest _buttons.jsonl ("Register/Sign In") + nav hint. #}
+    <nav class="cx-nav-links" aria-label="Primary">
       <a href="{{ url_for('homes_for_sale_index') }}">Buy</a>
       <a href="{{ url_for('homes_for_rent_index') }}">Rent</a>
       <a href="{{ url_for('sell_hub') }}">Sell</a>
-      <a href="{{ url_for('new_listings') }}">New Listings</a>
-      <a href="{{ url_for('open_houses') }}">Open Houses</a>
-      <a href="{{ url_for('luxury') }}">Luxury</a>
-      <a href="{{ url_for('agents_index') }}">Agents</a>
-      <a href="{{ url_for('blog_index') }}">The Edit</a>
+      <a href="{{ url_for('agents_index') }}">Real Estate Agents</a>
+      <a href="{{ url_for('about') }}">About</a>
     </nav>
     <div class="cx-nav-right">
       {% if current_user.is_authenticated %}
@@ -32,8 +32,7 @@
           <button class="btn outline tiny" type="submit">Sign out</button>
         </form>
       {% else %}
-        <a href="{{ url_for('login') }}">Log in</a>
-        <a class="btn-outline" href="{{ url_for('register') }}">Join</a>
+        <a class="cx-signin" href="{{ url_for('login') }}">Register/Sign In</a>
       {% endif %}
     </div>
   </div>
@@ -52,64 +51,77 @@
 <main>{% block content %}{% endblock %}</main>
 
 <footer class="cx-footer">
+  {# Footer columns derived from harvest _footer_links.jsonl —
+     real compass.com bundles: Company / Specialties / Tools / Find Agent / Legal. #}
   <div class="col-grid">
     <div>
       <a class="cx-logo" href="{{ url_for('index') }}" style="font-size:22px">COMPASS</a>
       <p>Compass is a licensed real estate broker. All material presented herein is intended for informational purposes only.</p>
     </div>
     <div>
-      <h4>Buy</h4>
+      <h4>Company</h4>
       <ul>
-        <li><a href="{{ url_for('homes_for_sale_index') }}">Homes for Sale</a></li>
-        <li><a href="{{ url_for('new_listings') }}">New Listings</a></li>
-        <li><a href="{{ url_for('open_houses') }}">Open Houses</a></li>
-        <li><a href="{{ url_for('luxury') }}">Luxury</a></li>
+        <li><a href="{{ url_for('about') }}">About Us</a></li>
+        <li><a href="{{ url_for('about') }}">Team</a></li>
+        <li><a href="{{ url_for('about') }}">Sales Leadership</a></li>
+        <li><a href="{{ url_for('about') }}">Join as an agent</a></li>
+        <li><a href="{{ url_for('about') }}">Careers</a></li>
+        <li><a href="{{ url_for('offices_index') }}">Offices</a></li>
+        <li><a href="{{ url_for('about') }}">Newsroom</a></li>
+        <li><a href="{{ url_for('about') }}">Contact Us</a></li>
       </ul>
     </div>
     <div>
-      <h4>Rent</h4>
+      <h4>Specialties</h4>
       <ul>
-        <li><a href="{{ url_for('homes_for_rent_index') }}">Apartments for Rent</a></li>
-        <li><a href="{{ url_for('homes_for_rent_index') }}">Pet-Friendly Rentals</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Sell</h4>
-      <ul>
-        <li><a href="{{ url_for('sell_hub') }}">Selling Resources</a></li>
-        <li><a href="{{ url_for('sell_evaluate') }}">Free Home Valuation</a></li>
-        <li><a href="{{ url_for('sell_cma') }}">CMA Report</a></li>
+        <li><a href="{{ url_for('luxury') }}">Compass Concierge</a></li>
+        <li><a href="{{ url_for('luxury') }}">Private Exclusives</a></li>
+        <li><a href="{{ url_for('new_listings') }}">Compass Coming Soon</a></li>
+        <li><a href="{{ url_for('market_reports_index') }}">Market Outlook</a></li>
+        <li><a href="{{ url_for('new_listings') }}">New Development</a></li>
+        <li><a href="{{ url_for('luxury') }}">Commercial</a></li>
+        <li><a href="{{ url_for('luxury') }}">Sports &amp; Entertainment</a></li>
       </ul>
     </div>
     <div>
       <h4>Tools</h4>
       <ul>
         <li><a href="{{ url_for('mortgage_calculator') }}">Mortgage Calculator</a></li>
-        <li><a href="{{ url_for('affordability_calculator') }}">Affordability</a></li>
+        <li><a href="{{ url_for('affordability_calculator') }}">Affordability Calculator</a></li>
         <li><a href="{{ url_for('market_reports_index') }}">Market Reports</a></li>
-        <li><a href="{{ url_for('neighborhood_index') }}">Neighborhoods</a></li>
-        <li><a href="{{ url_for('sold_homes_index') }}">Recently Sold</a></li>
+        <li><a href="{{ url_for('neighborhood_index') }}">Neighborhood Guides</a></li>
+        <li><a href="{{ url_for('sold_homes_index') }}">Recently Sold Homes</a></li>
+        <li><a href="{{ url_for('sell_evaluate') }}">Free Home Valuation</a></li>
+        <li><a href="{{ url_for('sell_cma') }}">CMA Report</a></li>
       </ul>
     </div>
     <div>
       <h4>Find an Agent</h4>
       <ul>
-        <li><a href="{{ url_for('agents_index') }}">Browse Agents</a></li>
+        <li><a href="{{ url_for('agents_index') }}">Find an Agent</a></li>
         <li><a href="{{ url_for('teams_index') }}">Teams</a></li>
         <li><a href="{{ url_for('offices_index') }}">Offices</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Compass</h4>
-      <ul>
-        <li><a href="{{ url_for('about') }}">About</a></li>
-        <li><a href="{{ url_for('help_page') }}">Help</a></li>
+        <li><a href="{{ url_for('about') }}">Compass Cares</a></li>
+        <li><a href="{{ url_for('about') }}">Diversity &amp; Inclusion</a></li>
         <li><a href="{{ url_for('blog_index') }}">The Compass Edit</a></li>
         <li><a href="{{ url_for('newsletter') }}">Newsletter</a></li>
       </ul>
     </div>
+    <div>
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="{{ url_for('help_page') }}">Sitemap</a></li>
+        <li><a href="{{ url_for('help_page') }}">Terms of Service</a></li>
+        <li><a href="{{ url_for('help_page') }}">Privacy Center</a></li>
+        <li><a href="{{ url_for('help_page') }}">Do Not Sell or Share My Personal Information</a></li>
+        <li><a href="{{ url_for('help_page') }}">Scam Avoidance</a></li>
+        <li><a href="{{ url_for('help_page') }}">Responsible Disclosure</a></li>
+        <li><a href="{{ url_for('help_page') }}">Compass is an E-Verify employer</a></li>
+        <li><a href="{{ url_for('help_page') }}">Your CA Privacy Rights</a></li>
+      </ul>
+    </div>
   </div>
-  <div class="legal">&copy; {{ now.year }} Compass mirror. Independent mirror site, not affiliated with Compass, Inc.</div>
+  <div class="legal">&copy; {{ now.year }} Compass, Inc. All rights reserved. Equal Housing Opportunity.</div>
 </footer>
 </body>
 </html>
