@@ -8,7 +8,7 @@
       <span aria-hidden="true">⌕</span>
       <input name="q" value="{{ args.get('q', args.get('location', '')) }}" placeholder="Where to?">
     </div>
-    <button class="date-pill" type="button">▣ May 15 → May 17 <span>×</span></button>
+    <button class="date-pill" type="submit">▣ May 15 → May 17 <span>×</span></button>
     <input type="hidden" name="inventory_type" value="{{ args.get('inventory_type', '') }}">
     <button class="filter-pill" type="submit">☰ More Filters {% if args.get('inventory_type') %}<span>1</span>{% endif %}</button>
   </form>
@@ -22,7 +22,9 @@
             {% if args.get('inventory_type') %}
               <a class="filter-chip" href="{{ url_for('search', q=args.get('q', '')) }}">{{ inventory_labels.get(args.get('inventory_type'), args.get('inventory_type')) }} <span>×</span></a>
             {% endif %}
+            {% if args.get('inventory_type') or args.get('q') or args.get('sort') %}
             <a href="{{ url_for('search') }}">Clear All</a>
+            {% endif %}
           </div>
           <span class="muted">1 - {{ visible_count }} results of {{ results|length }}</span>
         </div>
@@ -68,14 +70,14 @@
   <aside class="real-map-pane">
     <div class="map-canvas search-map real-search-map" aria-label="Map of search results">
       <div class="map-controls" aria-hidden="true">
-        <button class="map-control-btn" type="button">+</button>
-        <button class="map-control-btn" type="button">−</button>
+        <span class="map-control-btn" role="presentation">+</span>
+        <span class="map-control-btn" role="presentation">−</span>
       </div>
       <div class="map-attribution" aria-hidden="true">Map <span>Satellite</span></div>
       {% for entry in search_entries %}
         {% set point = entry.point %}
-        <button class="map-marker{% if loop.first %} is-active{% endif %}"
-                type="button"
+        <a class="map-marker{% if loop.first %} is-active{% endif %}"
+                href="{{ point.href }}"
                 style="left: {{ point.x }}%; top: {{ point.y }}%;"
                 data-marker-id="{{ point.id }}"
                 data-panel-key="search"
@@ -88,7 +90,7 @@
                 data-map-label="{{ point.label }}"
                 data-map-link="{{ point.href }}">
           <span>{{ point.rank }}</span>
-        </button>
+        </a>
       {% endfor %}
       <span class="mapbox-wordmark">mapbox</span>
     </div>

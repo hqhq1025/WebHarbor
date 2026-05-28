@@ -13,6 +13,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  document.querySelectorAll("[data-menu-button]").forEach((button) => {
+    const header = button.closest("header") || document.querySelector(".topbar");
+    const nav = header ? header.querySelector(".nav-links") : null;
+    button.addEventListener("click", () => {
+      const isOpen = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", isOpen ? "false" : "true");
+      if (nav) nav.classList.toggle("is-mobile-open", !isOpen);
+      if (header) header.classList.toggle("is-nav-open", !isOpen);
+    });
+  });
+
   document.querySelectorAll("[data-home-tabs]").forEach((tabRoot) => {
     const tabs = tabRoot.querySelectorAll("[data-home-tab]");
     const card = tabRoot.closest(".home-search-card");
