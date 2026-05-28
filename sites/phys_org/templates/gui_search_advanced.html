@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Advanced search — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="crumbs"><a href="{{ url_for('search') }}">Search</a> / Advanced</div>
+    <h1>Advanced search</h1>
+    <p class="lede">Combine keywords, category, journal, institution, author and a year range.</p>
+
+    <form method="get" action="/search/advanced/results" class="search-advanced-form"
+          style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;max-width:780px;padding:16px;border:1px solid #e6e9ee;border-radius:8px;background:#fafbfd;">
+      <label style="grid-column:1/3;">
+        <div class="meta">Keywords (any of the words)</div>
+        <input name="q" value="{{ query_params.get('q', '') }}" placeholder="dark matter, JWST, fusion…" style="width:100%;padding:8px;">
+      </label>
+
+      <label>
+        <div class="meta">Category</div>
+        <select name="category" style="width:100%;padding:8px;">
+          <option value="">All categories</option>
+          {% for c in categories %}
+            <option value="{{ c.slug }}" {% if query_params.get('category') == c.slug %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Journal</div>
+        <select name="journal" style="width:100%;padding:8px;">
+          <option value="">Any journal</option>
+          {% for j in journals %}
+            <option value="{{ j }}" {% if query_params.get('journal') == j %}selected{% endif %}>{{ j }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Institution</div>
+        <select name="institution" style="width:100%;padding:8px;">
+          <option value="">Any institution</option>
+          {% for i in institutions %}
+            <option value="{{ i }}" {% if query_params.get('institution') == i %}selected{% endif %}>{{ i }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Author</div>
+        <select name="author" style="width:100%;padding:8px;">
+          <option value="">Any author</option>
+          {% for a in authors %}
+            <option value="{{ a }}" {% if query_params.get('author') == a %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Year from</div>
+        <select name="year_from" style="width:100%;padding:8px;">
+          <option value="">Any</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if query_params.get('year_from')|string == y|string %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Year to</div>
+        <select name="year_to" style="width:100%;padding:8px;">
+          <option value="">Any</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if query_params.get('year_to')|string == y|string %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <div class="meta">Sort</div>
+        <select name="sort" style="width:100%;padding:8px;">
+          <option value="relevance" {% if query_params.get('sort') == 'relevance' %}selected{% endif %}>Relevance</option>
+          <option value="newest" {% if query_params.get('sort') == 'newest' %}selected{% endif %}>Newest first</option>
+          <option value="popular" {% if query_params.get('sort') == 'popular' %}selected{% endif %}>Most viewed</option>
+        </select>
+      </label>
+
+      <div style="grid-column:1/3;display:flex;gap:10px;align-items:center;">
+        <button class="btn" type="submit">Run advanced search</button>
+        <a class="btn secondary" href="/search/advanced">Reset</a>
+        <span class="meta" style="margin-left:auto;">
+          Looking for something simpler? <a href="{{ url_for('search') }}">Use quick search</a>.
+        </span>
+      </div>
+    </form>
+
+    {% if results is not none %}
+      <h2 style="margin-top:22px;">Results ({{ total }})</h2>
+      {% if results %}
+        <div class="article-grid">
+          {% for a in results %}
+            <article class="card">
+              {% if a.image_filename %}
+                <a href="{{ url_for('article_detail', slug=a.slug) }}"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+              {% endif %}
+              <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+              <div class="byline">{{ a.author_name }} · {{ a.published_at.strftime('%b %d, %Y') if a.published_at else '' }} · {{ a.source_journal or '' }}</div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">No articles match those filters. Try a broader query, or <a href="/search/advanced">reset the form</a>.</p>
+      {% endif %}
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

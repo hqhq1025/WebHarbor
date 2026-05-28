@@ -1071,3 +1071,264 @@ def register(app, db, Article, Category, Comment, User,
         db.session.commit()
         flash("Your message has been sent to the editorial team.", "success")
         return redirect(url_for("gui_contact"))
+
+    # ===================================================================== #
+    # Phase 2 deepening (R11): advanced search, topic taxonomy, journal     #
+    # email alerts, podcast episode pages, newsletter manage page.          #
+    # All POST surfaces reuse existing runtime tables (NewsletterSubscription,
+    # JournalFollow, TopicFollow) to preserve byte-identical reset — no new
+    # tables are introduced.                                                 #
+    # ===================================================================== #
+
+    # ---- Advanced search ------------------------------------------------ #
+
+    @app.route("/search/advanced")
+    def gui_search_advanced():
+        # Build facet vocabularies from the live Article table so they stay
+        # in sync with the seeded data (and any future re-seed).
+        journals = sorted({a.source_journal for a in Article.query.all()
+                           if a.source_journal})
+        institutions = sorted({a.source_institution for a in Article.query.all()
+                               if a.source_institution})
+        authors = sorted({a.author_name for a in Article.query.all()
+                          if a.author_name})
+        cats = Category.query.order_by(Category.sort_order, Category.name).all()
+        # Year range derived from seeded data — used to populate the year
+        # dropdown deterministically without exposing arbitrary years.
+        years = sorted({a.published_at.year for a in Article.query.all()
+                        if a.published_at}, reverse=True)
+        return render_template("gui_search_advanced.html",
+                               journals=journals, institutions=institutions,
+                               authors=authors, categories=cats, years=years,
+                               results=None, total=0, query_params={})
+
+    @app.route("/search/advanced/results")
+    def gui_search_advanced_results():
+        q = (request.args.get("q") or "").strip()
+        cat_slug = (request.args.get("category") or "").strip()
+        journal = (request.args.get("journal") or "").strip()
+        institution = (request.args.get("institution") or "").strip()
+        author = (request.args.get("author") or "").strip()
+        year_from = request.args.get("year_from", type=int)
+        year_to = request.args.get("year_to", type=int)
+        sort = (request.args.get("sort") or "relevance").strip()
+
+        from sqlalchemy import or_ as _or, desc as _desc
+        base = Article.query
+        if cat_slug:
+            c = Category.query.filter_by(slug=cat_slug).first()
+            if c:
+                base = base.filter(Article.category_id == c.id)
+        if journal:
+            base = base.filter(Article.source_journal == journal)
+        if institution:
+            base = base.filter(Article.source_institution == institution)
+        if author:
+            base = base.filter(Article.author_name == author)
+        if year_from:
+            base = base.filter(Article.published_at >= datetime(year_from, 1, 1))
+        if year_to:
+            base = base.filter(Article.published_at < datetime(year_to + 1, 1, 1))
+
+        if q:
+            tokens = [t for t in re.split(r"\W+", q.lower()) if len(t) > 1]
+            if tokens:
+                base = base.filter(_or(*[
+                    _or(Article.title.ilike(f"%{t}%"),
+                        Article.subtitle.ilike(f"%{t}%"),
+                        Article.body.ilike(f"%{t}%"))
+                    for t in tokens]))
+
+        if sort == "newest":
+            base = base.order_by(_desc(Article.published_at))
+        elif sort == "popular":
+            base = base.order_by(_desc(Article.views))
+        else:
+            # relevance — when q present, score by token hits; else newest
+            base = base.order_by(_desc(Article.published_at))
+
+        results = base.limit(60).all()
+
+        # Re-rank by token-overlap if relevance + q.
+        if sort == "relevance" and q:
+            tokens = [t for t in re.split(r"\W+", q.lower()) if len(t) > 1]
+            def _score(a):
+                blob = ((a.title or "") + " " + (a.subtitle or "")
+                        + " " + (a.body or "")).lower()
+                return sum(1 for t in tokens if t in blob)
+            results.sort(key=lambda a: (-_score(a),
+                                        -(a.published_at.timestamp()
+                                          if a.published_at else 0)))
+
+        cats = Category.query.order_by(Category.sort_order, Category.name).all()
+        journals = sorted({a.source_journal for a in Article.query.all()
+                           if a.source_journal})
+        institutions = sorted({a.source_institution for a in Article.query.all()
+                               if a.source_institution})
+        authors = sorted({a.author_name for a in Article.query.all()
+                          if a.author_name})
+        years = sorted({a.published_at.year for a in Article.query.all()
+                        if a.published_at}, reverse=True)
+        return render_template("gui_search_advanced.html",
+                               journals=journals, institutions=institutions,
+                               authors=authors, categories=cats, years=years,
+                               results=results, total=len(results),
+                               query_params={
+                                   "q": q, "category": cat_slug,
+                                   "journal": journal, "institution": institution,
+                                   "author": author, "year_from": year_from,
+                                   "year_to": year_to, "sort": sort,
+                               })
+
+    # ---- Topic taxonomy (parent-category grouped) ---------------------- #
+
+    @app.route("/topic-taxonomy")
+    def gui_topic_taxonomy():
+        # Group TOPICS by category so the agent can navigate hierarchically.
+        groups = {}
+        for s, label, cat in TOPICS:
+            groups.setdefault(cat, []).append({"slug": s, "label": label})
+        # Sort by category slug for deterministic order, topics by label.
+        rows = []
+        for cat in sorted(groups.keys()):
+            cat_obj = Category.query.filter_by(slug=cat).first()
+            rows.append({
+                "cat_slug": cat,
+                "cat_name": cat_obj.name if cat_obj else cat.title(),
+                "topics": sorted(groups[cat], key=lambda t: t["label"]),
+            })
+        return render_template("gui_topic_taxonomy.html", groups=rows,
+                               total_topics=len(TOPICS))
+
+    # ---- Journal new-issue email alerts -------------------------------- #
+
+    @app.route("/journal/<slug>/alerts")
+    def gui_journal_alerts(slug):
+        d = build_journal_detail(slug, Article)
+        if d is None:
+            abort(404)
+        # Distinct alert subscriptions reuse NewsletterSubscription with the
+        # synthetic newsletter_slug prefix 'journal-alert:'. This avoids
+        # introducing a new table and keeps reset byte-identical.
+        synthetic_slug = f"journal-alert:{slug}"
+        subscribed = False
+        if current_user.is_authenticated:
+            subscribed = NewsletterSubscription.query.filter_by(
+                user_id=current_user.id,
+                newsletter_slug=synthetic_slug).first() is not None
+        return render_template("gui_journal_alerts.html",
+                               slug=slug, journal_label=d["journal_label"],
+                               article_count=len(d["articles"]),
+                               subscribed=subscribed,
+                               synthetic_slug=synthetic_slug)
+
+    @app.route("/journal/<slug>/alerts", methods=["POST"])
+    def post_journal_alerts(slug):
+        d = build_journal_detail(slug, Article)
+        if d is None:
+            abort(404)
+        email = (request.form.get("email") or "").strip()
+        cadence = (request.form.get("cadence") or "weekly").strip()
+        synthetic_slug = f"journal-alert:{slug}"
+        uid = current_user.id if current_user.is_authenticated else None
+        if not email and uid is None:
+            flash("Email is required.", "error")
+            return redirect(url_for("gui_journal_alerts", slug=slug))
+        existing = NewsletterSubscription.query.filter_by(
+            user_id=uid, email=email,
+            newsletter_slug=synthetic_slug).first()
+        if existing is None:
+            db.session.add(NewsletterSubscription(
+                user_id=uid, email=email,
+                newsletter_slug=f"{synthetic_slug}:{cadence}",
+                created_at=datetime.utcnow()))
+            db.session.commit()
+            flash(f"You will receive {cadence} alerts when new "
+                  f"{d['journal_label']} articles publish.", "success")
+        else:
+            flash("Alert already enabled for this journal.", "info")
+        return redirect(url_for("gui_journal_alerts", slug=slug))
+
+    # ---- Podcast episode page ------------------------------------------ #
+
+    @app.route("/podcast/<slug>/episode/<int:n>")
+    def gui_podcast_episode(slug, n):
+        d = build_podcast_detail(slug)
+        if d is None:
+            abort(404)
+        ep = None
+        for e in d["episodes"]:
+            if e["n"] == n:
+                ep = e
+                break
+        if ep is None:
+            abort(404)
+        # Deterministic show-notes / transcript snippet keyed by (slug, n).
+        h = _seed("podcast-ep-detail", slug, n)
+        ep = dict(ep)
+        ep["show_notes"] = (
+            "In this episode we discuss " + _pick(h, 0, [
+                "the methods, the data and the open questions left behind.",
+                "what the new finding really means and what comes next.",
+                "the experiment, the analysis and the peer review timeline.",
+                "the research front and three independent commentaries.",
+            ])
+            + " " + _pick(h, 4, [
+                "Recorded live at the Phys.org research desk.",
+                "Recorded remotely with the corresponding author.",
+                "Recorded after the press conference.",
+            ])
+        )
+        ep["transcript_excerpt"] = (
+            "[00:00] Welcome to " + d["title"] + ", episode " + str(n) + ".\n"
+            "[00:14] " + _pick(h, 8, [
+                "Today's guest joins us from their lab.",
+                "We begin with the headline finding.",
+                "Let's start with the experimental setup.",
+            ]) + "\n[02:30] " + _pick(h, 12, [
+                "The key uncertainty here is replication.",
+                "The next milestone is independent confirmation.",
+                "The follow-up paper is already on preprint.",
+            ])
+        )
+        return render_template("gui_podcast_episode.html",
+                               podcast_slug=slug, podcast_title=d["title"],
+                               episode=ep)
+
+    # ---- Newsletter manage / multi-subscribe --------------------------- #
+
+    @app.route("/newsletter/manage")
+    @login_required
+    def gui_newsletter_manage():
+        # Show which of the 8 newsletters this user has active subscriptions
+        # for, plus a single form to subscribe to multiple at once.
+        my_subs = {s.newsletter_slug for s in
+                   NewsletterSubscription.query.filter_by(
+                       user_id=current_user.id).all()
+                   if not s.newsletter_slug.startswith("journal-alert:")}
+        return render_template("gui_newsletter_manage.html",
+                               newsletters=NEWSLETTERS, my_subs=my_subs)
+
+    @app.route("/newsletter/manage", methods=["POST"])
+    @login_required
+    def post_newsletter_manage():
+        wanted = set(request.form.getlist("newsletters"))
+        current = {s.newsletter_slug: s for s in
+                   NewsletterSubscription.query.filter_by(
+                       user_id=current_user.id).all()
+                   if not s.newsletter_slug.startswith("journal-alert:")}
+        added = 0
+        removed = 0
+        for slug, *_ in NEWSLETTERS:
+            if slug in wanted and slug not in current:
+                db.session.add(NewsletterSubscription(
+                    user_id=current_user.id, email="",
+                    newsletter_slug=slug, created_at=datetime.utcnow()))
+                added += 1
+            elif slug in current and slug not in wanted:
+                db.session.delete(current[slug])
+                removed += 1
+        db.session.commit()
+        flash(f"Subscriptions updated — added {added}, removed {removed}.",
+              "success")
+        return redirect(url_for("gui_newsletter_manage"))
