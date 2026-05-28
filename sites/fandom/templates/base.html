@@ -16,6 +16,13 @@
 <nav class="global-nav">
   <div class="gn-inner">
     <a href="{{ url_for('hub') }}" class="gn-logo">FAN<span class="pink">DOM</span></a>
+    <div class="gn-verticals">
+      <a href="{{ url_for('hub') }}?vertical=games">Games</a>
+      <a href="{{ url_for('hub') }}?vertical=movies">Movies</a>
+      <a href="{{ url_for('hub') }}?vertical=tv">TV</a>
+      <a href="{{ url_for('hub') }}?vertical=hot">What's Hot</a>
+      <a href="{{ url_for('community_portal') }}">Discord</a>
+    </div>
     <div class="gn-wikiswitcher">
       {% for w in WIKIS %}
         <a href="{{ url_for('wiki_home', wiki_slug=w.slug) }}"
@@ -69,12 +76,37 @@
 
 <footer class="global-footer">
   <div class="container">
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;max-width:1280px;margin:0 auto 18px;">
+      <div>
+        <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Explore Fandom</h4>
+        <a href="{{ url_for('hub') }}">Fandom</a><br>
+        <a href="{{ url_for('hub') }}?vertical=games">Games</a><br>
+        <a href="{{ url_for('hub') }}?vertical=movies">Movies</a><br>
+        <a href="{{ url_for('hub') }}?vertical=tv">TV</a><br>
+        <a href="{{ url_for('wiki_directory') }}">All wikis</a>
+      </div>
+      <div>
+        <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">About</h4>
+        <a href="{{ url_for('hub') }}">What is Fandom?</a><br>
+        <a href="{{ url_for('hub') }}">Essentials</a><br>
+        <a href="{{ url_for('hub') }}">About</a><br>
+        <a href="{{ url_for('hub') }}">Careers</a><br>
+        <a href="{{ url_for('hub') }}">Press</a>
+      </div>
+      <div>
+        <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Community</h4>
+        <a href="{{ url_for('community_portal') }}">Community Portal</a><br>
+        <a href="{{ url_for('community_portal') }}">Discord</a><br>
+        <a href="{{ url_for('community_portal') }}">Contact</a>
+      </div>
+      <div>
+        <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Legal</h4>
+        <a href="{{ url_for('hub') }}">Terms of Use</a><br>
+        <a href="{{ url_for('hub') }}">Privacy Policy</a><br>
+        <a href="{{ url_for('hub') }}">Digital Services Act</a>
+      </div>
+    </div>
     <p>Fandom &mdash; Build your own wiki. Read the lore. &copy; {{ now_year }} Fandom, Inc. &mdash; Mirror site for benchmark testing.</p>
-    <p>
-      <a href="{{ url_for('wiki_directory') }}">All wikis</a> &middot;
-      <a href="{{ url_for('hub') }}">Home</a> &middot;
-      <a href="{{ url_for('community_portal') }}">Community Portal</a>
-    </p>
   </div>
 </footer>
 
