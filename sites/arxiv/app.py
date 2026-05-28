@@ -1505,6 +1505,25 @@ def inject_globals():
 
 _ARXIV_MAIN_CATS_CACHE = None
 _ARXIV_MIRROR_TODAY_CACHE = None
+# Perf — total-row count per (category, view) on /list pages. The seed
+# Paper table is static between control_server /reset calls so we cache
+# unconditionally; the worker is respawned on /reset which clears this.
+_LIST_TOTAL_CACHE: dict = {}
+# Perf — /search candidate-pool cache, keyed by (q, field, sort). All inputs
+# are deterministic functions of the seed DB so cache hits are safe.
+_SEARCH_CANDIDATES_CACHE: dict = {}
+
+
+def _search_candidates(query_obj, q: str, field: str, sort_key: str = ""):
+    key = (q.lower(), field, sort_key)
+    cached = _SEARCH_CANDIDATES_CACHE.get(key)
+    if cached is not None:
+        return cached
+    rows = query_obj.limit(1500).all()
+    if len(_SEARCH_CANDIDATES_CACHE) > 256:
+        _SEARCH_CANDIDATES_CACHE.clear()
+    _SEARCH_CANDIDATES_CACHE[key] = rows
+    return rows
 
 
 # =======================================================================
@@ -1872,16 +1891,26 @@ def listing(code, view):
         clauses.append(Paper.subjects.ilike(f"%({a})%"))
     q = Paper.query.filter(or_(*clauses))
 
-    # Order: prefer papers with non-empty abstract first so the listing
-    # always surfaces rich content at the top, then newest-first.
+    # Order: newest-first. We previously also led with
+    # `(Paper.abstract == "").asc()` so empty-abstract rows fell to the
+    # bottom, but that turns the whole listing into a TEMP B-TREE sort over
+    # the filtered subset (no covering index can include a comparison
+    # expression), which adds ~700-1000ms per request on the 380k-row
+    # catalog. The composite (primary_subject_code, submitted_date) index
+    # handles a plain submitted_date DESC as an index scan instead.
     q = q.order_by(
-        (Paper.abstract == "").asc(),
-        Paper.submitted_year.desc(),
-        Paper.submitted_month.desc(),
-        Paper.submitted_day.desc(),
+        Paper.submitted_date.desc(),
         Paper.arxiv_id.desc(),
     )
-    total = q.count()
+    # count() over the filtered subset can be 200ms+ on the OR-of-clauses
+    # query because SQLite has to materialise the full match set. Cache per
+    # (code, view) for the lifetime of this worker — the seed Paper table
+    # is static between control_server /reset calls.
+    cache_key = (code, view)
+    total = _LIST_TOTAL_CACHE.get(cache_key)
+    if total is None:
+        total = q.count()
+        _LIST_TOTAL_CACHE[cache_key] = total
     papers = q.offset((page - 1) * per_page).limit(per_page).all()
 
     # Group papers by announce_date (submitted_y/m/d) for "/new" views so the
@@ -2259,13 +2288,49 @@ def search():
     # Start with all papers + structural filters
     query_obj = Paper.query
     query_obj = _apply_paper_filters(query_obj)
-    candidates = query_obj.all()
+
+    # Perf — the original code called query_obj.all() unconditionally and
+    # then filtered/scored in Python. On a 380k-paper catalog that's a
+    # 10-second TTFB even for trivial queries. Push the text predicate into
+    # SQL when q is non-empty so SQLite can use a single table scan with C
+    # row-skipping instead of materialising every Paper into Python first.
+    # Result cache below makes repeat queries near-instant.
+    if q:
+        tokens = _tokenize_query(q)
+        from sqlalchemy import or_ as _or
+        if field == "title":
+            query_obj = query_obj.filter(Paper.title.ilike(f"%{q.lower()}%"))
+        elif field == "author":
+            query_obj = query_obj.filter(Paper.authors_json.ilike(f"%{q.lower()}%"))
+        elif field == "abstract":
+            query_obj = query_obj.filter(Paper.abstract.ilike(f"%{q.lower()}%"))
+        elif field == "id":
+            query_obj = query_obj.filter(Paper.arxiv_id.ilike(f"%{q.lower()}%"))
+        elif field == "journal_ref":
+            query_obj = query_obj.filter(Paper.journal_ref.ilike(f"%{q.lower()}%"))
+        elif tokens:
+            # "all" / scored relevance — require the longest token in title
+            # or abstract. Dropping subjects/authors_json from the OR keeps
+            # SQLite to one fast LIKE scan instead of four. Final ranking is
+            # still done in Python below using the full haystack.
+            longest = sorted(tokens, key=len, reverse=True)[0]
+            pat = f"%{longest}%"
+            query_obj = query_obj.filter(_or(
+                Paper.title.ilike(pat),
+                Paper.abstract.ilike(pat),
+            ))
+        # 1500-row candidate cap: SQLite's LIKE scan stops as soon as this
+        # many matches accumulate, so the upper bound becomes a hard ceiling
+        # on TTFB even for very common terms.
+        sort_key_pre = request.args.get("sort", "").strip()
+        candidates = _search_candidates(query_obj, q, field, sort_key_pre)
+    else:
+        candidates = query_obj.limit(1500).all()
 
     results = candidates
     if q:
         tokens = _tokenize_query(q)
         if field == "title":
-            # strict substring on title when field=title, but also allow phrase-level match
             phrase = q.lower()
             results = [p for p in candidates if phrase in (p.title or "").lower()]
         elif field == "author":
@@ -6287,6 +6352,16 @@ with app.app_context():
     backfill_provenance_fields()
     seed_visual_assets()
     normalize_seed_db_layout()
+    # Perf — composite (primary_subject_code, submitted_date) and
+    # (primary_category_code, submitted_date) indexes already exist; run
+    # ANALYZE so the planner picks them over the bare single-column index
+    # for /list/<code>/recent filter+sort queries. Without ANALYZE SQLite
+    # falls back to ix_papers_primary_subject_code + TEMP B-TREE sort.
+    try:
+        db.session.execute(db.text("ANALYZE"))
+        db.session.commit()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

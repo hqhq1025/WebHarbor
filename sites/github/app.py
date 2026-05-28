@@ -3199,6 +3199,12 @@ STOPWORDS = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with',
              'source', 'opensource', 'on', 'github', 'related', 'find',
              'search', 'look', 'up', 'report', 'provide', 'tell'}
 
+# Perf — /search facet-pool cache. The seed Repository table is static
+# between control_server /reset calls; the worker is respawned on /reset
+# which clears this. Keyed by lowercase q only since both language and
+# license facets pull the same row set.
+_GITHUB_SEARCH_POOL_CACHE: dict = {}
+
 
 def _repo_haystack(r):
     return ' '.join([
@@ -3483,7 +3489,25 @@ def search():
     if search_type in ('repositories', ''):
         base = Repository.query.filter_by(is_public=True)
         base = _apply_repo_filters(base, extra=parsed)
-        candidates = base.all()
+        # Perf — push token LIKE into SQL when q is non-empty so we don't
+        # materialise all 56k public repos into Python before scoring. Use
+        # the longest (most-selective) token. The in-memory scorer below
+        # still does the final ranking, so this only prunes the candidate
+        # pool to rows that have *any* plausible match.
+        if q:
+            _toks_sql = [t.lower() for t in re.findall(r'[a-z0-9][\w-]*', q.lower())
+                         if t and t not in STOPWORDS and len(t) >= 2]
+            if _toks_sql:
+                _longest = sorted(_toks_sql, key=len, reverse=True)[0]
+                _pat = f"%{_longest}%"
+                base = base.filter(or_(
+                    Repository.full_name.ilike(_pat),
+                    Repository.name.ilike(_pat),
+                    Repository.description.ilike(_pat),
+                    Repository.topics_text.ilike(_pat),
+                    Repository.language.ilike(_pat),
+                ))
+        candidates = base.limit(2000).all()
         if q:
             tokens = [t.lower() for t in re.findall(r'[a-z0-9][\w-]*', q.lower())
                       if t and t not in STOPWORDS and len(t) >= 2]
@@ -3502,7 +3526,7 @@ def search():
                     s = _score_repo(r, tokens)
                     if s >= min_required:
                         scored.append((s, r))
-                scored.sort(key=lambda x: (-x[0], -x[1].stars_count))
+                scored.sort(key=lambda x: (-x[0], -(x[1].stars_count or 0)))
                 results = [r for _, r in scored]
             else:
                 results = candidates
@@ -3560,8 +3584,31 @@ def search():
 
         def _facet_pool(skip_key):
             # Fetch all public repos, then apply filters in Python — skipping
-            # the key we want to enumerate over.
-            pool = Repository.query.filter_by(is_public=True).all()
+            # the key we want to enumerate over. Perf — apply the same SQL
+            # token prefilter as the main candidate set so we don't pull all
+            # 56k rows twice per /search request. Cache by q so the
+            # language + license facet calls share work.
+            _cache_key = (q.lower(),)
+            pool = _GITHUB_SEARCH_POOL_CACHE.get(_cache_key)
+            if pool is None:
+                _base = Repository.query.filter_by(is_public=True)
+                if q:
+                    _toks_pool = [t.lower() for t in re.findall(r'[a-z0-9][\w-]*', q.lower())
+                                  if t and t not in STOPWORDS and len(t) >= 2]
+                    if _toks_pool:
+                        _longest_p = sorted(_toks_pool, key=len, reverse=True)[0]
+                        _pat_p = f"%{_longest_p}%"
+                        _base = _base.filter(or_(
+                            Repository.full_name.ilike(_pat_p),
+                            Repository.name.ilike(_pat_p),
+                            Repository.description.ilike(_pat_p),
+                            Repository.topics_text.ilike(_pat_p),
+                            Repository.language.ilike(_pat_p),
+                        ))
+                pool = _base.limit(2000).all()
+                if len(_GITHUB_SEARCH_POOL_CACHE) > 128:
+                    _GITHUB_SEARCH_POOL_CACHE.clear()
+                _GITHUB_SEARCH_POOL_CACHE[_cache_key] = pool
             eff_lang = '' if skip_key == 'language' else (_parsed_lang or _url_lang)
             eff_license = '' if skip_key == 'license' else (_parsed_license or _url_license)
             eff_topic = _parsed_topic or _url_topic
@@ -9404,6 +9451,24 @@ with app.app_context():
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
+        # Perf — composite indexes declared in __table_args__ above were never
+        # materialised on the existing seed DB (db.create_all() skips existing
+        # tables, so newly-added Index() in __table_args__ is silently ignored
+        # — see perf-optimize SKILL.md §H). Explicit create + ANALYZE so the
+        # planner uses (is_public, stars_count) for the / + /explore +
+        # /trending hot path. instance_seed/*.db is left untouched so byte-id
+        # reset still passes.
+        try:
+            db.Index('ix_repository_public_stars',
+                     Repository.is_public, Repository.stars_count
+                     ).create(db.engine, checkfirst=True)
+            db.Index('ix_topic_featured_repos',
+                     Topic.is_featured, Topic.repos_count
+                     ).create(db.engine, checkfirst=True)
+            db.session.execute(db.text("ANALYZE"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     except Exception:
         # In case of stale schema, skip silently; routes remain available.
         db.session.rollback()

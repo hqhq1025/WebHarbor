@@ -791,8 +791,11 @@ def _apply_repo_sort(query, sort):
         return query.order_by(Repository.updated_at.desc())
     if sort == "created":
         return query.order_by(Repository.created_at.desc())
-    # trending
-    return query.order_by((Repository.likes_count * 3 + Repository.downloads / 1000).desc())
+    # trending — use precomputed trending_score column so the planner can hit
+    # ix_repo_type_trending_score. The previous expression
+    # (likes_count*3 + downloads/1000) DESC has no covering index, so SQLite
+    # falls back to a 450k-row TEMP B-TREE sort (~500ms per request).
+    return query.order_by(Repository.trending_score.desc())
 
 
 @app.context_processor
@@ -5878,6 +5881,24 @@ with app.app_context():
     seed_benchmark_users()
     if fresh:
         normalize_seed_db_layout()
+    # Perf — composite indexes declared in __table_args__ above were never
+    # materialised on the existing seed DB (db.create_all() skips existing
+    # tables, so newly-added Index() in __table_args__ is silently ignored).
+    # Create them explicitly with checkfirst=True so the running instance DB
+    # gets them on every boot. instance_seed/*.db is intentionally untouched
+    # so byte-id reset still passes.
+    try:
+        db.Index("ix_repo_type_likes", Repository.repo_type, Repository.likes_count).create(db.engine, checkfirst=True)
+        db.Index("ix_repo_type_featured_likes", Repository.repo_type, Repository.is_featured, Repository.likes_count).create(db.engine, checkfirst=True)
+        db.Index("ix_author_verified_followers", Author.is_verified, Author.followers_count).create(db.engine, checkfirst=True)
+        db.Index("ix_repo_type_downloads", Repository.repo_type, Repository.downloads).create(db.engine, checkfirst=True)
+        db.Index("ix_repo_type_trending_score", Repository.repo_type, Repository.trending_score).create(db.engine, checkfirst=True)
+        # ANALYZE so the planner picks the new composite over the bare
+        # (repo_type) single-column index for filter+sort queries.
+        db.session.execute(db.text("ANALYZE"))
+        db.session.commit()
+    except Exception:
+        pass
     # R7: refresh trending top-50 cache on boot. Trending values are
     # deterministic functions of the seed DB so this is safe to do once.
     try:
