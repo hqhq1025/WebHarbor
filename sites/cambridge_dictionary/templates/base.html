@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
   <title>{% block title %}{{ ui.site_name }}{% endblock %} | {{ ui.site_name }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {# R7: Open Graph image — per-entry pages override og_slug to point at their own SVG. #}
