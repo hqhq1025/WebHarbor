@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bgg.css') }}">
-  <link rel="icon" href="{{ url_for('static', filename='icons/favicon.svg') }}" type="image/svg+xml">
-  {% block head_extra %}{% endblock %}
+{% block head_extra %}{% endblock %}
 </head>
 <body>
 
@@ -110,7 +110,7 @@
     </div>
   </div>
   <div style="text-align:center;padding:14px;border-top:1px solid #ddd;font-size:12px;color:#666;">
-    © {{ current_year }} BoardGameGeek Mirror · Independent fan mirror, not affiliated with BoardGameGeek, LLC
+    © {{ current_year }} BoardGameGeek, LLC. BoardGameGeek and the BGG logo are trademarks of BoardGameGeek, LLC.
   </div>
 </footer>
 
