@@ -7,18 +7,44 @@ description: "Phase 0 (pre-clone): harvest real HTML/CSS/screenshot fragments fr
 
 把要复刻的真站每个关键页面用真 Chromium 打开，拉回 HTML 片段 + 截图 + 元数据。**写 Flask mirror 之前就做**，让后续 clone/design/verify 阶段都有"真站长这样"的视觉与结构参考。
 
-## 复刻一个站需要 **6 维度** 数据（v4 框架，2026-05）
+## 复刻一个站需要 **14 维度** 数据（v7 框架，2026-05-27 R01+R02 大改）
 
 | Pillar | 内容 | 工具产出 |
 |---|---|---|
-| **1. 样式** | HTML + CSS + JS + 视觉组件 | harvest.py → `full.html` + `full.png` + `assets/{css_*,js_*,favicon,manifest.json}` + section fragments + card fragments |
-| **2. 文字** | 结构化数据 + 干净 body + 面包屑 | harvest.py + reprocess_structured.py → `structured.json` (JSON-LD + state blobs + og:* meta) + `article.json` (trafilatura) + `breadcrumbs.json` (Schema.org BreadcrumbList) + `feed.xml` (RSS/Atom) |
-| **3. 图像** | 真图 URL + icon sprite + brand | extract_image_urls.py + extract_sprites.py → `_image_urls.jsonl` + `sprites/<id>.svg` + `_sprites.json` + `assets/favicon` |
-| **4. 跳转** | 真站 link graph + button catalog + 页脚目录 | extract_nav_graph.py → `_nav_graph.json` + `_buttons.jsonl` + `_footer_links.jsonl` |
-| **5. 表单** | 每个 `<form>` 的字段 / 类型 / 选项 / 验证 | extract_forms.py → `_forms.jsonl` |
-| **6. Session/协议** | HTTP 头 + cookies + XHR endpoints + i18n locales + sitemap | harvest.py + extract_sitemap.py → metadata.json (response_headers + cookies) + `xhr_calls.jsonl` + `locales.json` + `_robots.txt` + `_sitemap_urls.jsonl` + `_sitemap_index.json` |
+| **1. 样式** | HTML + CSS + JS + 视觉组件 | harvest.py → `full.html` + `full.png` + assets + section/card fragments |
+| **2. 文字** | JSON-LD/state/OG + clean body + breadcrumb + feed | harvest.py + reprocess_structured.py → `structured.json` + `article.json` + `breadcrumbs.json` + `feed.xml` |
+| **3. 图像** | 真图 URL + sprite + favicon | extract_image_urls.py + extract_sprites.py → `_image_urls.jsonl` + `sprites/` + `_sprites.json` |
+| **4. 跳转** | link graph + button catalog + footer | extract_nav_graph.py → `_nav_graph.json` + `_buttons.jsonl` + `_footer_links.jsonl` |
+| **5. 表单** | `<form>` 字段/类型/选项/验证 | extract_forms.py → `_forms.jsonl` |
+| **6. Session/协议** | HTTP 头 + cookies + xhr + locales + sitemap + final_url/redirected/spa_404_shell/waf_challenge | harvest.py + extract_sitemap.py → metadata.json + `xhr_calls.jsonl` + `locales.json` + `_robots.txt` + `_sitemap_urls.jsonl` |
+| **7. 音频** (R01 新) | audio/source/mp3/ogg/wav/m4a/aac/flac/opus + JSON-LD AudioObject | extract_audio_urls.py → `_audio_urls.jsonl`（9/96 站 / 200 URL） |
+| **8. 视频** (R01 新) | video/source/iframe embed (YT/Vimeo/Twitch/Bilibili) + mp4/webm/m3u8/mpd + JSON-LD VideoObject + og:video | extract_video_urls.py → `_video_urls.jsonl`（56/96 / 2,668 URL） |
+| **9. 图标** (R01 新) | link rel=*icon* / apple-touch / mask-icon / manifest / msapplication-* / og:image | extract_icons.py → `_icons.jsonl`（91/96 / 4,129） |
+| **10. 动画** (R01 新, R02 修) | GIF/APNG `<img>` + `<video autoplay loop>` + Lottie + css `url(*.gif)` —— webp 默认静态不计 anim | extract_animations.py → `_animations.jsonl`（66/96 / 574） |
+| **11. 代码** (R01 新, R02 加 pre-bare) | `<pre><code>` + bare `<pre>` + inline `<code>` + `<script src>` + 源文件 a[href] + Gist/CodePen/CodeSandbox/Replit/JSFiddle | extract_code_blocks.py → `_code_blocks.jsonl`（95/96 / 37,526） |
+| **12. 全语义层** (R01 新+extruct OSS) | microdata + RDFa + microformat + DublinCore — 之前 reprocess_structured.py 漏 80%+ | extract_metadata_extruct.py → `extruct.json` + `_extruct_index.json`（**96/96 / 124,339 records** — imdb 20091 RDFa / hulu 5263 / nike 5105 / fandom 301 microdata + 3063 RDFa） |
+| **13. API endpoints** (R02 新) | XHR/fetch calls 聚合 + 分类（app_internal / 3rd_party / beacon） — SPA 站 entity 全在这 | extract_api_endpoints.py → `_api_endpoints.jsonl` + `_api_endpoints_index.json`（21/96 站 / 5,457 calls — drugs 2086 / carmax 742 / bbc 503 / coursera 157） |
+| **14. SSR/SPA state** (R02 新) | `__NEXT_DATA__` / `__APOLLO_STATE__` / `__SERVER_DATA__` / `__INITIAL_STATE__` / `__NUXT__` / `__SVELTEKIT_DATA__` / `__REMIX_CONTEXT__` / `__PRELOADED_STATE__` / `window.__data` | extract_server_state.py → per-page `server_state.json` + `_server_state_index.json`（28/96 站 / **32.7 MB total** — imdb 9.9MB / hulu 5.5MB / theverge 2.6MB / marriott 2.4MB / nba 1.9MB / nike 1.8MB / ted 1.4MB / apple 1.3MB Next.js） |
 
-每跑一站 = 6 维度全捕获。下游 clone-website / design-tasks / scrape-real-images 直接读这些产物。
+每跑一站 = 14 维度全捕获。`audit_dimensions.py` 跨 96 站统计完整覆盖率。
+
+**OSS 集成（R01 lesson 后）**：
+- ✅ **extruct** (pip) — 已封装 `extract_metadata_extruct.py`，96 站 100% 命中 124k records
+- ✅ **curl_cffi** (pip) — drugs.com Akamai 墙验证已通（chrome131 impersonate），待集成 harvest.py fallback
+- ✅ **ultimate-sitemap-parser** (pip) — 待包成 extract_sitemap.py 备选 backend
+- ✅ **warcio** (pip) — 待集成 harvest.py --warc flag
+- 推荐进阶：**browsertrix-crawler / crawl4ai / SingleFile CLI**
+- 候选清单：`/home/v-haoqiwang/.claude/workspace/harvest-iteration/findings/OPEN_SOURCE_SCRAPERS.md`
+
+**14 维度 site-property-N/A 区分**（不是所有维度对所有站都适用）：
+- **JSON-LD 缺失**：cambridge / apple 部分 / arxiv — 不是 bug，靠 og:* meta + 半结构 HTML（extruct 已补 RDFa/DC 把这块填回）
+- **BreadcrumbList 缺失**：BBC / 多数 news / Apple marketing — 不是 bug
+- **inline SVG sprite 缺失**：apple 用 use_refs / cambridge 用 PNG — 不是 bug
+- **facets 缺失**：news 站 / link-nav 站 / React-modal 站 — extract_facets.py 现在写 `_facets_hint.json` 区分"漏抓"vs"真站特性"
+- **forms 仅 1**：read-only 站 BBC/wikipedia — 不是 bug
+- **sitemap 0**：amazon（robots 不暴露）/ arxiv（用 OAI-PMH） — `_sitemap_index.json` 列候选与各自 status
+- **audio 0**：非词典/non-podcast 站基本不发 audio；bandcamp/soundcloud 流媒体走 XHR/blob URL 抽不到（**待加 xhr-mode**）
+- **API/state 维度仅 SPA 站有**：MPA/SSR-only 站（github/wikipedia/craigslist html）天然少 XHR 与 SSR JSON blob — 不是 bug
 
 ## 何时使用
 
@@ -69,12 +95,14 @@ v2 默认就装的 anti-bot 套件：
 
 v2 自动检测的失败状态（写入 metadata.json）：
 - `not_found: true` — HTTP 4xx/5xx 或 body 有 "Page Not Found" / "404 - Not Found" 等 soft-404 字面
-- `not_found_reason: "HTTP 404" | "body contains 'Page Not Found'"`
+- `not_found_reason: "HTTP 404" | "body contains 'Page Not Found'" | "title contains '<phrase>'"` (R01 加 title-level 探测)
 - `bot_block: true` — body 含 "Access Denied"/"errors.edgesuite.net"/"Checking your connection"/"challenges.cloudflare.com"/"Pardon Our Interruption"/"unusual traffic"/"captcha-delivery" 等
 - `bot_block_reason: "body contains '...'"` —— v2.1 加，让人秒看出哪种墙
+- `bot_block_reason: "auth_required_shell: status=4xx body=2.3KB title='Sign in'"` (R01 加：小 body + 4xx + auth-y title 升 bot_block，覆盖 amazon checkout/account/orders 漏判)
 - `interstitial: true` — body < 5KB 又没明确 block phrase；或 title 是字面 URL（Google reCaptcha 模式：title=`https://www.google.com/search?q=...&sei=...`）
 - `http2_error: true` — Chromium `ERR_HTTP2_PROTOCOL_ERROR`（自动用 curl HTTP/1.1 fallback）
 - `fallback_used: "curl_http1" | "exa_hint"` — 留 `FALLBACK_NEEDED.md` 让 agent 后续走 Exa MCP 抓 markdown 存 `content.md`
+- `final_url: "..."` + `redirected: true` + `redirect_to: "..."` (R01 加：silent 302→login 现在能被下游识别，allrecipes `/cook/<id>` / amazon `/your-orders` 案例)
 
 **v2.1 关键修复**（2026-05 R2 phys_org 案例后）：`detect_failure` 不再 short-circuit。**bot_block 检测优先于 status**，所以 Akamai/CF 的 403 + "Checking your connection" body 会正确标 bot_block（之前会被错标成 not_found）。bot_block 触发 Exa fallback hint；not_found 不触发（真 404 没必要走 Exa）。
 
@@ -84,13 +112,19 @@ v2 自动检测的失败状态（写入 metadata.json）：
 
 | 工具 | Pillar | 作用 |
 |---|---|---|
-| `harvest.py` v3.2 | 1+2+3+6 | 单 URL Playwright 抓 → HTML + fragments + assets/{css,js,favicon,manifest} + structured.json + xhr_calls.jsonl + locales.json + response_headers/cookies in metadata + feed.xml |
+| `harvest.py` v3.3 (R01) | 1+2+3+6 | 单 URL Playwright 抓 → HTML + fragments + assets + structured.json + xhr_calls.jsonl + locales.json + response_headers/cookies + **final_url/redirected**(R01 新) + feed.xml |
 | `harvest_spider.py` | all | BFS 多页爬 + per-host fail-fast + SQLite checkpoint resume |
-| `extract_sitemap.py` | **6** | 拉 /robots.txt + /sitemap.xml(.gz) → 全量 entity URL 分类 |
+| `harvest_retry.py` | helper | 单页手动 retry |
+| `extract_sitemap.py` (R01 加 default 200) | **6** | 拉 /robots.txt + /sitemap.xml(.gz) → 全量 entity URL 分类。`--max-sub-sitemaps` 默认 30→**200**（booking 案例 275 sub-indexes） |
 | `extract_forms.py` | **5** | 每个 `<form>` 字段 / 选项 / 验证 → `_forms.jsonl` |
-| `extract_facets.py` | 4 | 侧栏 filter facet + 选项 + URL param 映射 → `_facets.jsonl` |
+| `extract_facets.py` (R01 加 hint) | 4 | 侧栏 filter facet + 选项 + URL param 映射 → `_facets.jsonl` + `_facets_hint.json`（0 facets 时区分"漏抓"vs"真站特性"）|
 | `extract_image_urls.py` | 3 | 抽 `<img src>` → `_image_urls.jsonl` |
 | `extract_sprites.py` | 3 | 抽 inline SVG `<symbol id=X>` → `sprites/<id>.svg` |
+| `extract_audio_urls.py` (R01 新) | **7** | `<audio>` / `<source>` / mp3 ogg wav m4a aac flac opus / JSON-LD AudioObject → `_audio_urls.jsonl` |
+| `extract_video_urls.py` (R01 新) | **8** | `<video>` / `<source>` / iframe embed (YT/Vimeo/Twitch/Bilibili) / mp4 webm m3u8 mpd / JSON-LD VideoObject → `_video_urls.jsonl` |
+| `extract_icons.py` (R01 新) | **9** | link rel="*icon*" / apple-touch-icon / mask-icon / manifest icons / msapplication-* / og:image → `_icons.jsonl` |
+| `extract_animations.py` (R01 新) | **10** | GIF/WebP/APNG img + `<video autoplay loop>` + Lottie + css url(*.gif) → `_animations.jsonl` |
+| `extract_code_blocks.py` (R01 新) | **11** | `<pre><code>` + script[src] + 源文件 a[href] + Gist/CodePen/CodeSandbox/Replit/JSFiddle iframe → `_code_blocks.jsonl` |
 | `extract_nav_graph.py` | 4 | link graph + button catalog + footer-only links |
 | `reprocess_structured.py` | 2 | 离线从 `full.html` 抽 JSON-LD / state / article / BreadcrumbList |
 | `content_extract.py` | 2 | trafilatura wrapper 单页抽 clean body |
@@ -98,6 +132,8 @@ v2 自动检测的失败状态（写入 metadata.json）：
 | `infer_cdn_pattern.py` | 3 | URLs 推 CDN 模板 |
 | `index_site.py` | helper | 扫每页 metadata.json → `_index.json` 汇总 |
 | `search_local.py` | helper | SearXNG localhost:8888 wrapper，无 quota 替代 Tavily |
+| `download_samples.py` (R01 新) | helper | 从 audio/video/icon/anim/image jsonl 各下 N 个真样本到 `_proof_samples/<dim>/`，证明可达 |
+| `audit_dimensions.py` (R01 新) | helper | 扫所有 snapshots/ 输出 11 维度 × N 站的 markdown 覆盖表 |
 
 ## v4 实战 stats（A-K 11 features 全跑过 96 站）
 
