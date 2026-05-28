@@ -126,17 +126,6 @@
         <a href="{{ url_for('login') }}">Login</a> |
         <a href="{{ url_for('register') }}">Register</a>
     {% endif %}
-    {# R5 — accessibility toggle: dyslexia-friendly font. Persists choice in
-       localStorage (see main.js). Visible inline so users without a screen
-       reader can find it too. #}
-    <span class="a11y-tools" aria-label="Accessibility tools">
-        | <button type="button" id="a11y-dyslexia-toggle"
-                  class="a11y-toggle" aria-pressed="false"
-                  title="Toggle dyslexia-friendly font (high-letter-spacing, sans-serif)">
-            <span aria-hidden="true">Aa</span>
-            <span class="a11y-label">Dyslexia-friendly font</span>
-          </button>
-    </span>
     {# R7 — language switcher. Surfaces /lang/<code>/ paths so agents can
        verify multilingual stubs without leaving the mirror. The current
        language label is sourced from the lang_labels context dict. #}

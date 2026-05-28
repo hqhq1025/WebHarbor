@@ -348,33 +348,12 @@ function setRating(n) {
         });
     }
 
-    // ---- Dyslexia-friendly font toggle --------------------------------
-    function setupDyslexiaToggle() {
-        var btn = document.getElementById("a11y-dyslexia-toggle");
-        if (!btn) return;
-        var STORAGE_KEY = "arxiv_a11y_dyslexia";
-        function apply(on) {
-            document.body.classList.toggle("dyslexia-friendly", on);
-            btn.setAttribute("aria-pressed", on ? "true" : "false");
-        }
-        var stored = null;
-        try { stored = window.localStorage.getItem(STORAGE_KEY); } catch (e) {}
-        apply(stored === "1");
-        btn.addEventListener("click", function () {
-            var on = !document.body.classList.contains("dyslexia-friendly");
-            apply(on);
-            try { window.localStorage.setItem(STORAGE_KEY, on ? "1" : "0"); } catch (e) {}
-        });
-    }
-
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", function () {
             setupVersionModal();
-            setupDyslexiaToggle();
         });
     } else {
         setupVersionModal();
-        setupDyslexiaToggle();
     }
 })();
 
