@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
 <title>{% block title %}{{ site_name }}{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-<link rel="icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
 </head>
 <body>
 <header class="site-header">
