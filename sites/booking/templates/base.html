@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}Booking — Hotels, Homes, Flights, Car Hire & More{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/datepicker.css') }}">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='50%25' y='50%25' text-anchor='middle' dominant-baseline='central' font-size='14' fill='%23003580'>B.</text></svg>">
 <script defer src="{{ url_for('static', filename='js/datepicker.js') }}"></script>
 <!-- R7 — Open Graph defaults (per-page templates may override via block) -->
 <meta property="og:site_name" content="Booking.com">
@@ -103,46 +104,79 @@
 </main>
 
 <footer class="footer">
+    {# Footer columns derived from harvest _footer_links.jsonl —
+       real booking.com bundles: Support / Discover / Terms / About / Sitemap. #}
     <div class="footer-inner">
         <div class="footer-grid">
             <div>
                 <h4>Support</h4>
                 <ul>
                     <li><a href="{{ url_for('help_page') }}">Help Center</a></li>
-                    <li><a href="#">Manage your bookings</a></li>
-                    <li><a href="#">Contact Customer Service</a></li>
-                    <li><a href="#">Safety resource center</a></li>
-                    <li><a href="#">Cancellation options</a></li>
+                    <li><a href="{{ url_for('help_page') }}">Manage your bookings</a></li>
+                    <li><a href="{{ url_for('help_page') }}">Contact Customer Service</a></li>
+                    <li><a href="{{ url_for('help_page') }}">Safety Resource Center</a></li>
+                    <li><a href="{{ url_for('help_page') }}">Cancellation options</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Accessibility Statement</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Discover</h4>
                 <ul>
-                    <li><a href="{{ url_for('genius') }}">Genius loyalty programme</a></li>
-                    <li><a href="{{ url_for('deals') }}">Seasonal deals</a></li>
+                    <li><a href="{{ url_for('genius') }}">Genius loyalty program</a></li>
+                    <li><a href="{{ url_for('deals') }}">Seasonal and holiday deals</a></li>
                     <li><a href="{{ url_for('articles_index') }}">Travel articles</a></li>
-                    <li><a href="#">Booking.com for Business</a></li>
-                    <li><a href="#">Traveller Review Awards</a></li>
+                    <li><a href="{{ url_for('list_your_property') }}">Booking.com for Business</a></li>
+                    <li><a href="{{ url_for('list_your_property') }}">Booking.com for Travel Agents</a></li>
+                    <li><a href="{{ url_for('list_your_property') }}">Become an affiliate</a></li>
+                    <li><a href="{{ url_for('articles_index') }}">Traveller Review Awards</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Terms and settings</h4>
                 <ul>
-                    <li><a href="#">Privacy & cookies</a></li>
-                    <li><a href="#">Terms and conditions</a></li>
-                    <li><a href="#">Modern Slavery Statement</a></li>
-                    <li><a href="#">Human Rights Statement</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Privacy Notice</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Terms of Service</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Content guidelines and reporting</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Modern Slavery Statement</a></li>
+                    <li><a href="{{ url_for('accessibility_statement') }}">Human Rights Statement</a></li>
                 </ul>
             </div>
             <div>
                 <h4>About Booking.com</h4>
                 <ul>
-                    <li><a href="{{ url_for('about') }}">About</a></li>
-                    <li><a href="#">How we work</a></li>
-                    <li><a href="#">Sustainability</a></li>
-                    <li><a href="#">Press center</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Investor relations</a></li>
+                    <li><a href="{{ url_for('about') }}">About Booking.com</a></li>
+                    <li><a href="{{ url_for('about') }}">How We Work</a></li>
+                    <li><a href="{{ url_for('about') }}">Sustainability</a></li>
+                    <li><a href="{{ url_for('about') }}">Press center</a></li>
+                    <li><a href="{{ url_for('about') }}">Careers</a></li>
+                    <li><a href="{{ url_for('about') }}">Corporate contact</a></li>
+                    <li><a href="{{ url_for('about') }}">Investor relations</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Browse by destination</h4>
+                <ul>
+                    <li><a href="{{ url_for('sitemap_cities') }}">Countries</a></li>
+                    <li><a href="{{ url_for('sitemap_cities') }}">Regions</a></li>
+                    <li><a href="{{ url_for('sitemap_cities') }}">Cities</a></li>
+                    <li><a href="{{ url_for('sitemap_cities') }}">Districts</a></li>
+                    <li><a href="{{ url_for('sitemap_cities') }}">Airports</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Hotels</a></li>
+                    <li><a href="{{ url_for('sitemap_attractions') }}">Places of interest</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Places to stay</h4>
+                <ul>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Apartments</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Resorts</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Villas</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Hostels</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">B&amp;Bs</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Guest Houses</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Vacation Homes</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Unique places to stay</a></li>
+                    <li><a href="{{ url_for('sitemap_properties') }}">Discover monthly stays</a></li>
                 </ul>
             </div>
         </div>
