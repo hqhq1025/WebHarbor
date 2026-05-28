@@ -85,13 +85,57 @@
 
             <form class="nav-search nav-search-form" action="/s" method="get" role="search"
                   aria-label="Site search">
-                <select class="nav-search-dropdown" name="dept" aria-label="Department">
-                    <option>All</option>
-                    <option>Electronics</option>
-                    <option>Books</option>
-                    <option>Home</option>
-                    <option>Fashion</option>
-                    <option>Beauty</option>
+                <select class="nav-search-dropdown" name="dept" aria-label="Select the department you want to search in">
+                    <option value="search-alias=aps" selected>All Departments</option>
+                    <option value="search-alias=alexa-skills">Alexa Skills</option>
+                    <option value="search-alias=amazon-devices">Amazon Devices</option>
+                    <option value="search-alias=amazonfresh">Amazon Fresh</option>
+                    <option value="search-alias=bazaar">Amazon Haul</option>
+                    <option value="search-alias=amazon-pharmacy">Amazon Pharmacy</option>
+                    <option value="search-alias=warehouse-deals">Amazon Resale</option>
+                    <option value="search-alias=appliances">Appliances</option>
+                    <option value="search-alias=mobile-apps">Apps &amp; Games</option>
+                    <option value="search-alias=arts-crafts">Arts, Crafts &amp; Sewing</option>
+                    <option value="search-alias=audible">Audible Books &amp; Originals</option>
+                    <option value="search-alias=automotive">Automotive Parts &amp; Accessories</option>
+                    <option value="search-alias=baby-products">Baby</option>
+                    <option value="search-alias=beauty">Beauty &amp; Personal Care</option>
+                    <option value="search-alias=stripbooks">Books</option>
+                    <option value="search-alias=popular">CDs &amp; Vinyl</option>
+                    <option value="search-alias=mobile">Cell Phones &amp; Accessories</option>
+                    <option value="search-alias=fashion">Clothing, Shoes &amp; Jewelry</option>
+                    <option value="search-alias=collectibles">Collectibles &amp; Fine Art</option>
+                    <option value="search-alias=computers">Computers</option>
+                    <option value="search-alias=financial">Credit and Payment Cards</option>
+                    <option value="search-alias=digital-music">Digital Music</option>
+                    <option value="search-alias=electronics">Electronics</option>
+                    <option value="search-alias=lawngarden">Garden &amp; Outdoor</option>
+                    <option value="search-alias=gift-cards">Gift Cards</option>
+                    <option value="search-alias=grocery">Grocery &amp; Gourmet Food</option>
+                    <option value="search-alias=handmade">Handmade</option>
+                    <option value="search-alias=hpc">Health, Household &amp; Baby Care</option>
+                    <option value="search-alias=garden">Home &amp; Kitchen</option>
+                    <option value="search-alias=industrial">Industrial &amp; Scientific</option>
+                    <option value="search-alias=prime-exclusive">Just for Prime</option>
+                    <option value="search-alias=digital-text">Kindle Store</option>
+                    <option value="search-alias=fashion-luggage">Luggage &amp; Travel Gear</option>
+                    <option value="search-alias=luxury">Luxury Stores</option>
+                    <option value="search-alias=magazines">Magazine Subscriptions</option>
+                    <option value="search-alias=movies-tv">Movies &amp; TV</option>
+                    <option value="search-alias=mi">Musical Instruments</option>
+                    <option value="search-alias=office-products">Office Products</option>
+                    <option value="search-alias=pets">Pet Supplies</option>
+                    <option value="search-alias=luxury-beauty">Premium Beauty</option>
+                    <option value="search-alias=instant-video">Prime Video</option>
+                    <option value="search-alias=smart-home">Smart Home</option>
+                    <option value="search-alias=software">Software</option>
+                    <option value="search-alias=sporting">Sports &amp; Outdoors</option>
+                    <option value="search-alias=specialty-aps-sns">Subscribe &amp; Save</option>
+                    <option value="search-alias=tools">Tools &amp; Home Improvement</option>
+                    <option value="search-alias=toys-and-games">Toys &amp; Games</option>
+                    <option value="search-alias=under-ten-dollars">Under $10</option>
+                    <option value="search-alias=videogames">Video Games</option>
+                    <option value="search-alias=wholefoods">Whole Foods Market</option>
                 </select>
                 <input type="text" id="nav-search-input" class="nav-search-input" name="k"
                        placeholder="Search Amazon"
@@ -150,17 +194,21 @@
             </a>
         </div>
 
-        <!-- Sub Nav -->
+        <!-- Sub Nav (order matches www.amazon.com 2026 sub-nav: All / Amazon Haul / Medical Care / Amazon Basics / Best Sellers / Prime / Today's Deals / ...) -->
         <div class="nav-sub" role="navigation" aria-label="Department navigation">
             <div class="nav-sub-inner">
                 <a class="nav-sub-item nav-sub-item-bold" href="{{ url_for('departments') }}">☰ All</a>
+                <a class="nav-sub-item" href="{{ url_for('amazon_business') }}">Medical Care</a>
+                <a class="nav-sub-item" href="{{ url_for('departments') }}">Amazon Basics</a>
+                <a class="nav-sub-item" href="{{ url_for('bestsellers') }}">Best Sellers</a>
+                <a class="nav-sub-item" href="{{ url_for('prime') }}">Prime</a>
                 <a class="nav-sub-item" href="{{ url_for('todays_deals') }}">Today's Deals</a>
                 <a class="nav-sub-item" href="{{ url_for('customer_service') }}">Customer Service</a>
-                <a class="nav-sub-item" href="{{ url_for('registry') }}">Registry</a>
                 <a class="nav-sub-item" href="{{ url_for('gift_cards') }}">Gift Cards</a>
+                <a class="nav-sub-item" href="{{ url_for('registry') }}">Registry</a>
+                <a class="nav-sub-item" href="{{ url_for('sell') }}">Sell</a>
                 <a class="nav-sub-item" href="{{ url_for('gift_finder') }}">Gift Finder</a>
                 <a class="nav-sub-item" href="{{ url_for('subscribe_save') }}">Subscribe &amp; Save</a>
-                <a class="nav-sub-item" href="{{ url_for('sell') }}">Sell</a>
                 <a class="nav-sub-item" href="{{ url_for('alexa_skills') }}">Alexa Skills</a>
                 <a class="nav-sub-item" href="{{ url_for('amazon_business') }}">Amazon Business</a>
                 {% for c in nav_categories %}
@@ -189,16 +237,20 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
+    <!-- Footer (column groupings + labels match www.amazon.com 2026 footer harvest) -->
     <footer>
-        <div class="footer-back-top">Back to top</div>
+        <div class="footer-back-top"><a href="#" style="color:inherit;text-decoration:none">Back to top</a></div>
         <div class="footer-main">
             <div class="footer-cols">
                 <div class="footer-col">
                     <h4>Get to Know Us</h4>
                     <ul>
                         <li><a href="{{ url_for('index') }}">Careers</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Newsletter</a></li>
                         <li><a href="{{ url_for('index') }}">About Amazon</a></li>
+                        <li><a href="{{ url_for('index') }}">Accessibility</a></li>
+                        <li><a href="{{ url_for('index') }}">Sustainability</a></li>
+                        <li><a href="{{ url_for('index') }}">Press Center</a></li>
                         <li><a href="{{ url_for('index') }}">Investor Relations</a></li>
                         <li><a href="{{ url_for('index') }}">Amazon Devices</a></li>
                         <li><a href="{{ url_for('index') }}">Amazon Science</a></li>
@@ -207,31 +259,43 @@
                 <div class="footer-col">
                     <h4>Make Money with Us</h4>
                     <ul>
-                        <li><a href="{{ url_for('index') }}">Sell products on Amazon</a></li>
-                        <li><a href="{{ url_for('index') }}">Sell apps on Amazon</a></li>
+                        <li><a href="{{ url_for('sell') }}">Sell products on Amazon</a></li>
+                        <li><a href="{{ url_for('sell') }}">Sell apps on Amazon</a></li>
+                        <li><a href="{{ url_for('sell') }}">Supply to Amazon</a></li>
+                        <li><a href="{{ url_for('amazon_business') }}">Protect &amp; Build Your Brand</a></li>
                         <li><a href="{{ url_for('index') }}">Become an Affiliate</a></li>
+                        <li><a href="{{ url_for('index') }}">Become a Delivery Driver</a></li>
+                        <li><a href="{{ url_for('index') }}">Start a Package Delivery Business</a></li>
                         <li><a href="{{ url_for('index') }}">Advertise Your Products</a></li>
                         <li><a href="{{ url_for('index') }}">Self-Publish with Us</a></li>
+                        <li><a href="{{ url_for('index') }}">Become an Amazon Hub Partner</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h4>Amazon Payment Products</h4>
                     <ul>
-                        <li><a href="{{ url_for('index') }}">Amazon Rewards Visa</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Visa</a></li>
                         <li><a href="{{ url_for('index') }}">Amazon Store Card</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Secured Card</a></li>
                         <li><a href="{{ url_for('index') }}">Amazon Business Card</a></li>
-                        <li><a href="{{ url_for('gift_cards') }}">Amazon Gift Cards</a></li>
-                        <li><a href="{{ url_for('index') }}">Shop with Points</a></li>
+                        <li><a href="{{ url_for('gift_cards') }}">Shop with Points</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Credit Card Marketplace</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Reload Your Balance</a></li>
+                        <li><a href="{{ url_for('index') }}">Gift Cards</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Currency Converter</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h4>Let Us Help You</h4>
                     <ul>
-                        <li><a href="{% if current_user.is_authenticated %}{{ url_for('account') }}{% else %}{{ url_for('login') }}{% endif %}">Your Account</a></li>
+                        <li><a href="{{ url_for('index') }}">Your Account</a></li>
                         <li><a href="{% if current_user.is_authenticated %}{{ url_for('orders_list') }}{% else %}{{ url_for('login') }}{% endif %}">Your Orders</a></li>
                         <li><a href="{{ url_for('index') }}">Shipping Rates &amp; Policies</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Prime</a></li>
                         <li><a href="{{ url_for('index') }}">Returns &amp; Replacements</a></li>
-                        <li><a href="{{ url_for('customer_service') }}">Help</a></li>
+                        <li><a href="{{ url_for('index') }}">Manage Your Content and Devices</a></li>
+                        <li><a href="{{ url_for('index') }}">Recalls and Product Safety Alerts</a></li>
+                        <li><a href="{{ url_for('customer_service') }}">Customer Service</a></li>
                     </ul>
                 </div>
             </div>
@@ -240,8 +304,8 @@
             </div>
         </div>
         <div class="footer-bottom">
-            Conditions of Use · Privacy Notice · Consumer Health Data · Your Ads Privacy Choices<br>
-            © 1996-2026, Amazon.com Mirror (Educational Reproduction) · Built with Flask
+            Conditions of Use &middot; Privacy Notice &middot; Consumer Health Data &middot; Your Ads Privacy Choices<br>
+            &copy; 1996-2026, Amazon.com Mirror (Educational Reproduction) &middot; Built with Flask
         </div>
     </footer>
 
