@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
   <title>{% block title %}Apartments.com — Apartments for Rent{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
@@ -129,7 +130,7 @@
         <a href="{{ url_for('mobile_app') }}">Mobile App</a>
       </div>
     </div>
-    <div class="copy">© {{ current_year }} Apartments.com Mirror. Independent mirror site, not affiliated with apartments.com.</div>
+    <div class="copy">© {{ current_year }} CoStar Realty Information, Inc. Apartments.com and the running man logo are registered trademarks of CoStar Realty Information, Inc.</div>
   </footer>
 
   {% if compare_buildings %}
