@@ -986,6 +986,39 @@ def search():
     # Panel visibility: only show for bio / fact-lookup tasks.
     show_panel = should_show_panel(topic, q)
 
+    # ---- Splice r10 enrichment tables into the main SERP -----------
+    # FeaturedSnippet (12 rows) — show on top of /search?q=X when q LIKE
+    # one of the indexed query_text values. This is the on-SERP "blue
+    # answer box" that real Google ships above the organic list.
+    serp_featured = None
+    if vertical in ('all', ''):
+        ql = q.lower()
+        serp_featured = (FeaturedSnippet.query
+                         .filter(func.lower(FeaturedSnippet.query_text).like(f'%{ql}%'))
+                         .first())
+        if not serp_featured:
+            # Substring-match the other way: q contains a snippet key term.
+            for fs in FeaturedSnippet.query.all():
+                if fs.query_text and any(w in ql for w in
+                                         fs.query_text.lower().split() if len(w) > 4):
+                    serp_featured = fs
+                    break
+
+    # KnowledgePanel (8 rows) + KnowledgePanelFact (48 rows) — show on
+    # right-rail when q LIKE panel.name and we don't already have a topic
+    # knowledge-panel to render.
+    serp_kp = None
+    serp_kp_facts = []
+    if not (topic and show_panel) and vertical in ('all', ''):
+        ql = q.lower()
+        serp_kp = (KnowledgePanel.query
+                   .filter(func.lower(KnowledgePanel.name).like(f'%{ql}%'))
+                   .first())
+        if serp_kp:
+            serp_kp_facts = (KnowledgePanelFact.query
+                             .filter_by(panel_slug=serp_kp.slug)
+                             .order_by(KnowledgePanelFact.rank).all())
+
     # Vertical-specific card data: pull from real DB tables so the
     # images / videos / news / scholar tabs don't have to invent props.
     # No fabrication — when the q has no matching row we fall back to
@@ -1047,6 +1080,9 @@ def search():
         image_cards=image_cards,
         video_cards=video_cards,
         scholar_papers=scholar_papers,
+        serp_featured=serp_featured,
+        serp_kp=serp_kp,
+        serp_kp_facts=serp_kp_facts,
         total_pages=total_pages, has_prev=has_prev, has_next=has_next, per_page=per_page,
     )
 

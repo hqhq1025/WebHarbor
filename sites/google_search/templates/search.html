@@ -64,6 +64,32 @@
         </div>
         {% endif %}
 
+        {# --- Featured snippet card (real-Google "blue answer box") --- #}
+        {% if serp_featured %}
+        <div class="featured-snippet-card">
+            <div class="fs-card-head">
+                <span class="fs-card-tag">Featured snippet from the web</span>
+            </div>
+            <div class="fs-card-body fs-card-{{ serp_featured.kind }}">
+                {% if serp_featured.kind == 'list' %}
+                <ul>
+                    {% for line in serp_featured.answer.split('\n') if line.strip() %}
+                    <li>{{ line.strip().lstrip('-').lstrip('*').strip() }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>{{ serp_featured.answer }}</p>
+                {% endif %}
+            </div>
+            <div class="fs-card-source">
+                <a href="{{ url_for('r10_featured_snippet', slug=serp_featured.slug) }}">
+                    {{ serp_featured.source_title or serp_featured.source_domain }}
+                </a>
+                <span class="fs-card-domain">{{ serp_featured.source_domain }}</span>
+            </div>
+        </div>
+        {% endif %}
+
         {# --- R4: similar-search chips just under the AI block ------- #}
         {% if related %}
         <div class="similar-chips" aria-label="Refine results">
@@ -272,6 +298,31 @@
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('alert_new', q=q) }}" class="btn-secondary" style="font-size:12px; padding:6px 12px;">Create alert</a>
                 {% endif %}
+            </div>
+        </div>
+    </aside>
+    {% elif serp_kp %}
+    {# --- Fallback right-rail: r10 KnowledgePanel + facts when q didn't
+       map to a Topic but did match a curated panel. ----------------- #}
+    <aside class="serp-sidebar">
+        <div class="knowledge-panel">
+            <h2 class="kn-title">{{ serp_kp.name }}</h2>
+            {% if serp_kp.kind %}
+            <div class="kn-type">{{ serp_kp.kind }}</div>
+            {% endif %}
+            {% if serp_kp_facts %}
+            <div class="kn-facts">
+                {% for f in serp_kp_facts %}
+                <div class="kn-fact">
+                    <span class="kn-fact-key">{{ f.label }}</span>
+                    <span class="kn-fact-val">{{ f.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div style="margin-top:14px; display:flex; gap:8px;">
+                <a href="{{ url_for('r10_knowledge_panel', slug=serp_kp.slug) }}"
+                   class="btn-secondary" style="font-size:12px; padding:6px 12px;">Open panel</a>
             </div>
         </div>
     </aside>

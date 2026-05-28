@@ -2248,3 +2248,58 @@ input, textarea, select {
     color: rgba(255,255,255,.8);
     font-size: 36px;
 }
+
+/* ----- Featured-snippet card (top of SERP, real-Google blue box) ---- */
+.featured-snippet-card {
+    background: #fff;
+    border: 1px solid #dadce0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 0 0 18px;
+    box-shadow: 0 1px 2px rgba(60,64,67,.1);
+}
+.fs-card-head {
+    margin-bottom: 8px;
+}
+.fs-card-tag {
+    font-size: 11px;
+    color: #5f6368;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-weight: 500;
+}
+.fs-card-body p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #202124;
+}
+.fs-card-body ul {
+    margin: 0;
+    padding-left: 22px;
+    color: #202124;
+}
+.fs-card-body li {
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+.fs-card-source {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #ebebeb;
+}
+.fs-card-source a {
+    color: #1a73e8;
+    font-size: 13px;
+    text-decoration: none;
+}
+.fs-card-source a:hover { text-decoration: underline; }
+.fs-card-domain {
+    color: #5f6368;
+    font-size: 12px;
+}
