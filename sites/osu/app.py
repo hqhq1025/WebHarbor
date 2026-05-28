@@ -1535,6 +1535,32 @@ def library_study_room_reserve():
     return render_template('library_study_room.html', branches=branches)
 
 
+@app.route('/library/study-room/reservations')
+def library_reservations_list():
+    """List of upcoming study-room reservations across branches."""
+    branch_slug = (request.args.get('branch') or '').strip()
+    query = LibraryRoomReservation.query.join(
+        LibraryBranch, LibraryRoomReservation.branch_id == LibraryBranch.id)
+    if branch_slug:
+        query = query.filter(LibraryBranch.slug == branch_slug)
+    reservations = query.order_by(
+        LibraryRoomReservation.reserve_date,
+        LibraryRoomReservation.start_time).limit(80).all()
+    branches = LibraryBranch.query.filter_by(has_study_rooms=True).order_by(
+        LibraryBranch.name).all()
+    branch_counts = {}
+    for b in branches:
+        branch_counts[b.id] = LibraryRoomReservation.query.filter_by(
+            branch_id=b.id).count()
+    total = LibraryRoomReservation.query.count()
+    return render_template('library_reservations.html',
+                           reservations=reservations,
+                           branches=branches,
+                           branch_counts=branch_counts,
+                           branch_slug=branch_slug,
+                           total=total)
+
+
 @app.route('/library/<slug>')
 def library_branch(slug):
     branch = LibraryBranch.query.filter_by(slug=slug).first_or_404()

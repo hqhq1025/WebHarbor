@@ -25,6 +25,11 @@
   </div>
 </div>
 
+<div style="margin-bottom:30px;padding:14px 18px;background:#fdf6ee;border-left:4px solid #6e4c1e;border-radius:4px;font-family:sans-serif;font-size:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <span>Browse the full study-room reservation schedule before you book.</span>
+  <a href="{{ url_for('library_reservations_list') }}" class="btn btn-outline btn-sm" style="border-color:#6e4c1e;color:#6e4c1e">View Reservations</a>
+</div>
+
 <h2 class="section-title">Library Branches</h2>
 <div class="grid-2">
   {% for b in branches %}

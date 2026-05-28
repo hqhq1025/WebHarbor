@@ -57,6 +57,11 @@
       </div>
       <button type="submit" class="btn btn-primary">Reserve Room</button>
     </form>
+
+    <div style="margin-top:18px;padding:14px 18px;background:#fdf6ee;border-left:4px solid #6e4c1e;border-radius:4px;font-family:sans-serif;font-size:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <span>Already reserved? Browse the current schedule.</span>
+      <a href="{{ url_for('library_reservations_list') }}" class="btn btn-outline btn-sm" style="border-color:#6e4c1e;color:#6e4c1e">View Reservations</a>
+    </div>
   </div>
 
   <aside class="sidebar" style="background:#fdf6ee;border:1px solid #d9c8af">

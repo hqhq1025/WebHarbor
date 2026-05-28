@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Study Room Reservations — Ohio State Libraries{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('library_index') }}">Libraries</a><span>/</span>
+  <a href="{{ url_for('library_study_room_reserve') }}">Study Rooms</a><span>/</span>
+  <span>Reservations</span>
+</div>
+
+<div style="background:#fdf6ee;border:1px solid #d9c8af;color:#6e4c1e;padding:30px;margin:-10px -20px 30px;border-bottom:4px solid #6e4c1e">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.8;font-family:sans-serif">University Libraries</div>
+  <h1 style="font-size:32px;margin:6px 0 4px;color:#6e4c1e">Study Room Reservations</h1>
+  <p style="font-size:14px;font-family:sans-serif;opacity:0.92">{{ total }} reservations on the books. Group rooms hold up to 8 students; quiet rooms hold up to 4.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:30px">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <h2 class="section-title" style="margin-bottom:0;color:#6e4c1e;border-bottom-color:#6e4c1e">
+        {% if branch_slug %}Reservations at this branch{% else %}All upcoming reservations{% endif %}
+      </h2>
+      {% if branch_slug %}
+        <a href="{{ url_for('library_reservations_list') }}" style="font-size:13px;color:#6e4c1e;font-family:sans-serif">Show all branches</a>
+      {% endif %}
+    </div>
+
+    {% if reservations %}
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--gray-mid);font-family:sans-serif;font-size:14px">
+      <thead style="background:#fdf6ee;text-align:left">
+        <tr>
+          <th style="padding:10px 14px">Date</th>
+          <th style="padding:10px 14px">Time</th>
+          <th style="padding:10px 14px">Branch</th>
+          <th style="padding:10px 14px">Room</th>
+          <th style="padding:10px 14px">Reserved by</th>
+          <th style="padding:10px 14px">Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservations %}
+        <tr style="border-top:1px solid var(--gray-mid)">
+          <td style="padding:10px 14px;font-weight:bold;color:#6e4c1e">{{ r.reserve_date }}</td>
+          <td style="padding:10px 14px">{{ r.start_time }} <span style="color:var(--gray);font-size:12px">({{ r.duration_hours }}h)</span></td>
+          <td style="padding:10px 14px">
+            {% set branch = r.branch_id|string %}
+            {% for b in branches %}{% if b.id == r.branch_id %}<a href="{{ url_for('library_branch', slug=b.slug) }}" style="color:#6e4c1e">{{ b.name }}</a>{% endif %}{% endfor %}
+          </td>
+          <td style="padding:10px 14px;font-family:'Courier New',monospace">{{ r.room_number }}</td>
+          <td style="padding:10px 14px">{{ r.full_name }}</td>
+          <td style="padding:10px 14px;color:var(--gray)">{{ r.purpose or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="background:var(--gray-light);padding:30px;text-align:center;border-radius:6px;color:var(--gray)">No reservations match this filter yet.</p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar" style="background:#fdf6ee;border:1px solid #d9c8af;align-self:start">
+    <h3 style="color:#6e4c1e;border-bottom-color:#6e4c1e">Filter by branch</h3>
+    <ul style="padding-left:0;list-style:none;font-size:13px;line-height:1.8">
+      <li><a href="{{ url_for('library_reservations_list') }}" style="font-weight:{% if not branch_slug %}bold{% else %}normal{% endif %};color:#6e4c1e">All branches ({{ total }})</a></li>
+      {% for b in branches %}
+      <li><a href="{{ url_for('library_reservations_list', branch=b.slug) }}" style="font-weight:{% if branch_slug == b.slug %}bold{% else %}normal{% endif %};color:#6e4c1e">{{ b.name }} ({{ branch_counts.get(b.id, 0) }})</a></li>
+      {% endfor %}
+    </ul>
+
+    <div style="border-top:1px solid #d9c8af;margin-top:18px;padding-top:14px">
+      <h3 style="color:#6e4c1e;border-bottom-color:#6e4c1e;margin-top:0">Reserve a Room</h3>
+      <a href="{{ url_for('library_study_room_reserve') }}" class="btn btn-primary" style="background:#6e4c1e;width:100%;text-align:center">Reserve Study Room</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}
