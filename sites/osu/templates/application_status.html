@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Application #{{ '%05d' % a.id }} — Status{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('admissions') }}">Admissions</a><span>/</span>
+  <a href="{{ url_for('admissions_applications') }}">Application Status</a><span>/</span>
+  <span>#{{ '%05d' % a.id }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:30px">
+  <div>
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-top:4px solid var(--scarlet);border-radius:6px;padding:30px">
+      <div style="display:flex;justify-content:space-between;align-items:start;border-bottom:1px solid var(--gray-mid);padding-bottom:18px;margin-bottom:18px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Application</div>
+          <div style="font-family:'Courier New',monospace;font-size:22px;font-weight:bold;color:var(--scarlet)">#{{ '%05d' % a.id }}</div>
+        </div>
+        <div>
+          {% if a.status == 'accepted' %}<span style="background:#dcfce7;color:#15803d;padding:6px 16px;border-radius:14px;font-size:14px;font-weight:bold">Accepted</span>
+          {% elif a.status == 'waitlisted' %}<span style="background:#f3e8ff;color:#7c3aed;padding:6px 16px;border-radius:14px;font-size:14px;font-weight:bold">Waitlisted</span>
+          {% elif a.status == 'under-review' %}<span style="background:#fef3c7;color:#a16207;padding:6px 16px;border-radius:14px;font-size:14px;font-weight:bold">Under Review</span>
+          {% elif a.status == 'rejected' %}<span style="background:#fee2e2;color:#b91c1c;padding:6px 16px;border-radius:14px;font-size:14px;font-weight:bold">Not Admitted</span>
+          {% else %}<span style="background:#dbeafe;color:#1d4ed8;padding:6px 16px;border-radius:14px;font-size:14px;font-weight:bold">Submitted</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;font-family:sans-serif;font-size:14px">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Applicant</div>
+          <div style="font-weight:bold;margin-top:2px">{{ a.full_name }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Email</div>
+          <div style="margin-top:2px">{{ a.email }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Program</div>
+          <div style="margin-top:2px">{{ a.program }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Level</div>
+          <div style="margin-top:2px;text-transform:capitalize">{{ a.level }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Citizenship</div>
+          <div style="margin-top:2px">{{ a.citizenship }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Previous Institution</div>
+          <div style="margin-top:2px">{{ a.high_school or '—' }}</div>
+        </div>
+        <div style="grid-column:span 2">
+          <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px">Submitted</div>
+          <div style="margin-top:2px">{{ a.submitted_at.strftime('%A, %B %d, %Y at %I:%M %p') if a.submitted_at else '—' }}</div>
+        </div>
+      </div>
+
+      {% if a.statement %}
+      <div style="margin-top:20px">
+        <div style="font-size:11px;text-transform:uppercase;color:var(--gray);letter-spacing:1px;font-family:sans-serif">Personal statement</div>
+        <p style="margin-top:6px;line-height:1.7;background:var(--gray-light);padding:14px;border-radius:6px">{{ a.statement }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <h2 class="section-title" style="margin-top:30px">Status Timeline</h2>
+    <div style="background:#fff;border:1px solid var(--gray-mid);border-radius:6px;padding:24px">
+      {% for code, when, headline, body in timeline %}
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:18px;padding:14px 0{% if not loop.last %};border-bottom:1px solid var(--gray-mid){% endif %}">
+        <div style="font-family:sans-serif;font-size:12px;color:var(--gray)">{{ when.strftime('%b %d, %Y') }}</div>
+        <div>
+          <div style="font-weight:bold;color:var(--scarlet);font-size:15px">{{ headline }}</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--text);margin-top:4px;font-family:sans-serif">{{ body }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <aside class="sidebar" style="align-self:start">
+    <h3>Next Steps</h3>
+    {% if a.status == 'accepted' %}
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Pay your $100 enrollment deposit</li>
+      <li>Submit final transcript by July 1</li>
+      <li>Sign up for orientation</li>
+      <li>Apply for housing</li>
+    </ul>
+    {% elif a.status == 'waitlisted' %}
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Confirm waitlist interest by April 15</li>
+      <li>Send a Letter of Continued Interest</li>
+      <li>Final waitlist decisions by May 1</li>
+    </ul>
+    {% elif a.status == 'under-review' %}
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Your file is with the program committee</li>
+      <li>Decision typically within 4-6 weeks</li>
+      <li>Check this page every Friday for updates</li>
+    </ul>
+    {% else %}
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>We've received your application</li>
+      <li>Document review begins within 5 business days</li>
+      <li>Watch your email for missing-document requests</li>
+    </ul>
+    {% endif %}
+
+    <h3 style="margin-top:20px">Contact Admissions</h3>
+    <p style="font-size:13px;line-height:1.6">Office of Admissions<br>
+    Student Academic Services Bldg.<br>
+    281 W. Lane Avenue<br>
+    Columbus, OH 43210</p>
+    <p style="font-size:13px;margin-top:6px"><strong>Phone:</strong> 614-292-3980</p>
+
+    <div style="border-top:1px solid var(--gray-mid);margin-top:18px;padding-top:14px">
+      <a href="{{ url_for('admissions_applications') }}" class="btn btn-outline" style="width:100%;text-align:center">Back to All Applications</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

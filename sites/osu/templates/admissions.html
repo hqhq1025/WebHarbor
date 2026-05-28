@@ -8,6 +8,14 @@
   </div>
 </div>
 
+<!-- Quick actions -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px">
+  <a href="{{ url_for('admissions_apply') }}" class="btn btn-primary">Start an Application</a>
+  <a href="{{ url_for('admissions_applications') }}" class="btn btn-outline">Track Application Status</a>
+  <a href="{{ url_for('admissions_visit') }}" class="btn btn-outline">Schedule a Campus Visit</a>
+  <a href="{{ url_for('info_request') }}" class="btn btn-outline">Request Information</a>
+</div>
+
 <!-- Stats -->
 <div class="grid-3" style="margin-bottom:40px">
   <div style="text-align:center;background:var(--gray-light);padding:24px;border-radius:8px;border-top:4px solid var(--scarlet)">

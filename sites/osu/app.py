@@ -2,7 +2,7 @@
 """Ohio State University mirror — Flask application."""
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
 
 from flask import (Flask, render_template, request, redirect, url_for,
@@ -1247,10 +1247,82 @@ def admissions_apply():
             db.session.add(a)
             db.session.commit()
             flash(f'Application submitted. Application #{a.id}. Decision letter by April 1.', 'success')
-            return redirect(url_for('admissions_apply'))
+            return redirect(url_for('application_status', app_id=a.id))
         flash('Please complete all required fields.', 'danger')
     programs = Program.query.order_by(Program.name).limit(50).all()
     return render_template('admissions_apply.html', programs=programs)
+
+
+@app.route('/admissions/applications', methods=['GET', 'POST'])
+def admissions_applications():
+    """Application status tracker — public listing with lookup by ID."""
+    lookup_id = None
+    if request.method == 'POST':
+        lookup_id = request.form.get('lookup_id', type=int)
+        if lookup_id:
+            return redirect(url_for('application_status', app_id=lookup_id))
+        flash('Enter a valid Application ID to look up status.', 'danger')
+
+    status_filter = (request.args.get('status') or '').strip().lower()
+    level_filter = (request.args.get('level') or '').strip().lower()
+    query = Application.query
+    if status_filter:
+        query = query.filter(Application.status == status_filter)
+    if level_filter:
+        query = query.filter(Application.level == level_filter)
+    apps = query.order_by(Application.submitted_at.desc()).limit(60).all()
+
+    totals = {
+        'all': Application.query.count(),
+        'submitted': Application.query.filter_by(status='submitted').count(),
+        'under-review': Application.query.filter_by(status='under-review').count(),
+        'accepted': Application.query.filter_by(status='accepted').count(),
+        'waitlisted': Application.query.filter_by(status='waitlisted').count(),
+    }
+    return render_template('admissions_applications.html',
+                           apps=apps, totals=totals,
+                           status_filter=status_filter,
+                           level_filter=level_filter)
+
+
+@app.route('/admissions/applications/<int:app_id>')
+def application_status(app_id):
+    a = db.session.get(Application, app_id)
+    if a is None:
+        abort(404)
+    timeline = _build_application_timeline(a)
+    return render_template('application_status.html', a=a, timeline=timeline)
+
+
+def _build_application_timeline(a):
+    """Synthesize a deterministic status timeline from submitted_at + status."""
+    submit_dt = a.submitted_at or datetime.utcnow()
+    steps = [
+        ('submitted', submit_dt, 'Application received',
+         'Your application and $70 fee were received by the Office of Admissions.'),
+    ]
+    if a.status in ('under-review', 'accepted', 'waitlisted', 'rejected'):
+        steps.append(('under-review',
+                      submit_dt + timedelta(days=14),
+                      'Under faculty review',
+                      'A program committee in {} is reviewing your file.'.format(
+                          a.program or 'your program')))
+    if a.status == 'accepted':
+        steps.append(('accepted',
+                      submit_dt + timedelta(days=42),
+                      'Decision: Accepted',
+                      'Congratulations! Your offer letter is in your account.'))
+    if a.status == 'waitlisted':
+        steps.append(('waitlisted',
+                      submit_dt + timedelta(days=42),
+                      'Decision: Waitlisted',
+                      'Your application is on the waitlist. Updates by May 1.'))
+    if a.status == 'rejected':
+        steps.append(('rejected',
+                      submit_dt + timedelta(days=42),
+                      'Decision: Not admitted',
+                      'Thank you for applying. Decision letter has been emailed.'))
+    return steps
 
 
 @app.route('/financial-aid')
@@ -1749,6 +1821,227 @@ def server_error(e):
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
 
+# ─── Startup ──────────────────────────────────────────────────────────────────
+
+def ensure_demo_data():
+    """Seed activated tables with deterministic demo rows.
+
+    Idempotent: each table is gated on COUNT()==0 so re-runs are no-ops.
+    Not in instance_seed/ — runs at app startup after seed_extended().
+    This populates list/status pages that real users would otherwise see empty.
+    """
+    base_dt = datetime(2026, 1, 15, 9, 0, 0)
+
+    # ── applications (Application status tracker) ───────────────────────────
+    if Application.query.count() == 0:
+        apps_seed = [
+            # (full_name, email, level, program, citizenship, high_school,
+            #  status, days_after_base)
+            ('Maya Patel', 'maya.patel@example.com', 'undergraduate',
+             'Computer Science and Engineering', 'United States',
+             'Upper Arlington High School', 'accepted', 2),
+            ('Tyler Brennan', 'tyler.brennan@example.com', 'undergraduate',
+             'Mechanical Engineering', 'United States',
+             'Westerville North High School', 'accepted', 5),
+            ('Wei Zhang', 'wei.zhang@example.com', 'graduate',
+             'Statistics MS', 'China',
+             'Tsinghua University', 'under-review', 8),
+            ('Sofia Hernandez', 'sofia.hernandez@example.com', 'undergraduate',
+             'Nursing', 'United States',
+             'Hilliard Davidson High School', 'accepted', 11),
+            ('Jamal Carter', 'jamal.carter@example.com', 'undergraduate',
+             'Finance — Fisher College of Business', 'United States',
+             'Cleveland Heights High School', 'waitlisted', 14),
+            ('Aanya Iyer', 'aanya.iyer@example.com', 'international',
+             'Electrical and Computer Engineering MS', 'India',
+             'Delhi Public School', 'under-review', 17),
+            ('Connor O\'Reilly', 'connor.oreilly@example.com', 'transfer',
+             'Political Science', 'United States',
+             'Columbus State Community College', 'submitted', 22),
+            ('Hannah Kim', 'hannah.kim@example.com', 'undergraduate',
+             'Marketing — Fisher College of Business', 'South Korea',
+             'Daegu Foreign Language High School', 'accepted', 26),
+            ('Marcus Johnson', 'marcus.johnson@example.com', 'graduate',
+             'Public Health MPH', 'United States',
+             'Howard University', 'under-review', 30),
+            ('Olivia Schmidt', 'olivia.schmidt@example.com', 'undergraduate',
+             'Architecture', 'United States',
+             'Dublin Coffman High School', 'submitted', 35),
+            ('Diego Ramirez', 'diego.ramirez@example.com', 'transfer',
+             'Aerospace Engineering', 'Mexico',
+             'Tecnológico de Monterrey', 'accepted', 41),
+            ('Priya Singh', 'priya.singh@example.com', 'graduate',
+             'Materials Science and Engineering PhD', 'India',
+             'IIT Bombay', 'accepted', 48),
+            ('Ethan Walker', 'ethan.walker@example.com', 'undergraduate',
+             'Psychology', 'United States',
+             'New Albany High School', 'submitted', 55),
+            ('Grace Liu', 'grace.liu@example.com', 'international',
+             'Biomedical Engineering', 'China',
+             'Shanghai High School International Division',
+             'under-review', 62),
+        ]
+        for (name, email, level, program, citizenship, hs, status,
+             days) in apps_seed:
+            db.session.add(Application(
+                full_name=name, email=email, level=level, program=program,
+                citizenship=citizenship, high_school=hs,
+                statement=('I want to study {} at Ohio State because the '
+                           'program is a top match for my goals.').format(
+                               program.split(' ')[0]),
+                status=status,
+                submitted_at=base_dt + timedelta(days=days),
+            ))
+
+    # ── tour_bookings (Campus visit list) ───────────────────────────────────
+    if TourBooking.query.count() == 0:
+        tours_seed = [
+            # (full_name, email, tour_date, tour_type, group_size, notes, days)
+            ('Patel Family', 'maya.patel@example.com', '2026-06-14',
+             'in-person', 4, 'Two parents and one sibling.', 1),
+            ('Brennan Family', 'tyler.brennan@example.com', '2026-06-15',
+             'in-person', 3, '', 3),
+            ('Sofia Hernandez', 'sofia.hernandez@example.com', '2026-06-20',
+             'in-person', 2, 'Interested in nursing facilities.', 5),
+            ('Carter Family', 'jamal.carter@example.com', '2026-06-21',
+             'virtual', 1, '', 7),
+            ('Aanya Iyer', 'aanya.iyer@example.com', '2026-06-22',
+             'virtual', 1, 'India time zone — please confirm 8 a.m. ET.', 9),
+            ('O\'Reilly Family', 'connor.oreilly@example.com', '2026-06-28',
+             'in-person', 5, 'Wheelchair accessibility requested.', 11),
+            ('Kim Family', 'hannah.kim@example.com', '2026-07-02',
+             'in-person', 4, '', 13),
+            ('Marcus Johnson', 'marcus.johnson@example.com', '2026-07-05',
+             'virtual', 1, 'Graduate program inquiry.', 15),
+            ('Schmidt Family', 'olivia.schmidt@example.com', '2026-07-09',
+             'in-person', 3, '', 17),
+            ('Ramirez Family', 'diego.ramirez@example.com', '2026-07-12',
+             'in-person', 2, 'Spanish-language tour guide if available.', 19),
+            ('Walker Family', 'ethan.walker@example.com', '2026-07-14',
+             'in-person', 4, '', 22),
+            ('Liu Family', 'grace.liu@example.com', '2026-07-16',
+             'virtual', 2, '', 24),
+            ('Nguyen Family', 'thuy.nguyen@example.com', '2026-07-18',
+             'in-person', 3, 'Interested in Honors program.', 27),
+            ('Anderson Family', 'kate.anderson@example.com', '2026-07-22',
+             'in-person', 2, '', 29),
+            ('Park Family', 'minjun.park@example.com', '2026-07-25',
+             'virtual', 1, '', 31),
+            ('Williams Family', 'sara.williams@example.com', '2026-08-01',
+             'in-person', 5, 'Twin daughters both applying.', 34),
+        ]
+        for (name, email, date, ttype, gsize, notes, days) in tours_seed:
+            db.session.add(TourBooking(
+                full_name=name, email=email, tour_date=date,
+                tour_type=ttype, group_size=gsize, notes=notes,
+                created_at=base_dt + timedelta(days=days),
+            ))
+
+    # ── event_rsvps (RSVP rollup on event_detail) ───────────────────────────
+    if EventRSVP.query.count() == 0:
+        event_ids = [e.id for e in
+                     Event.query.order_by(Event.id).limit(20).all()]
+        if event_ids:
+            rsvp_names = [
+                ('Maya Patel', 'maya.patel@example.com', 1),
+                ('Tyler Brennan', 'tyler.brennan@example.com', 0),
+                ('Sofia Hernandez', 'sofia.hernandez@example.com', 2),
+                ('Jamal Carter', 'jamal.carter@example.com', 1),
+                ('Aanya Iyer', 'aanya.iyer@example.com', 0),
+                ('Connor O\'Reilly', 'connor.oreilly@example.com', 1),
+                ('Hannah Kim', 'hannah.kim@example.com', 0),
+                ('Marcus Johnson', 'marcus.johnson@example.com', 2),
+                ('Olivia Schmidt', 'olivia.schmidt@example.com', 1),
+                ('Diego Ramirez', 'diego.ramirez@example.com', 0),
+                ('Priya Singh', 'priya.singh@example.com', 1),
+                ('Ethan Walker', 'ethan.walker@example.com', 0),
+                ('Grace Liu', 'grace.liu@example.com', 2),
+                ('Thuy Nguyen', 'thuy.nguyen@example.com', 1),
+                ('Kate Anderson', 'kate.anderson@example.com', 0),
+                ('Minjun Park', 'minjun.park@example.com', 1),
+                ('Sara Williams', 'sara.williams@example.com', 3),
+                ('Logan Reed', 'logan.reed@example.com', 0),
+                ('Eli Morgan', 'eli.morgan@example.com', 1),
+                ('Naomi Bauer', 'naomi.bauer@example.com', 0),
+            ]
+            # Distribute: roughly 2-4 RSVPs per event for first 8 events
+            offset = 0
+            for ev_idx, ev_id in enumerate(event_ids[:10]):
+                count = 3 + (ev_idx % 3)  # 3,4,5,3,4,5,...
+                for i in range(count):
+                    name, email, guests = rsvp_names[
+                        (offset + i) % len(rsvp_names)]
+                    db.session.add(EventRSVP(
+                        event_id=ev_id, full_name=name, email=email,
+                        guests=guests,
+                        created_at=base_dt + timedelta(
+                            days=ev_idx * 2, hours=i),
+                    ))
+                offset += count
+
+    # ── library_room_reservations (Library reservations list) ───────────────
+    if LibraryRoomReservation.query.count() == 0:
+        branch_ids = [b.id for b in
+                      LibraryBranch.query.filter_by(
+                          has_study_rooms=True).order_by(
+                              LibraryBranch.id).all()]
+        if branch_ids:
+            lib_seed = [
+                # (name, room, date, start, dur, purpose, days)
+                ('Maya Patel', 'A201', '2026-06-13', '10:00', 2,
+                 'CSE 2231 study group', 0),
+                ('Tyler Brennan', 'B105', '2026-06-13', '14:00', 2,
+                 'Math 1151 problem set', 1),
+                ('Wei Zhang', 'C310', '2026-06-14', '09:00', 3,
+                 'Stat 5301 project meeting', 2),
+                ('Sofia Hernandez', 'A202', '2026-06-15', '16:00', 2,
+                 'NURS 3210 case study', 3),
+                ('Jamal Carter', 'B107', '2026-06-16', '11:00', 2,
+                 'BUSFIN 4221 group prep', 5),
+                ('Aanya Iyer', 'C311', '2026-06-17', '13:00', 4,
+                 'ECE 6712 lab report', 6),
+                ('Connor O\'Reilly', 'A203', '2026-06-18', '15:00', 2,
+                 'POL SCI 3115 thesis', 8),
+                ('Hannah Kim', 'B108', '2026-06-19', '10:00', 3,
+                 'BUS MGT 3230 marketing project', 10),
+                ('Marcus Johnson', 'C312', '2026-06-20', '14:00', 2,
+                 'PUBHLTH 6020 capstone', 12),
+                ('Olivia Schmidt', 'A204', '2026-06-21', '09:00', 2,
+                 'ARCH 2310 portfolio review', 13),
+                ('Diego Ramirez', 'B109', '2026-06-22', '13:00', 3,
+                 'AEROENG 4193 design build', 15),
+                ('Priya Singh', 'C313', '2026-06-23', '10:00', 2,
+                 'MSE 8001 lit review', 17),
+                ('Ethan Walker', 'A205', '2026-06-24', '14:00', 2,
+                 'PSYCH 3331 paper', 18),
+                ('Grace Liu', 'B110', '2026-06-25', '11:00', 3,
+                 'BME 5181 group project', 20),
+                ('Thuy Nguyen', 'C314', '2026-06-26', '09:00', 2,
+                 'Honors thesis writing', 22),
+                ('Kate Anderson', 'A206', '2026-06-27', '15:00', 2,
+                 'HIST 3700 reading group', 24),
+                ('Minjun Park', 'B111', '2026-06-28', '10:00', 2,
+                 '', 26),
+                ('Sara Williams', 'C315', '2026-06-29', '13:00', 3,
+                 'CSE 5523 final project', 28),
+                ('Logan Reed', 'A207', '2026-06-30', '16:00', 2,
+                 '', 30),
+                ('Eli Morgan', 'B112', '2026-07-01', '11:00', 2,
+                 'BIOLOGY 2100 study group', 31),
+            ]
+            for i, (name, room, date, start, dur, purpose, days) in enumerate(
+                    lib_seed):
+                db.session.add(LibraryRoomReservation(
+                    branch_id=branch_ids[i % len(branch_ids)],
+                    full_name=name, room_number=room,
+                    reserve_date=date, start_time=start,
+                    duration_hours=dur, purpose=purpose,
+                    created_at=base_dt + timedelta(days=days),
+                ))
+
+    db.session.commit()
+
+
 with app.app_context():
     fresh = not os.path.exists(os.path.join(BASE_DIR, 'instance', 'osu.db'))
     db.create_all()
@@ -1756,6 +2049,7 @@ with app.app_context():
     seed()
     from seed_extras2 import seed_extended
     seed_extended()
+    ensure_demo_data()
     if fresh:
         from sqlalchemy import text
         conn = db.engine.connect()

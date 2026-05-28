@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Application Status Tracker — Ohio State Admissions{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('admissions') }}">Admissions</a><span>/</span>
+  <span>Application Status</span>
+</div>
+
+<div style="background:linear-gradient(135deg,var(--scarlet),var(--scarlet-dark));color:#fff;padding:40px;margin:-30px -20px 30px;border-bottom:6px solid #7a0000;text-align:center">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.9;font-family:sans-serif">Office of Undergraduate Admissions</div>
+  <h1 style="font-size:38px;margin:8px 0 6px">Application Status Tracker</h1>
+  <p style="font-size:15px;opacity:0.92;font-family:sans-serif;max-width:680px;margin:0 auto">Look up your application by ID, browse current decisions, or filter by status. Decisions for spring rolling admission are released every Friday.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:30px">
+  <a href="{{ url_for('admissions_applications') }}" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #444;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">All Applications</div>
+    <div style="font-size:30px;font-weight:bold;color:var(--scarlet);margin-top:4px">{{ totals.all }}</div>
+  </a>
+  <a href="{{ url_for('admissions_applications') }}?status=submitted" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #3b82f6;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Submitted</div>
+    <div style="font-size:30px;font-weight:bold;color:#3b82f6;margin-top:4px">{{ totals.submitted }}</div>
+  </a>
+  <a href="{{ url_for('admissions_applications') }}?status=under-review" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #f59e0b;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Under Review</div>
+    <div style="font-size:30px;font-weight:bold;color:#f59e0b;margin-top:4px">{{ totals['under-review'] }}</div>
+  </a>
+  <a href="{{ url_for('admissions_applications') }}?status=accepted" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #16a34a;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Accepted</div>
+    <div style="font-size:30px;font-weight:bold;color:#16a34a;margin-top:4px">{{ totals.accepted }}</div>
+  </a>
+  <a href="{{ url_for('admissions_applications') }}?status=waitlisted" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #a855f7;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Waitlisted</div>
+    <div style="font-size:30px;font-weight:bold;color:#a855f7;margin-top:4px">{{ totals.waitlisted }}</div>
+  </a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:30px">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+      <h2 class="section-title" style="margin-bottom:0">{% if status_filter %}{{ status_filter|capitalize }} applications{% else %}Recent applications{% endif %}</h2>
+      {% if status_filter or level_filter %}
+        <a href="{{ url_for('admissions_applications') }}" style="font-size:13px;color:var(--scarlet);font-family:sans-serif">Clear filters</a>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;font-family:sans-serif;font-size:13px">
+      <span style="color:var(--gray)">Level:</span>
+      <a href="{{ url_for('admissions_applications', status=status_filter) }}" style="color:{% if not level_filter %}var(--scarlet){% else %}var(--gray){% endif %};font-weight:{% if not level_filter %}bold{% else %}normal{% endif %}">All</a>
+      <a href="{{ url_for('admissions_applications', status=status_filter, level='undergraduate') }}" style="color:{% if level_filter=='undergraduate' %}var(--scarlet){% else %}var(--gray){% endif %};font-weight:{% if level_filter=='undergraduate' %}bold{% else %}normal{% endif %}">Undergraduate</a>
+      <a href="{{ url_for('admissions_applications', status=status_filter, level='graduate') }}" style="color:{% if level_filter=='graduate' %}var(--scarlet){% else %}var(--gray){% endif %};font-weight:{% if level_filter=='graduate' %}bold{% else %}normal{% endif %}">Graduate</a>
+      <a href="{{ url_for('admissions_applications', status=status_filter, level='transfer') }}" style="color:{% if level_filter=='transfer' %}var(--scarlet){% else %}var(--gray){% endif %};font-weight:{% if level_filter=='transfer' %}bold{% else %}normal{% endif %}">Transfer</a>
+      <a href="{{ url_for('admissions_applications', status=status_filter, level='international') }}" style="color:{% if level_filter=='international' %}var(--scarlet){% else %}var(--gray){% endif %};font-weight:{% if level_filter=='international' %}bold{% else %}normal{% endif %}">International</a>
+    </div>
+
+    {% if apps %}
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--gray-mid);font-family:sans-serif;font-size:14px">
+      <thead style="background:var(--gray-light);text-align:left">
+        <tr>
+          <th style="padding:10px 14px">App #</th>
+          <th style="padding:10px 14px">Applicant</th>
+          <th style="padding:10px 14px">Program</th>
+          <th style="padding:10px 14px">Level</th>
+          <th style="padding:10px 14px">Submitted</th>
+          <th style="padding:10px 14px">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in apps %}
+        <tr style="border-top:1px solid var(--gray-mid)">
+          <td style="padding:10px 14px;font-family:'Courier New',monospace"><a href="{{ url_for('application_status', app_id=a.id) }}">#{{ '%05d' % a.id }}</a></td>
+          <td style="padding:10px 14px">{{ a.full_name }}</td>
+          <td style="padding:10px 14px">{{ a.program }}</td>
+          <td style="padding:10px 14px;text-transform:capitalize">{{ a.level }}</td>
+          <td style="padding:10px 14px;color:var(--gray)">{{ a.submitted_at.strftime('%b %d, %Y') if a.submitted_at else '—' }}</td>
+          <td style="padding:10px 14px">
+            {% if a.status == 'accepted' %}<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">Accepted</span>
+            {% elif a.status == 'waitlisted' %}<span style="background:#f3e8ff;color:#7c3aed;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">Waitlisted</span>
+            {% elif a.status == 'under-review' %}<span style="background:#fef3c7;color:#a16207;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">Under Review</span>
+            {% elif a.status == 'rejected' %}<span style="background:#fee2e2;color:#b91c1c;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">Not Admitted</span>
+            {% else %}<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold">Submitted</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="background:var(--gray-light);padding:30px;text-align:center;border-radius:6px;color:var(--gray)">No applications match your filters yet.</p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar" style="align-self:start">
+    <h3>Look Up Your Application</h3>
+    <p style="font-size:13px;line-height:1.6;color:var(--gray);font-family:sans-serif;margin-bottom:12px">Enter the application ID emailed after submission to view your decision and timeline.</p>
+    <form method="post" action="{{ url_for('admissions_applications') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Application ID</label>
+        <input type="number" name="lookup_id" placeholder="e.g. 7" min="1" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">View Status</button>
+    </form>
+    <div style="border-top:1px solid var(--gray-mid);margin-top:18px;padding-top:14px">
+      <h3 style="margin-top:0">Need to apply?</h3>
+      <a href="{{ url_for('admissions_apply') }}" class="btn btn-outline" style="width:100%;text-align:center">Start a new application</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}
