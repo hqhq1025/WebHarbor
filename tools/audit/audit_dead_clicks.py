@@ -123,12 +123,48 @@ async def click_and_classify(page, idx: int, base_url: str) -> str:
             if (t) t.click();
         }}""", idx)
         await page.wait_for_timeout(400)
-    except Exception:
-        return 'js_error'
+    except Exception as e:
+        # `<a href=...>` synchronously navigates inside t.click(), tearing down
+        # the JS execution context before evaluate() can return → playwright
+        # raises "Execution context was destroyed, most likely because of a
+        # navigation". That is a *successful* navigation, not a JS runtime
+        # error. Treat it as such; wait for the navigation to settle and
+        # fall through to the URL-change branch below.
+        msg = str(e)
+        if 'Execution context was destroyed' in msg or 'navigation' in msg.lower():
+            try:
+                await page.wait_for_load_state('domcontentloaded', timeout=4000)
+            except Exception:
+                pass
+        else:
+            return 'js_error'
 
-    # check modal opened
-    has_modal = await page.evaluate(
-        "() => Array.from(document.querySelectorAll('.modal.show, [role=dialog]:not([hidden]), .modal-open')).length > 0")
+    # URL change check FIRST — avoid racing the new page's execution context
+    # if click triggered nav. Without this guard, the subsequent
+    # `page.evaluate` for has_modal can throw "Execution context destroyed"
+    # mid-navigation and get mis-bucketed as js_error.
+    if page.url != url_before:
+        try:
+            await page.go_back(timeout=4000, wait_until='domcontentloaded')
+            await page.wait_for_timeout(150)
+        except Exception:
+            pass
+        return 'navigates'
+
+    # check modal opened — wrapped in try because late-arriving navigation
+    # teardown can still throw here even after the URL check above
+    try:
+        has_modal = await page.evaluate(
+            "() => Array.from(document.querySelectorAll('.modal.show, [role=dialog]:not([hidden]), .modal-open')).length > 0")
+    except Exception as e:
+        if 'Execution context was destroyed' in str(e) or 'navigation' in str(e).lower():
+            try:
+                await page.wait_for_load_state('domcontentloaded', timeout=2000)
+                await page.go_back(timeout=4000, wait_until='domcontentloaded')
+            except Exception:
+                pass
+            return 'navigates'
+        return 'js_error'
     if has_modal:
         # close it for next probe (Esc)
         try:
@@ -137,15 +173,6 @@ async def click_and_classify(page, idx: int, base_url: str) -> str:
         except Exception:
             pass
         return 'modal'
-
-    if page.url != url_before:
-        # navigated; go back so next probe still in same page
-        try:
-            await page.go_back(timeout=4000, wait_until='domcontentloaded')
-            await page.wait_for_timeout(150)
-        except Exception:
-            pass
-        return 'navigates'
 
     dom_hash_after = await page.evaluate(
         '() => document.body.innerText.length + ":" + document.body.children.length')
