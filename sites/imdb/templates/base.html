@@ -73,7 +73,7 @@
 <footer class="footer imdb-footer">
   <div class="container">
     <div class="footer__app">
-      <a class="footer__app-link" href="#" rel="nofollow noopener">Get the IMDb app</a>
+      <a class="footer__app-link" href="{{ url_for('imdb_app_page') }}" rel="nofollow noopener">Get the IMDb app</a>
     </div>
     {% if not current_user.is_authenticated %}
     <div class="footer__sign-in">
@@ -81,17 +81,17 @@
     </div>
     {% endif %}
     <ul class="footer__nav-links">
-      <li><a href="#">Help</a></li>
-      <li><a href="#">Site Index</a></li>
+      <li><a href="{{ url_for('help_page') }}">Help</a></li>
+      <li><a href="{{ url_for('site_index_page') }}">Site Index</a></li>
       <li><a href="https://pro.imdb.com/" rel="nofollow noopener" target="_blank">IMDbPro</a></li>
       <li><a href="https://www.boxofficemojo.com/" rel="nofollow noopener" target="_blank">Box Office Mojo</a></li>
-      <li><a href="#">License IMDb Data</a></li>
-      <li><a href="#">Press Room</a></li>
-      <li><a href="#">Advertising</a></li>
-      <li><a href="#">Jobs</a></li>
-      <li><a href="#">Conditions of Use</a></li>
-      <li><a href="#">Privacy Policy</a></li>
-      <li><a href="#">Your Ads Privacy Choices</a></li>
+      <li><a href="{{ url_for('license_data_page') }}">License IMDb Data</a></li>
+      <li><a href="{{ url_for('press_room_page') }}">Press Room</a></li>
+      <li><a href="{{ url_for('advertising_page') }}">Advertising</a></li>
+      <li><a href="{{ url_for('jobs_page') }}">Jobs</a></li>
+      <li><a href="{{ url_for('conditions_page') }}">Conditions of Use</a></li>
+      <li><a href="{{ url_for('privacy_page') }}">Privacy Policy</a></li>
+      <li><a href="{{ url_for('ads_privacy_page') }}">Your Ads Privacy Choices</a></li>
     </ul>
     <p class="footer__tagline">An <strong>Amazon</strong> company</p>
     <p class="footer__legal">&copy; 1990&ndash;{{ now_year }} by IMDb.com, Inc. (mirror &mdash; independent offline replica; data is illustrative only)</p>

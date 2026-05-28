@@ -689,6 +689,133 @@ def account():
                            watch_count=watch_count)
 
 
+# ---------------------------------------------------------------------------
+# Static info / footer stubs — wired so footer links are not dead.
+# ---------------------------------------------------------------------------
+
+@app.route('/help')
+def help_page():
+    return render_template('info_stub.html',
+        page_title='IMDb Help',
+        body=[
+            'Welcome to IMDb Help. This offline mirror collects the most common help topics '
+            'in one place: searching titles, managing your watchlist, rating movies and shows, '
+            'and editing your account details.',
+            'For account settings, visit your Account page. For watchlist management, see your '
+            'Watchlist. To rate titles, open any title page and use the rating control.',
+        ])
+
+
+@app.route('/site-index')
+@app.route('/siteindex')
+def site_index_page():
+    return render_template('info_stub.html',
+        page_title='Site Index',
+        body=[
+            'Quick links to the main sections of IMDb: Top 250 Movies, Top 250 TV Shows, '
+            'Most Popular, Most Popular TV, Top Box Office, Lowest Rated, Advanced Search, '
+            'News, Polls, Lists, and your Watchlist.',
+            'Use the Menu in the top navigation bar to jump to any of these sections.',
+        ])
+
+
+@app.route('/license')
+@app.route('/license-data')
+def license_data_page():
+    return render_template('info_stub.html',
+        page_title='License IMDb Data',
+        body=[
+            'IMDb licenses its data to qualified businesses, researchers, and educators. '
+            'Data sets cover titles, names, ratings, and credits.',
+            'This is an offline mirror; commercial licensing is handled through the production IMDb site.',
+        ])
+
+
+@app.route('/press')
+@app.route('/press-room')
+def press_room_page():
+    return render_template('info_stub.html',
+        page_title='Press Room',
+        body=[
+            'Press materials, brand assets, and contact information for journalists covering '
+            'IMDb, the world’s most popular and authoritative source for movie, TV and celebrity content.',
+            'Media inquiries are handled by the IMDb communications team.',
+        ])
+
+
+@app.route('/advertising')
+@app.route('/ads')
+def advertising_page():
+    return render_template('info_stub.html',
+        page_title='Advertising',
+        body=[
+            'Reach a passionate audience of movie and TV fans. IMDb advertising solutions include '
+            'display, video, sponsorships, and integrations across web and mobile.',
+            'Contact the advertising sales team to learn more about campaign options.',
+        ])
+
+
+@app.route('/jobs')
+@app.route('/careers')
+def jobs_page():
+    return render_template('info_stub.html',
+        page_title='Jobs at IMDb',
+        body=[
+            'IMDb is an Amazon company. We hire engineers, editors, designers, data scientists, '
+            'and product managers across our Seattle, Bristol, and Los Angeles offices.',
+            'Explore open positions on the Amazon Jobs portal.',
+        ])
+
+
+@app.route('/conditions')
+@app.route('/conditions-of-use')
+@app.route('/terms')
+def conditions_page():
+    return render_template('info_stub.html',
+        page_title='Conditions of Use',
+        body=[
+            'By using IMDb you agree to the Conditions of Use that govern access to the site, '
+            'including acceptable use, contributions, ratings, reviews, watchlists, and account ownership.',
+            'These terms are governed by applicable law and may be updated from time to time.',
+        ])
+
+
+@app.route('/privacy')
+@app.route('/privacy-policy')
+def privacy_page():
+    return render_template('info_stub.html',
+        page_title='Privacy Policy',
+        body=[
+            'IMDb respects your privacy. The Privacy Policy explains what information we collect, '
+            'how we use it, and the choices available to you when you use IMDb services.',
+            'Information collected includes account details, ratings, watchlist contents, and usage data.',
+        ])
+
+
+@app.route('/ads-privacy')
+@app.route('/your-ads-privacy-choices')
+def ads_privacy_page():
+    return render_template('info_stub.html',
+        page_title='Your Ads Privacy Choices',
+        body=[
+            'You can manage how your information is used for interest-based advertising. '
+            'Choices include opting out of personalised ads and clearing your advertising identifiers.',
+            'These settings apply to IMDb and other Amazon properties.',
+        ])
+
+
+@app.route('/app')
+@app.route('/mobile-app')
+def imdb_app_page():
+    return render_template('info_stub.html',
+        page_title='Get the IMDb App',
+        body=[
+            'The IMDb app puts the world of movies and TV in your pocket. Search titles, '
+            'check ratings, watch trailers, and manage your watchlist on the go.',
+            'Available for iOS and Android. (Offline mirror: download links are illustrative only.)',
+        ])
+
+
 @app.errorhandler(404)
 def not_found(e):
     return render_template('404.html'), 404
