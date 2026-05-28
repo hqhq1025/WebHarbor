@@ -3,33 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/favicon.ico') }}">
   <title>{% block title %}TED: Ideas change everything{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="{{ url_for('index') }}"><span>TED</span><small>Ideas change everything</small></a>
-    <nav>
-      <a href="{{ url_for('talks') }}">Watch</a>
-      <a href="{{ url_for('topics') }}">Topics</a>
-      <a href="{{ url_for('playlists') }}">Playlists</a>
-      <a href="{{ url_for('podcasts_index') }}">Podcasts</a>
-      <a href="{{ url_for('ted_ed_index') }}">TED-Ed</a>
-      <a href="{{ url_for('conferences_index') }}">Attend</a>
-      <a href="{{ url_for('blog_index') }}">Ideas blog</a>
-      <a href="{{ url_for('membership_landing') }}">Membership</a>
+    {# Primary nav — real upstream TED top bar (WATCH / DISCOVER / ATTEND / PARTICIPATE / ABOUT)
+       sourced from harvest _buttons.jsonl (menuButton group). #}
+    <nav class="primary-nav" aria-label="Primary">
+      <div class="nav-item">
+        <a href="{{ url_for('talks') }}">Watch</a>
+        <div class="nav-flyout">
+          <a href="{{ url_for('talks') }}">TED Talks</a>
+          <a href="{{ url_for('playlists') }}">Playlists</a>
+          <a href="{{ url_for('podcasts_index') }}">Podcasts</a>
+          <a href="{{ url_for('ted_ed_index') }}">TED-Ed videos</a>
+          <a href="{{ url_for('series_index') }}">Original series</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('topics') }}">Discover</a>
+        <div class="nav-flyout">
+          <a href="{{ url_for('topics') }}">Topics</a>
+          <a href="{{ url_for('speakers_index') }}">Speakers</a>
+          <a href="{{ url_for('blog_index') }}">Ideas blog</a>
+          <a href="{{ url_for('newsletter_index') }}">Newsletters</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('conferences_index') }}">Attend</a>
+        <div class="nav-flyout">
+          <a href="{{ url_for('conferences_index') }}">Conferences</a>
+          <a href="{{ url_for('tedx_index') }}">TEDx events</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('translate_landing') }}">Participate</a>
+        <div class="nav-flyout">
+          <a href="{{ url_for('translate_landing') }}">Translate TED</a>
+          <a href="{{ url_for('tedx_index') }}">Organize a TEDx</a>
+          <a href="{{ url_for('newsletter_index') }}">Nominate a speaker</a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <a href="{{ url_for('about') }}">About</a>
+        <div class="nav-flyout">
+          <a href="{{ url_for('about') }}">Our organization</a>
+          <a href="{{ url_for('about_org') }}">Programs &amp; initiatives</a>
+          <a href="{{ url_for('about_programs') }}">Partner with TED</a>
+        </div>
+      </div>
     </nav>
     <form class="quick-search" action="{{ url_for('search') }}" method="get">
-      <input name="q" value="{{ request.args.get('q', '') }}" placeholder="Search ideas">
-      <button type="submit">Search</button>
+      <input name="q" value="{{ request.args.get('q', '') }}" placeholder="Search">
+      <button type="submit" aria-label="Search">Search</button>
     </form>
     <div class="auth">
+      <a class="membership" href="{{ url_for('membership_landing') }}">Membership</a>
       {% if current_user %}
         <a href="{{ url_for('account') }}">{{ current_user.display_name }}</a>
         <a href="{{ url_for('logout') }}">Log out</a>
       {% else %}
-        <a href="{{ url_for('login') }}">Log in</a>
-        <a class="join" href="{{ url_for('register') }}">Join</a>
+        <a href="{{ url_for('login') }}">Sign In</a>
       {% endif %}
     </div>
   </header>
@@ -47,17 +84,67 @@
   <main>{% block content %}{% endblock %}</main>
 
   <footer class="footer">
-    <div>
-      <strong>TED</strong>
-      <p>Ideas worth spreading — talks, podcasts, lessons, conferences, and the people behind them.</p>
-      <p><a href="{{ url_for('about') }}">About TED</a> · <a href="{{ url_for('about_org') }}">Our organization</a> · <a href="{{ url_for('about_programs') }}">Programs &amp; initiatives</a></p>
-      <p><a href="{{ url_for('translate_landing') }}">Translate TED</a> · <a href="{{ url_for('newsletter_index') }}">Newsletters</a> · <a href="{{ url_for('tedx_index') }}">TEDx</a> · <a href="{{ url_for('speakers_index') }}">Speakers</a></p>
+    {# Footer structure derived from harvest _footer_links.jsonl — real ted.com columns #}
+    <div class="footer-cols">
+      <div>
+        <h4>Watch</h4>
+        <a href="{{ url_for('talks') }}">TED Talks</a>
+        <a href="{{ url_for('podcasts_index') }}">Podcasts</a>
+        <a href="{{ url_for('ted_ed_index') }}">TED Ed</a>
+        <a href="{{ url_for('playlists') }}">Playlists</a>
+        <a href="{{ url_for('series_index') }}">Original series</a>
+        <a href="{{ url_for('about_programs') }}">More ways to get TED</a>
+      </div>
+      <div>
+        <h4>Discover</h4>
+        <a href="{{ url_for('topics') }}">Topics</a>
+        <a href="{{ url_for('speakers_index') }}">TED Speakers</a>
+        <a href="{{ url_for('blog_index') }}">Ideas blog</a>
+        <a href="{{ url_for('newsletter_index') }}">Newsletters</a>
+        <a href="{{ url_for('newsletter_subscribe') }}">Sign up now</a>
+      </div>
+      <div>
+        <h4>Attend</h4>
+        <a href="{{ url_for('conferences_index') }}">Conferences</a>
+        <a href="{{ url_for('tedx_index') }}">TEDx events</a>
+        <a href="{{ url_for('tedx_index') }}">TEDx Organizers</a>
+        <a href="{{ url_for('membership_landing') }}">TED Community</a>
+        <a href="{{ url_for('membership_landing') }}">Become a TED Member</a>
+      </div>
+      <div>
+        <h4>Participate</h4>
+        <a href="{{ url_for('translate_landing') }}">TED Translators</a>
+        <a href="{{ url_for('translate_landing') }}">Open Translation Project</a>
+        <a href="{{ url_for('tedx_index') }}">Organize a TEDx</a>
+        <a href="{{ url_for('about_programs') }}">TED Fellows</a>
+        <a href="{{ url_for('about_programs') }}">Nominate a speaker</a>
+      </div>
+      <div>
+        <h4>About</h4>
+        <a href="{{ url_for('about') }}">About TED</a>
+        <a href="{{ url_for('about_org') }}">Our organization</a>
+        <a href="{{ url_for('about_programs') }}">Programs &amp; initiatives</a>
+        <a href="{{ url_for('about_programs') }}">TED Institute</a>
+        <a href="{{ url_for('about_programs') }}">The Audacious Project</a>
+        <a href="{{ url_for('about') }}">Jobs</a>
+        <a href="{{ url_for('about') }}">Press</a>
+        <a href="{{ url_for('about') }}">Contact</a>
+        <a href="{{ url_for('about') }}">Help</a>
+      </div>
+      <div>
+        <h4>Terms</h4>
+        <a href="{{ url_for('about') }}">Privacy Policy</a>
+        <a href="{{ url_for('about') }}">TED.com Terms of Use</a>
+        <a href="{{ url_for('about') }}">TED Talks Usage Policy</a>
+        <a href="{{ url_for('about') }}">Advertising / Partnership</a>
+      </div>
     </div>
     <div class="topic-strip">
       {% for topic in footer_topics %}
         <a href="{{ url_for('topic_detail', topic=topic) }}">{{ topic }}</a>
       {% endfor %}
     </div>
+    <div class="footer-bottom"><strong>TED</strong> &middot; Ideas worth spreading</div>
   </footer>
 </body>
 </html>
