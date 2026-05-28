@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Recent Condition Reports — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="wrap">
+    <h1>Recent Condition Reports</h1>
+    <p class="muted">Visitor-submitted trail, facility, and access notes from public lands across the mirror.</p>
+
+    <form method="get" class="filter-bar">
+      <label>Category
+        <select name="category" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>{{ cat|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Severity
+        <select name="severity" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for sev in severities %}
+            <option value="{{ sev }}" {% if sev == current_severity %}selected{% endif %}>{{ sev|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <a class="btn secondary" href="{{ url_for('ext_condition_reports_feed') }}">Reset</a>
+    </form>
+
+    <div class="reservation-table-wrap">
+      <table class="reservation-table">
+        <thead>
+          <tr><th>Facility</th><th>Category</th><th>Severity</th><th>Note</th><th>Submitted</th></tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>
+              <a href="{{ url_for('facility_detail', slug=report.facility.slug) }}">{{ report.facility.name }}</a>
+              <br><span class="muted">{{ report.facility.location }}, {{ report.facility.state }}</span>
+            </td>
+            <td>{{ report.category|capitalize }}</td>
+            <td><span class="badge badge-{{ report.severity }}">{{ report.severity|capitalize }}</span></td>
+            <td>{{ report.body }}</td>
+            <td>{{ report.created_at.strftime('%b %d, %Y') }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No condition reports match those filters yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <p class="muted">See something out of date? Open a facility page and use the <strong>Report condition</strong> link to submit a new note.</p>
+    {% else %}
+    <p class="muted"><a href="{{ url_for('login') }}">Sign in</a> to submit a condition report from any facility page.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

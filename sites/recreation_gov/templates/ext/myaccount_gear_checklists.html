@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}My Gear Checklists — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Gear Checklists</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a></p>
+
+  {% for entry in checklists %}
+    <article class="checklist-card">
+      <header>
+        <h2>
+          {% if entry['gear'] %}
+            <a href="{{ url_for('ext_gear_list_detail', category=entry['gear'].category) }}">{{ entry['gear'].name }}</a>
+          {% else %}
+            {{ entry['row'].category|capitalize }} list
+          {% endif %}
+        </h2>
+        <span class="muted">Saved {{ entry['row'].created_at.strftime('%b %d, %Y') }} · {{ entry['items']|length }} items</span>
+      </header>
+      <ol class="gear-items">
+        {% for item in entry['items'] %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ol>
+      {% if entry['gear'] %}
+      <p><a class="btn secondary" href="{{ url_for('ext_gear_list_detail', category=entry['gear'].category) }}">Re-edit checklist</a></p>
+      {% endif %}
+    </article>
+  {% else %}
+    <p>No checklists saved yet. <a href="{{ url_for('ext_gear_list_index') }}">Browse gear lists</a> to save one.</p>
+  {% endfor %}
+</div></section>
+{% endblock %}

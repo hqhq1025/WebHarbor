@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Condition Reports — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Condition Reports</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a> · <a href="{{ url_for('ext_condition_reports_feed') }}">Browse all recent reports</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Facility</th><th>Category</th><th>Severity</th><th>Note</th><th>Submitted</th></tr></thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td><a href="{{ url_for('facility_detail', slug=r.facility.slug) }}">{{ r.facility.name }}</a></td>
+        <td>{{ r.category|capitalize }}</td>
+        <td><span class="badge badge-{{ r.severity }}">{{ r.severity|capitalize }}</span></td>
+        <td>{{ r.body }}</td>
+        <td>{{ r.created_at.strftime('%b %d, %Y') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">You have not submitted a condition report yet. Use the <strong>Report condition</strong> link on any facility page.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

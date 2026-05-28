@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}My Check-Ins — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Check-Ins</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Reservation</th><th>Facility</th><th>Party</th><th>Vehicle</th><th>Notes</th><th>Checked in</th></tr></thead>
+    <tbody>
+      {% for c in checkins %}
+      {% set r = reservation_lookup.get(c.reservation_id) %}
+      <tr>
+        <td>{% if r %}{{ r.confirmation_code }}{% else %}#{{ c.reservation_id }}{% endif %}</td>
+        <td>{% if r %}<a href="{{ url_for('facility_detail', slug=r.facility.slug) }}">{{ r.facility.name }}</a>{% else %}—{% endif %}</td>
+        <td>{{ c.party_count }}</td>
+        <td>{{ c.vehicle_plate or "—" }}</td>
+        <td>{{ c.notes or "—" }}</td>
+        <td>{{ c.checked_in_at.strftime('%b %d, %Y') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No on-site check-ins yet. Visit <a href="{{ url_for('reservations') }}">your reservations</a> to record one.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

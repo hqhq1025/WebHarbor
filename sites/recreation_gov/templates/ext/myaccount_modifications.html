@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}My Reservation Modifications — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Reservation Modifications</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a> · <a href="{{ url_for('reservations') }}">Manage current reservations</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Reservation</th><th>Previous</th><th>New</th><th>Reason</th><th>Submitted</th></tr></thead>
+    <tbody>
+      {% for m in mods %}
+      {% set r = reservation_lookup.get(m.reservation_id) %}
+      <tr>
+        <td>{% if r %}<strong>{{ r.confirmation_code }}</strong><br><span class="muted">{{ r.facility.name }}</span>{% else %}#{{ m.reservation_id }}{% endif %}</td>
+        <td>{{ m.previous_start_date }} → {{ m.previous_end_date }}</td>
+        <td>{{ m.new_start_date }} → {{ m.new_end_date }}</td>
+        <td>{{ m.reason or "—" }}</td>
+        <td>{{ m.created_at.strftime('%b %d, %Y') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No reservation changes recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

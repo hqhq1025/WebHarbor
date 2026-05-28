@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My Alert Subscriptions — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Alert Subscriptions</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a> · <a href="{{ url_for('ext_alerts_list') }}">Browse all alerts</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Alert</th><th>Agency</th><th>Email</th><th>SMS</th><th>Subscribed</th><th></th></tr></thead>
+    <tbody>
+      {% for s in subs %}
+      <tr>
+        <td><a href="{{ url_for('ext_alerts_detail', slug=s.alert.slug) }}">{{ s.alert.title }}</a></td>
+        <td>{{ s.alert.agency }}</td>
+        <td>{{ "Yes" if s.notify_email else "No" }}</td>
+        <td>{{ "Yes" if s.notify_sms else "No" }}</td>
+        <td>{{ s.created_at.strftime('%b %d, %Y') }}</td>
+        <td>
+          <form method="post" action="{{ url_for('ext_alerts_subscribe', slug=s.alert.slug) }}" style="display:inline">
+            <button class="btn secondary" type="submit">Unsubscribe</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No alert subscriptions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

@@ -4,10 +4,20 @@
 <section class="section">
   <div class="wrap">
     <h1>Your reservations</h1>
+    <p class="muted">Modify dates, check in on arrival, or cancel inside the cut-off window. <a href="{{ url_for('ext_myaccount_modifications') }}">View change history</a> · <a href="{{ url_for('ext_myaccount_check_ins') }}">View check-in log</a></p>
     {% for reservation in reservations %}
       <div class="reservation-row">
         <div><strong>{{ reservation.facility.name }}</strong><br><span class="muted">{{ reservation.confirmation_code }} · {{ (reservation.start_date, reservation.end_date)|trip_window }} · {{ reservation.status }}</span></div>
-        <div><strong>${{ "%.0f"|format(reservation.total_cost) }}</strong>{% if reservation.status == 'Upcoming' %}<form method="post" action="{{ url_for('cancel_reservation', reservation_id=reservation.id) }}"><button class="btn danger" type="submit">Cancel</button></form>{% endif %}</div>
+        <div class="reservation-actions">
+          <strong>${{ "%.0f"|format(reservation.total_cost) }}</strong>
+          {% if reservation.status == 'Upcoming' %}
+            <a class="btn secondary" href="{{ url_for('ext_reservation_modify', reservation_id=reservation.id) }}">Modify</a>
+            <a class="btn secondary" href="{{ url_for('ext_check_in', reservation_id=reservation.id) }}">Check in</a>
+            <form method="post" action="{{ url_for('cancel_reservation', reservation_id=reservation.id) }}" style="display:inline"><button class="btn danger" type="submit">Cancel</button></form>
+          {% elif reservation.status == 'Checked In' %}
+            <span class="muted">Checked in</span>
+          {% endif %}
+        </div>
       </div>
     {% else %}
       <p>No reservations yet.</p>

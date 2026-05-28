@@ -250,6 +250,10 @@
             {% for resource in detail_resources %}
               <a href="{{ resource.href }}">{{ resource.label }} ↗</a>
             {% endfor %}
+            {% if current_user.is_authenticated %}
+              <a href="{{ url_for('ext_report_condition', facility_id=facility.id) }}">Report site condition ↗</a>
+            {% endif %}
+            <a href="{{ url_for('ext_condition_reports_feed') }}?category=trail">Recent condition reports ↗</a>
           </div>
         </section>
 

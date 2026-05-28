@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}My Timed Entry Reservations — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Timed Entry Reservations</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a> · <a href="{{ url_for('ext_timed_entry_list') }}">Browse timed-entry parks</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Confirmation</th><th>Park</th><th>Date</th><th>Window</th><th>Plate</th><th>Party</th></tr></thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td>{{ e.confirmation_code }}</td>
+        <td><a href="{{ url_for('ext_timed_entry_park', park=e.park.slug) }}">{{ e.park.name }}</a><br><span class="muted">{{ e.park.location }}</span></td>
+        <td>{{ e.entry_date }}</td>
+        <td>{{ e.entry_window }}</td>
+        <td>{{ e.vehicle_plate or "—" }}</td>
+        <td>{{ e.party_size }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No timed-entry reservations yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

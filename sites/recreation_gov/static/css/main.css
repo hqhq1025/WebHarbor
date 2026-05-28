@@ -2205,3 +2205,15 @@ label { font-weight: 800; font-size: 13px; color: #354553; display: block; margi
   .home-tabs { align-items: flex-start; }
   .footer-grid { grid-template-columns: 1fr; }
 }
+
+/* 2026-05-28 priority-deepen helpers */
+.reservation-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.checklist-card { border: 1px solid #d8d8d8; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; background: #fff; }
+.checklist-card header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.filter-bar { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 16px 0 24px; }
+.filter-bar label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.reservation-table-wrap { overflow-x: auto; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #eef0f4; color: #38465a; }
+.badge-advisory { background: #fff3d6; color: #806010; }
+.badge-warning { background: #ffe1d6; color: #913011; }
+.badge-closure { background: #fcd1d1; color: #8a1313; }

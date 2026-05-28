@@ -904,6 +904,106 @@ def _register_routes(app) -> None:
     def ext_myaccount_profile():
         return render_template("ext/myaccount_profile.html")
 
+    @app.route("/myaccount/tour-bookings")
+    @login_required
+    def ext_myaccount_tour_bookings():
+        bookings = TourBooking.query.filter_by(user_id=current_user.id).order_by(TourBooking.id.desc()).all()
+        return render_template("ext/myaccount_tour_bookings.html", bookings=bookings)
+
+    @app.route("/myaccount/check-ins")
+    @login_required
+    def ext_myaccount_check_ins():
+        checkins = CheckIn.query.filter_by(user_id=current_user.id).order_by(CheckIn.id.desc()).all()
+        res_ids = {c.reservation_id for c in checkins}
+        reservation_lookup = {
+            r.id: r for r in Reservation.query.filter(Reservation.id.in_(res_ids)).all()
+        } if res_ids else {}
+        return render_template(
+            "ext/myaccount_check_ins.html",
+            checkins=checkins, reservation_lookup=reservation_lookup,
+        )
+
+    @app.route("/myaccount/checklists")
+    @login_required
+    def ext_myaccount_checklists():
+        raw = GearChecklist.query.filter_by(user_id=current_user.id).order_by(GearChecklist.id.desc()).all()
+        checklists = []
+        for row in raw:
+            gear = GearList.query.filter_by(category=row.category).first()
+            try:
+                items = json.loads(row.items_json or "[]")
+            except (ValueError, TypeError):
+                items = []
+            checklists.append({"row": row, "items": items, "gear": gear})
+        return render_template("ext/myaccount_gear_checklists.html", checklists=checklists)
+
+    @app.route("/myaccount/condition-reports")
+    @login_required
+    def ext_myaccount_condition_reports():
+        reports = (
+            ConditionReport.query.filter_by(user_id=current_user.id)
+            .order_by(ConditionReport.id.desc())
+            .all()
+        )
+        return render_template("ext/myaccount_condition_reports.html", reports=reports)
+
+    @app.route("/myaccount/timed-entry")
+    @login_required
+    def ext_myaccount_timed_entry():
+        entries = (
+            TimedEntryReservation.query.filter_by(user_id=current_user.id)
+            .order_by(TimedEntryReservation.id.desc())
+            .all()
+        )
+        return render_template("ext/myaccount_timed_entry.html", entries=entries)
+
+    @app.route("/myaccount/alert-subscriptions")
+    @login_required
+    def ext_myaccount_alert_subscriptions():
+        subs = (
+            AlertSubscription.query.filter_by(user_id=current_user.id)
+            .order_by(AlertSubscription.id.desc())
+            .all()
+        )
+        return render_template("ext/myaccount_alert_subscriptions.html", subs=subs)
+
+    @app.route("/myaccount/modifications")
+    @login_required
+    def ext_myaccount_modifications():
+        mods = (
+            ReservationModification.query.filter_by(user_id=current_user.id)
+            .order_by(ReservationModification.id.desc())
+            .all()
+        )
+        res_ids = {m.reservation_id for m in mods}
+        reservation_lookup = {
+            r.id: r for r in Reservation.query.filter(Reservation.id.in_(res_ids)).all()
+        } if res_ids else {}
+        return render_template(
+            "ext/myaccount_modifications.html",
+            mods=mods, reservation_lookup=reservation_lookup,
+        )
+
+    # ------- Public condition feed -------
+    @app.route("/condition-reports")
+    def ext_condition_reports_feed():
+        category = (request.args.get("category") or "").strip()
+        severity = (request.args.get("severity") or "").strip()
+        q = ConditionReport.query
+        if category:
+            q = q.filter(ConditionReport.category == category)
+        if severity:
+            q = q.filter(ConditionReport.severity == severity)
+        reports = q.order_by(ConditionReport.id.desc()).limit(60).all()
+        categories = sorted({r.category for r in ConditionReport.query.all()})
+        severities = sorted({r.severity for r in ConditionReport.query.all()})
+        return render_template(
+            "condition_reports.html",
+            reports=reports,
+            categories=categories, severities=severities,
+            current_category=category, current_severity=severity,
+        )
+
     # ------- Reports / check-in -------
     @app.route("/report-condition/<int:facility_id>", methods=["GET", "POST"])
     @login_required
@@ -1276,6 +1376,212 @@ def seed_extensions() -> None:
                 emergency_contact="Trip emergency contact on file",
                 status="Submitted",
                 confirmation_code=f"PERMIT-{permit.id:03d}-FIX{idx:03d}",
+            ))
+        db.session.commit()
+
+    # ------------------------------------------------------------------
+    # 2026-05-28 priority-deepen seed: tour_booking / check_in /
+    # gear_checklist / condition_report / reservation_modification /
+    # timed_entry_reservation / alert_subscription / group_reservation_request
+    # ------------------------------------------------------------------
+    TourBooking = _BOUND["TourBooking"]
+    CheckIn = _BOUND["CheckIn"]
+    GearChecklist = _BOUND["GearChecklist"]
+    ConditionReport = _BOUND["ConditionReport"]
+    ReservationModification = _BOUND["ReservationModification"]
+    TimedEntryReservation = _BOUND["TimedEntryReservation"]
+    AlertSubscription = _BOUND["AlertSubscription"]
+    GroupReservationRequest = _BOUND["GroupReservationRequest"]
+
+    if TourBooking.query.count() == 0 and bench_users:
+        booking_specs = [
+            ("alice.j@test.com", "alcatraz-day-tour", 2, "2026-06-15 10:00"),
+            ("alice.j@test.com", "sf-maritime-hyde-street-tour", 3, "2026-07-11 13:00"),
+            ("bob.c@test.com", "yosemite-grand-tour-bus", 4, "2026-08-02 09:00"),
+            ("carol.d@test.com", "jenny-lake-shuttle-boat", 2, "2026-07-22 10:30"),
+            ("carol.d@test.com", "wind-cave-fairgrounds-tour", 3, "2026-07-23 11:00"),
+            ("david.k@test.com", "dry-tortugas-ferry-day-trip", 2, "2026-09-18 08:00"),
+            ("david.k@test.com", "biscayne-heritage-tour", 4, "2026-09-19 09:30"),
+        ]
+        for idx, (email, slug, party, when) in enumerate(booking_specs, start=1):
+            user = bench_users.get(email)
+            tour = Tour.query.filter_by(slug=slug).first()
+            if not (user and tour):
+                continue
+            db.session.add(TourBooking(
+                user_id=user.id, tour_id=tour.id, party_size=party,
+                session_time=when, status="Booked",
+                confirmation_code=f"TOUR-{tour.id:03d}-FIX{idx:03d}",
+            ))
+        db.session.commit()
+
+    if CheckIn.query.count() == 0 and bench_users:
+        checkin_specs = [
+            ("RG-2026-AJ01", 2, "RVR-4823", "Arrived 4 PM, set up at site 12 of the Coast Camp loop."),
+            ("RG-2026-BC01", 3, "WTH-7188", "Picked up bear canister from ranger station before sundown."),
+            ("RG-2026-CD01", 4, "FRD-2210", "Late check-in approved; quiet hours acknowledged."),
+            ("RG-2026-DK01", 2, "HND-0331", "Completed stay, returned permit slip on departure."),
+        ]
+        for code, party, plate, note in checkin_specs:
+            reservation = Reservation.query.filter_by(confirmation_code=code).first()
+            if not reservation:
+                continue
+            db.session.add(CheckIn(
+                user_id=reservation.user_id, reservation_id=reservation.id,
+                party_count=party, vehicle_plate=plate, notes=note,
+            ))
+        db.session.commit()
+
+    if GearChecklist.query.count() == 0 and bench_users:
+        checklist_specs = [
+            ("alice.j@test.com", "backpacking",
+             ["Internal-frame backpack 50-65L", "Sleeping bag rated to 20F", "Inflatable sleeping pad",
+              "Two-person backpacking tent", "Bear-resistant food canister", "Headlamp + extra batteries",
+              "Water filter or purifier", "Trekking poles"]),
+            ("alice.j@test.com", "day-hiking",
+             ["20-30L daypack", "Reusable water bottles or hydration bladder", "Snack and lunch supplies",
+              "Layered clothing", "Sun hat and sunscreen", "First-aid kit"]),
+            ("bob.c@test.com", "backcountry-skiing",
+             ["Backcountry skis with bindings", "Climbing skins", "Avalanche beacon",
+              "Probe (240cm+)", "Snow shovel", "Helmet", "Insulated layering kit", "Emergency bivy"]),
+            ("carol.d@test.com", "car-camping",
+             ["Family-sized tent", "Sleeping bags rated to 30F", "Camp stove + fuel canister",
+              "Cooler with ice packs", "Folding camp chairs", "LED lantern", "Camp kitchen tote"]),
+            ("david.k@test.com", "paddling",
+             ["PFD (Coast Guard approved)", "Spare paddle", "Dry bags", "Bilge pump or sponge",
+              "Whistle and signaling mirror", "Sun shirt with UPF rating", "Wide-brim hat"]),
+            ("david.k@test.com", "fishing",
+             ["Fly or spinning rod", "Reel matched to rod weight", "Polarized sunglasses",
+              "Tackle box", "Net (wood or rubber)", "Required state permit"]),
+        ]
+        for email, category, items in checklist_specs:
+            user = bench_users.get(email)
+            gear = GearList.query.filter_by(category=category).first()
+            if not (user and gear):
+                continue
+            db.session.add(GearChecklist(
+                user_id=user.id, category=gear.category,
+                items_json=json.dumps(items),
+            ))
+        db.session.commit()
+
+    if ConditionReport.query.count() == 0 and bench_users:
+        report_specs = [
+            ("alice.j@test.com", "point-reyes-national-seashore-campground", "trail", "advisory",
+             "Sky Trail is muddy after recent rain; consider trekking poles past the Stewart Trail junction."),
+            ("alice.j@test.com", "pinnacles-campground", "wildlife", "advisory",
+             "Bobcat sighted near Loop B at dusk. Keep food locked in bear boxes overnight."),
+            ("bob.c@test.com", "oak-knoll-campground", "facility", "warning",
+             "Vault toilet at site 6 is locked for repairs; portable replacement near the ranger station."),
+            ("bob.c@test.com", "lake-sonoma-boat-in-sites", "water", "warning",
+             "Lake levels are low; boat launch is steep and rocky. Confirm draft before launching."),
+            ("carol.d@test.com", "glory-hole-recreation-area", "access", "advisory",
+             "Lower trail from the boat-in sites has a fallen oak blocking the path."),
+            ("carol.d@test.com", "aquatic-park-cove-overnight-anchoring", "facility", "advisory",
+             "Mooring buoys 3 and 5 are missing tags; verify with harbormaster before tying off."),
+            ("david.k@test.com", "pinnacles-campground", "trail", "advisory",
+             "Bear Gulch Cave west entrance flooded; expect detour via the Rim Trail."),
+        ]
+        for email, slug, category, severity, body in report_specs:
+            user = bench_users.get(email)
+            facility = Facility.query.filter_by(slug=slug).first()
+            if not (user and facility):
+                continue
+            db.session.add(ConditionReport(
+                user_id=user.id, facility_id=facility.id,
+                category=category, severity=severity, body=body,
+            ))
+        db.session.commit()
+
+    if ReservationModification.query.count() == 0 and bench_users:
+        mod_specs = [
+            ("RG-2026-AJ02", "2026-07-03", "2026-07-05", "2026-07-10", "2026-07-12",
+             "Extended for an additional family member arriving late."),
+            ("RG-2026-BC01", "2026-08-11", "2026-08-14", "2026-08-13", "2026-08-16",
+             "Shifted to align with the Cascade backcountry permit window."),
+            ("RG-2026-CD01", "2026-05-20", "2026-05-22", "2026-05-21", "2026-05-23",
+             "Weather-related single-day shift requested by visitor."),
+            ("RG-2026-AJ01", "2026-06-12", "2026-06-14", "2026-06-13", "2026-06-15",
+             "Group adjusted arrival because of road closure on Hwy 1."),
+        ]
+        for code, old_s, old_e, new_s, new_e, reason in mod_specs:
+            reservation = Reservation.query.filter_by(confirmation_code=code).first()
+            if not reservation:
+                continue
+            db.session.add(ReservationModification(
+                reservation_id=reservation.id, user_id=reservation.user_id,
+                previous_start_date=old_s, previous_end_date=old_e,
+                new_start_date=new_s, new_end_date=new_e, reason=reason,
+            ))
+        db.session.commit()
+
+    if TimedEntryReservation.query.count() == 0 and bench_users:
+        te_specs = [
+            ("alice.j@test.com", "yosemite-firefall", "2026-02-22", "07:00 - 09:00", "8KJL231", 4),
+            ("alice.j@test.com", "muir-woods-parking", "2026-06-04", "10:00 - 12:00", "CA-7TR-993", 3),
+            ("bob.c@test.com", "rocky-mountain", "2026-07-18", "06:00 - 08:00", "OR-A8821", 3),
+            ("bob.c@test.com", "glacier-gtsr", "2026-08-09", "06:00 - 08:00", "MT-G-5512", 2),
+            ("carol.d@test.com", "arches", "2026-07-22", "07:00 - 09:00", "CO-NM-9912", 4),
+            ("carol.d@test.com", "zion-angels-landing", "2026-07-24", "09:00 - 11:00", "UT-AL-3320", 2),
+            ("david.k@test.com", "haleakala-sunrise", "2026-09-15", "03:00 - 07:00", "HI-PLR-3344", 2),
+            ("david.k@test.com", "acadia-cadillac", "2026-09-20", "05:30 - 07:30", "ME-AC-4012", 3),
+        ]
+        for idx, (email, park_slug, when, window, plate, party) in enumerate(te_specs, start=1):
+            user = bench_users.get(email)
+            park = TimedEntryPark.query.filter_by(slug=park_slug).first()
+            if not (user and park):
+                continue
+            db.session.add(TimedEntryReservation(
+                user_id=user.id, park_slug=park.slug,
+                entry_date=when, entry_window=window,
+                vehicle_plate=plate, party_size=party,
+                confirmation_code=f"TE-{park.slug[:6].upper()}-FIX{idx:03d}",
+            ))
+        db.session.commit()
+
+    if AlertSubscription.query.count() == 0 and bench_users:
+        sub_specs = [
+            ("alice.j@test.com", "yosemite-firefall-window"),
+            ("alice.j@test.com", "muir-woods-shuttle"),
+            ("bob.c@test.com", "glacier-going-to-sun-closure"),
+            ("bob.c@test.com", "wave-lottery-window-changes"),
+            ("carol.d@test.com", "rocky-bear-lake-corridor"),
+            ("carol.d@test.com", "arches-timed-entry"),
+            ("david.k@test.com", "dry-tortugas-ferry-cap"),
+            ("david.k@test.com", "everglades-shark-valley-trams"),
+        ]
+        for email, slug in sub_specs:
+            user = bench_users.get(email)
+            alert = Alert.query.filter_by(slug=slug).first()
+            if not (user and alert):
+                continue
+            db.session.add(AlertSubscription(
+                user_id=user.id, alert_slug=alert.slug,
+                notify_email=True, notify_sms=False,
+            ))
+        db.session.commit()
+
+    if GroupReservationRequest.query.count() == 0 and bench_users:
+        req_specs = [
+            ("alice.j@test.com", "rob-hill-group-campground", 28, "2026-08-15",
+             "Family reunion overnight stay, requesting fire ring access."),
+            ("bob.c@test.com", "twin-creek-group-camping", 42, "2026-09-12",
+             "Scout troop weekend, will bring own potable water."),
+            ("carol.d@test.com", "catoctin-mountain-group-pavilion", 60, "2026-07-04",
+             "Birthday picnic + pavilion booking for extended family."),
+            ("david.k@test.com", "everglades-flamingo-group-site", 24, "2026-12-19",
+             "Photography club seasonal retreat tied to wildlife migration window."),
+        ]
+        for idx, (email, slug, party, when, notes) in enumerate(req_specs, start=1):
+            user = bench_users.get(email)
+            group = GroupReservation.query.filter_by(slug=slug).first()
+            if not (user and group):
+                continue
+            db.session.add(GroupReservationRequest(
+                user_id=user.id, group_id=group.id,
+                party_size=party, event_date=when,
+                notes=notes, status="Submitted",
+                confirmation_code=f"GROUP-{group.id:03d}-FIX{idx:03d}",
             ))
         db.session.commit()
 

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}My Tour Bookings — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Tour Bookings</h1>
+  <p class="muted"><a href="{{ url_for('ext_myaccount_dashboard') }}">← Back to My Account</a></p>
+  <table class="reservation-table">
+    <thead><tr><th>Confirmation</th><th>Tour</th><th>Session</th><th>Party</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.confirmation_code }}</td>
+        <td>
+          <a href="{{ url_for('ext_tour_detail', slug=b.tour.slug) }}">{{ b.tour.name }}</a>
+          <br><span class="muted">{{ b.tour.parent_area }} · {{ b.tour.location }}, {{ b.tour.state }}</span>
+        </td>
+        <td>{{ b.session_time }}</td>
+        <td>{{ b.party_size }}</td>
+        <td>{{ b.status }}</td>
+        <td><a href="{{ url_for('ext_tour_book', slug=b.tour.slug) }}">Book again</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No tour bookings yet. <a href="{{ url_for('ext_tour_list') }}">Browse tours</a> to reserve one.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}
