@@ -476,15 +476,30 @@ class FeedbackForm(FlaskForm):
 
 # ---------- context helpers -------------------------------------------------
 
+# --- nav/trending/apps cache (perf B/I) -------------------------------------
+# Static lookup tables that never change at runtime. We pre-load once and
+# reuse on every request — saves 3 SQL roundtrips + ORM hydration per req.
+# Reset hook: `/restart/google_search` (control-plane) recreates the worker
+# process so module-level state including this cache is rebuilt from disk.
+_NAV_CACHE = {}
+
+
+def _cached_nav_globals():
+    if not _NAV_CACHE:
+        _NAV_CACHE['nav_verticals'] = Vertical.query.order_by(Vertical.sort_order).all()
+        _NAV_CACHE['trending_terms'] = TrendingTerm.query.order_by(TrendingTerm.rank).limit(10).all()
+        _NAV_CACHE['google_apps'] = GoogleApp.query.all()
+    return _NAV_CACHE
+
+
 @app.context_processor
 def inject_globals():
     from flask_wtf.csrf import generate_csrf
-    trending = TrendingTerm.query.order_by(TrendingTerm.rank).limit(10).all()
-    apps = GoogleApp.query.all()
+    nav = _cached_nav_globals()
     return {
-        'nav_verticals': Vertical.query.order_by(Vertical.sort_order).all(),
-        'trending_terms': trending,
-        'google_apps': apps,
+        'nav_verticals': nav['nav_verticals'],
+        'trending_terms': nav['trending_terms'],
+        'google_apps': nav['google_apps'],
         'current_year': datetime.utcnow().year,
         'csrf_token_value': generate_csrf(),
     }
@@ -658,6 +673,43 @@ def _score_topic(topic, tokens):
     return (primary, secondary)
 
 
+# --- topic scoring index cache (perf B/D) -----------------------------------
+# `find_topic` and `competing_topics` were both calling `Topic.query.all()`
+# (1300+ rows) on every /search request and re-running `_score_topic`
+# (JSON-parse + 4 lowercase joins) per row. Cumulative: ~28 ms / req.
+# We collapse this into a pre-built `[(id, core_str, aux_str), ...]` list
+# computed once at first use, then re-scan in-memory with substring tests.
+# Winner topic_ids are re-fetched via `db.session.get(Topic, id)` so the
+# returned object is attached to the current session and relationship
+# traversal (`topic.results`, etc.) still works.
+_TOPIC_SCORING_INDEX = None
+
+
+def _build_topic_scoring_row(topic):
+    try:
+        keywords = json.loads(topic.keywords_json or '[]')
+    except Exception:
+        keywords = []
+    core = ' '.join([
+        (topic.query_text or '').lower(),
+        (topic.name or '').lower(),
+        (topic.wiki_title or '').lower(),
+        ' '.join(str(k).lower() for k in keywords),
+    ])
+    aux = ' '.join([
+        (topic.summary or '').lower(),
+        (topic.answer_token or '').lower(),
+    ])
+    return (topic.id, core, aux)
+
+
+def _cached_topic_scoring_index():
+    global _TOPIC_SCORING_INDEX
+    if _TOPIC_SCORING_INDEX is None:
+        _TOPIC_SCORING_INDEX = [_build_topic_scoring_row(t) for t in Topic.query.all()]
+    return _TOPIC_SCORING_INDEX
+
+
 def competing_topics(q, exclude_id=None, limit=4):
     """Return topics that compete with a query (second-best matches).
 
@@ -668,16 +720,24 @@ def competing_topics(q, exclude_id=None, limit=4):
     tokens = _tokenize(q.lower())
     if not tokens:
         return []
+    token_set = set(tokens)
+    min_primary = max(1, len(tokens) // 2)
     scored = []
-    for cand in Topic.query.all():
-        if exclude_id is not None and cand.id == exclude_id:
+    for tid, core, aux in _cached_topic_scoring_index():
+        if exclude_id is not None and tid == exclude_id:
             continue
-        primary, secondary = _score_topic(cand, tokens)
-        if primary >= max(1, len(tokens) // 2):
-            scored.append((primary, secondary, cand))
-    # sort by primary desc, secondary desc
+        primary = sum(1 for t in token_set if t in core)
+        if primary < min_primary:
+            continue
+        secondary = sum(1 for t in token_set if t in aux)
+        scored.append((primary, secondary, tid))
     scored.sort(key=lambda x: (-x[0], -x[1]))
-    return [c for _, _, c in scored[:limit]]
+    winners = scored[:limit]
+    if not winners:
+        return []
+    ids = [tid for _, _, tid in winners]
+    fetched = {t.id: t for t in Topic.query.filter(Topic.id.in_(ids)).all()}
+    return [fetched[i] for i in ids if i in fetched]
 
 
 def find_topic(q):
@@ -696,26 +756,27 @@ def find_topic(q):
     if t:
         return t
 
-    # 2. Scored relevance
+    # 2. Scored relevance (over cached in-memory index)
     tokens = _tokenize(q_norm)
     if tokens:
         min_required = max(1, len(tokens) // 2)
-        best = None
+        token_set = set(tokens)
+        best_id = None
         best_primary = 0
         best_total = 0
-        for cand in Topic.query.all():
-            primary, secondary = _score_topic(cand, tokens)
+        for tid, core, aux in _cached_topic_scoring_index():
+            primary = sum(1 for t in token_set if t in core)
+            secondary = sum(1 for t in token_set if t in aux)
             total = primary + secondary
-            # Require at least min_required tokens total, prefer core matches
             if total >= min_required and (
                 primary > best_primary
                 or (primary == best_primary and total > best_total)
             ):
-                best = cand
+                best_id = tid
                 best_primary = primary
                 best_total = total
-        if best:
-            return best
+        if best_id is not None:
+            return db.session.get(Topic, best_id)
 
     # 3. Fallback — slug / substring
     slug = re.sub(r'[^a-z0-9]+', '_', q_norm).strip('_')
