@@ -12,7 +12,11 @@
     <div class="game-header">
       <div class="cover">
         {% if g.image_filename %}
-          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.image_filename) }}" alt="{{ g.name }}">
+          {% if g.image_filename.startswith('http://') or g.image_filename.startswith('https://') %}
+            <img loading="lazy" decoding="async" src="{{ g.image_filename }}" alt="{{ g.name }}">
+          {% else %}
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.image_filename) }}" alt="{{ g.name }}">
+          {% endif %}
         {% else %}
           <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/cover_placeholder.svg') }}" alt="{{ g.name }}">
         {% endif %}
