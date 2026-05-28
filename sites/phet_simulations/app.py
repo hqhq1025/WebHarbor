@@ -1622,11 +1622,17 @@ def teacher_dashboard():
         .filter_by(user_id=current_user.id)
         .all()
     )
+    # Perf: prefetch workshops by IN() — replaces N×Workshop.query.get() inside
+    # the per-registration loop.
+    ws_ids = {r.workshop_id for r in ws_regs}
+    ws_map = {
+        w.id: w for w in Workshop.query.filter(Workshop.id.in_(ws_ids)).all()
+    } if ws_ids else {}
     today = date(2026, 5, 28)
     upcoming_ws = []
     past_ws = []
     for r in ws_regs:
-        w = Workshop.query.get(r.workshop_id)
+        w = ws_map.get(r.workshop_id)
         if not w:
             continue
         (upcoming_ws if w.held_on >= today else past_ws).append(w)
