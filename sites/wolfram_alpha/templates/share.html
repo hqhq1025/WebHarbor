@@ -47,13 +47,13 @@
         <label for="permalinkBox" class="share-permalink-label">Permalink</label>
         <input id="permalinkBox" type="text" readonly class="share-permalink-input" value="{{ permalink }}">
         <button class="btn btn-secondary btn-sm" type="button"
-                onclick="navigator.clipboard.writeText(document.getElementById('permalinkBox').value)">Copy</button>
+                onclick="navigator.clipboard.writeText(document.getElementById('permalinkBox').value); showToast('Permalink copied to clipboard');">Copy</button>
       </div>
       <div class="share-permalink-block">
         <label for="permalinkImageBox" class="share-permalink-label">Image-share URL</label>
         <input id="permalinkImageBox" type="text" readonly class="share-permalink-input" value="{{ permalink_image }}">
         <button class="btn btn-secondary btn-sm" type="button"
-                onclick="navigator.clipboard.writeText(document.getElementById('permalinkImageBox').value)">Copy</button>
+                onclick="navigator.clipboard.writeText(document.getElementById('permalinkImageBox').value); showToast('Image-share URL copied to clipboard');">Copy</button>
       </div>
       <div class="share-actions">
         <a class="btn btn-secondary btn-sm" href="/input?i={{ comp.input_query|urlencode }}">Open in Wolfram|Alpha</a>

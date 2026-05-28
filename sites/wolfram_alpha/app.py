@@ -1160,6 +1160,7 @@ def input_result():
     q = request.args.get('i', '').strip()
     assumption = request.args.get('assumption', '').strip()
     if not q:
+        flash('Please enter a computation or question to compute.', 'info')
         return redirect(url_for('index'))
 
     # Find best matching precomputed result
@@ -2194,6 +2195,7 @@ def locale_switch(lang):
     resp = make_response(redirect(nxt))
     resp.set_cookie('locale', lang, max_age=60 * 60 * 24 * 365,
                     samesite='Lax')
+    flash(f'Language preference set to {R7_LOCALE_NAME.get(lang, lang)}.', 'info')
     return resp
 
 

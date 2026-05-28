@@ -9,10 +9,10 @@
 <section class="wa-hero">
   <div class="wa-hero-inner">
     <p class="wa-hero-eyebrow">FROM THE MAKERS OF <strong>WOLFRAM LANGUAGE</strong> AND <strong>MATHEMATICA</strong></p>
-    <a href="/" class="wa-wordmark" aria-label="WolframAlpha">
+    <div class="wa-wordmark" aria-label="WolframAlpha">
       <img loading="lazy" decoding="async" src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-wordmark-spikey">
       <span class="wa-wordmark-text"><span class="wm-wolfram">Wolfram</span><span class="wm-alpha">Alpha</span></span>
-    </a>
+    </div>
 
     <form class="wa-search-form" action="/input" method="get" id="mainSearchForm">
       <div class="wa-search-bar">
@@ -45,9 +45,9 @@
           </label>
         </div>
         <div class="wa-tools">
-          <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⌨</span>EXTENDED KEYBOARD</a>
+          <a href="/help/symbols" class="wa-tool-link"><span class="wa-tool-icon">⌨</span>EXTENDED KEYBOARD</a>
           <a href="/examples/mathematics" class="wa-tool-link"><span class="wa-tool-icon">⊞</span>EXAMPLES</a>
-          <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⬆</span>UPLOAD</a>
+          <a href="/pro/upgrade" class="wa-tool-link"><span class="wa-tool-icon">⬆</span>UPLOAD</a>
           <a href="/input?i={{ ['carbon','factor 70560','BMI 5ft10 170lb','weather New York']|random|urlencode }}" class="wa-tool-link"><span class="wa-tool-icon">⚄</span>RANDOM</a>
         </div>
       </div>

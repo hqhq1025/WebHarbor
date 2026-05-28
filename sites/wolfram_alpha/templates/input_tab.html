@@ -13,10 +13,16 @@
 <div class="section-inner" style="padding:24px">
   <nav class="subcategory-tabs" aria-label="Input modes" style="margin-bottom:18px">
     {% for slug, info in all_tabs.items() %}
+    {% if slug == tab_type %}
+    <span class="subcat-tab subcat-tab--active" aria-current="page">
+       {{ info.icon }} {{ info.label }}
+    </span>
+    {% else %}
     <a href="/input-tab/{{ slug }}"
-       class="subcat-tab {% if slug == tab_type %}subcat-tab--active{% endif %}">
+       class="subcat-tab">
        {{ info.icon }} {{ info.label }}
     </a>
+    {% endif %}
     {% endfor %}
   </nav>
 
