@@ -60,6 +60,26 @@ def time_ago_filter(dt):
     return _time_ago(dt)
 
 
+# Author slug filter used by article_detail.html toolbar and by /author/<slug>
+# routes. Must match gui_deepen._author_slug() exactly so that the link
+# generated here resolves to the author profile page.
+@app.template_filter('author_slug')
+def author_slug_filter(name):
+    import re as _re
+    if not name:
+        return 'x'
+    return _re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "x"
+
+
+# Journal slug filter — mirrors gui_deepen._journal_slug().
+@app.template_filter('journal_slug')
+def journal_slug_filter(name):
+    import re as _re
+    if not name:
+        return 'x'
+    return _re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "x"
+
+
 def _time_ago(dt: datetime) -> str:
     now = datetime.utcnow()
     diff = now - dt

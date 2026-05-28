@@ -37,7 +37,7 @@
     <section class="source-block">
       <dl>
         {% if article.source_journal %}
-          <div><dt>Journal</dt><dd>{{ article.source_journal }}</dd></div>
+          <div><dt>Journal</dt><dd><a href="/journal/{{ article.source_journal | journal_slug }}">{{ article.source_journal }}</a></dd></div>
         {% endif %}
         {% if article.source_institution %}
           <div><dt>Provided by</dt><dd>{{ article.source_institution }}</dd></div>
@@ -60,10 +60,38 @@
             <button class="btn" type="submit">Save article</button>
           {% endif %}
         </form>
+        <form method="post" action="/article/{{ article.slug }}/vote" style="display:inline;margin-left:6px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="direction" value="up">
+          <button class="btn secondary" type="submit" title="Upvote this article">▲ Upvote</button>
+        </form>
+        <form method="post" action="/article/{{ article.slug }}/vote" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="direction" value="down">
+          <button class="btn secondary" type="submit" title="Downvote this article">▼ Downvote</button>
+        </form>
       {% else %}
         <a class="btn secondary" href="{{ url_for('login', next=url_for('article_detail', slug=article.slug)) }}">Sign in to save</a>
       {% endif %}
       <span style="margin-left:auto;color:#777;font-size:13px;">{{ article.comment_count }} comment{{ '' if article.comment_count == 1 else 's' }}</span>
+    </div>
+
+    <div class="article-toolbar" style="margin:14px 0;padding:10px 12px;border-top:1px solid #e6e9ee;border-bottom:1px solid #e6e9ee;font-size:13px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+      <strong style="color:#555;">More:</strong>
+      {% if article.author_name %}
+        <a href="/author/{{ article.author_name | author_slug }}">More by {{ article.author_name }}</a>
+        {% if current_user.is_authenticated %}
+          <form method="post" action="/author/{{ article.author_name | author_slug }}/follow" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn secondary" type="submit" style="padding:4px 10px;">Follow author</button>
+          </form>
+        {% endif %}
+      {% endif %}
+      <a href="/article/{{ article.slug }}/share">Share this article</a>
+      <a href="/article/{{ article.slug }}/contact-author">Contact author</a>
+      <a href="/article/{{ article.slug }}/submit-tip">Submit a tip</a>
+      <a href="/article/{{ article.slug }}/report">Report</a>
+      <a href="/article/{{ article.slug }}/comments">All comments ({{ article.comment_count }})</a>
     </div>
 
     <section class="comments-section" id="comments">
