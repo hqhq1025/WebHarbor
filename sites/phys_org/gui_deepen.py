@@ -1082,21 +1082,31 @@ def register(app, db, Article, Category, Comment, User,
 
     # ---- Advanced search ------------------------------------------------ #
 
+    def _advanced_facets():
+        """Facet vocabularies from the Article table.
+
+        Perf: a single SELECT pulling only the 4 facet columns, grouped
+        in-Python — replaces 4x ``Article.query.all()`` full-row scans
+        (which materialised every column of every Article 4 times).
+        """
+        rows = db.session.query(
+            Article.source_journal,
+            Article.source_institution,
+            Article.author_name,
+            Article.published_at,
+        ).all()
+        journals = sorted({r[0] for r in rows if r[0]})
+        institutions = sorted({r[1] for r in rows if r[1]})
+        authors = sorted({r[2] for r in rows if r[2]})
+        years = sorted({r[3].year for r in rows if r[3]}, reverse=True)
+        return journals, institutions, authors, years
+
     @app.route("/search/advanced")
     def gui_search_advanced():
         # Build facet vocabularies from the live Article table so they stay
         # in sync with the seeded data (and any future re-seed).
-        journals = sorted({a.source_journal for a in Article.query.all()
-                           if a.source_journal})
-        institutions = sorted({a.source_institution for a in Article.query.all()
-                               if a.source_institution})
-        authors = sorted({a.author_name for a in Article.query.all()
-                          if a.author_name})
+        journals, institutions, authors, years = _advanced_facets()
         cats = Category.query.order_by(Category.sort_order, Category.name).all()
-        # Year range derived from seeded data — used to populate the year
-        # dropdown deterministically without exposing arbitrary years.
-        years = sorted({a.published_at.year for a in Article.query.all()
-                        if a.published_at}, reverse=True)
         return render_template("gui_search_advanced.html",
                                journals=journals, institutions=institutions,
                                authors=authors, categories=cats, years=years,
@@ -1161,14 +1171,7 @@ def register(app, db, Article, Category, Comment, User,
                                           if a.published_at else 0)))
 
         cats = Category.query.order_by(Category.sort_order, Category.name).all()
-        journals = sorted({a.source_journal for a in Article.query.all()
-                           if a.source_journal})
-        institutions = sorted({a.source_institution for a in Article.query.all()
-                               if a.source_institution})
-        authors = sorted({a.author_name for a in Article.query.all()
-                          if a.author_name})
-        years = sorted({a.published_at.year for a in Article.query.all()
-                        if a.published_at}, reverse=True)
+        journals, institutions, authors, years = _advanced_facets()
         return render_template("gui_search_advanced.html",
                                journals=journals, institutions=institutions,
                                authors=authors, categories=cats, years=years,
