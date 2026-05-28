@@ -48,4 +48,9 @@
   <div class="form-group"><label>Special Requests</label><textarea name="notes" rows="3" placeholder="Wheelchair accessibility, interpretation, etc."></textarea></div>
   <button type="submit" class="btn btn-primary">Reserve Tour</button>
 </form>
+
+<div style="margin-top:18px;padding:14px 18px;background:var(--gray-light);border-left:4px solid var(--scarlet);border-radius:4px;font-family:sans-serif;font-size:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <span>See all <strong>{{ upcoming }}</strong> upcoming campus visits.</span>
+  <a href="{{ url_for('admissions_visits_list') }}" class="btn btn-outline btn-sm">View Scheduled Visits</a>
+</div>
 {% endblock %}

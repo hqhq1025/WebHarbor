@@ -1211,6 +1211,23 @@ def admissions_visit():
     return render_template('admissions_visit.html', upcoming=upcoming)
 
 
+@app.route('/admissions/visits')
+def admissions_visits_list():
+    """List of upcoming campus tour bookings (public, anonymized last name)."""
+    tour_type = (request.args.get('type') or '').strip().lower()
+    query = TourBooking.query
+    if tour_type in ('in-person', 'virtual'):
+        query = query.filter_by(tour_type=tour_type)
+    bookings = query.order_by(TourBooking.tour_date).limit(80).all()
+    in_person_count = TourBooking.query.filter_by(tour_type='in-person').count()
+    virtual_count = TourBooking.query.filter_by(tour_type='virtual').count()
+    return render_template('admissions_visits_list.html',
+                           bookings=bookings,
+                           in_person_count=in_person_count,
+                           virtual_count=virtual_count,
+                           tour_type=tour_type)
+
+
 @app.route('/admissions/virtual-tour', methods=['GET', 'POST'])
 def admissions_virtual_tour():
     if request.method == 'POST':

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Upcoming Campus Visits — Ohio State Admissions{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a><span>/</span>
+  <a href="{{ url_for('admissions') }}">Admissions</a><span>/</span>
+  <a href="{{ url_for('admissions_visit') }}">Visit</a><span>/</span>
+  <span>Scheduled Visits</span>
+</div>
+
+<div style="background:linear-gradient(135deg,var(--scarlet),var(--scarlet-dark));color:#fff;padding:40px;margin:-30px -20px 30px;border-bottom:6px solid #7a0000">
+  <div style="font-size:13px;letter-spacing:3px;text-transform:uppercase;opacity:0.9;font-family:sans-serif">Visit the Oval</div>
+  <h1 style="font-size:36px;margin:8px 0 6px">Upcoming Campus Visits</h1>
+  <p style="font-size:15px;opacity:0.92;font-family:sans-serif">{{ in_person_count }} in-person tours and {{ virtual_count }} virtual tours scheduled.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+  <a href="{{ url_for('admissions_visits_list', type='in-person') }}" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid var(--scarlet);padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">In-Person Tours</div>
+    <div style="font-size:30px;font-weight:bold;color:var(--scarlet);margin-top:4px">{{ in_person_count }}</div>
+    <div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-top:4px">90-minute walking tour, Welcome Center start</div>
+  </a>
+  <a href="{{ url_for('admissions_visits_list', type='virtual') }}" style="background:#fff;border:1px solid var(--gray-mid);border-left:4px solid #555;padding:18px;text-decoration:none;color:var(--text);border-radius:6px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-family:sans-serif">Virtual Tours</div>
+    <div style="font-size:30px;font-weight:bold;color:#555;margin-top:4px">{{ virtual_count }}</div>
+    <div style="font-size:13px;color:var(--gray);font-family:sans-serif;margin-top:4px">Zoom-based, includes Q&amp;A with current student</div>
+  </a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:30px">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+      <h2 class="section-title" style="margin-bottom:0">
+        {% if tour_type == 'in-person' %}In-person tours{% elif tour_type == 'virtual' %}Virtual tours{% else %}All scheduled visits{% endif %}
+      </h2>
+      {% if tour_type %}
+        <a href="{{ url_for('admissions_visits_list') }}" style="font-size:13px;color:var(--scarlet);font-family:sans-serif">Show all</a>
+      {% endif %}
+    </div>
+
+    {% if bookings %}
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--gray-mid);font-family:sans-serif;font-size:14px">
+      <thead style="background:var(--gray-light);text-align:left">
+        <tr>
+          <th style="padding:10px 14px">Date</th>
+          <th style="padding:10px 14px">Visitor</th>
+          <th style="padding:10px 14px">Type</th>
+          <th style="padding:10px 14px">Party Size</th>
+          <th style="padding:10px 14px">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr style="border-top:1px solid var(--gray-mid)">
+          <td style="padding:10px 14px;font-weight:bold;color:var(--scarlet)">{{ b.tour_date }}</td>
+          <td style="padding:10px 14px">{{ b.full_name }}</td>
+          <td style="padding:10px 14px">
+            {% if b.tour_type == 'virtual' %}<span style="background:#e5e7eb;color:#374151;padding:3px 10px;border-radius:12px;font-size:12px">Virtual</span>
+            {% else %}<span style="background:#fee2e2;color:#b91c1c;padding:3px 10px;border-radius:12px;font-size:12px">In-Person</span>
+            {% endif %}
+          </td>
+          <td style="padding:10px 14px">{{ b.group_size or 1 }}</td>
+          <td style="padding:10px 14px;color:var(--gray)">{{ b.notes or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="background:var(--gray-light);padding:30px;text-align:center;border-radius:6px;color:var(--gray)">No tours match this filter.</p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar" style="align-self:start">
+    <h3>Reserve Your Visit</h3>
+    <p style="font-size:13px;line-height:1.6;color:var(--gray);font-family:sans-serif">Tours fill quickly during peak season. Book early to choose your date.</p>
+    <a href="{{ url_for('admissions_visit') }}" class="btn btn-primary" style="width:100%;text-align:center;margin-top:8px">Book In-Person Tour</a>
+    <a href="{{ url_for('admissions_virtual_tour') }}" class="btn btn-outline" style="width:100%;text-align:center;margin-top:8px">Book Virtual Tour</a>
+
+    <h3 style="margin-top:20px">Visit Logistics</h3>
+    <ul style="padding-left:18px;font-size:13px;line-height:1.7">
+      <li>Free parking at Lane Avenue Garage</li>
+      <li>Welcome Center: Student Academic Services Bldg.</li>
+      <li>281 W. Lane Avenue</li>
+      <li>Tours run Mon-Sat, 10 a.m. and 2 p.m.</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}
