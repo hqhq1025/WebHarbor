@@ -27,22 +27,28 @@
         </div>
       </div>
     </nav>
-    <form class="search" action="{{ url_for('search') }}" method="get">
-      <select name="s" aria-label="Search type">
+    <form class="search" action="{{ url_for('search') }}" method="get" id="suggestion-search-form" role="search" aria-label="Search IMDb">
+      <select name="s" aria-label="All" id="navbar-search-category-select">
         <option value="all">All</option>
         <option value="tt">Titles</option>
-        <option value="nm">Names</option>
+        <option value="ep">TV Episodes</option>
+        <option value="nm">Celebs</option>
+        <option value="co">Companies</option>
+        <option value="kw">Keywords</option>
+        <option value="adv">Advanced Search</option>
       </select>
       <input type="search" name="q" value="{{ request.args.get('q','') }}"
-             placeholder="Search IMDb" aria-label="Search IMDb">
-      <button type="submit">Search</button>
+             placeholder="Search IMDb" aria-label="Search IMDb" id="suggestion-search">
+      <button type="submit" aria-label="Submit Search">Search</button>
     </form>
+    <a class="imdbpro-link" href="https://pro.imdb.com/" rel="nofollow noopener" target="_blank">IMDbPro</a>
     <div class="user-area">
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('my_watchlist') }}">Watchlist</a>
         <a href="{{ url_for('account') }}">{{ current_user.name }}</a>
         <a href="{{ url_for('logout') }}">Sign Out</a>
       {% else %}
+        <a href="{{ url_for('my_watchlist') }}">Watchlist</a>
         <a href="{{ url_for('login') }}">Sign In</a>
       {% endif %}
     </div>
@@ -62,10 +68,31 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer class="footer">
+<footer class="footer imdb-footer">
   <div class="container">
-    <p>IMDb mirror &mdash; independent offline replica. Data is illustrative only.</p>
-    <p>&copy; 1990&ndash;{{ now_year }} IMDb mirror (independent fan project)</p>
+    <div class="footer__app">
+      <a class="footer__app-link" href="#" rel="nofollow noopener">Get the IMDb app</a>
+    </div>
+    {% if not current_user.is_authenticated %}
+    <div class="footer__sign-in">
+      <a class="footer__sign-in-link" href="{{ url_for('login') }}">Sign in for more access</a>
+    </div>
+    {% endif %}
+    <ul class="footer__nav-links">
+      <li><a href="#">Help</a></li>
+      <li><a href="#">Site Index</a></li>
+      <li><a href="https://pro.imdb.com/" rel="nofollow noopener" target="_blank">IMDbPro</a></li>
+      <li><a href="https://www.boxofficemojo.com/" rel="nofollow noopener" target="_blank">Box Office Mojo</a></li>
+      <li><a href="#">License IMDb Data</a></li>
+      <li><a href="#">Press Room</a></li>
+      <li><a href="#">Advertising</a></li>
+      <li><a href="#">Jobs</a></li>
+      <li><a href="#">Conditions of Use</a></li>
+      <li><a href="#">Privacy Policy</a></li>
+      <li><a href="#">Your Ads Privacy Choices</a></li>
+    </ul>
+    <p class="footer__tagline">An <strong>Amazon</strong> company</p>
+    <p class="footer__legal">&copy; 1990&ndash;{{ now_year }} by IMDb.com, Inc. (mirror &mdash; independent offline replica; data is illustrative only)</p>
   </div>
 </footer>
 </body>
