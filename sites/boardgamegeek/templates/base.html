@@ -16,11 +16,11 @@
       <span class="accent">Board</span>GameGeek
     </a>
     <nav>
-      <a href="{{ url_for('index') }}">Home</a>
       <a href="{{ url_for('browse') }}">Browse</a>
-      <a href="{{ url_for('hotness') }}">Hot</a>
       <a href="{{ url_for('forums_index') }}">Forums</a>
       <a href="{{ url_for('geeklists_index') }}">GeekLists</a>
+      <a href="{{ url_for('hotness') }}">Community</a>
+      <a href="{{ url_for('help_page') }}">Help</a>
     </nav>
     <form class="search-bar" action="{{ url_for('search') }}" method="get">
       <input type="text" name="q" placeholder="Search" value="{{ request.args.get('q','') }}">
@@ -79,9 +79,39 @@
 </main>
 
 <footer class="site-footer">
-  © {{ current_year }} BoardGameGeek Mirror · Independent fan mirror, not affiliated with BoardGameGeek, LLC ·
-  <a href="{{ url_for('about') }}">About</a> ·
-  <a href="{{ url_for('help_page') }}">Help</a>
+  <div class="footer-grid" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;max-width:1280px;margin:0 auto;padding:20px 16px;">
+    <div>
+      <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Browse</h4>
+      <a href="{{ url_for('browse') }}">All Boardgames</a><br>
+      <a href="{{ url_for('categories_index') }}">Categories</a><br>
+      <a href="{{ url_for('mechanics_index') }}">Mechanics</a><br>
+      <a href="{{ url_for('designers_index') }}">Designers</a><br>
+      <a href="{{ url_for('publishers_index') }}">Publishers</a><br>
+      <a href="{{ url_for('hotness') }}">The Hotness</a>
+    </div>
+    <div>
+      <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Forums</h4>
+      <a href="{{ url_for('forums_index') }}">All Forums</a><br>
+      <a href="{{ url_for('forums_index') }}">Recent</a><br>
+      <a href="{{ url_for('forums_index') }}">Hot</a>
+    </div>
+    <div>
+      <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">GeekLists</h4>
+      <a href="{{ url_for('geeklists_index') }}">All GeekLists</a><br>
+      <a href="{{ url_for('geeklists_index') }}?sort=hot">Hot</a><br>
+      <a href="{{ url_for('geeklists_index') }}?sort=thumbs">Top GeekLists</a>
+    </div>
+    <div>
+      <h4 style="font-size:13px;text-transform:uppercase;margin:0 0 8px;">Help</h4>
+      <a href="{{ url_for('about') }}">About</a><br>
+      <a href="{{ url_for('help_page') }}">Help</a><br>
+      <a href="{{ url_for('help_page') }}">FAQ</a><br>
+      <a href="{{ url_for('help_page') }}">Welcome to BGG</a>
+    </div>
+  </div>
+  <div style="text-align:center;padding:14px;border-top:1px solid #ddd;font-size:12px;color:#666;">
+    © {{ current_year }} BoardGameGeek Mirror · Independent fan mirror, not affiliated with BoardGameGeek, LLC
+  </div>
 </footer>
 
 </body>
