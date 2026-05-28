@@ -69,7 +69,7 @@
             <form class="nav-search" action="{{ url_for('search') }}" method="GET" role="search">
                 <label for="nav-search-input" class="visually-hidden">Search recipes</label>
                 <input id="nav-search-input" type="text" name="q" placeholder="Find a recipe or ingredient" value="{{ request.args.get('q', '') }}" autocomplete="off">
-                <button type="submit" aria-label="Submit search">&#128269;</button>
+                <button type="submit" aria-label="Submit search"><svg class="sprite-icon" width="18" height="18" aria-hidden="true"><use href="#sprite-icon-search"/></svg></button>
             </form>
             <div class="nav-actions">
                 {% if current_user.is_authenticated %}
@@ -127,7 +127,7 @@
         {% for category, message in messages %}
         <div class="flash-msg {{ category }}">
             {{ message }}
-            <button class="flash-close" aria-label="Dismiss message">&times;</button>
+            <button class="flash-close" aria-label="Dismiss message"><svg class="sprite-icon" width="14" height="14" aria-hidden="true"><use href="#sprite-icon-close"/></svg></button>
         </div>
         {% endfor %}
     </div>
