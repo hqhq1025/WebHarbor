@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Manage your Mayo Clinic newsletter preferences{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Newsletter preferences
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Newsletter preferences</h1>
+  <p>Mayo Clinic publishes free newsletters across more than a dozen specialties. Pick the topics you want, choose how often you'd like to hear from us, and we will deliver curated articles by Mayo physicians.</p>
+  <p style="font-size:13px;color:#666;">
+    Already a subscriber managing inbox? <a href="{{ url_for('newsletter_subscribers') }}">View current subscribers</a>.
+  </p>
+
+  <form method="post" action="{{ url_for('newsletter_signup') }}" class="form-grid">
+    <h2 class="span-2" style="margin:18px 0 0;">Your contact information</h2>
+    <div><label>Your name (optional)</label><input type="text" name="name" placeholder="First Last"></div>
+    <div><label>Email</label><input type="email" name="email" required></div>
+    <div class="span-2">
+      <label>Frequency</label>
+      <label style="margin-right:18px;"><input type="radio" name="frequency" value="weekly" checked> Weekly digest</label>
+      <label style="margin-right:18px;"><input type="radio" name="frequency" value="monthly"> Monthly digest</label>
+      <label><input type="radio" name="frequency" value="breaking"> Breaking research only</label>
+    </div>
+
+    <h2 class="span-2" style="margin:18px 0 0;">Choose your topics</h2>
+    <div class="span-2">
+      <p style="font-size:13px;color:#666;margin:0 0 10px;">Check as many as you'd like. You can unsubscribe from any individual topic at any time.</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 18px;">
+        {% for slug, label, blurb in topics %}
+          <label style="display:flex;align-items:flex-start;gap:8px;line-height:1.3;">
+            <input type="checkbox" name="topics" value="{{ slug }}" style="margin-top:4px;">
+            <span><strong>{{ label }}</strong><br><small style="color:#555;">{{ blurb }}</small></span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="span-2" style="margin-top:14px;">
+      <button class="btn-primary" type="submit">Subscribe to selected topics</button>
+    </div>
+  </form>
+
+  <h2>Why subscribe?</h2>
+  <ul>
+    <li>Vetted by Mayo Clinic physicians and editors before publication.</li>
+    <li>No advertising — supported by donor philanthropy.</li>
+    <li>Unsubscribe links on every issue.</li>
+  </ul>
+</section>
+{% endblock %}

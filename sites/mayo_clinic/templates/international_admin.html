@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}International Patient Inquiries{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('international_services') }}">International Patient Services</a><span>&rsaquo;</span> Inquiries
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Recent international inquiries</h1>
+  <p>International Patient Office coordinators monitor this queue. Most recent 50 shown.</p>
+
+  {% if rows %}
+  <table class="data">
+    <thead>
+      <tr><th>Code</th><th>Patient</th><th>Country</th><th>Language</th><th>Diagnosis</th><th>Services</th><th>Travel</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.confirmation_code }}</strong></td>
+          <td>{{ r.patient_name }}</td>
+          <td>{{ r.country }}</td>
+          <td>{{ r.language }}</td>
+          <td>{{ r.diagnosis|truncate(60) }}</td>
+          <td>
+            {% set sv = [] %}
+            {% if r.accommodation %}{% set _ = sv.append('lodging') %}{% endif %}
+            {% if r.translation %}{% set _ = sv.append('interpreter') %}{% endif %}
+            {% if r.visa_support %}{% set _ = sv.append('visa') %}{% endif %}
+            {{ sv|join(', ') or '—' }}
+          </td>
+          <td>{{ r.travel_dates or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p><em>No international inquiries yet. Submit one via the <a href="{{ url_for('international_services') }}">International Patient Services</a> form.</em></p>
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a class="btn-primary" href="{{ url_for('international_services') }}">Start a new inquiry</a>
+  </p>
+</section>
+{% endblock %}

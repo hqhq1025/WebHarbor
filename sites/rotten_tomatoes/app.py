@@ -338,12 +338,26 @@ def index():
     # Top box office — movies in theaters sorted by box_office
     top_box = Movie.query.filter_by(in_theaters=True).order_by(Movie.box_office.desc()).limit(10).all()
     popular = Movie.query.order_by(Movie.audience_score.desc()).limit(12).all()
+    # Featured Audience Poll: first poll in the system, surfaced on the homepage
+    Poll = _EXT_MODELS['Poll']
+    PollVote = _EXT_MODELS['PollVote']
+    featured_poll = Poll.query.order_by(Poll.id).first()
+    featured_poll_voted = False
+    featured_poll_total = 0
+    if featured_poll:
+        featured_poll_total = sum(o.votes for o in featured_poll.options)
+        if current_user.is_authenticated:
+            featured_poll_voted = PollVote.query.filter_by(
+                poll_id=featured_poll.id, user_id=current_user.id).first() is not None
     return render_template('index.html',
                            new_movies=new_movies,
                            streaming_movies=streaming,
                            certified_movies=certified,
                            top_box_office=top_box,
-                           popular_movies=popular)
+                           popular_movies=popular,
+                           featured_poll=featured_poll,
+                           featured_poll_voted=featured_poll_voted,
+                           featured_poll_total=featured_poll_total)
 
 
 @app.route('/search')
@@ -488,6 +502,21 @@ def movie_detail(slug):
     review_form = ReviewForm()
     rating_form = RatingForm()
 
+    # Per-movie audience poll: deterministic pick from available polls
+    Poll = _EXT_MODELS['Poll']
+    PollVote = _EXT_MODELS['PollVote']
+    movie_poll = None
+    movie_poll_voted = False
+    movie_poll_total = 0
+    poll_count = Poll.query.count()
+    if poll_count:
+        movie_poll = Poll.query.order_by(Poll.id).offset(movie.id % poll_count).first()
+        if movie_poll:
+            movie_poll_total = sum(o.votes for o in movie_poll.options)
+            if current_user.is_authenticated:
+                movie_poll_voted = PollVote.query.filter_by(
+                    poll_id=movie_poll.id, user_id=current_user.id).first() is not None
+
     return render_template('movie_detail.html',
                            movie=movie,
                            critic_reviews=critic_reviews,
@@ -498,7 +527,10 @@ def movie_detail(slug):
                            user_rating=user_rating,
                            in_watchlist=in_watchlist,
                            review_form=review_form,
-                           rating_form=rating_form)
+                           rating_form=rating_form,
+                           movie_poll=movie_poll,
+                           movie_poll_voted=movie_poll_voted,
+                           movie_poll_total=movie_poll_total)
 
 
 @app.route('/celebrity/<slug>')
@@ -760,12 +792,27 @@ _EXT_MODELS = _register_ext(app, db, _BASE_MODELS)
 def init_db():
     """Create tables and seed data."""
     db.create_all()
+    _migrate_news_comments_parent_id()
     from seed_data import seed_all
     seed_all(db, Genre, Movie, Person, MovieCast, CriticReview, AudienceReview,
              User, UserRating, WatchlistItem)
     from seed_extras_runner import seed_extras
     seed_extras(db, _BASE_MODELS, _EXT_MODELS)
     _finalize_byte_identical_layout()
+
+
+def _migrate_news_comments_parent_id():
+    """Idempotent: add parent_id column to news_comments for reply nesting."""
+    from sqlalchemy import inspect, text as _t
+    inspector = inspect(db.engine)
+    if not inspector.has_table('news_comments'):
+        return
+    cols = [c['name'] for c in inspector.get_columns('news_comments')]
+    if 'parent_id' not in cols:
+        db.session.execute(_t(
+            "ALTER TABLE news_comments ADD COLUMN parent_id INTEGER REFERENCES news_comments(id)"
+        ))
+        db.session.commit()
 
 
 def _finalize_byte_identical_layout():

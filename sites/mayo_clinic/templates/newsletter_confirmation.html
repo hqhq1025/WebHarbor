@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Subscribed — {{ confirmation.code }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('newsletter_signup') }}">Newsletter preferences</a><span>&rsaquo;</span> Confirmation
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>You're subscribed</h1>
+  <div class="alert alert-success">
+    Thank you{% if confirmation.name %}, {{ confirmation.name }}{% endif %}.
+    Your subscription is confirmed. Confirmation code:
+    <strong>{{ confirmation.code }}</strong>.
+  </div>
+
+  <h2>Your subscriptions</h2>
+  <p>You will receive a <strong>{{ confirmation.frequency }}</strong> digest at
+    <strong>{{ confirmation.email }}</strong> for the following topics:</p>
+  <ul>
+    {% for slug, label in confirmation.topics %}
+      <li>{{ label }}</li>
+    {% endfor %}
+  </ul>
+
+  <p>Your first issue arrives within 7 days. Each issue includes a one-click
+    unsubscribe link if you change your mind.</p>
+
+  <p>
+    <a class="btn-primary" href="{{ url_for('index') }}">Return home</a>
+    <a class="btn-secondary" href="{{ url_for('newsletter_signup') }}" style="margin-left:8px;">Edit preferences</a>
+    <a class="btn-secondary" href="{{ url_for('newsletter_subscribers') }}" style="margin-left:8px;">View subscribers</a>
+  </p>
+</section>
+{% endblock %}

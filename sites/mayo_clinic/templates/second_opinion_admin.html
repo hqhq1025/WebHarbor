@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Second Opinion Requests{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('second_opinion') }}">Second Opinion</a><span>&rsaquo;</span> Requests
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Recent second-opinion requests</h1>
+  <p>Triage nurses watch this queue and assign each case to a specialty within 48 hours. Most recent 50 shown.</p>
+
+  {% if rows %}
+  <table class="data">
+    <thead>
+      <tr><th>Code</th><th>Patient</th><th>Diagnosis</th><th>Year</th><th>Specialty</th><th>Records?</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.confirmation_code }}</strong></td>
+        <td>{{ r.patient_name }}</td>
+        <td>{{ r.diagnosis|truncate(60) }}</td>
+        <td>{{ r.diagnosis_year or '—' }}</td>
+        <td>{{ r.department_slug or 'auto-route' }}</td>
+        <td>{{ 'Yes (' ~ (r.records_count or 0) ~ ')' if r.records_attached else 'Pending' }}</td>
+        <td>{{ r.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p><em>No second-opinion requests yet. Submit one via the <a href="{{ url_for('second_opinion') }}">Second Opinion</a> form.</em></p>
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a class="btn-primary" href="{{ url_for('second_opinion') }}">Submit a new request</a>
+  </p>
+</section>
+{% endblock %}

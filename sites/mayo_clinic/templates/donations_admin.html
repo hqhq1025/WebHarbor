@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Donor Wall — Recent Gifts{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('giving') }}">Giving</a><span>&rsaquo;</span> Recent gifts
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Recent gifts to Mayo Clinic</h1>
+  <p>Mayo Clinic publishes a public donor wall thanking recent contributors. Anonymous gifts appear without donor names. Total recorded on this page: <strong>${{ '{:,}'.format(total) }}</strong>.</p>
+
+  {% if rows %}
+  <table class="data">
+    <thead>
+      <tr><th>Code</th><th>Donor</th><th>Amount</th><th>Frequency</th><th>Fund</th><th>Tribute</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.confirmation_code }}</strong></td>
+          <td>{{ 'Anonymous' if r.is_anonymous else r.donor_name }}</td>
+          <td>${{ '{:,}'.format(r.amount or 0) }}</td>
+          <td>{{ r.frequency }}</td>
+          <td>{{ r.fund }}</td>
+          <td>
+            {% if r.tribute_type and r.tribute_type != 'none' %}
+              {{ 'In honor of' if r.tribute_type == 'honor' else 'In memory of' }} {{ r.dedication or '' }}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p><em>No gifts recorded yet. Be the first — <a href="{{ url_for('donate') }}">Make a gift</a>.</em></p>
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a class="btn-primary" href="{{ url_for('donate') }}">Make a gift</a>
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Newsletter Subscribers{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('newsletter_signup') }}">Newsletter preferences</a><span>&rsaquo;</span> Subscribers
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Newsletter subscriber roll</h1>
+  <p>Mayo Clinic newsletters track per-topic subscriber counts so editors can prioritize content. Most recent 100 signups shown below.</p>
+
+  <h2>Subscribers per topic</h2>
+  {% if topic_counts %}
+  <table class="data">
+    <thead><tr><th>Topic</th><th>Subscribers</th></tr></thead>
+    <tbody>
+      {% for slug, n in topic_counts %}
+        <tr><td>{{ topic_labels.get(slug, slug) }}</td><td>{{ n }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p><em>No subscribers yet.</em></p>
+  {% endif %}
+
+  <h2>Most recent signups</h2>
+  {% if rows %}
+  <table class="data">
+    <thead><tr><th>Email</th><th>Name</th><th>Topic</th><th>Frequency</th><th>Code</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.email }}</td>
+          <td>{{ r.name or '—' }}</td>
+          <td>{{ topic_labels.get(r.topic, r.topic) }}</td>
+          <td>{{ r.frequency or 'weekly' }}</td>
+          <td>{{ r.confirmation_code or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a class="btn-primary" href="{{ url_for('newsletter_signup') }}">Manage your preferences</a>
+  </p>
+</section>
+{% endblock %}

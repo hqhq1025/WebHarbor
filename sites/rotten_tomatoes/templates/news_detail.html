@@ -29,10 +29,44 @@
     </aside>
     {% endif %}
 
+    {% macro render_comment(c, depth) %}
+    <li class="comment-row{% if depth %} comment-reply{% endif %}" id="comment-{{ c.id }}" data-depth="{{ depth }}">
+        <strong>{{ c.user.name }}</strong>
+        <span class="comment-date">{{ c.created_at.strftime('%b %d, %Y') }}</span>
+        <p>{{ c.text }}</p>
+        <div class="comment-actions">
+            {% if current_user.is_authenticated and depth < 3 %}
+            <a href="#reply-form-{{ c.id }}" class="comment-reply-link btn btn-tiny btn-outline">↩ Reply</a>
+            {% endif %}
+            {% if current_user.is_authenticated and c.user_id == current_user.id %}
+            <form action="/news/comment/{{ c.id }}/delete" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-tiny btn-danger">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+        {% if current_user.is_authenticated and depth < 3 %}
+        <form action="/news/{{ article.slug }}/comment" method="POST" class="comment-reply-form" id="reply-form-{{ c.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="parent_id" value="{{ c.id }}">
+            <textarea name="text" rows="2" required placeholder="Reply to {{ c.user.name }}..."></textarea>
+            <button type="submit" class="btn btn-sm btn-primary">Post Reply</button>
+        </form>
+        {% endif %}
+        {% if reply_map.get(c.id) %}
+        <ul class="comment-thread">
+            {% for child in reply_map.get(c.id) %}
+            {{ render_comment(child, depth + 1) }}
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </li>
+    {% endmacro %}
+
     <section class="news-comments">
         <h2>Comments ({{ comments|length }})</h2>
         {% if current_user.is_authenticated %}
-        <form action="/news/{{ article.slug }}/comment" method="POST" class="comment-form">
+        <form action="/news/{{ article.slug }}/comment" method="POST" class="comment-form" id="new-comment-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <textarea name="text" rows="3" required placeholder="Share your thoughts..."></textarea>
             <button type="submit" class="btn btn-primary">Post Comment</button>
@@ -41,18 +75,8 @@
         <p><a href="/login">Sign in</a> to comment.</p>
         {% endif %}
         <ul class="comment-list">
-            {% for c in comments %}
-            <li class="comment-row">
-                <strong>{{ c.user.name }}</strong>
-                <span class="comment-date">{{ c.created_at.strftime('%b %d, %Y') }}</span>
-                <p>{{ c.text }}</p>
-                {% if current_user.is_authenticated and c.user_id == current_user.id %}
-                <form action="/news/comment/{{ c.id }}/delete" method="POST" class="inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-tiny btn-danger">Delete</button>
-                </form>
-                {% endif %}
-            </li>
+            {% for c in top_comments %}
+            {{ render_comment(c, 0) }}
             {% else %}
             <li class="empty">No comments yet.</li>
             {% endfor %}

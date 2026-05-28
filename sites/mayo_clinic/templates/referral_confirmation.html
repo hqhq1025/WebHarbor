@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Referral Submitted — {{ confirmation.code }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('refer_a_patient') }}">Refer a Patient</a><span>&rsaquo;</span> Confirmation
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Referral received</h1>
+  <div class="alert alert-success">
+    Thank you. Your patient referral has been received. Confirmation code:
+    <strong>{{ confirmation.code }}</strong>.
+    You are number <strong>#{{ queue_position }}</strong> in the Mayo Clinic referral queue.
+  </div>
+
+  <p>A Mayo Clinic care coordinator will contact
+    <strong>{{ confirmation.referring_provider }}</strong> at
+    <strong>{{ confirmation.referring_email }}</strong>
+    within one business day to confirm scheduling.</p>
+
+  <h2>Referral summary</h2>
+  <table class="data">
+    <tr><th>Patient</th><td>{{ confirmation.patient_name }} (DOB {{ confirmation.patient_dob or '—' }})</td></tr>
+    <tr><th>Diagnosis</th><td>{{ confirmation.patient_diagnosis }}</td></tr>
+    <tr><th>Requested department</th><td>{{ confirmation.requested_department }}</td></tr>
+    <tr><th>Preferred Mayo location</th><td>{{ confirmation.requested_location or 'Rochester' }}</td></tr>
+    <tr><th>Preferred date</th><td>{{ confirmation.preferred_date or 'Earliest available' }}</td></tr>
+    <tr><th>Urgency</th><td>{{ confirmation.urgency or 'routine' }}</td></tr>
+    <tr><th>Notes</th><td>{{ confirmation.notes or '—' }}</td></tr>
+  </table>
+
+  <h2>What happens next</h2>
+  <ol>
+    <li>Mayo Clinic confirms receipt by email within 24 hours.</li>
+    <li>A care coordinator reaches out to schedule and to request medical records.</li>
+    <li>The patient is contacted directly once a visit time is reserved.</li>
+  </ol>
+
+  <p>
+    <a class="btn-primary" href="{{ url_for('index') }}">Return home</a>
+    <a class="btn-secondary" href="{{ url_for('refer_a_patient') }}" style="margin-left:8px;">Submit another referral</a>
+    <a class="btn-secondary" href="{{ url_for('refer_a_patient_submissions') }}" style="margin-left:8px;">View all submissions</a>
+  </p>
+</section>
+{% endblock %}

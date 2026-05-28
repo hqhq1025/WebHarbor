@@ -162,6 +162,44 @@
         <a href="/m/{{ movie.slug }}/photos" class="tab">Photos</a>
     </nav>
 
+    {% if movie_poll %}
+    <section class="movie-poll-section">
+        <h2>🍅 Audience Poll</h2>
+        <div class="featured-poll-card">
+            <h3>{{ movie_poll.question }}</h3>
+            <p class="meta">Ends {{ movie_poll.ends_on }} · {{ movie_poll_total }} votes</p>
+            {% if current_user.is_authenticated and not movie_poll_voted %}
+            <form action="/polls/{{ movie_poll.slug }}/vote" method="POST" class="poll-form inline-poll-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% for opt in movie_poll.options %}
+                <label class="poll-option">
+                    <input type="radio" name="option_id" value="{{ opt.id }}" required>
+                    <span>{{ opt.text }}</span>
+                </label>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Submit Vote</button>
+            </form>
+            {% else %}
+            <ul class="poll-results">
+                {% set total = movie_poll_total or 1 %}
+                {% for opt in movie_poll.options %}
+                {% set pct = (opt.votes * 100 / total) | round(1) %}
+                <li>
+                    <div class="poll-bar">
+                        <span class="poll-text">{{ opt.text }}</span>
+                        <span class="poll-pct">{{ pct }}% ({{ opt.votes }})</span>
+                        <div class="poll-fill" style="width: {{ pct }}%"></div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if movie_poll_voted %}<p class="hint">✓ You have already voted.</p>{% endif %}
+            {% if not current_user.is_authenticated %}<p><a href="/login">Sign in</a> to vote.</p>{% endif %}
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
 
     <!-- Critic Reviews -->
     {% if critic_reviews %}

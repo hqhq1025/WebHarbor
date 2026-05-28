@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Make a Gift to Mayo Clinic{% endblock %}
+{% block title %}Make a Gift to Mayo Clinic — Step {{ step }}{% endblock %}
 {% block breadcrumbs %}
 <div class="container breadcrumbs">
   <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
@@ -9,41 +9,115 @@
 {% block content %}
 <section class="container">
   <h1>Make a Gift</h1>
-  <p>Every gift, large or small, advances Mayo Clinic's mission. Thank you for your support.</p>
+  <p>Every gift, large or small, advances Mayo Clinic's mission of providing the best care to every patient through integrated clinical practice, education, and research.</p>
 
-  {% if success_code %}
-    <div class="alert alert-success">Thank you for your gift of ${{ '{:,}'.format(donation.amount) }} to {{ donation.fund }}. Confirmation: <strong>{{ success_code }}</strong>. A receipt has been sent to {{ donation.donor_email }}.</div>
-  {% endif %}
+  <div class="sc-progress" style="max-width:520px;">
+    {% for i in range(1,6) %}
+      <div class="{{ 'done' if i <= step else '' }}"></div>
+    {% endfor %}
+  </div>
+  <p style="font-size:13px;color:#666;">Step {{ step }} of 5 &middot;
+    <a href="{{ url_for('donations_list') }}">View recent donations</a>
+  </p>
 
-  <form method="post" class="form-grid">
-    <div class="span-2">
-      <label>Gift amount</label>
-      <input type="number" name="amount" min="1" required placeholder="e.g., 100">
-    </div>
-    <div>
-      <label>Frequency</label>
-      <select name="frequency">
-        <option value="one-time">One-time</option>
-        <option value="monthly">Monthly recurring</option>
-        <option value="quarterly">Quarterly</option>
-        <option value="annual">Annually</option>
-      </select>
-    </div>
-    <div>
-      <label>Designate to</label>
-      <select name="fund">
-        {% for slug, name in funds %}<option value="{{ slug }}">{{ name }}</option>{% endfor %}
-      </select>
-    </div>
-    <div><label>Your name</label><input type="text" name="donor_name" required></div>
-    <div><label>Email (for receipt)</label><input type="email" name="donor_email" required></div>
-    <div class="span-2"><label>In honor / memory of (optional)</label><input type="text" name="dedication" placeholder="e.g., In memory of John Smith"></div>
-    <div class="span-2">
-      <label><input type="checkbox" name="is_anonymous" value="yes"> List my gift as anonymous.</label>
-    </div>
-    <div class="span-2">
-      <button class="btn-primary" type="submit">Complete gift</button>
-    </div>
+  <form method="post" action="{{ url_for('donate') }}" class="form-grid">
+    <input type="hidden" name="step" value="{{ step }}">
+
+    {% if step == 1 %}
+      <h2 class="span-2">Step 1 — Choose a gift amount</h2>
+      <div class="span-2">
+        <label>Quick amount</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px;">
+          {% for p in presets %}
+            <button type="submit" name="amount_preset" value="{{ p }}" class="btn-secondary" style="min-width:80px;">${{ p }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="span-2">
+        <label>Or enter another amount (USD)</label>
+        <input type="number" name="amount" min="1" max="1000000" value="{{ state.get('amount','') }}" placeholder="e.g., 750">
+      </div>
+      <div class="span-2">
+        <label>Frequency</label>
+        <select name="frequency">
+          <option value="one-time"  {{ 'selected' if state.get('frequency','one-time') == 'one-time' else '' }}>One-time gift</option>
+          <option value="monthly"   {{ 'selected' if state.get('frequency') == 'monthly' else '' }}>Monthly recurring</option>
+          <option value="quarterly" {{ 'selected' if state.get('frequency') == 'quarterly' else '' }}>Quarterly</option>
+          <option value="annual"    {{ 'selected' if state.get('frequency') == 'annual' else '' }}>Annually</option>
+        </select>
+      </div>
+      <div class="span-2">
+        <input type="hidden" name="next_step" value="2">
+        <button class="btn-primary" type="submit">Continue to step 2 &rarr;</button>
+      </div>
+
+    {% elif step == 2 %}
+      <h2 class="span-2">Step 2 — Designate your gift</h2>
+      <div class="span-2">
+        <label>Apply my gift to:</label>
+        {% for slug, label in funds %}
+          <label style="display:block;margin:6px 0;">
+            <input type="radio" name="fund" value="{{ slug }}" {{ 'checked' if state.get('fund', 'general') == slug else '' }}>
+            <strong>{{ label }}</strong>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('donate') }}?step=1" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="3">
+        <button class="btn-primary" type="submit">Continue to step 3 &rarr;</button>
+      </div>
+
+    {% elif step == 3 %}
+      <h2 class="span-2">Step 3 — Tribute (optional)</h2>
+      <div class="span-2">
+        <label>Is this gift in honor or memory of someone?</label>
+        <label style="display:block;margin:4px 0;"><input type="radio" name="tribute_type" value="none"   {{ 'checked' if state.get('tribute_type','none') == 'none' else '' }}> No tribute</label>
+        <label style="display:block;margin:4px 0;"><input type="radio" name="tribute_type" value="honor"  {{ 'checked' if state.get('tribute_type') == 'honor' else '' }}> In honor of</label>
+        <label style="display:block;margin:4px 0;"><input type="radio" name="tribute_type" value="memory" {{ 'checked' if state.get('tribute_type') == 'memory' else '' }}> In memory of</label>
+      </div>
+      <div class="span-2">
+        <label>Honoree's name (if applicable)</label>
+        <input type="text" name="dedication" placeholder="e.g., Jane Smith" value="{{ state.get('dedication','') }}">
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('donate') }}?step=2" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="4">
+        <button class="btn-primary" type="submit">Continue to step 4 &rarr;</button>
+      </div>
+
+    {% elif step == 4 %}
+      <h2 class="span-2">Step 4 — Donor &amp; payment information</h2>
+      <div><label>Your name</label><input type="text" name="donor_name" value="{{ state.get('donor_name','') }}" required></div>
+      <div><label>Email (for receipt)</label><input type="email" name="donor_email" value="{{ state.get('donor_email','') }}" required></div>
+      <div><label>Phone</label><input type="tel" name="donor_phone" value="{{ state.get('donor_phone','') }}"></div>
+      <div><label>Billing ZIP / postal code</label><input type="text" name="billing_zip" value="{{ state.get('billing_zip','') }}"></div>
+      <div class="span-2"><label>Card number</label><input type="text" name="card_number" placeholder="•••• •••• •••• 0000" value="{{ state.get('card_number','') }}"><p style="font-size:11px;color:#888;margin:4px 0;">Only the last 4 digits are retained on this mirror.</p></div>
+      <div class="span-2"><label><input type="checkbox" name="is_anonymous" value="yes" {{ 'checked' if state.get('is_anonymous') == 'yes' else '' }}> List my gift as anonymous in donor reports.</label></div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('donate') }}?step=3" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="5">
+        <button class="btn-primary" type="submit">Continue to review &rarr;</button>
+      </div>
+
+    {% elif step == 5 %}
+      <h2 class="span-2">Step 5 — Review &amp; complete</h2>
+      <div class="span-2">
+        <table class="data">
+          <tr><th>Amount</th><td>${{ state.get('amount', '0') }} ({{ state.get('frequency', 'one-time') }})</td></tr>
+          <tr><th>Designated to</th><td>{{ state.get('fund', 'general') }}</td></tr>
+          <tr><th>Tribute</th><td>{{ state.get('tribute_type', 'none') }} {{ state.get('dedication') or '' }}</td></tr>
+          <tr><th>Donor</th><td>{{ state.get('donor_name','') }} &middot; {{ state.get('donor_email','') }}</td></tr>
+          <tr><th>Card</th><td>•••• {% set cn = state.get('card_number','') %}{{ cn[-4:] if cn else '0000' }}</td></tr>
+          <tr><th>Anonymous?</th><td>{{ 'Yes' if state.get('is_anonymous') == 'yes' else 'No' }}</td></tr>
+        </table>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('donate') }}?step=4" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="6">
+        <button class="btn-primary" type="submit">Complete gift</button>
+      </div>
+    {% endif %}
   </form>
 </section>
 {% endblock %}

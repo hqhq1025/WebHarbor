@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Refer a Patient{% endblock %}
+{% block title %}Refer a Patient — Step {{ step }}{% endblock %}
 {% block breadcrumbs %}
 <div class="container breadcrumbs">
   <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Refer a Patient
@@ -8,54 +8,99 @@
 {% block content %}
 <section class="container">
   <h1>Refer a Patient to Mayo Clinic</h1>
-  <p>Physicians can refer patients to Mayo Clinic using this form. A Mayo Clinic care coordinator will contact you within one business day.</p>
+  <p>Physicians can refer patients using this 4-step form. A Mayo Clinic care coordinator will contact you within one business day after submission.</p>
 
-  {% if success_code %}
-    <div class="alert alert-success">Referral submitted. Confirmation code: <strong>{{ success_code }}</strong></div>
-  {% endif %}
+  <div class="sc-progress" style="max-width:520px;">
+    {% for i in range(1,5) %}
+      <div class="{{ 'done' if i <= step else '' }}"></div>
+    {% endfor %}
+  </div>
+  <p style="font-size:13px;color:#666;">Step {{ step }} of 4 &middot;
+    <a href="{{ url_for('refer_a_patient_submissions') }}">View recent submissions</a>
+  </p>
 
-  <form method="post" class="form-grid">
-    <h2 class="span-2" style="margin:18px 0 0;">Referring provider</h2>
-    <div><label>Provider name</label><input type="text" name="referring_provider" required></div>
-    <div><label>NPI number</label><input type="text" name="npi"></div>
-    <div><label>Clinic / institution</label><input type="text" name="referring_clinic" required></div>
-    <div><label>Phone</label><input type="tel" name="referring_phone" required></div>
-    <div class="span-2"><label>Email</label><input type="email" name="referring_email" required></div>
+  <form method="post" action="{{ url_for('refer_a_patient') }}" class="form-grid">
+    <input type="hidden" name="step" value="{{ step }}">
 
-    <h2 class="span-2" style="margin:18px 0 0;">Patient information</h2>
-    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
-    <div><label>Date of birth</label><input type="date" name="patient_dob"></div>
-    <div class="span-2"><label>Diagnosis / reason for referral</label><textarea name="patient_diagnosis" rows="3" required></textarea></div>
+    {% if step == 1 %}
+      <h2 class="span-2">Step 1 — Referring provider</h2>
+      <div><label>Provider name</label><input type="text" name="referring_provider" value="{{ state.get('referring_provider','') }}" required></div>
+      <div><label>NPI number</label><input type="text" name="npi" value="{{ state.get('npi','') }}"></div>
+      <div><label>Clinic / institution</label><input type="text" name="referring_clinic" value="{{ state.get('referring_clinic','') }}" required></div>
+      <div><label>Phone</label><input type="tel" name="referring_phone" value="{{ state.get('referring_phone','') }}" required></div>
+      <div class="span-2"><label>Email</label><input type="email" name="referring_email" value="{{ state.get('referring_email','') }}" required></div>
+      <div class="span-2">
+        <input type="hidden" name="next_step" value="2">
+        <button class="btn-primary" type="submit">Continue to step 2 &rarr;</button>
+      </div>
 
-    <h2 class="span-2" style="margin:18px 0 0;">Requested services</h2>
-    <div>
-      <label>Department</label>
-      <select name="requested_department" required>
-        <option value="">Choose a department...</option>
-        {% for d in departments %}<option value="{{ d.slug }}">{{ d.name }}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Preferred location</label>
-      <select name="requested_location">
-        <option value="Rochester">Rochester, MN</option>
-        <option value="Jacksonville">Jacksonville, FL</option>
-        <option value="Phoenix">Phoenix, AZ</option>
-      </select>
-    </div>
-    <div>
-      <label>Urgency</label>
-      <select name="urgency">
-        <option value="routine">Routine (within 2-4 weeks)</option>
-        <option value="urgent">Urgent (within 1 week)</option>
-        <option value="emergent">Emergent (immediate)</option>
-      </select>
-    </div>
-    <div class="span-2"><label>Additional clinical notes</label><textarea name="notes" rows="4"></textarea></div>
+    {% elif step == 2 %}
+      <h2 class="span-2">Step 2 — Patient information</h2>
+      <div><label>Patient name</label><input type="text" name="patient_name" value="{{ state.get('patient_name','') }}" required></div>
+      <div><label>Date of birth</label><input type="date" name="patient_dob" value="{{ state.get('patient_dob','') }}"></div>
+      <div class="span-2"><label>Diagnosis / reason for referral</label><textarea name="patient_diagnosis" rows="3" required>{{ state.get('patient_diagnosis','') }}</textarea></div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('refer_a_patient') }}?step=1" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="3">
+        <button class="btn-primary" type="submit">Continue to step 3 &rarr;</button>
+      </div>
 
-    <div class="span-2">
-      <button class="btn-primary" type="submit">Submit referral</button>
-    </div>
+    {% elif step == 3 %}
+      <h2 class="span-2">Step 3 — Requested services</h2>
+      <div>
+        <label>Department</label>
+        <select name="requested_department" required>
+          <option value="">Choose a department...</option>
+          {% for d in departments %}<option value="{{ d.slug }}" {{ 'selected' if state.get('requested_department') == d.slug else '' }}>{{ d.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Preferred Mayo location</label>
+        <select name="requested_location">
+          {% for L in locations %}<option value="{{ L }}" {{ 'selected' if state.get('requested_location') == L else '' }}>{{ L }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Preferred date</label>
+        <input type="date" name="preferred_date" value="{{ state.get('preferred_date','') }}">
+      </div>
+      <div>
+        <label>Urgency</label>
+        <select name="urgency">
+          <option value="routine" {{ 'selected' if state.get('urgency','routine') == 'routine' else '' }}>Routine (within 2-4 weeks)</option>
+          <option value="urgent" {{ 'selected' if state.get('urgency') == 'urgent' else '' }}>Urgent (within 1 week)</option>
+          <option value="emergent" {{ 'selected' if state.get('urgency') == 'emergent' else '' }}>Emergent (immediate)</option>
+        </select>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('refer_a_patient') }}?step=2" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="4">
+        <button class="btn-primary" type="submit">Continue to step 4 &rarr;</button>
+      </div>
+
+    {% elif step == 4 %}
+      <h2 class="span-2">Step 4 — Review &amp; submit</h2>
+      <div class="span-2"><label>Additional clinical notes</label><textarea name="notes" rows="3">{{ state.get('notes','') }}</textarea></div>
+      <div class="span-2">
+        <h3>Referral summary</h3>
+        <table class="data">
+          <tr><th>Referring provider</th><td>{{ state.get('referring_provider','') }} ({{ state.get('referring_clinic','') }})</td></tr>
+          <tr><th>NPI</th><td>{{ state.get('npi','') or '—' }}</td></tr>
+          <tr><th>Provider contact</th><td>{{ state.get('referring_phone','') }} &middot; {{ state.get('referring_email','') }}</td></tr>
+          <tr><th>Patient</th><td>{{ state.get('patient_name','') }} (DOB {{ state.get('patient_dob','') or '—' }})</td></tr>
+          <tr><th>Diagnosis</th><td>{{ state.get('patient_diagnosis','') }}</td></tr>
+          <tr><th>Department</th><td>{{ state.get('requested_department','') }}</td></tr>
+          <tr><th>Location</th><td>{{ state.get('requested_location','Rochester') }}</td></tr>
+          <tr><th>Preferred date</th><td>{{ state.get('preferred_date','') or '—' }}</td></tr>
+          <tr><th>Urgency</th><td>{{ state.get('urgency','routine') }}</td></tr>
+        </table>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('refer_a_patient') }}?step=3" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="5">
+        <button class="btn-primary" type="submit">Submit referral</button>
+      </div>
+    {% endif %}
   </form>
 </section>
 {% endblock %}

@@ -10,18 +10,53 @@
             <a href="/myaccount/watched">Watched</a>
             <a href="/myaccount/follows" class="active">Critics Followed</a>
             <a href="/myaccount/lists">My Lists</a>
+            <a href="/myaccount/podcasts">Podcasts</a>
+            <a href="/myaccount/sweepstakes">Sweepstakes</a>
         </nav>
     </header>
-    <div class="critic-grid">
-        {% for c in critics %}
-        <a href="/critics/{{ c.slug }}" class="critic-card">
-            <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
-            <div class="critic-name">{{ c.name }}</div>
-            <div class="critic-pub">{{ c.publication }}</div>
-        </a>
+
+    <section class="followed-critics-section">
+        <h2>Your Critics ({{ critics|length }})</h2>
+        <div class="critic-grid">
+            {% for c in critics %}
+            <a href="/critics/{{ c.slug }}" class="critic-card">
+                <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
+                <div class="critic-name">{{ c.name }}</div>
+                <div class="critic-pub">{{ c.publication }}</div>
+            </a>
+            {% else %}
+            <p class="empty">You aren't following any critics yet. <a href="/critics/">Browse critics →</a></p>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if critics %}
+    <section class="followed-reviews-section">
+        <h2>Recent Reviews from Critics You Follow</h2>
+        {% if followed_reviews %}
+        <div class="reviews-list">
+            {% for critic, r in followed_reviews %}
+            <article class="review-card {{ 'fresh' if r.fresh else 'rotten' }}">
+                <div class="review-icon">{% if r.fresh %}🍅{% else %}🟢{% endif %}</div>
+                <div class="review-content">
+                    <p class="review-text">{{ r.text }}</p>
+                    <div class="review-meta">
+                        <a href="/critics/{{ critic.slug }}" class="reviewer-name">{{ critic.name }}</a>
+                        <span class="reviewer-pub">{{ critic.publication }}</span>
+                        {% if r.movie %}
+                        <span class="review-sep">·</span>
+                        <a href="/m/{{ r.movie.slug }}" class="review-movie-link">{{ r.movie.title }} ({{ r.movie.year }})</a>
+                        {% endif %}
+                        {% if r.score %}<span class="review-score">{{ r.score }}</span>{% endif %}
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
         {% else %}
-        <p class="empty">You aren't following any critics yet.</p>
-        {% endfor %}
-    </div>
+        <p class="empty">No recent reviews from the critics you follow.</p>
+        {% endif %}
+    </section>
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}International Patient Services{% endblock %}
+{% block title %}International Patient Services — Step {{ step }}{% endblock %}
 {% block breadcrumbs %}
 <div class="container breadcrumbs">
   <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> International Patient Services
@@ -8,41 +8,89 @@
 {% block content %}
 <section class="container">
   <h1>International Patient Services</h1>
-  <p>Mayo Clinic welcomes patients from more than 130 countries each year. Our international offices provide multilingual coordinators, travel and accommodation assistance, and integrated billing.</p>
+  <p>Mayo Clinic welcomes patients from more than 130 countries each year. Our International Patient Offices provide multilingual coordinators, travel and lodging assistance, visa-support letters, and integrated billing in your home currency.</p>
 
-  {% if success_code %}
-    <div class="alert alert-success">Your international inquiry has been received. Confirmation: <strong>{{ success_code }}</strong>.</div>
-  {% endif %}
+  <div class="sc-progress" style="max-width:520px;">
+    {% for i in range(1,5) %}
+      <div class="{{ 'done' if i <= step else '' }}"></div>
+    {% endfor %}
+  </div>
+  <p style="font-size:13px;color:#666;">Step {{ step }} of 4 &middot;
+    <a href="{{ url_for('international_services_inquiries') }}">View recent inquiries</a>
+  </p>
 
-  <form method="post" class="form-grid">
-    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
-    <div><label>Country</label><input type="text" name="country" required></div>
-    <div><label>Email</label><input type="email" name="patient_email" required></div>
-    <div><label>Phone (with country code)</label><input type="tel" name="patient_phone"></div>
-    <div><label>Preferred language</label>
-      <select name="language">
-        <option>English</option><option>Spanish</option><option>French</option>
-        <option>Portuguese</option><option>Arabic</option><option>Mandarin</option>
-        <option>Russian</option><option>Italian</option><option>German</option><option>Japanese</option>
-        <option>Korean</option><option>Vietnamese</option><option>Hindi</option><option>Tagalog</option>
-      </select>
-    </div>
-    <div><label>Estimated travel dates</label><input type="text" name="travel_dates" placeholder="e.g., June 15 - July 5"></div>
-    <div class="span-2"><label>Diagnosis or reason for visit</label><textarea name="diagnosis" rows="3" required></textarea></div>
-    <div class="span-2">
-      <label><input type="checkbox" name="accommodation" value="yes"> I'd like assistance with lodging.</label>
-    </div>
-    <div class="span-2">
-      <label><input type="checkbox" name="translation" value="yes"> I need an interpreter for appointments.</label>
-    </div>
-    <div class="span-2"><button class="btn-primary" type="submit">Submit international inquiry</button></div>
+  <form method="post" action="{{ url_for('international_services') }}" class="form-grid">
+    <input type="hidden" name="step" value="{{ step }}">
+
+    {% if step == 1 %}
+      <h2 class="span-2">Step 1 — Country &amp; preferred language</h2>
+      <div><label>Country of residence</label><input type="text" name="country" value="{{ state.get('country','') }}" required></div>
+      <div>
+        <label>Preferred language</label>
+        <select name="language">
+          {% for L in languages %}<option {{ 'selected' if state.get('language') == L else '' }}>{{ L }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="span-2">
+        <input type="hidden" name="next_step" value="2">
+        <button class="btn-primary" type="submit">Continue to step 2 &rarr;</button>
+      </div>
+
+    {% elif step == 2 %}
+      <h2 class="span-2">Step 2 — Reason for visit</h2>
+      <div class="span-2"><label>Diagnosis or reason for visit</label><textarea name="diagnosis" rows="4" required>{{ state.get('diagnosis','') }}</textarea></div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('international_services') }}?step=1" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="3">
+        <button class="btn-primary" type="submit">Continue to step 3 &rarr;</button>
+      </div>
+
+    {% elif step == 3 %}
+      <h2 class="span-2">Step 3 — Travel &amp; services</h2>
+      <div class="span-2"><label>Estimated travel dates</label><input type="text" name="travel_dates" placeholder="e.g., June 15 – July 5" value="{{ state.get('travel_dates','') }}"></div>
+      <div class="span-2"><label><input type="checkbox" name="accommodation" value="yes" {{ 'checked' if state.get('accommodation') == 'yes' else '' }}> I would like assistance with lodging.</label></div>
+      <div class="span-2"><label><input type="checkbox" name="translation" value="yes" {{ 'checked' if state.get('translation') == 'yes' else '' }}> I need an interpreter for appointments.</label></div>
+      <div class="span-2"><label><input type="checkbox" name="visa_support" value="yes" {{ 'checked' if state.get('visa_support') == 'yes' else '' }}> Please issue a visa-support letter for U.S. medical-travel.</label></div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('international_services') }}?step=2" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="4">
+        <button class="btn-primary" type="submit">Continue to step 4 &rarr;</button>
+      </div>
+
+    {% elif step == 4 %}
+      <h2 class="span-2">Step 4 — Contact &amp; review</h2>
+      <div><label>Patient name</label><input type="text" name="patient_name" value="{{ state.get('patient_name','') }}" required></div>
+      <div><label>Email</label><input type="email" name="patient_email" value="{{ state.get('patient_email','') }}" required></div>
+      <div class="span-2"><label>Phone (with country code)</label><input type="tel" name="patient_phone" value="{{ state.get('patient_phone','') }}"></div>
+      <div class="span-2">
+        <h3>Review</h3>
+        <table class="data">
+          <tr><th>Country</th><td>{{ state.get('country','') }}</td></tr>
+          <tr><th>Language</th><td>{{ state.get('language','English') }}</td></tr>
+          <tr><th>Diagnosis</th><td>{{ state.get('diagnosis','') }}</td></tr>
+          <tr><th>Travel dates</th><td>{{ state.get('travel_dates','') or '—' }}</td></tr>
+          <tr><th>Services requested</th><td>
+            {% set sv = [] %}
+            {% if state.get('accommodation') == 'yes' %}{% set _ = sv.append('Lodging') %}{% endif %}
+            {% if state.get('translation') == 'yes' %}{% set _ = sv.append('Interpreter') %}{% endif %}
+            {% if state.get('visa_support') == 'yes' %}{% set _ = sv.append('Visa-support letter') %}{% endif %}
+            {{ sv|join(', ') or 'None' }}
+          </td></tr>
+        </table>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('international_services') }}?step=3" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="5">
+        <button class="btn-primary" type="submit">Submit international inquiry</button>
+      </div>
+    {% endif %}
   </form>
 
-  <h2>Mayo Clinic international offices</h2>
+  <h2 style="margin-top:32px;">Mayo Clinic International Patient Offices</h2>
   <ul>
-    <li><strong>Rochester:</strong> +1-507-538-3270</li>
-    <li><strong>Jacksonville:</strong> +1-904-953-7000</li>
-    <li><strong>Phoenix:</strong> +1-480-301-7101</li>
+    {% for o in offices %}
+      <li><strong>{{ o.campus }}:</strong> {{ o.phone }} &middot; <a href="mailto:{{ o.email }}">{{ o.email }}</a></li>
+    {% endfor %}
   </ul>
 </section>
 {% endblock %}

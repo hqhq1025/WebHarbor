@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Second Opinion{% endblock %}
+{% block title %}Request a Second Opinion — Step {{ step }}{% endblock %}
 {% block breadcrumbs %}
 <div class="container breadcrumbs">
   <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Second Opinion
@@ -8,33 +8,91 @@
 {% block content %}
 <section class="container">
   <h1>Request a Second Opinion</h1>
-  <p>Mayo Clinic provides second opinions for complex diagnoses across all specialties. Your medical team will review your records and offer a comprehensive opinion.</p>
+  <p>Mayo Clinic provides expert second opinions across all specialties. This 4-step form gathers your diagnosis, the records you can share, and the questions you would like our team to review.</p>
 
-  {% if success_code %}
-    <div class="alert alert-success">Your second opinion request has been received. Confirmation: <strong>{{ success_code }}</strong>. A Mayo Clinic coordinator will reach out within 48 hours.</div>
-  {% endif %}
+  <div class="sc-progress" style="max-width:520px;">
+    {% for i in range(1,5) %}
+      <div class="{{ 'done' if i <= step else '' }}"></div>
+    {% endfor %}
+  </div>
+  <p style="font-size:13px;color:#666;">Step {{ step }} of 4 &middot;
+    <a href="{{ url_for('second_opinion_requests') }}">View recent requests</a>
+  </p>
 
-  <form method="post" class="form-grid">
-    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
-    <div><label>Email</label><input type="email" name="patient_email" required></div>
-    <div><label>Phone</label><input type="tel" name="patient_phone"></div>
-    <div>
-      <label>Department</label>
-      <select name="department_slug">
-        <option value="">Auto-route based on diagnosis</option>
-        {% for d in departments %}<option value="{{ d.slug }}">{{ d.name }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="span-2"><label>Diagnosis</label><input type="text" name="diagnosis" required></div>
-    <div class="span-2"><label>Current treatment</label><textarea name="current_treatment" rows="3"></textarea></div>
-    <div class="span-2"><label>What would you like our team to review?</label><textarea name="desired_review" rows="4" required placeholder="Outline the specific questions you'd like answered."></textarea></div>
-    <div class="span-2">
-      <label>
-        <input type="checkbox" name="records_attached" value="yes">
-        I have my medical records ready to submit (you will be contacted to upload them securely).
-      </label>
-    </div>
-    <div class="span-2"><button class="btn-primary" type="submit">Submit second opinion request</button></div>
+  <form method="post" action="{{ url_for('second_opinion') }}" class="form-grid">
+    <input type="hidden" name="step" value="{{ step }}">
+
+    {% if step == 1 %}
+      <h2 class="span-2">Step 1 — About your diagnosis</h2>
+      <div class="span-2"><label>Diagnosis</label><input type="text" name="diagnosis" value="{{ state.get('diagnosis','') }}" required></div>
+      <div><label>Year diagnosed</label><input type="number" name="diagnosis_year" min="1950" max="2026" value="{{ state.get('diagnosis_year','') }}"></div>
+      <div></div>
+      <div class="span-2"><label>Current treatment</label><textarea name="current_treatment" rows="3" placeholder="Medications, therapies, surgeries to date">{{ state.get('current_treatment','') }}</textarea></div>
+      <div class="span-2">
+        <input type="hidden" name="next_step" value="2">
+        <button class="btn-primary" type="submit">Continue to step 2 &rarr;</button>
+      </div>
+
+    {% elif step == 2 %}
+      <h2 class="span-2">Step 2 — Medical records you can share</h2>
+      <div class="span-2">
+        <label>
+          <input type="checkbox" name="records_attached" value="yes" {{ 'checked' if state.get('records_attached') == 'yes' else '' }}>
+          I have medical records ready to submit (Mayo Clinic will contact me to upload them securely).
+        </label>
+      </div>
+      <div><label>Approximate number of records</label><input type="number" name="records_count" min="0" max="999" value="{{ state.get('records_count','0') }}"></div>
+      <div></div>
+      <div class="span-2">
+        <label>What questions would you like our team to answer?</label>
+        <textarea name="desired_review" rows="4" required placeholder="e.g., Is the current treatment plan optimal? Are there additional tests recommended?">{{ state.get('desired_review','') }}</textarea>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('second_opinion') }}?step=1" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="3">
+        <button class="btn-primary" type="submit">Continue to step 3 &rarr;</button>
+      </div>
+
+    {% elif step == 3 %}
+      <h2 class="span-2">Step 3 — Specialty</h2>
+      <div class="span-2">
+        <label>Which Mayo Clinic specialty should review your case?</label>
+        <select name="department_slug">
+          <option value="">Auto-route based on diagnosis</option>
+          {% for d in departments %}
+            <option value="{{ d.slug }}" {{ 'selected' if state.get('department_slug') == d.slug else '' }}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+        <p style="font-size:13px;color:#666;margin-top:8px;">If you are not sure, leave this set to "Auto-route". A nurse triage coordinator will assign your case to the most appropriate team.</p>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('second_opinion') }}?step=2" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="4">
+        <button class="btn-primary" type="submit">Continue to step 4 &rarr;</button>
+      </div>
+
+    {% elif step == 4 %}
+      <h2 class="span-2">Step 4 — Contact &amp; review</h2>
+      <div><label>Your name</label><input type="text" name="patient_name" value="{{ state.get('patient_name','') }}" required></div>
+      <div><label>Email</label><input type="email" name="patient_email" value="{{ state.get('patient_email','') }}" required></div>
+      <div><label>Phone</label><input type="tel" name="patient_phone" value="{{ state.get('patient_phone','') }}"></div>
+      <div></div>
+      <div class="span-2">
+        <h3>Review your request</h3>
+        <table class="data">
+          <tr><th>Diagnosis</th><td>{{ state.get('diagnosis','') }} {% if state.get('diagnosis_year') %}({{ state.get('diagnosis_year') }}){% endif %}</td></tr>
+          <tr><th>Current treatment</th><td>{{ state.get('current_treatment','') or '—' }}</td></tr>
+          <tr><th>Records on hand</th><td>{{ 'Yes' if state.get('records_attached') == 'yes' else 'No' }} ({{ state.get('records_count','0') }} items)</td></tr>
+          <tr><th>Questions for the team</th><td>{{ state.get('desired_review','') }}</td></tr>
+          <tr><th>Specialty</th><td>{{ state.get('department_slug') or 'Auto-route' }}</td></tr>
+        </table>
+      </div>
+      <div class="span-2">
+        <button class="btn-secondary" type="submit" formaction="{{ url_for('second_opinion') }}?step=3" formnovalidate>&larr; Back</button>
+        <input type="hidden" name="next_step" value="5">
+        <button class="btn-primary" type="submit">Submit second-opinion request</button>
+      </div>
+    {% endif %}
   </form>
 </section>
 {% endblock %}

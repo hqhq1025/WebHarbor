@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}International Inquiry Submitted — {{ confirmation.code }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('international_services') }}">International Patient Services</a><span>&rsaquo;</span> Confirmation
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>International inquiry received</h1>
+  <div class="alert alert-success">
+    Thank you. Your inquiry has been received. Confirmation code: <strong>{{ confirmation.code }}</strong>.
+    A multilingual coordinator will contact you within 48 hours.
+  </div>
+
+  <h2>Inquiry summary</h2>
+  <table class="data">
+    <tr><th>Patient</th><td>{{ confirmation.patient_name }}</td></tr>
+    <tr><th>Country</th><td>{{ confirmation.country }}</td></tr>
+    <tr><th>Preferred language</th><td>{{ confirmation.language }}</td></tr>
+    <tr><th>Diagnosis / reason</th><td>{{ confirmation.diagnosis }}</td></tr>
+    <tr><th>Travel dates</th><td>{{ confirmation.travel_dates or 'To be confirmed' }}</td></tr>
+    <tr><th>Lodging assistance</th><td>{{ 'Yes' if confirmation.accommodation == 'yes' else 'No' }}</td></tr>
+    <tr><th>Interpreter</th><td>{{ 'Yes' if confirmation.translation == 'yes' else 'No' }}</td></tr>
+    <tr><th>Visa-support letter</th><td>{{ 'Yes' if confirmation.visa_support == 'yes' else 'No' }}</td></tr>
+  </table>
+
+  <h2>Mayo Clinic International Patient Offices</h2>
+  <ul>
+    {% for o in offices %}
+      <li><strong>{{ o.campus }}:</strong> {{ o.phone }} &middot; <a href="mailto:{{ o.email }}">{{ o.email }}</a></li>
+    {% endfor %}
+  </ul>
+
+  <p>
+    <a class="btn-primary" href="{{ url_for('index') }}">Return home</a>
+    <a class="btn-secondary" href="{{ url_for('international_services') }}" style="margin-left:8px;">Submit another inquiry</a>
+    <a class="btn-secondary" href="{{ url_for('international_services_inquiries') }}" style="margin-left:8px;">View all inquiries</a>
+  </p>
+</section>
+{% endblock %}

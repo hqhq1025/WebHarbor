@@ -6,16 +6,34 @@
     <div class="filter-bar">
         <a href="/critics/" class="filter {{ 'active' if not top_only }}">All Critics</a>
         <a href="/critics/?top=1" class="filter {{ 'active' if top_only }}">Top Critics Only</a>
+        {% if current_user.is_authenticated %}
+        <a href="/myaccount/follows" class="filter">My Follows</a>
+        {% endif %}
     </div>
     <p class="result-count">{{ critics|length }} critics.</p>
     <div class="critic-grid">
         {% for c in critics %}
-        <a href="/critics/{{ c.slug }}" class="critic-card">
-            <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
-            <div class="critic-name">{{ c.name }}</div>
-            <div class="critic-pub">{{ c.publication }}</div>
-            {% if c.top_critic %}<span class="badge badge-top">Top Critic</span>{% endif %}
-        </a>
+        <div class="critic-card-wrap">
+            <a href="/critics/{{ c.slug }}" class="critic-card">
+                <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
+                <div class="critic-name">{{ c.name }}</div>
+                <div class="critic-pub">{{ c.publication }}</div>
+                {% if c.top_critic %}<span class="badge badge-top">Top Critic</span>{% endif %}
+            </a>
+            {% if current_user.is_authenticated %}
+            {% if c.id in followed_ids %}
+            <form action="/critics/{{ c.slug }}/unfollow" method="POST" class="critic-follow-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-sm">✓ Following</button>
+            </form>
+            {% else %}
+            <form action="/critics/{{ c.slug }}/follow" method="POST" class="critic-follow-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary btn-sm">+ Follow</button>
+            </form>
+            {% endif %}
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
 </div>

@@ -265,6 +265,9 @@ class NewsletterSignup(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(200))
     topic = db.Column(db.String(80), default="general")
+    name = db.Column(db.String(200), default="")
+    frequency = db.Column(db.String(20), default="weekly")
+    confirmation_code = db.Column(db.String(40), default="")
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
@@ -302,6 +305,7 @@ class ReferralRequest(db.Model):
     urgency = db.Column(db.String(20), default="routine")
     status = db.Column(db.String(40), default="received")
     confirmation_code = db.Column(db.String(40))
+    preferred_date = db.Column(db.String(40), default="")
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
@@ -315,6 +319,8 @@ class SecondOpinion(db.Model):
     desired_review = db.Column(db.Text)
     department_slug = db.Column(db.String(80))
     records_attached = db.Column(db.Boolean, default=False)
+    diagnosis_year = db.Column(db.Integer, default=None)
+    records_count = db.Column(db.Integer, default=0)
     confirmation_code = db.Column(db.String(40))
     status = db.Column(db.String(40), default="received")
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
@@ -331,6 +337,7 @@ class InternationalInquiry(db.Model):
     travel_dates = db.Column(db.String(120))
     accommodation = db.Column(db.Boolean, default=False)
     translation = db.Column(db.Boolean, default=False)
+    visa_support = db.Column(db.Boolean, default=False)
     confirmation_code = db.Column(db.String(40))
     status = db.Column(db.String(40), default="received")
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
@@ -345,6 +352,10 @@ class Donation(db.Model):
     fund = db.Column(db.String(80), default="general")
     dedication = db.Column(db.String(200), default="")
     is_anonymous = db.Column(db.Boolean, default=False)
+    tribute_type = db.Column(db.String(20), default="none")  # none / honor / memory
+    card_last4 = db.Column(db.String(4), default="")
+    donor_phone = db.Column(db.String(40), default="")
+    billing_zip = db.Column(db.String(20), default="")
     confirmation_code = db.Column(db.String(40))
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
@@ -1014,8 +1025,25 @@ def unsave_item():
     return redirect(request.referrer or url_for("patient_portal"))
 
 
+NEWSLETTER_TOPICS = [
+    ("wellness",        "Wellness & Healthy Living",       "Weekly tips on healthy habits, stress, and sleep."),
+    ("heart",           "Heart Health",                    "Cardiology research, blood-pressure tips, and recipes."),
+    ("cancer",          "Cancer & Oncology",               "Cancer prevention, treatment advances, and survivor stories."),
+    ("diabetes",        "Diabetes & Endocrinology",        "Blood-sugar management, nutrition, and new therapies."),
+    ("mental_health",   "Mental Health",                   "Anxiety, depression, mindfulness, and coping skills."),
+    ("childrens",       "Children's Health",               "Pediatric care, parenting, growth, and vaccines."),
+    ("healthy_aging",   "Healthy Aging",                   "Memory, mobility, and chronic-condition guides for 50+."),
+    ("nutrition",       "Nutrition & Recipes",             "Mayo Clinic Diet recipes and evidence-based nutrition."),
+    ("fitness",         "Fitness & Exercise",              "Workouts, stretching, recovery, and motivation."),
+    ("womens_health",   "Women's Health",                  "Hormones, fertility, menopause, and screening guidance."),
+    ("mens_health",     "Men's Health",                    "Prostate, heart, fitness, and screening reminders."),
+    ("research",        "Research & Trials",               "Latest Mayo Clinic studies and clinical-trial openings."),
+]
+
+
 @app.route("/newsletter", methods=["POST"])
 def newsletter():
+    """Quick subscribe (footer form): single email + optional topic."""
     email = request.form.get("email", "").strip()
     topic = request.form.get("topic", "general")
     if email:
@@ -1023,6 +1051,61 @@ def newsletter():
         db.session.commit()
         flash("You're subscribed. Watch for our weekly Mayo Clinic newsletter.", "success")
     return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/newsletter-signup", methods=["GET", "POST"])
+def newsletter_signup():
+    """Full newsletter preferences page: pick name, email, frequency, and any
+    number of topic checkboxes. One DB row written per selected topic so the
+    table fills naturally from realistic usage."""
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip()
+        name = (request.form.get("name") or "").strip()
+        frequency = request.form.get("frequency", "weekly")
+        selected = request.form.getlist("topics")
+        if not selected:
+            # Use a sentinel slug so users who hit Subscribe with zero topics
+            # don't lose the row entirely.
+            selected = ["wellness"]
+        rows_made = []
+        code_seed = (email + ",".join(selected)).encode()
+        base_code = "NL-" + hashlib.md5(code_seed).hexdigest()[:8].upper()
+        if email:
+            for slug in selected:
+                ns = NewsletterSignup(
+                    email=email,
+                    topic=slug,
+                    name=name,
+                    frequency=frequency,
+                    confirmation_code=base_code,
+                )
+                db.session.add(ns)
+                rows_made.append(slug)
+            db.session.commit()
+        topic_labels = dict((t[0], t[1]) for t in NEWSLETTER_TOPICS)
+        confirmation = {
+            "email": email,
+            "name": name,
+            "frequency": frequency,
+            "topics": [(s, topic_labels.get(s, s)) for s in rows_made],
+            "code": base_code,
+        }
+        return render_template("newsletter_confirmation.html",
+                               confirmation=confirmation)
+    return render_template("newsletter_signup.html",
+                           topics=NEWSLETTER_TOPICS)
+
+
+@app.route("/newsletter-signup/subscribers")
+def newsletter_subscribers():
+    rows = NewsletterSignup.query.order_by(NewsletterSignup.id.desc()).limit(100).all()
+    topic_counts = (
+        db.session.query(NewsletterSignup.topic, db.func.count(NewsletterSignup.id))
+        .group_by(NewsletterSignup.topic).order_by(db.desc(db.func.count(NewsletterSignup.id))).all()
+    )
+    return render_template("newsletter_admin.html",
+                           rows=rows, topic_counts=topic_counts,
+                           topic_labels=dict((t[0], t[1]) for t in NEWSLETTER_TOPICS))
 
 
 @app.route("/feedback", methods=["POST"])
@@ -1257,83 +1340,198 @@ def newsroom():
 # --- Refer-a-Patient (physician portal) ---
 @app.route("/refer-a-patient", methods=["GET", "POST"])
 def refer_a_patient():
+    """Refer-a-patient: 4-step wizard.
+
+    Step 1: Referring provider (name, clinic, NPI, phone, email)
+    Step 2: Patient info  (name, DOB, diagnosis)
+    Step 3: Requested services (department, location, preferred date, urgency)
+    Step 4: Review + clinical notes -> submit
+    """
+    step = int(request.values.get("step", 1))
+    sd = session.setdefault("referral_request", {})
     depts = Department.query.order_by(Department.name).all()
+    locations = ["Rochester", "Jacksonville", "Phoenix"]
+
     if request.method == "POST":
-        code = "REF-" + hashlib.md5(
-            (request.form.get("patient_name", "") + request.form.get("referring_email", "")).encode()
-        ).hexdigest()[:8].upper()
-        rr = ReferralRequest(
-            referring_provider=request.form.get("referring_provider", ""),
-            referring_clinic=request.form.get("referring_clinic", ""),
-            referring_phone=request.form.get("referring_phone", ""),
-            referring_email=request.form.get("referring_email", ""),
-            npi=request.form.get("npi", ""),
-            patient_name=request.form.get("patient_name", ""),
-            patient_dob=request.form.get("patient_dob", ""),
-            patient_diagnosis=request.form.get("patient_diagnosis", ""),
-            requested_department=request.form.get("requested_department", ""),
-            requested_location=request.form.get("requested_location", "Rochester"),
-            notes=request.form.get("notes", ""),
-            urgency=request.form.get("urgency", "routine"),
-            confirmation_code=code,
-        )
-        db.session.add(rr)
-        db.session.commit()
-        flash(f"Referral submitted. Confirmation: {code}. A Mayo Clinic coordinator will contact you within one business day.", "success")
-        return render_template("refer_a_patient.html", departments=depts, success_code=code)
-    return render_template("refer_a_patient.html", departments=depts)
+        for k in ("referring_provider", "referring_clinic", "npi",
+                  "referring_phone", "referring_email",
+                  "patient_name", "patient_dob", "patient_diagnosis",
+                  "requested_department", "requested_location",
+                  "preferred_date", "urgency", "notes"):
+            v = request.form.get(k)
+            if v is not None:
+                sd[k] = v
+        session.modified = True
+        next_step = int(request.form.get("next_step", step + 1))
+        if next_step >= 5:
+            code = "REF-" + hashlib.md5(
+                (sd.get("patient_name", "") + sd.get("referring_email", "")).encode()
+            ).hexdigest()[:8].upper()
+            rr = ReferralRequest(
+                referring_provider=sd.get("referring_provider", ""),
+                referring_clinic=sd.get("referring_clinic", ""),
+                referring_phone=sd.get("referring_phone", ""),
+                referring_email=sd.get("referring_email", ""),
+                npi=sd.get("npi", ""),
+                patient_name=sd.get("patient_name", ""),
+                patient_dob=sd.get("patient_dob", ""),
+                patient_diagnosis=sd.get("patient_diagnosis", ""),
+                requested_department=sd.get("requested_department", ""),
+                requested_location=sd.get("requested_location", "Rochester"),
+                preferred_date=sd.get("preferred_date", ""),
+                notes=sd.get("notes", ""),
+                urgency=sd.get("urgency", "routine"),
+                confirmation_code=code,
+            )
+            db.session.add(rr)
+            db.session.commit()
+            confirmation = {"code": code, **sd}
+            session.pop("referral_request", None)
+            queue_position = ReferralRequest.query.count()
+            return render_template("referral_confirmation.html",
+                                   confirmation=confirmation,
+                                   queue_position=queue_position)
+        return redirect(url_for("refer_a_patient", step=next_step))
+
+    return render_template("refer_a_patient.html",
+                           step=step, state=sd,
+                           departments=depts, locations=locations)
+
+
+@app.route("/refer-a-patient/submissions")
+def refer_a_patient_submissions():
+    rows = ReferralRequest.query.order_by(ReferralRequest.id.desc()).limit(50).all()
+    return render_template("referral_admin.html", rows=rows)
 
 
 # --- Second Opinion ---
 @app.route("/second-opinion", methods=["GET", "POST"])
 def second_opinion():
+    """Second-opinion: 4-step wizard.
+
+    Step 1: Diagnosis details (diagnosis text, diagnosis year, current treatment)
+    Step 2: Records (records_attached, records_count, desired_review)
+    Step 3: Specialty department choice
+    Step 4: Contact + review + submit
+    """
+    step = int(request.values.get("step", 1))
+    sd = session.setdefault("second_opinion", {})
     depts = Department.query.order_by(Department.name).all()
+
     if request.method == "POST":
-        code = "SO-" + hashlib.md5(
-            (request.form.get("patient_email", "") + request.form.get("diagnosis", "")).encode()
-        ).hexdigest()[:8].upper()
-        so = SecondOpinion(
-            patient_name=request.form.get("patient_name", ""),
-            patient_email=request.form.get("patient_email", ""),
-            patient_phone=request.form.get("patient_phone", ""),
-            diagnosis=request.form.get("diagnosis", ""),
-            current_treatment=request.form.get("current_treatment", ""),
-            desired_review=request.form.get("desired_review", ""),
-            department_slug=request.form.get("department_slug", ""),
-            records_attached=(request.form.get("records_attached") == "yes"),
-            confirmation_code=code,
-        )
-        db.session.add(so)
-        db.session.commit()
-        flash(f"Second opinion request received. Confirmation: {code}.", "success")
-        return render_template("second_opinion.html", departments=depts, success_code=code)
-    return render_template("second_opinion.html", departments=depts)
+        for k in ("diagnosis", "diagnosis_year", "current_treatment",
+                  "records_attached", "records_count", "desired_review",
+                  "department_slug",
+                  "patient_name", "patient_email", "patient_phone"):
+            v = request.form.get(k)
+            if v is not None:
+                sd[k] = v
+        session.modified = True
+        next_step = int(request.form.get("next_step", step + 1))
+        if next_step >= 5:
+            code = "SO-" + hashlib.md5(
+                (sd.get("patient_email", "") + sd.get("diagnosis", "")).encode()
+            ).hexdigest()[:8].upper()
+            try:
+                dyr = int(sd.get("diagnosis_year") or 0) or None
+            except ValueError:
+                dyr = None
+            try:
+                rc = int(sd.get("records_count") or 0)
+            except ValueError:
+                rc = 0
+            so = SecondOpinion(
+                patient_name=sd.get("patient_name", ""),
+                patient_email=sd.get("patient_email", ""),
+                patient_phone=sd.get("patient_phone", ""),
+                diagnosis=sd.get("diagnosis", ""),
+                diagnosis_year=dyr,
+                current_treatment=sd.get("current_treatment", ""),
+                desired_review=sd.get("desired_review", ""),
+                department_slug=sd.get("department_slug", ""),
+                records_attached=(sd.get("records_attached") == "yes"),
+                records_count=rc,
+                confirmation_code=code,
+            )
+            db.session.add(so)
+            db.session.commit()
+            confirmation = {"code": code, **sd}
+            session.pop("second_opinion", None)
+            return render_template("second_opinion_confirmation.html",
+                                   confirmation=confirmation)
+        return redirect(url_for("second_opinion", step=next_step))
+
+    return render_template("second_opinion.html",
+                           step=step, state=sd, departments=depts)
+
+
+@app.route("/second-opinion/requests")
+def second_opinion_requests():
+    rows = SecondOpinion.query.order_by(SecondOpinion.id.desc()).limit(50).all()
+    return render_template("second_opinion_admin.html", rows=rows)
 
 
 # --- International Patient Inquiry ---
+INTL_LANGUAGES = ["English", "Spanish", "French", "Portuguese", "Arabic",
+                  "Mandarin", "Russian", "Italian", "German", "Japanese",
+                  "Korean", "Vietnamese", "Hindi", "Tagalog"]
+INTL_OFFICES = [
+    {"campus": "Rochester, MN",        "phone": "+1-507-538-3270", "email": "intl.rst@mayo.edu"},
+    {"campus": "Jacksonville, FL",     "phone": "+1-904-953-7000", "email": "intl.jax@mayo.edu"},
+    {"campus": "Phoenix / Scottsdale", "phone": "+1-480-301-7101", "email": "intl.phx@mayo.edu"},
+]
+
+
 @app.route("/international-services", methods=["GET", "POST"])
 def international_services():
+    """International patients: 4-step wizard."""
+    step = int(request.values.get("step", 1))
+    sd = session.setdefault("international_inquiry", {})
+
     if request.method == "POST":
-        code = "INT-" + hashlib.md5(
-            (request.form.get("patient_email", "") + request.form.get("country", "")).encode()
-        ).hexdigest()[:8].upper()
-        ii = InternationalInquiry(
-            patient_name=request.form.get("patient_name", ""),
-            patient_email=request.form.get("patient_email", ""),
-            patient_phone=request.form.get("patient_phone", ""),
-            country=request.form.get("country", ""),
-            language=request.form.get("language", ""),
-            diagnosis=request.form.get("diagnosis", ""),
-            travel_dates=request.form.get("travel_dates", ""),
-            accommodation=(request.form.get("accommodation") == "yes"),
-            translation=(request.form.get("translation") == "yes"),
-            confirmation_code=code,
-        )
-        db.session.add(ii)
-        db.session.commit()
-        flash(f"International inquiry received. Confirmation: {code}. A coordinator will contact you within 48 hours.", "success")
-        return render_template("international_services.html", success_code=code)
-    return render_template("international_services.html")
+        for k in ("country", "language",
+                  "diagnosis",
+                  "travel_dates", "accommodation", "translation", "visa_support",
+                  "patient_name", "patient_email", "patient_phone"):
+            v = request.form.get(k)
+            if v is not None:
+                sd[k] = v
+        session.modified = True
+        next_step = int(request.form.get("next_step", step + 1))
+        if next_step >= 5:
+            code = "INT-" + hashlib.md5(
+                (sd.get("patient_email", "") + sd.get("country", "")).encode()
+            ).hexdigest()[:8].upper()
+            ii = InternationalInquiry(
+                patient_name=sd.get("patient_name", ""),
+                patient_email=sd.get("patient_email", ""),
+                patient_phone=sd.get("patient_phone", ""),
+                country=sd.get("country", ""),
+                language=sd.get("language", "English"),
+                diagnosis=sd.get("diagnosis", ""),
+                travel_dates=sd.get("travel_dates", ""),
+                accommodation=(sd.get("accommodation") == "yes"),
+                translation=(sd.get("translation") == "yes"),
+                visa_support=(sd.get("visa_support") == "yes"),
+                confirmation_code=code,
+            )
+            db.session.add(ii)
+            db.session.commit()
+            confirmation = {"code": code, **sd}
+            session.pop("international_inquiry", None)
+            return render_template("international_confirmation.html",
+                                   confirmation=confirmation, offices=INTL_OFFICES)
+        return redirect(url_for("international_services", step=next_step))
+
+    return render_template("international_services.html",
+                           step=step, state=sd,
+                           languages=INTL_LANGUAGES, offices=INTL_OFFICES)
+
+
+@app.route("/international-services/inquiries")
+def international_services_inquiries():
+    rows = InternationalInquiry.query.order_by(InternationalInquiry.id.desc()).limit(50).all()
+    return render_template("international_admin.html", rows=rows)
 
 
 # --- Giving / Donate ---
@@ -1342,43 +1540,90 @@ def giving():
     return render_template("giving.html")
 
 
+DONATION_FUNDS = [
+    ("general", "Greatest Need"),
+    ("cancer", "Cancer Research"),
+    ("heart", "Cardiovascular Research"),
+    ("neuroscience", "Neuroscience Research"),
+    ("transplant", "Transplant Programs"),
+    ("childrens", "Children's Center"),
+    ("rare-diseases", "Rare Diseases"),
+    ("alzheimer", "Alzheimer's Disease"),
+    ("nursing", "Nursing Education"),
+    ("alix-school", "Mayo Clinic Alix School of Medicine"),
+]
+DONATION_PRESETS = [50, 100, 250, 500, 1000, 2500]
+
+
 @app.route("/giving/donate", methods=["GET", "POST"])
 def donate():
-    funds = [
-        ("general", "Greatest Need"),
-        ("cancer", "Cancer Research"),
-        ("heart", "Cardiovascular Research"),
-        ("neuroscience", "Neuroscience Research"),
-        ("transplant", "Transplant Programs"),
-        ("childrens", "Children's Center"),
-        ("rare-diseases", "Rare Diseases"),
-        ("alzheimer", "Alzheimer's Disease"),
-        ("nursing", "Nursing Education"),
-        ("alix-school", "Mayo Clinic Alix School of Medicine"),
-    ]
+    """Donate: 5-step wizard.
+
+    Step 1: Amount + frequency
+    Step 2: Designate to a fund
+    Step 3: Tribute (in honor / in memory / none)
+    Step 4: Donor + payment info (card last4 only)
+    Step 5: Review + submit -> receipt page
+    """
+    step = int(request.values.get("step", 1))
+    sd = session.setdefault("donation", {})
+
     if request.method == "POST":
-        try:
-            amount = int(request.form.get("amount", "0").replace(",", "").replace("$", ""))
-        except ValueError:
-            amount = 0
-        code = "GIFT-" + hashlib.md5(
-            (request.form.get("donor_email", "") + str(amount)).encode()
-        ).hexdigest()[:8].upper()
-        d = Donation(
-            donor_name=request.form.get("donor_name", "Anonymous"),
-            donor_email=request.form.get("donor_email", ""),
-            amount=amount,
-            frequency=request.form.get("frequency", "one-time"),
-            fund=request.form.get("fund", "general"),
-            dedication=request.form.get("dedication", ""),
-            is_anonymous=(request.form.get("is_anonymous") == "yes"),
-            confirmation_code=code,
-        )
-        db.session.add(d)
-        db.session.commit()
-        flash(f"Thank you for your gift of ${amount:,}. Confirmation: {code}.", "success")
-        return render_template("donate.html", funds=funds, success_code=code, donation=d)
-    return render_template("donate.html", funds=funds)
+        for k in ("amount", "amount_preset", "frequency",
+                  "fund",
+                  "tribute_type", "dedication",
+                  "donor_name", "donor_email", "donor_phone",
+                  "billing_zip", "card_number", "is_anonymous"):
+            v = request.form.get(k)
+            if v is not None:
+                sd[k] = v
+        # If user picked a preset chip, prefer it over the raw amount field
+        if request.form.get("amount_preset"):
+            sd["amount"] = request.form.get("amount_preset")
+        session.modified = True
+        next_step = int(request.form.get("next_step", step + 1))
+        if next_step >= 6:
+            try:
+                amount = int(str(sd.get("amount", "0")).replace(",", "").replace("$", "") or "0")
+            except ValueError:
+                amount = 0
+            card = (sd.get("card_number") or "").replace(" ", "").replace("-", "")
+            last4 = card[-4:] if card else ""
+            code = "GIFT-" + hashlib.md5(
+                (sd.get("donor_email", "") + str(amount) + sd.get("fund", "")).encode()
+            ).hexdigest()[:8].upper()
+            d = Donation(
+                donor_name=sd.get("donor_name", "Anonymous"),
+                donor_email=sd.get("donor_email", ""),
+                donor_phone=sd.get("donor_phone", ""),
+                billing_zip=sd.get("billing_zip", ""),
+                amount=amount,
+                frequency=sd.get("frequency", "one-time"),
+                fund=sd.get("fund", "general"),
+                dedication=sd.get("dedication", ""),
+                tribute_type=sd.get("tribute_type", "none"),
+                is_anonymous=(sd.get("is_anonymous") == "yes"),
+                card_last4=last4,
+                confirmation_code=code,
+            )
+            db.session.add(d)
+            db.session.commit()
+            confirmation = {**sd, "code": code, "amount": amount, "last4": last4}
+            confirmation["fund_label"] = dict(DONATION_FUNDS).get(sd.get("fund", "general"), "Greatest Need")
+            session.pop("donation", None)
+            return render_template("donate_confirmation.html", confirmation=confirmation)
+        return redirect(url_for("donate", step=next_step))
+
+    return render_template("donate.html",
+                           step=step, state=sd,
+                           funds=DONATION_FUNDS, presets=DONATION_PRESETS)
+
+
+@app.route("/giving/donations")
+def donations_list():
+    rows = Donation.query.order_by(Donation.id.desc()).limit(50).all()
+    total = db.session.query(db.func.sum(Donation.amount)).scalar() or 0
+    return render_template("donations_admin.html", rows=rows, total=int(total))
 
 
 # --- Careers ---
@@ -1771,8 +2016,53 @@ import sys as _sys
 _sys.modules.setdefault('app', _sys.modules[__name__])
 from seed_data import seed_database, seed_benchmark_users  # noqa: E402
 
+def _migrate_schema():
+    """Lightweight ALTER TABLE migrations for columns added after initial rollout.
+
+    Touch only — never drops or renames. Keeps seed/db byte-identical for tables
+    that don't need new columns.
+    """
+    from sqlalchemy import text, inspect
+    try:
+        insp = inspect(db.engine)
+        existing = set(insp.get_table_names())
+
+        def add_col(table, col, decl):
+            if table not in existing:
+                return
+            cols = {c['name'] for c in insp.get_columns(table)}
+            if col in cols:
+                return
+            with db.engine.begin() as conn:
+                conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {decl}'))
+
+        # ReferralRequest: add preferred_date for date-picker step
+        add_col('referral_request', 'preferred_date', 'VARCHAR(40)')
+
+        # SecondOpinion: diagnosis_year + records_count for richer wizard
+        add_col('second_opinion', 'diagnosis_year', 'INTEGER')
+        add_col('second_opinion', 'records_count', 'INTEGER')
+
+        # InternationalInquiry: visa_support flag for travel/services step
+        add_col('international_inquiry', 'visa_support', 'BOOLEAN DEFAULT 0')
+
+        # Donation: tribute_type / card_last4 / phone / billing_zip for receipt flow
+        add_col('donation', 'tribute_type', 'VARCHAR(20)')      # honor / memory / none
+        add_col('donation', 'card_last4',   'VARCHAR(4)')
+        add_col('donation', 'donor_phone',  'VARCHAR(40)')
+        add_col('donation', 'billing_zip',  'VARCHAR(20)')
+
+        # NewsletterSignup: add display name + frequency for the full preferences page
+        add_col('newsletter_signup', 'name', 'VARCHAR(200)')
+        add_col('newsletter_signup', 'frequency', "VARCHAR(20) DEFAULT 'weekly'")
+        add_col('newsletter_signup', 'confirmation_code', 'VARCHAR(40)')
+    except Exception as _e:  # noqa: BLE001 — schema migration must not crash boot
+        app.logger.warning("schema migration skipped: %s", _e)
+
+
 with app.app_context():
     db.create_all()
+    _migrate_schema()
     seed_database()
     seed_benchmark_users()
 

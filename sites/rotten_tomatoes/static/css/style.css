@@ -304,3 +304,91 @@ img { max-width: 100%; height: auto; }
 
 /* Grid wrapper fix for browse page with watchlist buttons */
 .movie-grid .movie-card-wrapper { width: auto; min-width: auto; }
+
+/* ── P2: Featured Audience Poll on Homepage + Movie Detail ── */
+.featured-poll { margin: 24px 0 28px; }
+.featured-poll-card { background: linear-gradient(135deg, #fff7f4 0%, #fff 100%); border: 2px solid #fad7c8; border-radius: 12px; padding: 22px 28px; box-shadow: 0 2px 8px rgba(218, 41, 28, 0.06); }
+.featured-poll-eyebrow { display: inline-block; background: var(--rt-red, #fa320a); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px; border-radius: 4px; margin-bottom: 10px; }
+.featured-poll-card h2 { margin: 0 0 6px; font-size: 22px; }
+.featured-poll-card .meta { color: var(--text-light, #666); font-size: 13px; margin: 0 0 16px; }
+.featured-poll-card .poll-form,
+.movie-poll-section .poll-form { display: flex; flex-direction: column; gap: 8px; }
+.featured-poll-card .poll-option,
+.movie-poll-section .poll-option { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #fff; border: 1px solid #eee; border-radius: 6px; cursor: pointer; }
+.featured-poll-card .poll-option:hover,
+.movie-poll-section .poll-option:hover { border-color: var(--rt-red, #fa320a); }
+.featured-poll-card .btn,
+.movie-poll-section .btn { align-self: flex-start; margin-top: 6px; }
+.poll-more-link { font-size: 13px; color: var(--rt-red, #fa320a); margin-left: 12px; text-decoration: none; }
+.poll-more-link:hover { text-decoration: underline; }
+.poll-results { list-style: none; padding: 0; margin: 0; }
+.poll-results li { margin-bottom: 8px; }
+.poll-bar { position: relative; background: #f1f1f1; border-radius: 6px; padding: 10px 14px; overflow: hidden; }
+.poll-bar .poll-fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(250, 50, 10, 0.18); z-index: 0; }
+.poll-bar .poll-text { position: relative; z-index: 1; font-weight: 600; }
+.poll-bar .poll-pct { position: relative; z-index: 1; float: right; color: var(--text-light, #666); font-size: 13px; }
+.movie-poll-section { margin: 32px 0; }
+.movie-poll-section h2 { margin-bottom: 12px; }
+
+/* ── P1: Inline Follow Buttons on Critics Index ── */
+.critic-card-wrap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.critic-follow-inline { margin: 0; text-align: center; }
+.critic-follow-inline .btn-sm { padding: 4px 12px; font-size: 12px; width: 100%; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+
+/* ── P1: Followed Critics Recent Reviews on My Account ── */
+.followed-critics-section { margin-bottom: 32px; }
+.followed-reviews-section { margin-top: 24px; }
+.followed-reviews-section .reviews-list { display: flex; flex-direction: column; gap: 12px; }
+.followed-reviews-section .review-card { display: flex; gap: 12px; padding: 14px 16px; background: var(--bg-alt, #fafafa); border-radius: 8px; border-left: 3px solid #ddd; }
+.followed-reviews-section .review-card.fresh { border-left-color: #fa320a; }
+.followed-reviews-section .review-card.rotten { border-left-color: #11A85F; }
+.followed-reviews-section .review-icon { font-size: 24px; }
+.followed-reviews-section .review-content { flex: 1; }
+.followed-reviews-section .review-text { margin: 0 0 6px; line-height: 1.5; }
+.followed-reviews-section .review-meta { font-size: 13px; color: var(--text-light, #666); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.followed-reviews-section .review-meta a { color: var(--text, #333); text-decoration: none; font-weight: 600; }
+.followed-reviews-section .review-meta a:hover { color: var(--rt-red, #fa320a); }
+.followed-reviews-section .review-sep { color: #ccc; }
+
+/* ── P3: News Comments — Threaded Replies ── */
+.news-comments .comment-list { list-style: none; padding: 0; margin: 0; }
+.news-comments .comment-thread { list-style: none; padding-left: 28px; margin: 8px 0 0; border-left: 2px solid #eee; }
+.news-comments .comment-row { padding: 12px 0; margin-bottom: 4px; }
+.news-comments .comment-row > strong { color: var(--text, #222); }
+.news-comments .comment-date { color: var(--text-light, #999); font-size: 12px; margin-left: 8px; }
+.news-comments .comment-row p { margin: 6px 0; }
+.news-comments .comment-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn-tiny { padding: 2px 8px; font-size: 11px; border-radius: 4px; text-decoration: none; display: inline-block; }
+.btn-outline { background: #fff; border: 1px solid #ccc; color: #333; }
+.btn-outline:hover { border-color: var(--rt-red, #fa320a); color: var(--rt-red, #fa320a); }
+.btn-danger { background: #fff; border: 1px solid #e9c5c5; color: #c0392b; }
+.btn-danger:hover { background: #fdecec; }
+.comment-reply-link { cursor: pointer; }
+/* Reply forms hidden by default, revealed on :target */
+.comment-reply-form { display: none; margin: 10px 0 4px; padding: 10px; background: #fafafa; border: 1px solid #eee; border-radius: 6px; }
+.comment-reply-form:target { display: block; }
+.comment-reply-form textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; resize: vertical; }
+.comment-reply-form .btn { margin-top: 6px; }
+.comment-reply { background: rgba(0,0,0,0.015); border-radius: 4px; padding-left: 10px; }
+
+/* ── P4: Podcast Subscribe Inline ── */
+.podcast-card-wrap { display: flex; flex-direction: column; gap: 6px; }
+.podcast-subscribe-inline { margin: 0; text-align: center; padding: 0 12px 12px; }
+.podcast-subscribe-inline .btn-sm { width: 100%; }
+
+/* ── P5: Sweepstakes Entry Form ── */
+.sweep-enter-section { margin-top: 24px; }
+.sweep-form-card { background: var(--bg-alt, #fafafa); border: 1px solid #eee; border-radius: 10px; padding: 22px 26px; max-width: 560px; }
+.sweep-entered-card { background: linear-gradient(135deg, #f3fbf6 0%, #fff 100%); border-color: #c8e6d0; }
+.sweep-form-card h2 { margin: 0 0 14px; font-size: 20px; }
+.sweep-enter-form .form-group { margin-bottom: 16px; }
+.sweep-enter-form label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.sweep-enter-form input[type=email] { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+.sweep-enter-form input[type=email]:focus { outline: none; border-color: var(--rt-red, #fa320a); }
+.sweep-enter-form .form-hint { color: var(--text-light, #888); font-size: 12px; margin: 4px 0 0; font-weight: 400; }
+.sweep-enter-form .checkbox-group label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; font-weight: 400; }
+.sweep-enter-form .checkbox-label span { font-size: 13px; line-height: 1.5; }
+.sweep-enter-form .required { color: var(--rt-red, #fa320a); }
+.sweep-enter-form .btn-lg { padding: 10px 22px; font-size: 15px; }
+.sweep-rules-note { font-size: 13px; color: var(--text-light, #888); margin-top: 12px; }

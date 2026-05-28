@@ -6,6 +6,46 @@
     <p>Reviews, ratings, and where to watch the best movies</p>
 </div>
 
+{% if featured_poll %}
+<section class="featured-poll" id="featured-poll">
+    <div class="featured-poll-card">
+        <span class="featured-poll-eyebrow">🍅 Audience Poll</span>
+        <h2>{{ featured_poll.question }}</h2>
+        <p class="meta">Ends {{ featured_poll.ends_on }} · {{ featured_poll_total }} votes so far</p>
+        {% if current_user.is_authenticated and not featured_poll_voted %}
+        <form action="/polls/{{ featured_poll.slug }}/vote" method="POST" class="poll-form inline-poll-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% for opt in featured_poll.options %}
+            <label class="poll-option">
+                <input type="radio" name="option_id" value="{{ opt.id }}" required>
+                <span>{{ opt.text }}</span>
+            </label>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Submit Vote</button>
+            <a href="/polls/" class="poll-more-link">See all polls →</a>
+        </form>
+        {% else %}
+        <ul class="poll-results">
+            {% set total = featured_poll_total or 1 %}
+            {% for opt in featured_poll.options %}
+            {% set pct = (opt.votes * 100 / total) | round(1) %}
+            <li>
+                <div class="poll-bar">
+                    <span class="poll-text">{{ opt.text }}</span>
+                    <span class="poll-pct">{{ pct }}% ({{ opt.votes }})</span>
+                    <div class="poll-fill" style="width: {{ pct }}%"></div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% if featured_poll_voted %}<p class="hint">✓ You have already voted.</p>{% endif %}
+        {% if not current_user.is_authenticated %}<p><a href="/login">Sign in</a> to vote.</p>{% endif %}
+        <p><a href="/polls/" class="poll-more-link">See all polls →</a></p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 {% macro movie_card(movie) %}
 <div class="movie-card-wrapper">
     <a href="/m/{{ movie.slug }}" class="movie-card">

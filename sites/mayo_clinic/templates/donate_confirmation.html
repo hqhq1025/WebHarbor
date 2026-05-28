@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Thank You — {{ confirmation.code }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('giving') }}">Giving</a><span>&rsaquo;</span>
+  <a href="{{ url_for('donate') }}">Donate</a><span>&rsaquo;</span> Receipt
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Thank you for your generosity</h1>
+  <div class="alert alert-success">
+    Your gift of <strong>${{ '{:,}'.format(confirmation.amount) }}</strong>
+    to <strong>{{ confirmation.fund_label }}</strong>
+    has been received. Confirmation: <strong>{{ confirmation.code }}</strong>.
+    {% if confirmation.donor_email %}A tax receipt has been sent to <strong>{{ confirmation.donor_email }}</strong>.{% endif %}
+  </div>
+
+  <h2>Gift summary</h2>
+  <table class="data">
+    <tr><th>Amount</th><td>${{ '{:,}'.format(confirmation.amount) }}</td></tr>
+    <tr><th>Frequency</th><td>{{ confirmation.frequency }}</td></tr>
+    <tr><th>Designated to</th><td>{{ confirmation.fund_label }}</td></tr>
+    {% if confirmation.tribute_type and confirmation.tribute_type != 'none' %}
+      <tr><th>Tribute</th><td>{{ 'In honor of' if confirmation.tribute_type == 'honor' else 'In memory of' }} {{ confirmation.dedication or '' }}</td></tr>
+    {% endif %}
+    <tr><th>Donor</th><td>{{ 'Anonymous' if confirmation.is_anonymous == 'yes' else confirmation.donor_name }}</td></tr>
+    <tr><th>Card</th><td>•••• {{ confirmation.last4 or '0000' }}</td></tr>
+  </table>
+
+  <p>Mayo Foundation for Medical Education and Research is a charitable organization under section 501(c)(3) of the Internal Revenue Code. EIN&nbsp;41-6011702. No goods or services were provided in exchange for this gift.</p>
+
+  <p>
+    <a class="btn-primary" href="{{ url_for('index') }}">Return home</a>
+    <a class="btn-secondary" href="{{ url_for('donate') }}" style="margin-left:8px;">Make another gift</a>
+    <a class="btn-secondary" href="{{ url_for('donations_list') }}" style="margin-left:8px;">View donor wall</a>
+  </p>
+</section>
+{% endblock %}

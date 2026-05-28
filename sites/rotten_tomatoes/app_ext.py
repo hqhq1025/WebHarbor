@@ -128,6 +128,13 @@ def register(app, db, base_models):
         user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
         text = db.Column(db.Text, default="")
         created_at = db.Column(db.DateTime)
+        parent_id = db.Column(db.Integer, db.ForeignKey("news_comments.id"), nullable=True)
+        replies = db.relationship(
+            "NewsComment",
+            backref=db.backref("parent", remote_side="NewsComment.id"),
+            lazy="select",
+            order_by="NewsComment.created_at",
+        )
 
     class Podcast(db.Model):
         __tablename__ = "podcasts"
@@ -362,7 +369,12 @@ def register(app, db, base_models):
         if top_only:
             q = q.filter_by(top_critic=True)
         critics = q.order_by(Critic.name).all()
-        return render_template("critics_index.html", critics=critics, top_only=top_only)
+        followed_ids = set()
+        if current_user.is_authenticated:
+            followed_ids = {f.critic_id for f in CriticFollow.query.filter_by(
+                user_id=current_user.id).all()}
+        return render_template("critics_index.html", critics=critics,
+                               top_only=top_only, followed_ids=followed_ids)
 
     @app.route("/critics/<slug>")
     def critic_detail(slug):
@@ -399,14 +411,31 @@ def register(app, db, base_models):
     @app.route("/news/<slug>")
     def news_detail(slug):
         art = NewsArticle.query.filter_by(slug=slug).first_or_404()
-        comments = NewsComment.query.filter_by(news_id=art.id).order_by(NewsComment.created_at.desc()).all()
+        all_comments = (NewsComment.query
+                        .filter_by(news_id=art.id)
+                        .order_by(NewsComment.created_at.asc(), NewsComment.id.asc())
+                        .all())
+        # Build a parent-id → [replies] map for nested rendering.
+        children = {}
+        for c in all_comments:
+            children.setdefault(c.parent_id, []).append(c)
+        top_comments = children.get(None, [])
         tag_movie = Movie.query.get(art.tag_movie_id) if art.tag_movie_id else None
-        return render_template("news_detail.html", article=art, comments=comments, tag_movie=tag_movie)
+        return render_template("news_detail.html", article=art,
+                               comments=all_comments,
+                               top_comments=top_comments,
+                               reply_map=children,
+                               tag_movie=tag_movie)
 
     @app.route("/podcasts/")
     def podcasts_index():
         items = Podcast.query.order_by(Podcast.title).all()
-        return render_template("podcasts_index.html", podcasts=items)
+        subscribed_ids = set()
+        if current_user.is_authenticated:
+            subscribed_ids = {s.podcast_id for s in PodcastSubscribe.query.filter_by(
+                user_id=current_user.id).all()}
+        return render_template("podcasts_index.html", podcasts=items,
+                               subscribed_ids=subscribed_ids)
 
     @app.route("/podcasts/<slug>")
     def podcast_detail(slug):
@@ -528,7 +557,26 @@ def register(app, db, base_models):
         follows = CriticFollow.query.filter_by(user_id=current_user.id).all()
         critics = [Critic.query.get(f.critic_id) for f in follows]
         critics = [c for c in critics if c is not None]
-        return render_template("myaccount_follows.html", critics=critics)
+        # Recent reviews from followed critics — joined on critic_name+publication
+        # since CriticReview is a flat snapshot table without a critic FK.
+        followed_reviews = []
+        if critics:
+            keys = {(c.name, c.publication): c for c in critics}
+            # Pull the freshest 24 reviews for followed critics. Critics
+            # typically write 3-15 reviews each in the seed, so this caps at
+            # a manageable size and stays deterministic.
+            cand = (CriticReview.query
+                    .filter(CriticReview.critic_name.in_([c.name for c in critics]))
+                    .order_by(CriticReview.review_date.desc(), CriticReview.id.desc())
+                    .limit(80).all())
+            for r in cand:
+                critic = keys.get((r.critic_name, r.publication))
+                if critic is not None:
+                    followed_reviews.append((critic, r))
+            followed_reviews = followed_reviews[:24]
+        return render_template("myaccount_follows.html",
+                               critics=critics,
+                               followed_reviews=followed_reviews)
 
     @app.route("/myaccount/lists")
     @login_required
@@ -639,10 +687,21 @@ def register(app, db, base_models):
         if len(text) < 1:
             flash("Comment cannot be empty.", "danger")
             return redirect(url_for("news_detail", slug=slug))
+        parent_id = None
+        raw_parent = (request.form.get("parent_id") or "").strip()
+        if raw_parent:
+            try:
+                pid = int(raw_parent)
+                parent = NewsComment.query.get(pid)
+                if parent and parent.news_id == art.id:
+                    parent_id = parent.id
+            except ValueError:
+                parent_id = None
         db.session.add(NewsComment(news_id=art.id, user_id=current_user.id,
-                                    text=text, created_at=datetime.utcnow()))
+                                    text=text, parent_id=parent_id,
+                                    created_at=datetime.utcnow()))
         db.session.commit()
-        flash("Comment posted.", "success")
+        flash("Reply posted." if parent_id else "Comment posted.", "success")
         return redirect(url_for("news_detail", slug=slug))
 
     @app.route("/news/comment/<int:comment_id>/delete", methods=["POST"])
@@ -686,12 +745,20 @@ def register(app, db, base_models):
         sw = Sweepstakes.query.filter_by(slug=slug).first_or_404()
         if SweepstakesEntry.query.filter_by(sweepstake_id=sw.id, user_id=current_user.id).first():
             flash("You have already entered this sweepstakes.", "info")
-        else:
-            db.session.add(SweepstakesEntry(sweepstake_id=sw.id,
-                                             user_id=current_user.id,
-                                             entered_at=datetime.utcnow()))
-            db.session.commit()
-            flash(f'Entry submitted for "{sw.title}". Good luck!', "success")
+            return redirect(url_for("sweepstakes_detail", slug=slug))
+        email = (request.form.get("email") or "").strip()
+        agree = (request.form.get("agree_tos") or "").strip()
+        if "@" not in email or "." not in email.split("@")[-1]:
+            flash("Please enter a valid email address.", "danger")
+            return redirect(url_for("sweepstakes_detail", slug=slug))
+        if agree not in ("on", "1", "true", "yes"):
+            flash("You must agree to the official rules to enter.", "danger")
+            return redirect(url_for("sweepstakes_detail", slug=slug))
+        db.session.add(SweepstakesEntry(sweepstake_id=sw.id,
+                                         user_id=current_user.id,
+                                         entered_at=datetime.utcnow()))
+        db.session.commit()
+        flash(f'Entry submitted for "{sw.title}". Good luck!', "success")
         return redirect(url_for("sweepstakes_detail", slug=slug))
 
     @app.route("/critics/<slug>/follow", methods=["POST"])

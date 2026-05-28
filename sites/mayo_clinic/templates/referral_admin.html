@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Referral Submissions{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('refer_a_patient') }}">Refer a Patient</a><span>&rsaquo;</span> Submissions
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Recent referral submissions</h1>
+  <p>Coordinators monitor this queue for new physician referrals. Most recent 50 shown.</p>
+
+  {% if rows %}
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Code</th><th>Patient</th><th>Diagnosis</th><th>Dept</th>
+        <th>Location</th><th>Urgency</th><th>Referred by</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.confirmation_code }}</strong></td>
+          <td>{{ r.patient_name }}</td>
+          <td>{{ r.patient_diagnosis|truncate(60) }}</td>
+          <td>{{ r.requested_department }}</td>
+          <td>{{ r.requested_location }}</td>
+          <td>{{ r.urgency }}</td>
+          <td>{{ r.referring_provider }}<br><small>{{ r.referring_clinic }}</small></td>
+          <td>{{ r.status }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p><em>No referrals submitted yet. Submit one via the <a href="{{ url_for('refer_a_patient') }}">Refer a Patient</a> form.</em></p>
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a class="btn-primary" href="{{ url_for('refer_a_patient') }}">Submit a new referral</a>
+  </p>
+</section>
+{% endblock %}
