@@ -752,6 +752,21 @@ with app.app_context():
     import mega_deepen
     mega_deepen.register_deepen(app, db)
 
+    # Legacy data fix: an earlier builder pipeline wrote ProductPage.hero_image
+    # with an embedded `static/images/` prefix in addition to what `image_url()`
+    # already adds at render time, producing doubled `/static/images/static/
+    # images/...` URLs on the homepage (audit reported 8 broken hero images).
+    # Strip the prefix on startup so /reset (which restores instance/ from a
+    # still-stale instance_seed/mega.db pulled from HF) gets clean data too.
+    # Idempotent — no work once the rows are normalized.
+    _legacy_hero = ProductPage.query.filter(
+        ProductPage.hero_image.like("static/images/%")
+    ).all()
+    if _legacy_hero:
+        for _row in _legacy_hero:
+            _row.hero_image = _row.hero_image[len("static/images/"):]
+        db.session.commit()
+
     if fresh_seed:
         # Force deterministic on-disk index layout. SQLAlchemy iterates
         # `Table.indexes` as a Python set, so `CREATE INDEX` runs in
