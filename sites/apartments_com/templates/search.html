@@ -88,6 +88,22 @@
         <h4>Available by</h4>
         <input type="date" name="available_by" value="{{ filters.available_by }}" class="form-field">
 
+        {# Advanced filters — real upstream apartments.com `advancedFiltersContainer` options from harvest #}
+        <h4>More options</h4>
+        {% for v, l in [
+          ("no_broker_fee","Only show listings with no broker’s fee"),
+          ("commute","Search by Commute Time"),
+          ("low_income","Low Income / Income Restricted"),
+          ("online_apps","Properties accepting online applications"),
+          ("move_in_specials","Properties with move-in specials"),
+          ("by_owner","Properties that are for rent by owner"),
+          ("room_for_rent","Room for Rent")
+        ] %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="advanced" value="{{ v }}" {% if filters.advanced and v in filters.advanced %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+
         <button class="btn" type="submit" style="width:100%; margin-top: 10px;">Apply filters</button>
       </form>
       {% if current_user.is_authenticated %}
