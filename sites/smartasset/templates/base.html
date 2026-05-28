@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
 </head>
 <body>
+{% include 'sprites_inline.html' %}
+
 <header class="sa-header">
   <div class="sa-header-inner">
     <a class="sa-logo" href="{{ url_for('index') }}">
