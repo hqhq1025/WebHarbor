@@ -602,6 +602,72 @@ def _score_article(article, tokens):
     return sum(1 for t in tokens if t in haystack)
 
 
+# ─── Module-level snapshot cache for /search ─────────────────────────────────
+# `/search` previously scanned 12,719 Article rows (~150ms) plus 1,197 Player
+# and 142 Team rows on every keystroke. Snapshot the scoring-relevant columns
+# once into precomputed haystacks; hydrate only the top-20 IDs per type for
+# render. `/reset/<site>` restarts the worker → cache rebuilds.
+
+class _ArticleSnap:
+    __slots__ = ('id', 'sport_slug', '_haystack')
+
+    def __init__(self, row):
+        self.id = row.id
+        self.sport_slug = row.sport_slug
+        self._haystack = ' '.join([
+            (row.title or '').lower(),
+            (row.subtitle or '').lower(),
+            (row.tags or '').lower(),
+            (row.sport_slug or '').lower(),
+        ])
+
+
+class _PlayerSnap:
+    __slots__ = ('id', 'sport_slug', '_haystack')
+
+    def __init__(self, row):
+        self.id = row.id
+        self.sport_slug = row.sport_slug
+        self._haystack = ' '.join([
+            (row.name or '').lower(),
+            (row.first_name or '').lower(),
+            (row.last_name or '').lower(),
+            (row.position or '').lower(),
+            (row.sport_slug or '').lower(),
+        ])
+
+
+class _TeamSnap:
+    __slots__ = ('id', 'sport_slug', '_haystack')
+
+    def __init__(self, row):
+        self.id = row.id
+        self.sport_slug = row.sport_slug
+        self._haystack = ' '.join([
+            (row.full_name or '').lower(),
+            (row.name or '').lower(),
+            (row.city or '').lower(),
+            (row.abbreviation or '').lower(),
+            (row.sport_slug or '').lower(),
+        ])
+
+
+_SEARCH_CACHE = {}
+
+
+def _cached_search_snapshots(key, model, snap_cls):
+    cached = _SEARCH_CACHE.get(key)
+    if cached is None:
+        cached = [snap_cls(r) for r in model.query.all()]
+        _SEARCH_CACHE[key] = cached
+    return cached
+
+
+def _score_snap(snap, tokens):
+    haystack = snap._haystack
+    return sum(1 for t in tokens if t in haystack)
+
+
 def get_recent_headlines(sport_slug=None, limit=5):
     q = Article.query.filter_by(is_headline=True)
     if sport_slug:
@@ -1176,33 +1242,39 @@ def search(espn_query=''):
 
         # Search teams
         if not type_filter or type_filter == 'teams':
-            all_teams = Team.query
+            cand = _cached_search_snapshots('teams', Team, _TeamSnap)
             if sport_filter:
-                all_teams = all_teams.filter_by(sport_slug=sport_filter)
-            scored_teams = [(s, t) for t in all_teams.all()
-                            if (s := _score_team(t, tokens)) >= min_req]
-            scored_teams.sort(key=lambda x: -x[0])
-            teams = [t for _, t in scored_teams[:20]]
+                cand = [s for s in cand if s.sport_slug == sport_filter]
+            scored = [(sc, s) for s in cand if (sc := _score_snap(s, tokens)) >= min_req]
+            scored.sort(key=lambda x: -x[0])
+            top_ids = [s.id for _, s in scored[:20]]
+            if top_ids:
+                rows_by_id = {t.id: t for t in Team.query.filter(Team.id.in_(top_ids)).all()}
+                teams = [rows_by_id[i] for i in top_ids if i in rows_by_id]
 
         # Search players
         if not type_filter or type_filter == 'players':
-            all_players = Player.query
+            cand = _cached_search_snapshots('players', Player, _PlayerSnap)
             if sport_filter:
-                all_players = all_players.filter_by(sport_slug=sport_filter)
-            scored_players = [(s, p) for p in all_players.all()
-                              if (s := _score_player(p, tokens)) >= min_req]
-            scored_players.sort(key=lambda x: -x[0])
-            players = [p for _, p in scored_players[:20]]
+                cand = [s for s in cand if s.sport_slug == sport_filter]
+            scored = [(sc, s) for s in cand if (sc := _score_snap(s, tokens)) >= min_req]
+            scored.sort(key=lambda x: -x[0])
+            top_ids = [s.id for _, s in scored[:20]]
+            if top_ids:
+                rows_by_id = {p.id: p for p in Player.query.filter(Player.id.in_(top_ids)).all()}
+                players = [rows_by_id[i] for i in top_ids if i in rows_by_id]
 
         # Search articles
         if not type_filter or type_filter == 'articles':
-            all_articles = Article.query
+            cand = _cached_search_snapshots('articles', Article, _ArticleSnap)
             if sport_filter:
-                all_articles = all_articles.filter_by(sport_slug=sport_filter)
-            scored_articles = [(s, a) for a in all_articles.all()
-                               if (s := _score_article(a, tokens)) >= min_req]
-            scored_articles.sort(key=lambda x: -x[0])
-            articles_list = [a for _, a in scored_articles[:20]]
+                cand = [s for s in cand if s.sport_slug == sport_filter]
+            scored = [(sc, s) for s in cand if (sc := _score_snap(s, tokens)) >= min_req]
+            scored.sort(key=lambda x: -x[0])
+            top_ids = [s.id for _, s in scored[:20]]
+            if top_ids:
+                rows_by_id = {a.id: a for a in Article.query.filter(Article.id.in_(top_ids)).all()}
+                articles_list = [rows_by_id[i] for i in top_ids if i in rows_by_id]
 
     sports = Sport.query.filter_by(is_active=True).order_by(Sport.nav_order).all()
     return render_template('search.html', query=q, teams=teams,
