@@ -1,5 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Stays — Booking{% endblock %}
+{% block title %}Stays — Booking
+<style>
+/* WV-SELECT-FIX-2026-06-01 */
+.wv-sort-pill:hover { background: #f0f6ff !important; border-color: #006ce4 !important; }
+.wv-sort-active { background: #e8f0fe !important; border-color: #006ce4 !important; font-weight: 600 !important; color: #003580 !important; }
+.wv-sort-active::before { content: "\2713 "; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container">
     <h1 class="page-title">Stays</h1>
@@ -18,32 +25,42 @@
         </div>
         <div class="form-group" style="margin:0;flex:1;min-width:140px;">
             <label>Property type</label>
+            {# WV-SEARCH-LOOP-2026-06-03-BOOKING — preserve ?type= across sort clicks #}
+            {% set _sel_type = request.args.get('type','') %}
             <select name="type">
-                <option value="">All</option>
-                <option value="Hotel">Hotel</option>
-                <option value="Apartment">Apartment</option>
-                <option value="Resort">Resort</option>
-                <option value="Villa">Villa</option>
-                <option value="Hostel">Hostel</option>
+                <option value="" {% if _sel_type == '' %}selected{% endif %}>All</option>
+                {% for _ptype in ['Hotel','Apartment','Resort','Villa','Hostel','Bed and Breakfast','Guest House','Aparthotel','Holiday Home','Holiday Park','Lodge','Country House','Cabin','Chalet','Boat','Capsule Hotel','Motel','Riad','Ryokan','Farm Stay','Campground'] %}
+                <option value="{{ _ptype }}" {% if _sel_type == _ptype %}selected{% endif %}>{{ _ptype }}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="form-group" style="margin:0;flex:1;min-width:120px;">
             <label>Min stars</label>
+            {# WV-SEARCH-LOOP-2026-06-03-BOOKING — preserve ?stars= across sort clicks #}
+            {% set _sel_stars = request.args.get('stars','') %}
             <select name="stars">
-                <option value="">Any</option>
-                <option value="3">3+ stars</option>
-                <option value="4">4+ stars</option>
-                <option value="5">5 stars</option>
+                <option value="" {% if _sel_stars == '' %}selected{% endif %}>Any</option>
+                <option value="3" {% if _sel_stars == '3' %}selected{% endif %}>3+ stars</option>
+                <option value="4" {% if _sel_stars == '4' %}selected{% endif %}>4+ stars</option>
+                <option value="5" {% if _sel_stars == '5' %}selected{% endif %}>5 stars</option>
             </select>
         </div>
-        <div class="form-group" style="margin:0;flex:1;min-width:140px;">
+        {# WV-SELECT-FIX-2026-06-01 — sort pills #}
+        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
             <label>Sort by</label>
-            <select name="sort">
-                <option value="rating">Top rated</option>
-                <option value="price_low">Price (low → high)</option>
-                <option value="price_high">Price (high → low)</option>
-                <option value="stars">Star rating</option>
-            </select>
+            <input type="hidden" name="sort" id="staysSortHidden" value="{{ request.args.get('sort','rating') }}">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                {% set _ss = request.args.get('sort','rating') %}
+                {% for val, label in [('rating','Top rated'),('price_low','Price \u2191'),('price_high','Price \u2193'),('stars','Stars')] %}
+                <button type="button"
+                        class="wv-sort-pill{% if _ss == val %} wv-sort-active{% endif %}"
+                        data-sort-value="{{ val }}"
+                        onclick="document.getElementById('staysSortHidden').value=this.dataset.sortValue;this.closest('form').querySelectorAll('.wv-sort-pill').forEach(function(b){b.classList.remove('wv-sort-active')});this.classList.add('wv-sort-active');"
+                        style="padding:6px 12px;border:1px solid #d0d0d0;border-radius:4px;background:#fff;color:#262626;font-size:13px;cursor:pointer;">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
         </div>
         <button type="submit" class="btn-primary">Apply</button>
     </form>
@@ -53,13 +70,13 @@
         <div class="property-card">
             <div class="property-card-img">
                 {% if prop.image %}
-                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}"
                      onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:10px;text-align:center;&quot;>{{ prop.name }}</div>'">
                 {% endif %}
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('saved_toggle_form', property_id=prop.id) }}" style="position:absolute;top:8px;right:8px;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
-                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <input type="hidden" name="next" value="{{ current_relative_url() }}">
                     <button type="submit" class="save-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                     </button>

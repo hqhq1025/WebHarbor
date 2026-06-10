@@ -1,18 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Search results — Booking{% endblock %}
+{% block title %}Search results — Booking
+<style>
+/* WV-SELECT-FIX-2026-06-01 pill button styles */
+.wv-sort-pill:hover { background: #f0f6ff !important; border-color: #006ce4 !important; }
+.wv-sort-active { background: #e8f0fe !important; border-color: #006ce4 !important; font-weight: 600 !important; color: #003580 !important; }
+.wv-sort-active::before { content: "\2713 "; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container">
     <h1 class="page-title">Search results</h1>
     {% if empty_destination %}
     <p class="page-subtitle"><strong>0</strong> properties found</p>
+    {# WV-BOOKING-SEARCH-PAGINATION-2026-06-01 #}
     {% elif query %}
-    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found for "<strong>{{ query }}</strong>"</p>
+    <p class="page-subtitle"><strong>{{ search_total }}</strong> properties found for "<strong>{{ query }}</strong>"{% if search_pages > 1 %} &mdash; page {{ search_page }} of {{ search_pages }}{% endif %}</p>
     {% else %}
-    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found</p>
+    <p class="page-subtitle"><strong>{{ search_total }}</strong> properties found{% if search_pages > 1 %} &mdash; page {{ search_page }} of {{ search_pages }}{% endif %}</p>
     {% endif %}
 
     {% if empty_destination %}
-    <div class="empty-state" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:32px;text-align:center;color:#5d666e;font-size:15px;margin-bottom:20px;">
+    <div class="empty-state" role="status" aria-live="polite" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:32px;text-align:center;color:#5d666e;font-size:15px;margin-bottom:20px;">
         <h2 style="margin:0 0 8px 0;font-size:18px;color:#262626;">Please enter a destination to start your search.</h2>
         <p style="margin:0;">Type a city, property name or landmark in the search box above and press Search.</p>
     </div>
@@ -26,7 +34,7 @@
     <form method="get" id="searchForm" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e7e7e7;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
         <div class="form-group" style="margin:0;flex:1;min-width:200px;">
             <label>Keyword / destination</label>
-            <input type="text" name="q" value="{{ query }}" placeholder="Property, city or landmark" required minlength="2">
+            <input type="text" name="ss" value="{{ query }}" placeholder="Property, city or landmark" required minlength="2">
         </div>
         <div class="form-group" style="margin:0;flex:1;min-width:160px;">
             <label>City</label>
@@ -61,12 +69,29 @@
         {% endfor %}
     </form>
 
+
+    {# WV-SEARCH-LOOP-2026-06-03-BOOKING quick property-type pills #}
+    {% if not empty_destination %}
+    {% set _cur_pt = (args.get('property_type') or args.get('type') or '').strip() %}
+    {% set _carry_qs = [] %}
+    {% for _k, _v in args.items() %}{% if _k not in ['type','property_type','page'] %}{% set _ = _carry_qs.append(_k ~ '=' ~ (_v|urlencode)) %}{% endif %}{% endfor %}
+    {% set _qsbase = _carry_qs|join('&') %}
+    <div role="region" aria-label="Quick property type filter" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:13px;color:#5d666e;font-weight:600;margin-right:4px;">Property type:</span>
+        {% for _val, _label in [('','All'),('Hotel','Hotel'),('Apartment','Apartment'),('Apart-hotel','Apart-hotel'),('Hostel','Hostel'),('Bed and Breakfast','B&amp;B'),('Resort','Resort'),('Villa','Villa'),('Guest House','Guest House'),('Cabin','Cabin')] %}
+        {% set _is_active = (_val == '' and not _cur_pt) or (_val != '' and _cur_pt == _val) %}
+        <a href="?{{ _qsbase }}{% if _val %}&type={{ _val|urlencode }}{% endif %}"
+           style="display:inline-block;padding:6px 12px;font-size:13px;border-radius:14px;text-decoration:none;border:1px solid {% if _is_active %}#006ce4{% else %}#d0d0d0{% endif %};background:{% if _is_active %}#e8f0fe{% else %}#fff{% endif %};color:{% if _is_active %}#003580{% else %}#262626{% endif %};font-weight:{% if _is_active %}600{% else %}400{% endif %};">{% if _is_active %}&#x2713; {% endif %}{{ _label }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;">
         {# =========== FILTER SIDEBAR =========== #}
         <aside class="filter-sidebar" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:16px;position:sticky;top:12px;">
             <form method="get" id="filterForm">
                 {# carry over keyword + city + occupancy #}
-                {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+                {% if query %}<input type="hidden" name="ss" value="{{ query }}">{% endif %}
                 {% if args.get('city_id') %}<input type="hidden" name="city_id" value="{{ args.get('city_id') }}">{% endif %}
                 {% if args.get('city') %}<input type="hidden" name="city" value="{{ args.get('city') }}">{% endif %}
                 {% if args.get('dest') %}<input type="hidden" name="dest" value="{{ args.get('dest') }}">{% endif %}
@@ -80,18 +105,39 @@
                 <h3 style="font-size:15px;margin:0 0 10px 0;">Filter by</h3>
 
                 {# ---- Sort dropdown ---- #}
+                {# WV-SELECT-FIX-2026-06-01 — sort pills replace native <select> for CUA compatibility #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <label style="font-weight:600;font-size:13px;display:block;margin-bottom:6px;">Sort results by</label>
                     {% set cur_sort = args.get('sort','') %}
-                    <select name="sort" onchange="document.getElementById('filterForm').submit()" style="width:100%;padding:6px;border:1px solid #d0d0d0;border-radius:4px;">
-                        <option value="" {% if not cur_sort %}selected{% endif %}>Our top picks</option>
-                        <option value="review_score_desc" {% if cur_sort in ['review_score_desc','best_reviewed','review_score','rating'] %}selected{% endif %}>Best reviewed (review score)</option>
-                        <option value="price_asc" {% if cur_sort in ['price_asc','price_low'] %}selected{% endif %}>Price (lowest first)</option>
-                        <option value="price_desc" {% if cur_sort in ['price_desc','price_high'] %}selected{% endif %}>Price (highest first)</option>
-                        <option value="stars" {% if cur_sort == 'stars' %}selected{% endif %}>Property rating (stars)</option>
-                        <option value="distance" {% if cur_sort == 'distance' %}selected{% endif %}>Distance from city centre</option>
-                        {% if show_beach_sort %}<option value="distance_beach" {% if cur_sort == 'distance_beach' %}selected{% endif %}>Distance From Beach</option>{% endif %}
-                    </select>
+                    <input type="hidden" name="sort" id="sortHidden" value="{{ cur_sort }}">
+                    <div class="wv-sort-pills" style="display:flex;flex-direction:column;gap:4px;">
+                        {% set sort_options = [
+                            ('', 'Our top picks'),
+                            ('review_score_desc', 'Best reviewed'),
+                            ('price_asc', 'Price (lowest first)'),
+                            ('price_desc', 'Price (highest first)'),
+                            ('stars', 'Property rating (stars)'),
+                            ('distance', 'Distance from centre'),
+                        ] %}
+                        {% for val, label in sort_options %}
+                        <button type="button"
+                                class="wv-sort-pill{% if cur_sort == val or (not cur_sort and val == '') or (cur_sort in ['best_reviewed','review_score','rating'] and val == 'review_score_desc') or (cur_sort == 'price_low' and val == 'price_asc') or (cur_sort == 'price_high' and val == 'price_desc') %} wv-sort-active{% endif %}"
+                                data-sort-value="{{ val }}"
+                                onclick="document.getElementById('sortHidden').value=this.dataset.sortValue;this.parentElement.querySelectorAll('.wv-sort-pill').forEach(function(b){b.classList.remove('wv-sort-active')});this.classList.add('wv-sort-active');document.getElementById('filterForm').submit();"
+                                style="display:block;width:100%;text-align:left;padding:7px 10px;border:1px solid #d0d0d0;border-radius:4px;background:#fff;color:#262626;font-size:13px;cursor:pointer;transition:background 0.1s,border-color 0.1s;">
+                            {{ label }}
+                        </button>
+                        {% endfor %}
+                        {% if show_beach_sort %}
+                        <button type="button"
+                                class="wv-sort-pill{% if cur_sort == 'distance_beach' %} wv-sort-active{% endif %}"
+                                data-sort-value="distance_beach"
+                                onclick="document.getElementById('sortHidden').value=this.dataset.sortValue;this.parentElement.querySelectorAll('.wv-sort-pill').forEach(function(b){b.classList.remove('wv-sort-active')});this.classList.add('wv-sort-active');document.getElementById('filterForm').submit();"
+                                style="display:block;width:100%;text-align:left;padding:7px 10px;border:1px solid #d0d0d0;border-radius:4px;background:#fff;color:#262626;font-size:13px;cursor:pointer;">
+                            Distance From Beach
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
 
                 {# ---- Popular filters (amenities / cancellation / breakfast) ---- #}
@@ -116,6 +162,43 @@
                                {% if args.get(key) in ['1','true','on','yes'] %}checked{% endif %}
                                onchange="document.getElementById('filterForm').submit()">
                         {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+
+                {# ---- Star rating selector ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property type</h4>
+                    {# Real upstream booking.com `ht_id` property-type filter from harvest /searchresults Paris #}
+                    {% for code, label, cnt in [
+                        ('204','Hotels',806),
+                        ('201','Apartments',1320),
+                        ('220','Vacation Homes',5),
+                        ('213','Villas',4),
+                        ('208','Bed and Breakfasts',4),
+                        ('216','Guesthouses',1),
+                        ('203','Hostels',17),
+                        ('222','Homestays',8),
+                        ('214','Campgrounds',1)
+                    ] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="checkbox" name="ht_id" value="{{ code }}"
+                               {% if args.getlist('ht_id') and code in args.getlist('ht_id') %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Bed preference</h4>
+                    {% for v, label, cnt in [
+                        ('3','Double bed',1124),('5','Queen bed',939),('2','Twin beds',491),('6','King bed',300)
+                    ] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="checkbox" name="tdb" value="{{ v }}"
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
                     </label>
                     {% endfor %}
                 </div>
@@ -183,27 +266,56 @@
                 {% endif %}
 
                 <noscript><button type="submit" class="btn-primary" style="width:100%;">Apply filters</button></noscript>
+                {# R5 — explicit apply CTA, sticks to bottom of filter sidebar on mobile #}
+                <button type="submit" class="btn-primary apply-filters-cta" id="applyFiltersCta"
+                        aria-label="Apply selected filters" style="width:100%;margin-top:6px;">
+                    Apply filters
+                </button>
             </form>
         </aside>
 
         {# =========== RESULTS =========== #}
         <div>
+            {# R5 — map view toggle + "Search this area" floating CTA. JS-only;
+               does not change result list, just demonstrates the map overlay. #}
+            <div class="map-view-bar" role="region" aria-label="Map view controls">
+                <button type="button" id="toggleMapView" class="btn-secondary"
+                        aria-pressed="false" aria-controls="mapClusterPane">
+                    &#128506; Show on map
+                </button>
+                <span style="font-size:12px;color:#666;">View all properties as map clusters</span>
+            </div>
+            <div class="map-cluster-pane" id="mapClusterPane" aria-hidden="true">
+                <div class="map-cluster-grid">
+                    {% for prop in results[:24] %}
+                    <span class="map-cluster-pin"
+                          style="left:{{ ((loop.index0 * 37) % 90 + 5) }}%;top:{{ ((loop.index0 * 53) % 80 + 8) }}%;"
+                          aria-label="Cluster {{ loop.index }}: {{ prop.name }} at ${{ '%.0f' % prop.discounted_price }} per night">
+                        ${{ '%.0f' % prop.discounted_price }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <button type="button" class="map-search-here-btn" id="mapSearchHereBtn"
+                        aria-label="Re-search this map area">
+                    &#128270; Search this area
+                </button>
+            </div>
             {% if results %}
             {% for prop in results %}
-            <div class="property-card">
+            <div class="property-card" role="article" aria-labelledby="prop-title-{{ prop.id }}">
                 <div class="property-card-img">
                     {% if prop.image %}
-                    <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                    <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}"
                          onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;&quot;></div>'">
                     {% endif %}
                 </div>
                 <div class="property-card-body">
                     <div class="property-card-header">
                         <div>
-                            <h3 class="property-card-title">
+                            <h3 class="property-card-title" id="prop-title-{{ prop.id }}">
                                 <a href="{{ url_for('property_detail', slug=prop.slug, checkin=q_checkin, checkout=q_checkout) }}">{{ prop.name }}</a>
                             </h3>
-                            <div class="stars">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
+                            <div class="stars" aria-label="{{ prop.stars }} star property">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
                             <div class="neighborhood">{{ prop.neighborhood }} &middot; {{ prop.city.display }}{% if prop.brand %} &middot; <span style="color:#006ce4;">{{ prop.brand }}</span>{% endif %}</div>
                             {% if prop.miles_from_query is not none and miles_label_name %}
                             <div class="distance-from-landmark" style="margin-top:4px;font-size:13px;color:#262626;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -241,7 +353,8 @@
                         </div>
                     </div>
                     <div class="property-card-footer">
-                        <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                        <span class="price" aria-hidden="true">${{ '%.0f' % prop.discounted_price }}</span>
+                        <span class="sr-only">from ${{ '%.0f' % prop.discounted_price }} per night</span>
                         <div class="price-includes">per night
                             {% if currency_code == 'CNY' %}
                                 <span style="color:#444;"> &asymp; &yen;{{ '%.0f' % (prop.discounted_price * currency_rate) }}</span>
@@ -263,13 +376,71 @@
                 </div>
             </div>
             {% endfor %}
+
+            {# =========== PAGINATION =========== #}
+            <!-- WV-BOOKING-10PPP-FIX-2026-06-01 -->
+            {%- if search_pages > 1 %}
+            <div style="text-align:center;margin:24px 0 8px 0;padding:20px;background:#003580;border-radius:8px;position:sticky;bottom:0;z-index:50;box-shadow:0 -2px 8px rgba(0,0,0,0.15);">
+                <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;">
+                    {% if search_page > 1 %}
+                    <a href="?{{ request.query_string.decode().replace('&page=' ~ search_page, '').replace('page=' ~ search_page, '') }}&page={{ search_page - 1 }}"
+                       style="display:inline-block;padding:12px 28px;font-size:16px;font-weight:700;color:#fff;background:#006ce4;border:2px solid #fff;border-radius:8px;text-decoration:none;">&larr; Previous page</a>
+                    {% endif %}
+                    <span style="padding:8px 16px;font-size:15px;color:#fff;font-weight:600;">Page {{ search_page }} of {{ search_pages }} &middot; {{ search_total }} properties total</span>
+                    {% if search_page < search_pages %}
+                    <a href="?{{ request.query_string.decode().replace('&page=' ~ search_page, '').replace('page=' ~ search_page, '') }}&page={{ search_page + 1 }}"
+                       style="display:inline-block;padding:12px 28px;font-size:16px;font-weight:700;color:#003580;background:#febb02;border:2px solid #febb02;border-radius:8px;text-decoration:none;">Next page &rarr;</a>
+                    {% endif %}
+                </div>
+            </div>
+            {%- endif %}
+
+            {# No-match hint after last card on current page #}
+            {% if results %}
+            <div style="text-align:center;margin:12px 0 20px 0;padding:14px 20px;background:#fef9e7;border:1px solid #f5e6b8;border-radius:8px;font-size:14px;color:#6b5900;">
+                <strong>Can't find what you're looking for?</strong> Try refining your search with the filters on the left, or
+                {% if search_pages > 1 and search_page < search_pages %}
+                browse the <a href="?{{ request.query_string.decode().replace('&page=' ~ search_page, '').replace('page=' ~ search_page, '') }}&page={{ search_page + 1 }}" style="color:#006ce4;font-weight:600;">next page of results</a>.
+                {% else %}
+                try a different keyword.
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% elif not empty_destination %}
-            <div class="empty-state">
-                <h2>No properties found</h2>
-                <p>Try a different keyword or browse all <a href="{{ url_for('stays') }}">stays</a>.</p>
+            <div class="empty-state" role="status" aria-live="polite"
+                 style="padding:40px;text-align:center;background:#fafafa;border:1px solid #e7e7e7;border-radius:8px;margin:20px 0;">
+                <h2 style="margin:0 0 10px 0;font-size:20px;color:#262626;">No properties found{% if query %} for "{{ query }}"{% endif %}</h2>
+                <p style="margin:0;color:#666;font-size:14px;">Try a different city/keyword, clear amenity or rating filters, or <a href="{{ url_for('stays') }}">browse all stays</a> and <a href="{{ url_for('index') }}">return to the Booking homepage</a> for trending destinations.</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+// R5 — Map view toggle + "Search this area" CTA. Pure client-side demo,
+// no backend dependency. Keyboard-accessible (Enter/Space trigger via native).
+(function () {
+    var btn = document.getElementById('toggleMapView');
+    var pane = document.getElementById('mapClusterPane');
+    var search = document.getElementById('mapSearchHereBtn');
+    if (!btn || !pane) return;
+    btn.addEventListener('click', function () {
+        var open = pane.classList.toggle('open');
+        btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        pane.setAttribute('aria-hidden', open ? 'false' : 'true');
+    });
+    if (search) {
+        search.addEventListener('click', function () {
+            search.disabled = true;
+            search.textContent = '✓ Searching this area...';
+            setTimeout(function () {
+                search.disabled = false;
+                search.textContent = '\u{1F50E} Search this area';
+            }, 900);
+        });
+    }
+})();
+</script>
 {% endblock %}
