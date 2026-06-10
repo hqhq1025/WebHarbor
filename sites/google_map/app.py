@@ -713,6 +713,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 def gen_trip_code():
     return "TRIP-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
@@ -1003,6 +1036,15 @@ def category_page(slug):
     city_filter = request.args.get("city", "")
     sort = request.args.get("sort", "rating")
     min_rating = request.args.get("min_rating", type=float)
+    # WV-MEDIUM-PERF-GMAP-2026-06-03 F1: paginate — was unlimited q.all(),
+    # would render up to 160k rows (parks) = 330 MB / 19s solo.
+    try:
+        page = int(request.args.get("page", "1"))
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+    page_size = 60
 
     q = Place.query.filter_by(category_id=cat.id)
     if city_filter:
@@ -1019,7 +1061,11 @@ def category_page(slug):
     else:
         q = q.order_by(Place.rating.desc(), Place.review_count.desc())
 
-    places = q.all()
+    total_count = q.with_entities(Place.id).count()
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
+    if page > total_pages:
+        page = total_pages
+    places = q.limit(page_size).offset((page - 1) * page_size).all()
     cities = City.query.order_by(City.display_name).all()
 
     return render_template(
@@ -1030,6 +1076,12 @@ def category_page(slug):
         city_filter=city_filter,
         sort=sort,
         min_rating=min_rating,
+        page=page,
+        page_size=page_size,
+        total_count=total_count,
+        total_pages=total_pages,
+        has_prev=(page > 1),
+        has_next=(page < total_pages),
     )
 
 
@@ -1627,6 +1679,53 @@ def _resolve_location_anchor(q, args):
                              City.display_name.ilike(f"{phrase},%"),
                              City.slug == slug))
                  .first())
+            # === wv-search-fix-2026-06-01-gm === M1: ASCII-fold fallback (Zürich→Zurich, Bogotá→Bogota)
+            if c is None:
+                from unicodedata import normalize, combining
+                _ascii_phrase = ''.join(ch for ch in normalize('NFKD', phrase) if not combining(ch))
+                if _ascii_phrase != phrase:
+                    _ascii_slug = _ascii_phrase.lower().replace(' ', '-')
+                    c = (City.query
+                         .filter(or_(City.display_name.ilike(_ascii_phrase),
+                                     City.display_name.ilike(f"{_ascii_phrase},%"),
+                                     City.slug == _ascii_slug))
+                         .first())
+            # === wv-search-fix-2026-06-01-gm === M1b: foreign-language city alias map (München→Munich, Köln→Cologne)
+            if c is None:
+                _CITY_ALIAS = {
+                    'münchen': 'munich', 'munchen': 'munich',
+                    'köln': 'cologne', 'koln': 'cologne', 'koeln': 'cologne',
+                    'wien': 'vienna',
+                    'roma': 'rome',
+                    'milano': 'milan',
+                    'firenze': 'florence',
+                    'napoli': 'naples',
+                    'venezia': 'venice',
+                    'praha': 'prague',
+                    'warszawa': 'warsaw',
+                    'lisboa': 'lisbon',
+                    'moskva': 'moscow',
+                    'москва': 'moscow',
+                    'kyiv': 'kiev',
+                    'athína': 'athens', 'athina': 'athens',
+                    'kobenhavn': 'copenhagen', 'københavn': 'copenhagen',
+                    'beijing': 'beijing', '北京': 'beijing',
+                    'shanghai': 'shanghai', '上海': 'shanghai',
+                    'tokyo': 'tokyo', '東京': 'tokyo',
+                    'kyoto': 'kyoto', '京都': 'kyoto',
+                    'seoul': 'seoul', '서울': 'seoul',
+                    'bombay': 'mumbai',
+                    'peking': 'beijing',
+                }
+                _alias = _CITY_ALIAS.get(phrase.lower().strip())
+                if _alias is None:
+                    from unicodedata import normalize as _n, combining as _co
+                    _alias = _CITY_ALIAS.get(''.join(ch for ch in _n('NFKD', phrase.lower()) if not _co(ch)).strip())
+                if _alias:
+                    c = (City.query
+                         .filter(or_(City.display_name.ilike(_alias),
+                                     City.slug == _alias))
+                         .first())
             if c and c.lat and c.lng:
                 cleaned = " ".join(words[:i] + words[i + span:]).strip(" ,")
                 return cleaned, c.lat, c.lng, c.display_name
@@ -1640,6 +1739,14 @@ def _apply_place_filters(query, args):
         c = City.query.filter(
             or_(City.slug == city.lower().replace(" ", "-"),
                 City.display_name.ilike(f"%{city}%"))).first()
+        # === wv-search-fix-2026-06-01-gm === M3: ASCII-fold city= fallback
+        if c is None:
+            from unicodedata import normalize, combining
+            _ac = ''.join(ch for ch in normalize('NFKD', city) if not combining(ch))
+            if _ac != city:
+                c = City.query.filter(
+                    or_(City.slug == _ac.lower().replace(" ", "-"),
+                        City.display_name.ilike(f"%{_ac}%"))).first()
         if c:
             query = query.filter(Place.city_id == c.id)
     state = args.get("state", "").strip()
@@ -1691,7 +1798,12 @@ def _apply_place_filters(query, args):
         query = query.filter(Place.is_24h.is_(True))
     # "Price" chip — exact match on price_level ($, $$, $$$, $$$$)
     price_level = args.get("price_level", "").strip()
-    if price_level in ("$", "$$", "$$$", "$$$$"):
+    # === wv-search-fix-2026-06-01-gm === M2: accept numeric 1..4 / 'free' / dollar strings
+    _pl_map = {'1': '$', '2': '$$', '3': '$$$', '4': '$$$$',
+               'free': 'Free', 'Free': 'Free', 'FREE': 'Free'}
+    if price_level in _pl_map:
+        price_level = _pl_map[price_level]
+    if price_level in ("$", "$$", "$$$", "$$$$", "Free"):
         query = query.filter(Place.price_level == price_level)
     has_parking_lot = args.get("has_parking_lot", "")
     if has_parking_lot in ("1", "true", "yes"):
@@ -1749,6 +1861,37 @@ def _apply_place_sort(results, sort):
     return results
 
 
+
+# === WV-FTS5-INIT-2026-06-01 ===
+def _fts5_search_places(q, limit=300):
+    """FTS5 first-pass for place search: porter stemmer + accent folding + BM25."""
+    try:
+        import sqlite3 as _s3
+        import re as _r
+        db_path = str(BASE_DIR / "instance" / "gmaps.db")
+        conn = _s3.connect(db_path)
+        if conn.execute("SELECT count(*) FROM sqlite_master WHERE name='place_fts'").fetchone()[0] == 0:
+            conn.close()
+            return None
+        toks = [t for t in _r.findall(r"[a-zA-Z0-9]+", q) if len(t) >= 2]
+        toks = [t for t in toks if t.lower() not in STOPWORDS]
+        if not toks:
+            conn.close()
+            return None
+        fts_query = " ".join('"' + t + '"' for t in toks)
+        rows = conn.execute(
+            "SELECT rowid, bm25(place_fts) FROM place_fts "
+            "WHERE place_fts MATCH ? ORDER BY bm25(place_fts) LIMIT ?",
+            (fts_query, limit)
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return None
+        return [r[0] for r in rows]  # return place IDs
+    except Exception:
+        return None
+# === /WV-FTS5-INIT-2026-06-01 ===
+
 @app.route("/search")
 @app.route("/search/<path:maps_query>")
 @app.route("/maps/search/")
@@ -1783,9 +1926,59 @@ def search(maps_query=""):
 
     query = Place.query
     query = _apply_place_filters(query, args)
-    if state_filter:
+    # === WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix A: when a city anchor was resolved, skip the
+    # state filter.  Place.state is empty for 99.999% of rows (only 3 of
+    # 903K have non-empty state), so applying state_filter=='GA' kills
+    # 100% of candidates for queries like "transit Savannah, GA".  The
+    # anchor city/lat-lng already pins the location precisely; the state
+    # token was just a parsing disambiguator.
+    _anchor_resolved = (anchor_lat is not None and anchor_lng is not None)
+    if state_filter and not _anchor_resolved:
         query = query.filter(Place.state == state_filter)
-    candidates = query.limit(2000).all()
+    # === /WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 ===
+    # Reset-fix 2026-05-31: push anchor-city filter into SQL so
+    # rare-city queries (Branson, Shenyang, Winston-Salem) actually
+    # hit their rows. Previous code did limit(2000) FIRST, missing
+    # 99% of the 903K-row Place table for any non-major city.
+    if anchor_lat is not None and anchor_lng is not None:
+        # Crude bbox to narrow SQL before limit (≈1.5° lat/lng around anchor
+        # ≈ 100 mi, matching the Python radius filter below).
+        bbox_deg = 1.5
+        query = query.filter(
+            Place.lat.between(anchor_lat - bbox_deg, anchor_lat + bbox_deg),
+            Place.lng.between(anchor_lng - bbox_deg, anchor_lng + bbox_deg),
+        )
+        candidates = query.limit(5000).all()
+    else:
+        # No anchor → broader sweep but still limit (token scorer
+        # truncates to top-60 anyway)
+        candidates = query.limit(5000).all()
+
+    # === WV-GMAP-CITY-PRIORITY-2026-06-01 ===
+    # When a city anchor was resolved, ensure places belonging to that city
+    # are ALWAYS in the candidate set.  The bbox + limit(5000) can miss
+    # the anchor city entirely (e.g. Detroit has city_id=44 but its 1117
+    # places may all fall outside the first 5000 rows returned by the
+    # unordered query).  Fix: do a separate city_id-filtered query and
+    # merge into candidates.
+    if anchor_label and anchor_lat is not None:
+        _anchor_city = City.query.filter(
+            City.display_name == anchor_label
+        ).first()
+        if _anchor_city:
+            _existing_ids = {p.id for p in candidates}
+            _city_q = Place.query.filter(Place.city_id == _anchor_city.id)
+            _city_q = _apply_place_filters(_city_q, args)
+            # === WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix A2: same rationale — skip state filter
+            # when we already have a city anchor.  The city_id filter
+            # in _city_q is the precise location, state would only
+            # drop rows because the Place.state column is unpopulated.
+            # === /WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 ===
+            _city_places = _city_q.limit(2000).all()
+            _new = [p for p in _city_places if p.id not in _existing_ids]
+            if _new:
+                candidates.extend(_new)
+    # === /WV-GMAP-CITY-PRIORITY-2026-06-01 ===
 
     # Apply anchor radius filter EARLY (before token scoring + top-60
     # truncation) so semantically equivalent queries converge.  Without
@@ -1804,16 +1997,94 @@ def search(maps_query=""):
 
     tokens = _tokenize(search_q)
 
+    # === WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+    _fts5_place_ids = set()
+    if search_q and tokens:
+        _fts_ids = _fts5_search_places(search_q, limit=300)
+        if _fts_ids:
+            _fts5_place_ids = set(_fts_ids)
+    # === /WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+
     if search_q and tokens:
         min_required = max(1, (len(tokens) + 1) // 2)
+        # === WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix B+C helpers
+        # Pre-compute query-derived signals reused inside the scoring loop:
+        #  - token_set   : lower-cased query tokens, set for O(1) lookup
+        #  - search_q_lc : full cleaned query, lower-cased
+        #  - search_q_nf : ASCII-folded query for diacritic-blind name match
+        try:
+            from unicodedata import normalize as _wv_nfkd, combining as _wv_co
+            def _wv_fold(s):
+                return ''.join(ch for ch in _wv_nfkd('NFKD', (s or '').lower())
+                               if not _wv_co(ch))
+        except Exception:
+            def _wv_fold(s):
+                return (s or '').lower()
+        _wv_token_set = {t.lower() for t in tokens}
+        _wv_search_q_lc = (search_q or '').strip().lower()
+        _wv_search_q_nf = _wv_fold(search_q)
+        _wv_anchor_city_id = None
+        if _anchor_resolved and anchor_label:
+            _wv_ac = City.query.filter(City.display_name == anchor_label).first()
+            if _wv_ac is not None:
+                _wv_anchor_city_id = _wv_ac.id
+        # === /WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix B+C helpers
         scored = []
         for p in candidates:
             s = _score_place(p, tokens)
+            # === WV-FTS5-INIT-2026-06-01-BOOST ===
+            if p.id in _fts5_place_ids:
+                s += 5  # BM25 match bonus
+            # === /WV-FTS5-INIT-2026-06-01-BOOST ===
+            # === WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix B: category-slug / category-name token match
+            # When the user's query tokens include the place's exact
+            # category slug or name (e.g. token "transit" for a row in
+            # the Transit category), boost +3 so the row beats out
+            # haystack-substring matches whose category is unrelated
+            # (e.g. "Transit Plaza Bike-Share Hub" in Bike Rentals).
+            try:
+                _cat = p.category
+                if _cat is not None:
+                    _cs = (_cat.slug or '').lower()
+                    _cn = (_cat.name or '').lower()
+                    if _cs and _cs in _wv_token_set:
+                        s += 3
+                    elif _cn and _cn in _wv_token_set:
+                        s += 3
+                    else:
+                        # Multi-word category names ("Religious Sites",
+                        # "Gas Stations") — boost if ALL words present
+                        _cn_words = [w for w in _cn.split() if len(w) >= 3]
+                        if _cn_words and all(w in _wv_token_set for w in _cn_words):
+                            s += 3
+            except Exception:
+                pass
+            # Fix B2: in-anchor-city boost.  When a city anchor was
+            # resolved and this place belongs to that city, +2.  Stops
+            # adjacent-city places (Hilton Head SC) from drowning out
+            # in-anchor-city places (Savannah GA).
+            if _wv_anchor_city_id and p.city_id == _wv_anchor_city_id:
+                s += 2
+            # Fix C: exact-name short-circuit.  When the full cleaned
+            # query equals the place's name (case-insensitive, with or
+            # without diacritics), give a +50 boost so the exact-name
+            # strategy always ranks the canonical row at #1.
+            if _wv_search_q_lc and p.name:
+                _pn_lc = p.name.lower()
+                if _pn_lc == _wv_search_q_lc:
+                    s += 50
+                elif _wv_fold(p.name) == _wv_search_q_nf:
+                    s += 50
+                elif len(_wv_search_q_lc) >= 6 and _wv_search_q_lc in _pn_lc:
+                    s += 10
+            # === /WV-GMAP-ANCHOR-FINDABILITY-2026-06-03 === Fix B+C
             if s >= min_required:
                 scored.append((s, p))
         if not scored:
             for p in candidates:
                 s = _score_place(p, tokens)
+                if p.id in _fts5_place_ids:
+                    s += 5
                 if s >= 1:
                     scored.append((s, p))
         # Fuzzy LIKE fallback: if the tokenized scorer found nothing
@@ -1844,6 +2115,12 @@ def search(maps_query=""):
                            if pat.strip("%") in hay)
                 if hits:
                     scored.append((hits, p))
+        # === WV-FTS5-INIT-2026-06-01-RESCUE ===
+        if not scored and _fts5_place_ids:
+            _rescue = Place.query.filter(Place.id.in_(list(_fts5_place_ids)[:60])).all()
+            _rmap = {p.id: p for p in _rescue}
+            scored = [(1, _rmap[pid]) for pid in list(_fts5_place_ids)[:60] if pid in _rmap]
+        # === /WV-FTS5-INIT-2026-06-01-RESCUE ===
         scored.sort(key=lambda x: (-x[0], -(x[1].rating or 0)))
         results = [p for _, p in scored][:60]
     else:
@@ -2200,6 +2477,46 @@ _ZIP_AREA_RE = re.compile(r"^(\d{5})\s*\(zip\s*area\)\s*$", re.I)
 _CITY_CENTER_RE = re.compile(r"^(.+?)\s*\(city\s*center\)\s*$", re.I)
 
 
+# WV-MEDIUM-PERF-GMAP-2026-06-03 F2: deferred-load helper for endpoint
+# resolver token-overlap fallback paths.  ORM-hydrating 2000 Place rows
+# including description/photos_json/hours_json/etc was ~1.5 MB per
+# /directions call (0.8-2.5s solo, much worse under concurrency).
+# Defer the heavy TEXT cols; resolver only reads name/subcategory/
+# chain_brand/category/lat/lng/rating/review_count/address/slug.
+from sqlalchemy.orm import defer as _wv_defer
+
+_WV_HEAVY_PLACE_COLS = (
+    "description", "photos_json", "hours_json", "tags_json",
+    "amenities_json", "review_snippets_json", "popular_times_json",
+    "menu_json", "ratings_dist_json", "floors_json",
+)
+
+def _wv_lite_place_query():
+    """Return Place.query with heavy TEXT cols deferred."""
+    q = Place.query
+    for c in _WV_HEAVY_PLACE_COLS:
+        col = getattr(Place, c, None)
+        if col is not None:
+            q = q.options(_wv_defer(col))
+    return q
+
+
+# WV-MEDIUM-PERF-GMAP-2026-06-03 F4: add a NOCASE index on place.name so
+# `_is_specific_endpoint` and `_resolve_endpoint`'s exact-name lookups
+# (Place.name.ilike(term) without wildcards) stop full-scanning the 903k
+# row Place table.  Profiled cost: ~540ms per call before, <0.5ms after.
+# Each /directions request makes 2-4 such calls.
+def _wv_ensure_perf_indexes():
+    try:
+        with db.engine.begin() as conn:
+            conn.exec_driver_sql(
+                "CREATE INDEX IF NOT EXISTS "
+                "ix_place_name_nocase ON place(name COLLATE NOCASE)"
+            )
+    except Exception:
+        pass
+
+
 def _is_specific_endpoint(term):
     """A term is 'specific' when it unambiguously names ONE location for
     /directions purposes: an exact Place name, an exact City name, or
@@ -2217,7 +2534,8 @@ def _is_specific_endpoint(term):
         return True
     if _CITY_CENTER_RE.match(term):
         return True
-    if Place.query.filter(Place.name.ilike(term)).first():
+    # WV-MEDIUM-PERF-GMAP-2026-06-03 F4: NOCASE-indexed exact lookup
+    if Place.query.filter(Place.name.collate('NOCASE') == term).first():
         return True
     slug = term.lower().replace(" ", "-")
     # City match — accept exact display_name ("Boston"), comma-prefix
@@ -2299,7 +2617,8 @@ def _endpoint_candidates(term, anchor_lat=None, anchor_lng=None, max_n=8):
                        Category.name.ilike(f"%{term}%")))
            .first())
     cat_id = cat.id if cat else -1
-    cands = (Place.query.filter(Place.lat != 0).filter(or_(
+    # WV-MEDIUM-PERF-GMAP-2026-06-03 F2: deferred-load
+    cands = (_wv_lite_place_query().filter(Place.lat != 0).filter(or_(
         Place.name.ilike(f"%{term}%"),
         Place.subcategory.ilike(f"%{term}%"),
         Place.chain_brand.ilike(f"%{term}%"),
@@ -2312,7 +2631,8 @@ def _endpoint_candidates(term, anchor_lat=None, anchor_lng=None, max_n=8):
     toks = set(_tokenize(term))
     if toks:
         seen = {p.id for p in cands}
-        for p in (Place.query.filter(Place.lat != 0).limit(2000).all()):
+        # WV-MEDIUM-PERF-GMAP-2026-06-03 F2: deferred-load
+        for p in (_wv_lite_place_query().filter(Place.lat != 0).limit(2000).all()):
             if p.id in seen:
                 continue
             haystack = " ".join([
@@ -2427,8 +2747,9 @@ def _resolve_endpoint(term, anchor_lat=None, anchor_lng=None):
                 "address": city_exact.display_name, "place_id": None}
 
     # 2b) Direct Place name match (single best)
+    # WV-MEDIUM-PERF-GMAP-2026-06-03 F4: NOCASE-indexed exact lookup
     direct = (Place.query
-              .filter(Place.name.ilike(term), Place.lat != 0)
+              .filter(Place.name.collate('NOCASE') == term, Place.lat != 0)
               .order_by(Place.is_featured.desc(), Place.review_count.desc())
               .first())
     if direct:
@@ -2446,7 +2767,8 @@ def _resolve_endpoint(term, anchor_lat=None, anchor_lng=None):
                              Category.name.ilike(f"%{term}%")))
                  .first())
     cat_id = cat_match.id if cat_match else -1
-    cand_query = Place.query.filter(Place.lat != 0).filter(or_(
+    # WV-MEDIUM-PERF-GMAP-2026-06-03 F2: deferred-load
+    cand_query = _wv_lite_place_query().filter(Place.lat != 0).filter(or_(
         Place.name.ilike(f"%{term}%"),
         Place.subcategory.ilike(f"%{term}%"),
         Place.chain_brand.ilike(f"%{term}%"),
@@ -2488,7 +2810,8 @@ def _resolve_endpoint(term, anchor_lat=None, anchor_lng=None):
     toks = set(_tokenize(term))
     if toks:
         scored = []
-        for p in Place.query.filter(Place.lat != 0).limit(2000).all():
+        # WV-MEDIUM-PERF-GMAP-2026-06-03 F2: deferred-load
+        for p in _wv_lite_place_query().filter(Place.lat != 0).limit(2000).all():
             pt = set(_tokenize((p.name or "") + " " + (p.subcategory or "")
                                + " " + (p.chain_brand or "")))
             overlap = len(toks & pt)
@@ -3439,6 +3762,60 @@ def list_delete(list_id):
     db.session.commit()
     flash("List deleted.", "success")
     return redirect(url_for("lists_page"))
+
+
+
+# WV-SEARCH-LOOP-2026-06-03-GMAP — quick-add place to a specific list by name
+@app.route("/lists/<int:list_id>/add", methods=["POST"])
+@login_required
+def list_quick_add(list_id):
+    sl = db.session.get(SavedList, list_id)
+    if not sl or sl.user_id != current_user.id:
+        abort(404)
+    q = (request.form.get("place_query") or "").strip()
+    if not q:
+        flash("Type a place name to add.", "error")
+        return redirect(url_for("list_detail", list_id=list_id))
+    # Exact name match first
+    place = Place.query.filter(Place.name.ilike(q)).first()
+    if not place:
+        # Prefix match
+        place = Place.query.filter(Place.name.ilike(q + "%")).first()
+    if not place:
+        # Unique substring
+        matches = Place.query.filter(
+            Place.name.ilike("%" + q + "%")
+        ).limit(2).all()
+        if len(matches) == 1:
+            place = matches[0]
+        elif len(matches) > 1:
+            flash(
+                "Multiple places match '{0}'. Pick one from the "
+                "results then click 'Save to {1}'.".format(q, sl.name),
+                "info",
+            )
+            return redirect(url_for(
+                "maps_search_query", maps_query=q,
+            ) + "?add_to_list={0}".format(list_id))
+    if not place:
+        flash("No place found for '{0}'.".format(q), "error")
+        return redirect(url_for(
+            "maps_search_query", maps_query=q,
+        ) + "?add_to_list={0}".format(list_id))
+    existing = SavedPlace.query.filter_by(
+        user_id=current_user.id, place_id=place.id, list_id=list_id,
+    ).first()
+    if not existing:
+        sp = SavedPlace(user_id=current_user.id,
+                        list_id=list_id, place_id=place.id)
+        db.session.add(sp)
+        db.session.commit()
+        flash("Saved {0} to '{1}'.".format(place.name, sl.name),
+              "success")
+    else:
+        flash("{0} is already in '{1}'.".format(place.name, sl.name),
+              "info")
+    return redirect(url_for("list_detail", list_id=list_id))
 
 
 @app.route("/saved")
@@ -6958,10 +7335,58 @@ def r6_photosphere_detail(sphere_id):
 
 
 
+
+# === WV-FTS5-STARTUP ===
+def _ensure_fts5_places():
+    """Create place_fts if missing. Runs at startup + survives /reset."""
+    import sqlite3 as _s3
+    db_path = str(BASE_DIR / "instance" / "gmaps.db")
+    conn = _s3.connect(db_path, timeout=120)
+    cur = conn.cursor()
+    cur.execute("SELECT count(*) FROM sqlite_master WHERE name='place_fts'")
+    if cur.fetchone()[0] > 0:
+        try:
+            n = cur.execute("SELECT count(*) FROM place_fts").fetchone()[0]
+            if n > 100000:
+                conn.close()
+                return
+        except:
+            cur.execute("DROP TABLE IF EXISTS place_fts")
+            conn.commit()
+    cur.execute("""
+        CREATE VIRTUAL TABLE place_fts USING fts5(
+            name, category_name, city_name,
+            tokenize='porter unicode61 remove_diacritics 2'
+        )
+    """)
+    conn.commit()
+    cur.execute("""
+        INSERT INTO place_fts(rowid, name, category_name, city_name)
+        SELECT p.id, COALESCE(p.name,''), COALESCE(c.name,''), COALESCE(ci.display_name,'')
+        FROM place p
+        LEFT JOIN category c ON p.category_id = c.id
+        LEFT JOIN city ci ON p.city_id = ci.id
+    """)
+    conn.commit()
+    print(f"  [+] place_fts created ({cur.execute('SELECT count(*) FROM place_fts').fetchone()[0]} rows)")
+    conn.close()
+# === /WV-FTS5-STARTUP ===
+
+# === WV-FTS5-MODLEVEL ===
+# Auto-init FTS5 on import (site_runner uses 'from app import app')
+with app.app_context():
+    try:
+        _ensure_fts5_places()
+    except Exception as _fts_err:
+        import traceback
+        traceback.print_exc()
+# === /WV-FTS5-MODLEVEL ===
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         seed_database()
+        _ensure_fts5_places()
         seed_benchmark_users()
         from seed_data import seed_user_content
         seed_user_content(db, User, Place, Review, Photo, TimelineEntry)
@@ -6982,3 +7407,41 @@ def _add_static_cache_headers(resp):
     return resp
 # --- end perf ---
 
+
+
+# === WVFIT AUTO-LOGIN (2026-05-31) ===
+# Auto-login middleware: before every request, if no user is authenticated,
+# silently log in user id=1 (the seed demo user). This gives the CUA a
+# stable signed-in session without exposing a fake login flow that fails
+# bcrypt password checks.
+try:
+    from flask_login import login_user as _wvfit_login_user, current_user as _wvfit_current_user
+
+    @app.before_request
+    def _wvfit_autologin():
+        # Skip static & login routes; let real login flow work if user actively visits.
+        from flask import request as _req
+        if _req.path.startswith('/static/') or _req.path == '/login' or _req.path == '/logout':
+            return
+        try:
+            if not _wvfit_current_user.is_authenticated:
+                _seed_user = User.query.get(1)
+                if _seed_user is not None:
+                    _wvfit_login_user(_seed_user, remember=False)
+        except Exception:
+            pass  # never break the request flow over autologin
+except Exception as _e:
+    import sys as _sys
+    print(f"[WVFIT autologin] init failed: {_e}", file=_sys.stderr)
+# === END WVFIT AUTO-LOGIN ===
+
+
+# === WV-MEDIUM-PERF-GMAP-2026-06-03 startup index hook ===
+try:
+    with app.app_context():
+        _wv_ensure_perf_indexes()
+except Exception as _wv_perf_idx_err:
+    import sys as _sys
+    print(f"[WV-MEDIUM-PERF-GMAP] index init failed: {_wv_perf_idx_err}",
+          file=_sys.stderr)
+# === /WV-MEDIUM-PERF-GMAP-2026-06-03 startup index hook ===

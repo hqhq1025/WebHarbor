@@ -270,6 +270,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 @app.context_processor
 def inject_globals():
     cart_count = 0

@@ -181,10 +181,15 @@
         {% if paa %}
         <div class="paa-block" aria-labelledby="paa-heading">
             <h2 class="paa-header" id="paa-heading">People also ask</h2>
+            {# WV-SEARCH-LOOP-2026-06-03-GSEARCH-P1 — first PAA item (hoisted by the route to
+               best-match query) renders expanded by default so its answer is
+               visible without a click. This kills the
+               agent-keeps-reformulating-same-PAA-question loop class seen
+               in bulk_medium_v1 (task 33 reformulated 22x, task 70 6x). #}
             {% for p in paa %}
             <button type="button"
-                    class="paa-item"
-                    aria-expanded="false"
+                    class="paa-item{% if loop.first %} paa-item-open{% endif %}"
+                    aria-expanded="{{ 'true' if loop.first else 'false' }}"
                     aria-controls="paa-ans-{{ loop.index }}"
                     id="paa-q-{{ loop.index }}">
                 <span>{{ p.question }}</span>
@@ -194,7 +199,7 @@
                  id="paa-ans-{{ loop.index }}"
                  role="region"
                  aria-labelledby="paa-q-{{ loop.index }}"
-                 hidden>{{ p.answer }}</div>
+                 {% if not loop.first %}hidden{% endif %}>{{ p.answer }}</div>
             {% endfor %}
             <div class="paa-more">
                 <a href="{{ url_for('search', q=q + ' related questions') }}">See more questions →</a>

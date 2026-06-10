@@ -1,13 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Trending searches - Google Trends{% endblock %}
 
+{# WV-LOOP-HOTSPOT-2026-06-03-T1 — agents looped on /trending scrolling through 208
+   items not knowing total count. Adds visible count, a client-side filter box
+   so agents can type a term to jump to its row, and an explicit end-of-list
+   sentinel so a scroll-to-bottom check terminates. #}
+
 {% block content %}
 <div class="trending-page">
     <h1 style="font-size:32px; font-weight:400; margin:0 0 8px;">Trending searches</h1>
-    <p class="muted">Top searches across Google right now</p>
+    <p class="muted">Top searches across Google right now ({{ terms|length }} total)</p>
+    <div role="search" style="margin:12px 0 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <label for="wv-trending-filter" style="font-size:12px;color:#5f6368;">Filter by term:</label>
+      <input id="wv-trending-filter" type="text" placeholder="Type to filter ({{ terms|length }} items)"
+             aria-label="Filter trending list"
+             style="flex:1 1 280px;min-width:240px;padding:8px 10px;border:1px solid #dadce0;border-radius:6px;font-size:14px;"
+             oninput="(function(v){v=v.toLowerCase();document.querySelectorAll('.trending-row').forEach(function(li){var t=(li.querySelector('.term')||{}).textContent||'';li.style.display=(!v||t.toLowerCase().indexOf(v)>=0)?'':'none';});var rem=Array.from(document.querySelectorAll('.trending-row')).filter(function(li){return li.style.display!=='none'}).length;var c=document.getElementById('wv-trending-match');if(c)c.textContent=rem+' match'+(rem===1?'':'es');})(this.value)">
+      <span id="wv-trending-match" style="font-size:12px;color:#5f6368;">{{ terms|length }} matches</span>
+    </div>
     <ol class="trending-list">
         {% for t in terms %}
-        <li class="trending-row">
+        <li class="trending-row" data-term="{{ t.term|lower }}">
             <div class="rank">{{ t.rank }}</div>
             <a href="{{ url_for('search', q=t.term) }}" class="term">{{ t.term }}</a>
             <div class="vol">{{ '{:,}'.format(t.volume) }} searches</div>
@@ -17,5 +30,8 @@
         </li>
         {% endfor %}
     </ol>
+    <div role="status" aria-live="polite" style="margin:24px 0 8px;padding:16px;text-align:center;border:1px dashed #dadce0;border-radius:8px;background:#f8f9fa;color:#5f6368;font-size:14px;">
+      &mdash; End of list: {{ terms|length }} trending terms total &mdash;
+    </div>
 </div>
 {% endblock %}

@@ -44,6 +44,16 @@
                    style="flex:1;padding:6px 10px;font-size:0.82rem;border:1px solid #ddd;border-radius:5px">
             <button type="submit" class="btn btn-secondary btn-sm">Add Item</button>
         </form>
+        <!-- WV-SEARCH-LOOP-2026-06-03-ALLR-S2 — Bulk-add textarea. Lets agents drop a
+             whole ingredient list in one POST instead of looping 8-20x. -->
+        <form method="POST" action="{{ url_for('add_items_to_shopping_list', list_id=sl.id) }}"
+              style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="items" rows="3"
+                      placeholder="Add many items at once (one per line or comma-separated)..."
+                      style="width:100%;padding:6px 10px;font-size:0.82rem;border:1px solid #ddd;border-radius:5px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea>
+            <button type="submit" class="btn btn-secondary btn-sm" style="align-self:flex-start">Add All Items</button>
+        </form>
 
         {% set items = sl.get_items() %}
         {% if items %}

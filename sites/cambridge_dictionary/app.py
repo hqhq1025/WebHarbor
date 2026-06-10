@@ -586,6 +586,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # Minimal UI translation dictionary. When session['lang'] selects one of
 # these locales, visible homepage/nav strings are swapped via the `ui` dict
 # exposed to every template. English (UK) is the default and returns the
@@ -676,27 +709,98 @@ def _score_word(word, tokens):
 
 def _search_words(q):
     """Return scored list of words matching query."""
+    # === wv-search-fix-2026-06-01 ===
+    # Bug: previously candidates were only words whose HEADWORD contains
+    # tokens[0]. Definition-based clues like "low triangular area alluvial
+    # deposits" -> delta or "musical phrase repeated" -> ostinato never
+    # reached _score_word because the headword doesn't contain any of those
+    # tokens. Fix: add a second candidate pool that matches against
+    # definitions_json / guide_word / pos via LIKE, then score everything
+    # together with the existing token-overlap function. Also add an
+    # exact-substring boost so a user typing the exact headword still ranks
+    # the headword #1 above coincidental definition mentions.
     tokens = [t.lower() for t in re.findall(r'[a-z0-9]+', q.lower())
               if t not in STOPWORDS and len(t) >= 2]
     if not tokens:
         return []
-    # Exact headword match first
+    # Pool 1: exact headword match
     exact = Word.query.filter(
         Word.headword.ilike(q.strip()),
         Word.is_thesaurus_phrase == False  # noqa
     ).all()
-    # Partial matches
-    partial = Word.query.filter(
+    # Pool 2: headword contains tokens[0]
+    head_partial = Word.query.filter(
         Word.headword.ilike(f'%{tokens[0]}%'),
         Word.is_thesaurus_phrase == False  # noqa
     ).limit(50).all()
-    seen = {w.id for w in exact}
-    combined = exact + [w for w in partial if w.id not in seen]
-    min_req = max(1, len(tokens) // 2)
-    scored = [(s, w) for w in combined
-              if (s := _score_word(w, tokens)) >= min_req]
+    # Pool 3: definitions / guide_word / pos contain a token (definition clues).
+    # Use one SQL per token (LIMIT 200 each) rather than a single OR-of-N
+    # query — with a giant OR, SQLite would return the first 200 matches of
+    # any term and silently drop rarer matches. E.g. for the clue "low
+    # triangular area alluvial deposits", "low" appears in 5036 defs and
+    # "alluvial" in 12 — a single OR-query LIMIT 200 returns 200 "low" rows
+    # and misses delta entirely. Per-token pools guarantee rare tokens (the
+    # signal) survive. Cap each pool by rarity: very common tokens get 100
+    # rows, rare tokens get 200 (still cheap on 75k-row words table).
+    def_pool = []
+    def_seen = set()
+    for tok in tokens:
+        pat = f'%{tok}%'
+        rows = Word.query.filter(
+            or_(
+                Word.definitions_json.ilike(pat),
+                Word.guide_word.ilike(pat),
+                Word.pos.ilike(pat),
+            ),
+            Word.is_thesaurus_phrase == False  # noqa
+        ).limit(200).all()
+        for w in rows:
+            if w.id in def_seen: continue
+            def_seen.add(w.id); def_pool.append(w)
+    seen = set()
+    combined = []
+    for w in exact + head_partial + def_pool:
+        if w.id in seen: continue
+        seen.add(w.id)
+        combined.append(w)
+    min_req = 1  # was max(1, n//2) — over-filtered short queries
+    scored = []
+    q_lower = q.lower().strip()
+    for w in combined:
+        s = _score_word(w, tokens)
+        # Exact-substring boost: full query is a substring of headword or guide_word.
+        head_l = (w.headword or '').lower()
+        guide_l = (w.guide_word or '').lower()
+        defs_l = (w.definitions_json or '').lower()
+        # Exact-headword boost only when the user typed a short query (looks
+        # like a lookup, not a sentence-clue). For long sentence-clues like
+        # "low triangular area alluvial deposits", the headword "low" should
+        # NOT shadow the semantic match against delta's definition.
+        if q_lower and q_lower == head_l and len(tokens) <= 3:
+            s += 2000
+        elif q_lower and len(q_lower) >= 4 and q_lower in head_l and len(tokens) <= 3:
+            s += 500
+        if q_lower and q_lower in guide_l:
+            s += 500  # full clue appears verbatim in guide_word — bullseye
+        if q_lower and q_lower in defs_l:
+            s += 200  # full clue appears as substring in definitions
+        # Bigram boost on definitions+guide+headword
+        if len(tokens) >= 2:
+            haystack = head_l + ' ' + guide_l + ' ' + defs_l
+            for i in range(len(tokens) - 1):
+                bg = tokens[i] + ' ' + tokens[i + 1]
+                if bg in haystack: s += 10
+                if bg in guide_l:  s += 20  # guide-word bigram is very strong
+        # Per-token count specifically in definitions/guide (semantic clue).
+        # For multi-token clues, the more tokens hit the definition, the
+        # better — overrides the +1-per-token-in-headword default.
+        defguide = guide_l + ' ' + defs_l
+        s += sum(3 for t in tokens if t in defguide)
+        if s >= min_req:
+            scored.append((s, w))
     scored.sort(key=lambda x: -x[0])
-    return [w for _, w in scored]
+    return [w for _, w in scored[:100]]
+    # === /wv-search-fix-2026-06-01 ===
 
 
 # ---------------------------------------------------------------------------

@@ -410,6 +410,39 @@ def load_user(uid):
     return db.session.get(User, int(uid))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ---------- forms -----------------------------------------------------------
 
 class LoginForm(FlaskForm):
@@ -740,6 +773,80 @@ def competing_topics(q, exclude_id=None, limit=4):
     return [fetched[i] for i in ids if i in fetched]
 
 
+
+
+# === wv-search-fix-2026-06-01 ===
+# PAA-question reverse index: maps q-token → topic_id via paa_question.question.
+# Built lazily once per process. Invalidated on /reset (worker restart).
+_PAA_QUESTION_INDEX = None
+
+
+def _build_paa_question_index():
+    """Pre-tokenize every paa_question.question into [(topic_id, q_lower, q_tokens_set)].
+    Used to rescue queries that paraphrase a People-Also-Ask question stem but
+    don't overlap any Topic-level field."""
+    rows = []
+    for row in PaaQuestion.query.all():
+        ql = (row.question or '').lower()
+        tokens = set(re.findall(r'[a-z0-9]+', ql))
+        # Drop pure-stopword sets so noise queries don't match every row.
+        tokens = {t for t in tokens if t not in STOPWORDS and len(t) >= 2}
+        rows.append((row.topic_id, ql, tokens, row.id))
+    return rows
+
+
+def _cached_paa_question_index():
+    global _PAA_QUESTION_INDEX
+    if _PAA_QUESTION_INDEX is None:
+        _PAA_QUESTION_INDEX = _build_paa_question_index()
+    return _PAA_QUESTION_INDEX
+
+
+def find_topic_via_paa(q):
+    t, pid, _, _ = find_topic_via_paa_strong(q)
+    return t, pid
+
+
+def find_topic_via_paa_strong(q):
+    """Return (topic, matching_paa_id, overlap_count, is_substring) for the
+    best PAA-question match, or (None, None, 0, False).
+
+    Score = (overlap_count, is_substring) tuple. Caller can decide whether
+    "strong enough" (we use overlap>=2 OR substring) to short-circuit step 2
+    of find_topic, or use ANY hit as rescue fallback.
+    """
+    if not q:
+        return None, None, 0, False
+    ql = q.strip().lower()
+    q_tokens = {t for t in re.findall(r'[a-z0-9]+', ql)
+                if t not in STOPWORDS and len(t) >= 2}
+    best = None
+    best_score = (0, 0)
+    for tid, pql, ptokens, pid in _cached_paa_question_index():
+        if not pql:
+            continue
+        is_sub = 1 if (ql and (ql in pql or pql in ql)) else 0
+        overlap = len(q_tokens & ptokens) if q_tokens else 0
+        if overlap == 0 and not is_sub:
+            continue
+        # Require overlap ratio >= 0.4 OR substring, else skip.
+        if q_tokens and not is_sub:
+            ratio = overlap / max(1, len(q_tokens))
+            if ratio < 0.4:
+                continue
+        score = (overlap, is_sub)
+        if score > best_score:
+            best_score = score
+            best = (tid, pid, overlap, bool(is_sub))
+    if best is None:
+        return None, None, 0, False
+    t = db.session.get(Topic, best[0])
+    if t is None:
+        return None, None, 0, False
+    return t, best[1], best[2], best[3]
+# === end wv-search-fix-2026-06-01 ===
+
+
 def find_topic(q):
     """Find the best matching topic for a query string.
 
@@ -755,6 +862,21 @@ def find_topic(q):
     t = Topic.query.filter(func.lower(Topic.query_text) == q_norm).first()
     if t:
         return t
+
+    # === wv-search-fix-2026-06-01 ===
+    # PAA-anchored priority: paa_question table holds People-Also-Ask
+    # rows whose `question` text the agent now emits as queries
+    # (post Fix 18, generator's primary_table = paa_question). Step 2
+    # below only scores Topic-level fields, so a paa-question phrasing
+    # has no path to the right Topic and step 2 routinely wins with a
+    # wrong topic. Probe PAA first; if we get a strong hit, use it.
+    # `_strong_paa_hit` is True when overlap >= 2 (i.e. multi-token
+    # match) OR substring match — those are exactly the cases where
+    # PAA is the more specific signal than topic-bag-of-words.
+    paa_topic, _paa_id, _paa_overlap, _paa_substr = find_topic_via_paa_strong(q_norm)
+    if paa_topic is not None and (_paa_overlap >= 2 or _paa_substr):
+        return paa_topic
+    # === end wv-search-fix-2026-06-01 ===
 
     # 2. Scored relevance (over cached in-memory index)
     tokens = _tokenize(q_norm)
@@ -777,6 +899,14 @@ def find_topic(q):
                 best_total = total
         if best_id is not None:
             return db.session.get(Topic, best_id)
+
+    # === wv-search-fix-2026-06-01 ===
+    # Weak-PAA rescue (overlap=1 / non-substring): only reached if
+    # step 2 found nothing. Still better than slug fallback.
+    paa_topic, _paa_id, _paa_overlap, _paa_substr = find_topic_via_paa_strong(q_norm)
+    if paa_topic is not None:
+        return paa_topic
+    # === end wv-search-fix-2026-06-01 ===
 
     # 3. Fallback — slug / substring
     slug = re.sub(r'[^a-z0-9]+', '_', q_norm).strip('_')
@@ -972,6 +1102,35 @@ def search():
             if not results:
                 results = list(topic.results)
         paa = topic.paa_questions
+        # === wv-search-fix-2026-06-01 ===
+        # Hoist the paa_question whose text best matches q to the top
+        # of the PAA list. We score q against THIS TOPIC's paa rows
+        # only (not the global PAA index, which can return another
+        # topic's row that happens to share more tokens), then move
+        # the winner to index 0 so the seeded answer is the first
+        # thing the agent sees in the People-Also-Ask block.
+        try:
+            paa_list = list(paa)
+            ql_h = (q or '').strip().lower()
+            q_tokens_h = {t for t in re.findall(r'[a-z0-9]+', ql_h)
+                          if t not in STOPWORDS and len(t) >= 2}
+            best_idx, best_score = -1, (0, 0)
+            for i, p in enumerate(paa_list):
+                pql = (p.question or '').lower()
+                p_tokens = {t for t in re.findall(r'[a-z0-9]+', pql)
+                            if t not in STOPWORDS and len(t) >= 2}
+                overlap = len(q_tokens_h & p_tokens) if q_tokens_h else 0
+                is_sub = 1 if (ql_h and (ql_h in pql or pql in ql_h)) else 0
+                score = (overlap, is_sub)
+                if score > best_score:
+                    best_score, best_idx = score, i
+            if best_idx > 0 and best_score != (0, 0):
+                paa_list.insert(0, paa_list.pop(best_idx))
+                paa = paa_list
+        except Exception:
+            pass
+        # === end wv-search-fix-2026-06-01 ===
+
         related = topic.related_queries
         knowledge = topic
         result_count = topic.result_count
@@ -1342,26 +1501,114 @@ def should_show_panel(topic, query: str) -> bool:
 def url_redirect():
     """Same-origin Google-style /url?q=<ext>&topic=<slug> redirect.
 
-    The sandboxed browser cannot load public internet URLs, so instead of
-    opening the external page we synthesize a cached summary for the agent.
-    If `topic` is present (or resolvable from `q`), we render topic_detail
-    for that topic. Otherwise we fall back to a /search?q=<q>."""
+    WV-SEARCH-LOOP-2026-06-03-GSEARCH-U3
+    The sandboxed browser cannot load public internet URLs. We do NOT
+    render the local topic page here even when SearchResult.url matches
+    a Topic — doing so was trapping agents in scroll-loops looking for
+    SERP-only controls (rank, bookmark button, PAA expansion).
+
+    Instead we always render an explicit stub showing what was clicked,
+    plus three actions:
+      1. Save to bookmarks (if SearchResult resolved)
+      2. View the topic page at /topic/<slug> (if resolvable)
+      3. Back to results (via Referer or homepage)
+    """
+    from urllib.parse import urlparse as _wv_urlparse
     ext = (request.args.get('q') or '').strip()
     slug = (request.args.get('topic') or '').strip()
     topic = None
+    sr = None
     if slug:
         topic = Topic.query.filter_by(slug=slug).first()
-    if topic is None and ext:
-        # Try to resolve by matching a stored SearchResult url
-        sr = SearchResult.query.filter_by(url=ext).first()
-        if sr is not None:
-            topic = sr.topic
-    if topic is not None:
-        related_topics = Topic.query.filter(Topic.id != topic.id).order_by(func.random()).limit(6).all()
-        return render_template('topic_detail.html', topic=topic, related_topics=related_topics)
     if ext:
-        return redirect(url_for('search', q=ext))
-    return redirect(url_for('index'))
+        sr = SearchResult.query.filter_by(url=ext).first()
+        if topic is None and sr is not None:
+            topic = sr.topic
+
+    if not ext:
+        return redirect(url_for('index'))
+
+    try:
+        _host = _wv_urlparse(ext).netloc or ext
+    except Exception:
+        _host = ext
+
+    _ref = request.headers.get('Referer') or ''
+    _back = _ref if '/search' in _ref else url_for('index')
+
+    _title = (sr.title if sr else (topic.name if topic else _host)) or _host
+    _snippet = ''
+    if sr and sr.snippet:
+        _snippet = sr.snippet
+    elif topic and getattr(topic, 'summary', None):
+        _snippet = topic.summary
+
+    _bookmark_html = ''
+    if sr is not None:
+        try:
+            _save_url = url_for('bookmark_save_form', result_id=sr.id)
+            _bookmark_html = (
+                "<form method='POST' action='" + _save_url +
+                "' style='display:inline'>"
+                "<input type='hidden' name='csrf_token' value='" +
+                (request.cookies.get('csrf_token') or '') + "'>"
+                "<button type='submit' style='padding:10px 18px;"
+                "background:#188038;color:#fff;border:0;border-radius:4px;"
+                "font-size:14px;cursor:pointer;'>"
+                "&#9733; Save to bookmarks</button></form>"
+            )
+        except Exception:
+            _bookmark_html = ''
+
+    _topic_link_html = ''
+    if topic is not None:
+        try:
+            _t_url = url_for('topic_detail', slug=topic.slug)
+            _topic_link_html = (
+                "<a href='" + _t_url + "' style='padding:10px 18px;"
+                "background:#f1f3f4;color:#202124;text-decoration:none;"
+                "border-radius:4px;font-size:14px;'>"
+                "View topic page</a>"
+            )
+        except Exception:
+            _topic_link_html = ''
+
+    _snippet_block = ''
+    if _snippet:
+        from markupsafe import escape as _esc
+        _snippet_block = (
+            "<div style='padding:14px 16px;background:#fafafa;"
+            "border:1px solid #e0e0e0;border-radius:8px;color:#202124;"
+            "font-size:14px;line-height:1.55;margin:18px 0;'>" +
+            str(_esc(_snippet)) + "</div>"
+        )
+
+    from markupsafe import escape as _esc
+    return ("""<!doctype html><html><head><meta charset='utf-8'>
+<title>External link not previewed - Google</title>
+<link rel='stylesheet' href='/static/css/main.css'></head>
+<body><div style='max-width:760px;margin:48px auto;padding:24px;
+font-family:Arial,sans-serif;'>
+<div style='font-size:48px;line-height:1;text-align:center;color:#dadce0;'>&#128279;</div>
+<h1 style='font-size:22px;font-weight:400;text-align:center;margin:8px 0 4px;'>External link not previewed</h1>
+<p style='text-align:center;color:#5f6368;margin:0 0 18px;font-size:14px;'>
+This Google Search mirror does not host a live snapshot of
+<strong>""" + str(_esc(_host)) + """</strong>.
+The cached title and snippet are shown below.</p>
+<div role='status' aria-live='polite' style='padding:12px 16px;
+background:#fff7e6;border:1px solid #ffd9b3;border-radius:8px;
+color:#7a3e00;font-size:13px;margin-bottom:14px;'>
+External URL: <code style='word-break:break-all;'>""" + str(_esc(ext)) + """</code>
+</div>
+<h2 style='font-size:18px;font-weight:500;margin:18px 0 6px;color:#1a0dab;'>""" + str(_esc(_title)) + """</h2>
+""" + _snippet_block + """
+<div style='display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;'>
+<a href='""" + _back + """' style='padding:10px 18px;background:#1a73e8;color:#fff;
+text-decoration:none;border-radius:4px;font-size:14px;'>&larr; Back to results</a>
+""" + _topic_link_html + _bookmark_html + """
+<a href='/' style='padding:10px 18px;background:#f1f3f4;color:#202124;
+text-decoration:none;border-radius:4px;font-size:14px;'>Google home</a>
+</div></div></body></html>""", 200)
 
 
 @app.route('/trending')

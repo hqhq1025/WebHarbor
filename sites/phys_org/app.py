@@ -407,6 +407,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ----- Helpers -----
 
 STOP_WORDS = {'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'and',
@@ -762,29 +795,35 @@ register_gui_deepen(
 
 with app.app_context():
     db.create_all()
-    seed_database(db, User, Category, Article, Comment, bcrypt)
-    seed_benchmark_users(db, User, Category, Article, Comment, SavedArticle, SearchHistory, bcrypt)
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # On warm restart (DB already populated via /reset's copy-from-instance_seed)
+    # the seed + DROP/RECREATE all ix_* indexes + VACUUM block below is wasted
+    # work and routinely exceeds control_server.wait_ready. Gate it.
+    _needs_full_bootstrap = (Article.query.count() < 50)
+    if _needs_full_bootstrap:
+        seed_database(db, User, Category, Article, Comment, bcrypt)
+        seed_benchmark_users(db, User, Category, Article, Comment, SavedArticle, SearchHistory, bcrypt)
 
-    # Byte-identical rebuild: SQLAlchemy emits CREATE INDEX in set-iteration
-    # (process-id-dependent) order. Re-emit indexes in alpha order and
-    # VACUUM so a clean re-build matches byte-for-byte across machines.
-    # See gotchas.md §2.
-    from sqlalchemy import text as _sa_text   # noqa: E402
-    _conn = db.engine.connect()
-    _idx_rows = _conn.execute(_sa_text(
-        "SELECT name, sql FROM sqlite_master "
-        "WHERE type='index' AND name LIKE 'ix_%'"
-    )).fetchall()
-    for _name, _sql in _idx_rows:
-        _conn.execute(_sa_text(f"DROP INDEX IF EXISTS {_name}"))
-    for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
-        if _sql:
-            _conn.execute(_sa_text(_sql))
-    _conn.commit()
-    _conn.close()
-    with db.engine.connect() as _vc:
-        _vc.execute(_sa_text("VACUUM"))
-        _vc.commit()
+        # Byte-identical rebuild: SQLAlchemy emits CREATE INDEX in set-iteration
+        # (process-id-dependent) order. Re-emit indexes in alpha order and
+        # VACUUM so a clean re-build matches byte-for-byte across machines.
+        # See gotchas.md §2.
+        from sqlalchemy import text as _sa_text   # noqa: E402
+        _conn = db.engine.connect()
+        _idx_rows = _conn.execute(_sa_text(
+            "SELECT name, sql FROM sqlite_master "
+            "WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for _name, _sql in _idx_rows:
+            _conn.execute(_sa_text(f"DROP INDEX IF EXISTS {_name}"))
+        for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
+            if _sql:
+                _conn.execute(_sa_text(_sql))
+        _conn.commit()
+        _conn.close()
+        with db.engine.connect() as _vc:
+            _vc.execute(_sa_text("VACUUM"))
+            _vc.commit()
 
 
 if __name__ == '__main__':

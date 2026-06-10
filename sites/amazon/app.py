@@ -681,6 +681,39 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ----- Context processors -----
 
 @app.context_processor
@@ -6102,6 +6135,29 @@ def seed_benchmark_users():
 
     db.session.commit()
 
+
+
+# === WV-MEDIUM-PERF-2026-06-03-amazon-warm ===
+# Pre-build the per-process Product haystack cache + inverted token index in
+# a daemon thread on module import. Without this, the first /s? request on a
+# fresh-restart worker pays ~3.2s (_get_search_row_cache) + ~1s
+# (_get_token_index) cold-build while a chromium screenshot waits.
+# Idempotent: both builders short-circuit when their globals are already set.
+def _wv_warm_in_background_amazon():
+    import threading
+    def _run():
+        try:
+            with app.app_context():
+                _get_search_row_cache()
+                _get_token_index()
+        except Exception as _e:
+            print(f"[wv-warm-amazon] background warm failed: {_e!r}", flush=True)
+    t = threading.Thread(target=_run, name="wv-warm-amazon", daemon=True)
+    t.start()
+
+
+_wv_warm_in_background_amazon()
+# === /WV-MEDIUM-PERF-2026-06-03-amazon-warm ===
 
 if __name__ == '__main__':
     with app.app_context():

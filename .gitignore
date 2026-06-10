@@ -86,6 +86,14 @@ secrets.json
 *.pid
 *.tmp
 *.bak
+# editor/agent backups + restart markers (the *.bak rule above does NOT match these dotted suffixes)
+*.devloginbak
+*.preauthbak
+*.restart
+sites/*/app.py.bak-*
+# local agent worktrees / workspace (machine-local, never committed)
+.claude/worktrees/
+.claude/workspace/
 audit_screens/
 
 # =============================================================

@@ -216,6 +216,39 @@ class BookmarkForm(FlaskForm):
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice@berkeley.edu").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@berkeley.edu"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ─── Context Processors ───────────────────────────────────────────────────────
 
 @app.context_processor
@@ -743,28 +776,33 @@ with app.app_context():
     import gui_deepen
     gui_deepen.register(app, db)
     db.create_all()
-    from seed_data import seed
-    seed()
-    gui_deepen.seed_extras()
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # DROP/RECREATE all ix_* + VACUUM costs ~14s on a populated DB. On warm
+    # restart that's pure waste and risks control_server.wait_ready timeout.
+    _needs_full_bootstrap = (College.query.count() == 0)
+    if _needs_full_bootstrap:
+        from seed_data import seed
+        seed()
+        gui_deepen.seed_extras()
 
-    # Normalize index order + VACUUM so rebuilds match byte-for-byte
-    # (gotcha #2 — SQLAlchemy emits CREATE INDEX from a Python set whose
-    # iteration order depends on object id() and changes per process)
-    from sqlalchemy import text
-    _conn = db.engine.connect()
-    _idx_rows = _conn.execute(text(
-        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
-    )).fetchall()
-    for _name, _ in _idx_rows:
-        _conn.execute(text(f"DROP INDEX IF EXISTS {_name}"))
-    for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
-        if _sql:
-            _conn.execute(text(_sql))
-    _conn.commit()
-    _conn.close()
-    # VACUUM must run outside a transaction
-    with db.engine.connect() as _v:
-        _v.execute(text("VACUUM"))
+        # Normalize index order + VACUUM so rebuilds match byte-for-byte
+        # (gotcha #2 — SQLAlchemy emits CREATE INDEX from a Python set whose
+        # iteration order depends on object id() and changes per process)
+        from sqlalchemy import text
+        _conn = db.engine.connect()
+        _idx_rows = _conn.execute(text(
+            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for _name, _ in _idx_rows:
+            _conn.execute(text(f"DROP INDEX IF EXISTS {_name}"))
+        for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
+            if _sql:
+                _conn.execute(text(_sql))
+        _conn.commit()
+        _conn.close()
+        # VACUUM must run outside a transaction
+        with db.engine.connect() as _v:
+            _v.execute(text("VACUUM"))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=40016, debug=False)

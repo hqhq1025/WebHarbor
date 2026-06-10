@@ -319,6 +319,39 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ---------------------------------------------------------------------------
 # R4: Jinja filters for share-token and gallery step images
 # ---------------------------------------------------------------------------
@@ -2220,9 +2253,9 @@ def meal_plan():
             plan[day][meal] = None
     for item in items:
         plan[item.day][item.meal_type] = item
-    all_recipes = Recipe.query.order_by(Recipe.title).all()
+    # WV-MEDIUM-PERF-2026-06-03-allr-meal  template uses typeahead; no all_recipes needed
     return render_template('meal_plan.html', plan=plan, days=days, meals=meals,
-                           all_recipes=all_recipes)
+                           all_recipes=[])
 
 
 @csrf.exempt
@@ -2310,8 +2343,8 @@ def remove_from_meal_plan_form():
 def shopping_list():
     lists = ShoppingList.query.filter_by(user_id=current_user.id).order_by(
         ShoppingList.created_at.desc()).all()
-    all_recipes = Recipe.query.order_by(Recipe.title).all()
-    return render_template('shopping_list.html', lists=lists, all_recipes=all_recipes)
+    # WV-MEDIUM-PERF-2026-06-03-allr-shop  template uses typeahead; no all_recipes needed
+    return render_template('shopping_list.html', lists=lists, all_recipes=[])
 
 
 @app.route('/shopping-list/create', methods=['POST'])
@@ -2380,13 +2413,39 @@ def delete_shopping_list(list_id):
 @app.route('/shopping-list/<int:list_id>/add-recipe', methods=['POST'])
 @login_required
 def add_recipe_to_shopping_list(list_id):
-    """Form-POST endpoint to add a recipe's ingredients to a shopping list (agent-friendly)."""
+    """Form-POST endpoint to add a recipe's ingredients to a shopping list (agent-friendly).
+    WV-SEARCH-LOOP-2026-06-03-ALLR-S3 — accept ``recipe_query`` fallback when JS
+    typeahead hasn't filled in ``recipe_id`` yet (agent clicked Add before
+    debounce). Resolution priority: exact (case-insensitive) title >
+    unique prefix match > unique substring match. Mirrors the meal-plan
+    form behavior so agents using either page see the same fallback.
+    """
     sl = ShoppingList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
     recipe_id = request.form.get('recipe_id', type=int)
-    if not recipe_id:
-        flash('No recipe selected.', 'danger')
+    recipe = None
+    if recipe_id:
+        recipe = Recipe.query.get(recipe_id)
+    if recipe is None:
+        rq = (request.form.get('recipe_query') or '').strip()
+        if rq:
+            rq_lower = rq.lower()
+            recipe = Recipe.query.filter(
+                db.func.lower(Recipe.title) == rq_lower).first()
+            if recipe is None:
+                pm = Recipe.query.filter(
+                    db.func.lower(Recipe.title).like(rq_lower + '%')
+                    ).limit(2).all()
+                if len(pm) == 1:
+                    recipe = pm[0]
+            if recipe is None:
+                cm = Recipe.query.filter(
+                    db.func.lower(Recipe.title).like('%' + rq_lower + '%')
+                    ).limit(2).all()
+                if len(cm) == 1:
+                    recipe = cm[0]
+    if recipe is None:
+        flash('No recipe selected — please pick a suggestion from the typeahead, or type the full recipe title.', 'danger')
         return redirect(url_for('shopping_list'))
-    recipe = Recipe.query.get_or_404(recipe_id)
     items = sl.get_items()
     added = 0
     for ing in recipe.get_ingredients():
@@ -2415,6 +2474,54 @@ def add_item_to_shopping_list(list_id):
     flash(f'"{item}" added to "{sl.name}".', 'success')
     return redirect(url_for('shopping_list'))
 
+
+
+# WV-SEARCH-LOOP-2026-06-03-ALLR-S2 — bulk-add custom items, breaks the
+# 'agent retypes same ingredient 2-3x because page reloaded mid-stream'
+# loop. Accepts newline-separated or comma-separated `items` textarea.
+@app.route('/shopping-list/<int:list_id>/add-items', methods=['POST'])
+@login_required
+def add_items_to_shopping_list(list_id):
+    """Bulk-add multiple custom items in a single POST.
+    Body field ``items`` is split on newline OR comma; blank lines
+    skipped; duplicates already on the list skipped. Per WV-SEARCH-LOOP-2026-06-03-ALLR-S2."""
+    sl = ShoppingList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    raw = (request.form.get('items') or '').strip()
+    if not raw:
+        flash('Please enter at least one item.', 'danger')
+        return redirect(url_for('shopping_list'))
+    # split on newline first; if no newlines, fall back to comma.
+    if '\n' in raw:
+        parts = raw.split('\n')
+    else:
+        parts = raw.split(',')
+    cleaned = []
+    seen = set()
+    for p in parts:
+        s = p.strip().lstrip('-*\xb7').strip()
+        if not s:
+            continue
+        key = s.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(s)
+    if not cleaned:
+        flash('No valid items found.', 'danger')
+        return redirect(url_for('shopping_list'))
+    items = sl.get_items()
+    existing = {it.lower() for it in items}
+    added = 0
+    for it in cleaned:
+        if it.lower() in existing:
+            continue
+        items.append(it)
+        existing.add(it.lower())
+        added += 1
+    sl.set_items(items)
+    db.session.commit()
+    flash(f'Added {added} item(s) to "{sl.name}".', 'success')
+    return redirect(url_for('shopping_list'))
 
 @app.route('/shopping-list/<int:list_id>/remove-item', methods=['POST'])
 @login_required
@@ -2733,6 +2840,33 @@ def api_recipe_filter():
         'avg_rating': r.avg_rating, 'review_count': r.review_count,
         'cuisine': r.cuisine, 'total_time': r.total_time,
     } for r in items])
+
+
+# WV-FIX-RECIPES-LOOKUP
+@app.route('/api/recipes/lookup')
+def api_recipes_lookup():
+    """Typeahead endpoint for recipe picker (meal-plan and shopping-list).
+    Returns up to ``limit`` recipes matching ``q`` as JSON array of {id, title}.
+    Priority: exact title > prefix > contains, then shortest title first."""
+    q = request.args.get('q', '').strip()
+    limit = request.args.get('limit', 15, type=int)
+    if not q:
+        return jsonify([])
+    q_lower = q.lower()
+    # Exact match first
+    exact = Recipe.query.filter(db.func.lower(Recipe.title) == q_lower).order_by(
+        db.func.length(Recipe.title)).limit(limit).all()
+    if exact:
+        return jsonify([{"id": r.id, "title": r.title} for r in exact])
+    # Prefix match
+    prefix = Recipe.query.filter(db.func.lower(Recipe.title).like(q_lower + '%')).order_by(
+        db.func.length(Recipe.title)).limit(limit).all()
+    if prefix:
+        return jsonify([{"id": r.id, "title": r.title} for r in prefix])
+    # Contains (substring)
+    contains = Recipe.query.filter(db.func.lower(Recipe.title).like('%' + q_lower + '%')).order_by(
+        db.func.length(Recipe.title)).limit(limit).all()
+    return jsonify([{"id": r.id, "title": r.title} for r in contains])
 
 
 @app.route('/api/recipes/<slug>/scale')
@@ -5680,66 +5814,73 @@ def seed_1960s_collection_recipes():
 
 with app.app_context():
     db.create_all()
-    seed_database()
-    # Extended catalog (TheMealDB + benchmark-fixture recipes) runs
-    # BEFORE seed_benchmark_users so that user recipe-box / meal-plan
-    # lookups by title fragment hit the extended recipe set.
-    # Lives in seed_data.py to keep this file readable.
-    try:
-        from seed_data import seed_extended_catalog
-        seed_extended_catalog()
-    except Exception as exc:  # pragma: no cover - never silently swallow
-        print(f"[seed_extended] FAILED: {exc!r}")
-        raise
-    seed_benchmark_users()
-    seed_1960s_collection_recipes()
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # Every _enrich_* below does Recipe.query.order_by(Recipe.id).all() and
+    # rewrites every row (no sentinel for r4/r5), then the final block
+    # DROPs/RECREATEs all ix_* + VACUUM. On warm restart this is tens of
+    # seconds of wasted work that risks control_server.wait_ready timeout.
+    _needs_full_bootstrap = (Recipe.query.count() < 100)
+    if _needs_full_bootstrap:
+        seed_database()
+        # Extended catalog (TheMealDB + benchmark-fixture recipes) runs
+        # BEFORE seed_benchmark_users so that user recipe-box / meal-plan
+        # lookups by title fragment hit the extended recipe set.
+        # Lives in seed_data.py to keep this file readable.
+        try:
+            from seed_data import seed_extended_catalog
+            seed_extended_catalog()
+        except Exception as exc:  # pragma: no cover - never silently swallow
+            print(f"[seed_extended] FAILED: {exc!r}")
+            raise
+        seed_benchmark_users()
+        seed_1960s_collection_recipes()
 
-    # R4: final enrichment pass — fills tags >=5 + nutrition + gallery for
-    # any recipe inserted by post-extended seed paths (1960s, benchmark users).
-    try:
-        from r4_seed import _enrich_existing_recipes
-        _enrich_existing_recipes()
-        db.session.commit()
-    except Exception as exc:  # pragma: no cover
-        print(f"[r4_final_enrich] failed: {exc!r}")
+        # R4: final enrichment pass — fills tags >=5 + nutrition + gallery for
+        # any recipe inserted by post-extended seed paths (1960s, benchmark users).
+        try:
+            from r4_seed import _enrich_existing_recipes
+            _enrich_existing_recipes()
+            db.session.commit()
+        except Exception as exc:  # pragma: no cover
+            print(f"[r4_final_enrich] failed: {exc!r}")
 
-    # R5: final enrichment pass — top up cuisine-origin / time / calorie /
-    # equipment / allergen-free flags on every recipe (including the
-    # post-extended 1960s + benchmark inserts).
-    try:
-        from r5_seed import _enrich_r5_fields
-        _enrich_r5_fields()
-        db.session.commit()
-    except Exception as exc:  # pragma: no cover
-        print(f"[r5_final_enrich] failed: {exc!r}")
+        # R5: final enrichment pass — top up cuisine-origin / time / calorie /
+        # equipment / allergen-free flags on every recipe (including the
+        # post-extended 1960s + benchmark inserts).
+        try:
+            from r5_seed import _enrich_r5_fields
+            _enrich_r5_fields()
+            db.session.commit()
+        except Exception as exc:  # pragma: no cover
+            print(f"[r5_final_enrich] failed: {exc!r}")
 
-    # R6: final enrichment pass — re-derive more-like-this bucket tags on
-    # the post-extended inserts (1960s collection, benchmark fixtures) so
-    # the recipe detail "更像 X" carousel has rich tags to query against.
-    try:
-        from r6_seed import _enrich_r6_more_like_features
-        _enrich_r6_more_like_features(sentinel_check=False)
-        db.session.commit()
-    except Exception as exc:  # pragma: no cover
-        print(f"[r6_final_enrich] failed: {exc!r}")
+        # R6: final enrichment pass — re-derive more-like-this bucket tags on
+        # the post-extended inserts (1960s collection, benchmark fixtures) so
+        # the recipe detail "更像 X" carousel has rich tags to query against.
+        try:
+            from r6_seed import _enrich_r6_more_like_features
+            _enrich_r6_more_like_features(sentinel_check=False)
+            db.session.commit()
+        except Exception as exc:  # pragma: no cover
+            print(f"[r6_final_enrich] failed: {exc!r}")
 
-    # R4: final VACUUM + index re-emit so the seed DB is byte-identical
-    # across rebuilds (sees all post-extended inserts).
-    try:
-        from sqlalchemy import text as _text
-        conn = db.engine.connect()
-        idx_rows = conn.execute(_text(
-            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
-        )).fetchall()
-        for name, _ in idx_rows:
-            conn.execute(_text(f"DROP INDEX IF EXISTS {name}"))
-        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
-            if sql:
-                conn.execute(_text(sql))
-        conn.execute(_text("VACUUM"))
-        conn.commit()
-    except Exception as exc:  # pragma: no cover
-        print(f"[r4_final_vacuum] failed: {exc!r}")
+        # R4: final VACUUM + index re-emit so the seed DB is byte-identical
+        # across rebuilds (sees all post-extended inserts).
+        try:
+            from sqlalchemy import text as _text
+            conn = db.engine.connect()
+            idx_rows = conn.execute(_text(
+                "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+            )).fetchall()
+            for name, _ in idx_rows:
+                conn.execute(_text(f"DROP INDEX IF EXISTS {name}"))
+            for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+                if sql:
+                    conn.execute(_text(sql))
+            conn.execute(_text("VACUUM"))
+            conn.commit()
+        except Exception as exc:  # pragma: no cover
+            print(f"[r4_final_vacuum] failed: {exc!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -5765,4 +5906,53 @@ def _add_static_cache_headers(resp):
         pass
     return resp
 # --- end perf ---
+
+
+# ---------------------------------------------------------------------------
+# WV-FILTER-CHIP-URL-FIX-2026-06-04
+# Expose chip_url(set={...}, unset=[...]) helper to Jinja templates.
+# Used by filter "chips" on search/category pages so each chip's href is the
+# current URL with one filter toggled. Drops `page` on change to reset
+# pagination when result set narrows.
+# ---------------------------------------------------------------------------
+@app.context_processor
+def _inject_filter_chip_url():
+    from urllib.parse import urlencode
+
+    def chip_url(set=None, unset=None, drop_page=True, **kwargs):
+        # `set` is the conventional Jinja kwarg name; accept it but don't
+        # shadow the builtin set() inside the body.
+        set_params = kwargs.get("set_params", set)
+        unset_keys = unset
+        try:
+            args = request.args.lists()  # list of (k, [v, v, ...])
+        except Exception:
+            return request.path
+        pairs = []
+        skip = []
+        if set_params:
+            skip.extend(set_params.keys())
+        if unset_keys:
+            skip.extend(unset_keys)
+        if drop_page:
+            skip.append("page")
+        skip_lookup = {k: True for k in skip}
+        for k, vs in args:
+            if k in skip_lookup:
+                continue
+            for v in vs:
+                pairs.append((k, v))
+        if set_params:
+            for k, v in set_params.items():
+                if v is None or v == "":
+                    continue
+                if isinstance(v, (list, tuple)):
+                    for x in v:
+                        pairs.append((k, str(x)))
+                else:
+                    pairs.append((k, str(v)))
+        qs = urlencode(pairs)
+        return (request.path + "?" + qs) if qs else request.path
+
+    return {"chip_url": chip_url}
 

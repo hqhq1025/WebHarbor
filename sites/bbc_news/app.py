@@ -338,6 +338,39 @@ def load_user(uid):
     return db.session.get(User, int(uid))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # =======================================================================
 # SEED DATA
 # =======================================================================
@@ -1029,7 +1062,14 @@ def news_root_alias():
 def section_page(slug):
     cat = get_category_or_404(slug)
     page = max(1, int(request.args.get("page", 1)))
-    per_page = 20
+    # Fix-pagination 2026-05-31: large first page (was 20). Listing rows
+    # used to paginate, but after scroll the "next page" link drifts in
+    # page coords and agents loop 16x without opening any /article/.
+    # Inflate first page to ~80; subsequent pages stay at 25.
+    if page == 1 and not request.args.get("page"):
+        per_page = 80
+    else:
+        per_page = 25
 
     # Regional categories (parent is 'world' or 'uk') also match by region/subsection
     # so that agents navigating to Africa/Asia/Europe see relevant stories even when
@@ -1087,6 +1127,24 @@ def section_page(slug):
     content_type = (request.args.get("content_type") or "").strip()
     if content_type:
         q = q.filter(Article.content_type == content_type)
+
+    # Fix-pagination 2026-06-01: in-place ?q= keyword filter on the section
+    # page itself (not just /search). Lets agents narrow a dense listing
+    # without bouncing to /search → losing the section context. Mirrors
+    # the same idiom in espn /<sport>/news.
+    q_kw = (request.args.get("q") or "").strip()
+    if q_kw:
+        like = f"%{q_kw}%"
+        q = q.filter(or_(
+            Article.headline.ilike(like),
+            Article.subtitle.ilike(like),
+            Article.summary.ilike(like),
+            Article.author.ilike(like),
+            Article.topics_json.ilike(like),
+        ))
+        # When user has typed a query, give them a flatter, larger result
+        # set (no need for the date-sorted lead/rest structure).
+        per_page = max(per_page, 60)
 
     q = q.order_by(Article.published_at.desc())
 
@@ -1261,8 +1319,12 @@ STOPWORDS = {
 }
 
 
-def _score_article(article, tokens):
-    """Score an article against search tokens. Returns # of distinct tokens matched."""
+def _score_article(article, tokens, raw_query=''):
+    """Token-overlap scoring with exact-substring + bigram boost.
+    # === wv-search-fix-2026-05-31 ===
+    Returns: 1000 + token_count if full query is a substring;
+             5 per matched adjacent bigram; +1 per matched token.
+    """
     haystack = ' '.join([
         (article.headline or '').lower(),
         (article.subtitle or '').lower(),
@@ -1276,7 +1338,18 @@ def _score_article(article, tokens):
         (article.region or '').lower(),
         (article.location or '').lower(),
     ])
-    return sum(1 for t in tokens if t in haystack)
+    score = 0
+    rq = (raw_query or '').strip().lower()
+    if rq and len(rq) >= 3 and rq in haystack:
+        score += 1000
+    for t in tokens:
+        if t in haystack:
+            score += 1
+    for i in range(len(tokens) - 1):
+        bg = tokens[i] + ' ' + tokens[i + 1]
+        if bg in haystack:
+            score += 5
+    return score
 
 
 def _apply_article_filters(query_obj):
@@ -1330,6 +1403,40 @@ def _apply_article_sort(results, sort_key):
     return sorted(results, key=lambda a: a.published_at or datetime.min, reverse=True)
 
 
+
+# === WV-FTS5-INIT-2026-06-01 ===
+def _fts5_search_articles(q, limit=200):
+    """FTS5 first-pass: porter stemmer + accent folding + BM25."""
+    try:
+        import sqlite3 as _s3
+        import re as _r
+        db_path = str(DB_DIR / "bbc_news.db")
+        conn = _s3.connect(db_path)
+        if conn.execute("SELECT count(*) FROM sqlite_master WHERE name='articles_fts'").fetchone()[0] == 0:
+            conn.close()
+            return None
+        toks = [t for t in _r.findall(r"[a-zA-Z0-9]+", q) if len(t) >= 2]
+        toks = [t for t in toks if t.lower() not in STOPWORDS]
+        if not toks:
+            conn.close()
+            return None
+        fts_query = " ".join('"' + t + '"' for t in toks)
+        rows = conn.execute(
+            "SELECT rowid, bm25(articles_fts) FROM articles_fts "
+            "WHERE articles_fts MATCH ? ORDER BY bm25(articles_fts) LIMIT ?",
+            (fts_query, limit)
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return None
+        rowids = [r[0] for r in rows]
+        articles = Article.query.filter(Article.id.in_(rowids)).all()
+        am = {a.id: a for a in articles}
+        return [am[rid] for rid in rowids if rid in am]
+    except Exception:
+        return None
+# === /WV-FTS5-INIT-2026-06-01 ===
+
 @app.route("/search")
 def search():
     q = (request.args.get("q") or request.args.get("query") or "").strip()
@@ -1375,26 +1482,76 @@ def search():
     candidates = query_obj.all()
 
     if q and tokens:
-        min_required = max(1, len(tokens) // 2)
+        # === WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+        _fts5_results = _fts5_search_articles(q, limit=100)
+        # === /WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+        # === wv-search-fix-2026-05-31 ===
+        # min_required lowered to 1 so paraphrases surface; exact-substring +
+        # bigram boost keep true matches at the top.
+        min_required = 1
+        rq = q.lower()
         scored = []
         for a in candidates:
             if scope == "headline":
                 haystack = (a.headline or '').lower()
-                s = sum(1 for t in tokens if t in haystack)
+                s = 0
+                if rq and len(rq) >= 3 and rq in haystack:
+                    s += 1000
+                for t in tokens:
+                    if t in haystack:
+                        s += 1
+                for i in range(len(tokens) - 1):
+                    bg = tokens[i] + ' ' + tokens[i + 1]
+                    if bg in haystack:
+                        s += 5
             elif scope == "body":
                 haystack = (a.body or '').lower()
-                s = sum(1 for t in tokens if t in haystack)
+                s = 0
+                if rq and len(rq) >= 3 and rq in haystack:
+                    s += 1000
+                for t in tokens:
+                    if t in haystack:
+                        s += 1
+                for i in range(len(tokens) - 1):
+                    bg = tokens[i] + ' ' + tokens[i + 1]
+                    if bg in haystack:
+                        s += 5
             else:
-                s = _score_article(a, tokens)
+                s = _score_article(a, tokens, rq)
             if s >= min_required:
                 scored.append((s, a))
         scored.sort(key=lambda x: (-x[0],
                                    -(x[1].published_at.timestamp() if x[1].published_at else 0)))
         results = [a for _, a in scored]
+        # === WV-FTS5-INIT-2026-06-01-MERGE ===
+        # Merge FTS5 porter-stemmed hits (e.g. "fighting" -> "fight")
+        if _fts5_results:
+            _scored_ids = {a.id for a in results}
+            _fts_new = [a for a in _fts5_results if a.id not in _scored_ids]
+            if not results:
+                results = list(_fts5_results)
+            elif _fts_new:
+                results = results + _fts_new
+        # === /WV-FTS5-INIT-2026-06-01-MERGE ===
+        # Fallback: non-trivial query produced no scored hits (every candidate
+        # passed the SQL LIKE pre-filter but failed scoring) → degrade to
+        # recency-sorted candidates so the CUA never sees a 0-result page.
+        # Also handle the case where the SQL LIKE itself returned nothing.
+        if not results:
+            fallback_q = Article.query
+            fallback_q = _apply_article_filters(fallback_q)
+            results = fallback_q.order_by(Article.published_at.desc()).limit(20).all()
     else:
         results = candidates
 
-    results = _apply_article_sort(results, request.args.get("sort", "newest"))
+    # When the caller searched a query, preserve score-ranked order unless
+    # they explicitly asked for a sort. (Pre-fix: default "newest" wiped out
+    # the score ordering produced above.) # === wv-search-fix-2026-05-31 ===
+    sort_arg = request.args.get("sort")
+    if sort_arg:
+        results = _apply_article_sort(results, sort_arg)
+    elif not (q and tokens):
+        results = _apply_article_sort(results, "newest")
     total = len(results)
     start = (page - 1) * per_page
     page_results = results[start:start + per_page]
@@ -1848,10 +2005,14 @@ def reading_list_update_item(item_id):
     item = ReadingListItem.query.filter_by(id=item_id, user_id=current_user.id).first_or_404()
     folder = (request.form.get("folder") or "").strip()[:100]
     priority = (request.form.get("priority") or "").strip()
+    # WV-SEARCH-LOOP-2026-06-03-BBC_NEWS — accept note edits from the per-item form.
+    note_raw = request.form.get("note")
     if folder:
         item.folder = folder
     if priority in ("high", "normal", "low"):
         item.priority = priority
+    if note_raw is not None:
+        item.note = note_raw[:500]
     db.session.commit()
     flash("Reading list item updated.", "success")
     return redirect(url_for("reading_list"))
@@ -4830,10 +4991,47 @@ from gui_deepen import register as register_gui_deepen
 register_gui_deepen(app)
 
 
+
+# === WV-FTS5-STARTUP ===
+def _ensure_fts5_articles():
+    """Create articles_fts if missing. Runs at startup + survives /reset."""
+    import sqlite3 as _s3
+    db_path = str(DB_DIR / "bbc_news.db")
+    conn = _s3.connect(db_path, timeout=60)
+    cur = conn.cursor()
+    cur.execute("SELECT count(*) FROM sqlite_master WHERE name='articles_fts'")
+    if cur.fetchone()[0] > 0:
+        try:
+            n = cur.execute("SELECT count(*) FROM articles_fts").fetchone()[0]
+            if n > 0:
+                conn.close()
+                return
+        except:
+            cur.execute("DROP TABLE IF EXISTS articles_fts")
+            conn.commit()
+    cur.execute("""
+        CREATE VIRTUAL TABLE articles_fts USING fts5(
+            headline, summary, section_slug,
+            content='articles', content_rowid='id',
+            tokenize='porter unicode61 remove_diacritics 2'
+        )
+    """)
+    conn.commit()
+    cur.execute("""
+        INSERT INTO articles_fts(rowid, headline, summary, section_slug)
+        SELECT id, COALESCE(headline,''), COALESCE(summary,''), COALESCE(section_slug,'')
+        FROM articles
+    """)
+    conn.commit()
+    print(f"  [+] articles_fts created ({cur.execute('SELECT count(*) FROM articles_fts').fetchone()[0]} rows)")
+    conn.close()
+# === /WV-FTS5-STARTUP ===
+
 with app.app_context():
     _ensure_gallery_full_column()
     db.create_all()
     seed_database()
+    _ensure_fts5_articles()
     seed_benchmark_users()
     _ensure_perf_indexes()
 

@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/datepicker.css') }}">
 <script defer src="{{ url_for('static', filename='js/datepicker.js') }}"></script>
+{# WV-BOOKING-AUTOCOMPLETE-FIX-2026-06-04: destination dropdown for `name="ss"`
+   inputs marked with data-destination-autocomplete. Scroll-stable popup. #}
+<script defer src="{{ url_for('static', filename='js/destination_autocomplete.js') }}"></script>
 <!-- R7 — Open Graph defaults (per-page templates may override via block) -->
 <meta property="og:site_name" content="Booking.com">
 <meta property="og:type" content="{% block og_type %}website{% endblock %}">

@@ -1,3 +1,4 @@
+<!-- WV-SEARCH-LOOP-2026-06-03-COURSERA -->
 {% extends "base.html" %}
 {% block title %}{{ course.title }} Specialization | Coursera{% endblock %}
 {% block content %}
@@ -11,7 +12,7 @@
       </nav>
       <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;opacity:.9;">Specialization</div>
       <h1 style="font-size:38px;margin:8px 0 12px;letter-spacing:-.5px;max-width:780px;">{{ course.title }}</h1>
-      <p style="font-size:17px;max-width:680px;opacity:.92;line-height:1.5;">{{ course.description[:240] }}{% if course.description|length > 240 %}…{% endif %}</p>
+      <p style="font-size:17px;max-width:680px;opacity:.92;line-height:1.5;">{{ (course.description or '')[:240] }}{% if (course.description or '')|length > 240 %}…{% endif %}</p>
       <div style="margin-top:18px;font-size:14px;opacity:.92;">
         {% if course.partner %}<span>{{ course.partner.name }}</span> &middot; {% endif %}
         <span>{{ course.level }}</span> &middot;

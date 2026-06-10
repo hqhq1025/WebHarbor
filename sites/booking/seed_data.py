@@ -32,26 +32,26 @@ def _load_expansion(name):
 
 # Destination categories
 DESTINATION_CATEGORIES = [
-    {'slug': 'city-breaks', 'name': 'City breaks', 'description': 'Culture, food, and vibrant nightlife', 'icon': 'city'},
-    {'slug': 'beach', 'name': 'Beach destinations', 'description': 'Sun, sand, and surf', 'icon': 'beach'},
-    {'slug': 'ski', 'name': 'Ski resorts', 'description': 'Snow-capped mountains and alpine adventure', 'icon': 'ski'},
-    {'slug': 'nature', 'name': 'Nature & outdoors', 'description': 'Escape into the wild', 'icon': 'tree'},
-    {'slug': 'luxury', 'name': 'Luxury stays', 'description': 'Five-star service and world-class amenities', 'icon': 'crown'},
-    {'slug': 'family', 'name': 'Family-friendly', 'description': 'Trips the whole family will love', 'icon': 'family'},
-    {'slug': 'romantic', 'name': 'Romantic getaways', 'description': 'Perfect for couples', 'icon': 'heart'},
-    {'slug': 'business', 'name': 'Business travel', 'description': 'Work-friendly stays', 'icon': 'briefcase'},
+    {'slug': 'city-breaks', 'name': 'City breaks', 'description': 'Culture, food, and vibrant nightlife', 'icon': 'city', 'image_path': 'images/categories/city-breaks.jpg'},
+    {'slug': 'beach', 'name': 'Beach destinations', 'description': 'Sun, sand, and surf', 'icon': 'beach', 'image_path': 'images/categories/beach.jpg'},
+    {'slug': 'ski', 'name': 'Ski resorts', 'description': 'Snow-capped mountains and alpine adventure', 'icon': 'ski', 'image_path': 'images/categories/ski.jpg'},
+    {'slug': 'nature', 'name': 'Nature & outdoors', 'description': 'Escape into the wild', 'icon': 'tree', 'image_path': 'images/categories/nature.jpg'},
+    {'slug': 'luxury', 'name': 'Luxury stays', 'description': 'Five-star service and world-class amenities', 'icon': 'crown', 'image_path': 'images/categories/luxury.jpg'},
+    {'slug': 'family', 'name': 'Family-friendly', 'description': 'Trips the whole family will love', 'icon': 'family', 'image_path': 'images/categories/family.jpg'},
+    {'slug': 'romantic', 'name': 'Romantic getaways', 'description': 'Perfect for couples', 'icon': 'heart', 'image_path': 'images/categories/romantic.jpg'},
+    {'slug': 'business', 'name': 'Business travel', 'description': 'Work-friendly stays', 'icon': 'briefcase', 'image_path': 'images/categories/business.jpg'},
 ]
 
 # Property type categories
 PROPERTY_TYPES = [
-    {'slug': 'hotels', 'name': 'Hotels', 'description': 'Traditional hotel comforts', 'icon': 'building'},
-    {'slug': 'apartments', 'name': 'Apartments', 'description': 'Home-like spaces with kitchens', 'icon': 'apartment'},
-    {'slug': 'resorts', 'name': 'Resorts', 'description': 'All-inclusive luxury', 'icon': 'palm'},
-    {'slug': 'villas', 'name': 'Villas', 'description': 'Private homes for groups', 'icon': 'villa'},
-    {'slug': 'b-and-bs', 'name': 'Bed and Breakfasts', 'description': 'Cosy, personal stays', 'icon': 'bed'},
-    {'slug': 'hostels', 'name': 'Hostels', 'description': 'Budget-friendly social stays', 'icon': 'hostel'},
-    {'slug': 'guesthouses', 'name': 'Guest Houses', 'description': 'Family-run hospitality', 'icon': 'home'},
-    {'slug': 'cabins', 'name': 'Cabins', 'description': 'Rustic getaways', 'icon': 'cabin'},
+    {'slug': 'hotels', 'name': 'Hotels', 'description': 'Traditional hotel comforts', 'icon': 'building', 'image_path': 'images/types/hotels.jpg'},
+    {'slug': 'apartments', 'name': 'Apartments', 'description': 'Home-like spaces with kitchens', 'icon': 'apartment', 'image_path': 'images/types/apartments.png'},
+    {'slug': 'resorts', 'name': 'Resorts', 'description': 'All-inclusive luxury', 'icon': 'palm', 'image_path': 'images/types/resorts.jpg'},
+    {'slug': 'villas', 'name': 'Villas', 'description': 'Private homes for groups', 'icon': 'villa', 'image_path': 'images/types/villas.jpg'},
+    {'slug': 'b-and-bs', 'name': 'Bed and Breakfasts', 'description': 'Cosy, personal stays', 'icon': 'bed', 'image_path': 'images/types/b-and-bs.jpg'},
+    {'slug': 'hostels', 'name': 'Hostels', 'description': 'Budget-friendly social stays', 'icon': 'hostel', 'image_path': 'images/types/hostels.jpg'},
+    {'slug': 'guesthouses', 'name': 'Guest Houses', 'description': 'Family-run hospitality', 'icon': 'home', 'image_path': 'images/types/guesthouses.jpg'},
+    {'slug': 'cabins', 'name': 'Cabins', 'description': 'Rustic getaways', 'icon': 'cabin', 'image_path': 'images/types/cabins.jpg'},
 ]
 
 # City base info with real content

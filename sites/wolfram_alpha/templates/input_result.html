@@ -113,6 +113,21 @@
     </div>
   </section>
 
+  {# WV-WOLFRAM-SAVE-FIX-2026-06-02 — above-the-fold save action #}
+  {% if query %}
+  <section class="wv-quick-actions" aria-label="Result actions" style="max-width:960px;margin:0 auto 12px;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;">
+    <span style="font-weight:600;color:#9a3412;font-size:13px;letter-spacing:0.04em;">QUICK ACTIONS:</span>
+    <form action="/saved-queries/add" method="post" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="query_text" value="{{ query }}">
+      <input type="hidden" name="next" value="/input?i={{ query|urlencode }}">
+      <button type="submit" class="btn btn-primary btn-sm" style="background:#ea580c;color:#fff;border:0;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;">&#128190; Save Query</button>
+    </form>
+    <a href="/notebooks" style="color:#9a3412;text-decoration:none;font-weight:500;padding:8px 14px;border:1px solid #fed7aa;border-radius:6px;">&#128195; Add to Notebook</a>
+    <a href="/saved-queries" style="color:#9a3412;text-decoration:none;margin-left:auto;font-size:13px;">View saved &rarr;</a>
+  </section>
+  {% endif %}
+
   <div class="result-main">
     <!-- Result panel -->
     <div class="result-panel-col">
@@ -146,9 +161,28 @@
         </div>
 
         {% if computation %}
-        {# When pods exist, render them directly — real WA shows pod-by-pod, not a
-           bundle paragraph. plaintext is only the fallback headline if no pods. #}
-        {% if not computation.get_pods() %}
+        {# === wv-search-fix-2026-06-01 ===
+           Previously the canonical `plaintext` field was only rendered when
+           get_pods() was empty, so for the majority of rows the agent had to
+           hunt through pod-extra-plaintext entries to find the answer. The
+           Wolfram mirror is a lookup table — `plaintext` IS the canonical
+           short answer. We now always render it at the top in a stable
+           pod-result-plaintext block so the agent has ONE deterministic
+           extraction point regardless of pod structure. The legacy
+           "if not get_pods()" branch is kept for empty-pod rows. #}
+        {% if computation.plaintext %}
+        <div class="result-pod result-pod--result">
+          <div class="pod-title">Result</div>
+          <div class="pod-content">
+            <div class="pod-result-rich">
+              <pre class="pod-result-plaintext">{{ computation.plaintext }}</pre>
+              {% if computation.units %}
+              <div class="pod-result-units"><span class="pod-answer-label">Units:</span> <code>{{ computation.units }}</code></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% elif not computation.get_pods() %}
         <div class="result-pod result-pod--result">
           <div class="pod-title">Result</div>
           <div class="pod-content">
@@ -161,6 +195,7 @@
           </div>
         </div>
         {% endif %}
+        {# === end wv-search-fix-2026-06-01 === #}
 
         {% for pod in computation.get_pods() %}
         {# Skip a pod titled "Input interpretation" — the template's first pod

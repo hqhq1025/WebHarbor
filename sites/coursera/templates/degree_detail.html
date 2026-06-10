@@ -1,3 +1,4 @@
+<!-- WV-SEARCH-LOOP-2026-06-03-COURSERA -->
 {% extends "base.html" %}
 {% block title %}{{ course.title }} | Online Degree on Coursera{% endblock %}
 {% block content %}
@@ -14,7 +15,7 @@
       {% if course.partner %}
       <p style="font-size:16px;opacity:.92;margin:0 0 6px;">Offered by <strong>{{ course.partner.name }}</strong> ({{ course.partner.country }})</p>
       {% endif %}
-      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">{{ course.description[:280] }}{% if course.description|length > 280 %}…{% endif %}</p>
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">{{ (course.description or '')[:280] }}{% if (course.description or '')|length > 280 %}…{% endif %}</p>
       <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
         <a href="{{ url_for('degree_admissions', slug=course.slug) }}" class="btn-primary" style="background:#fff;color:#0A2540;border-color:#fff;">Apply now</a>
         <a href="#curriculum" class="btn-outline-white">View curriculum</a>

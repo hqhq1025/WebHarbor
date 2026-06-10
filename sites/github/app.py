@@ -524,6 +524,39 @@ class MarketingPageSection(db.Model):
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ─────────────────────────── Forms ───────────────────────────
 
 class LoginForm(FlaskForm):
@@ -3193,6 +3226,32 @@ def fork_form(repo_id):
 
 # ─── Search (scored relevance, filters, sort) ───
 
+
+# === WV-CSHARP-FIX-2026-06-01 === Language alias map for search tokenizer
+# Maps lowercase alias -> canonical DB language value.
+# '#' is stripped by the [a-z0-9][\w-]* tokenizer, so "c#" becomes "c" (filtered).
+# This map intercepts at the query level before tokenization.
+_LANGUAGE_ALIASES = {
+    'c#': 'C#',
+    'csharp': 'C#',
+    'c-sharp': 'C#',
+    'f#': 'F#',
+    'fsharp': 'F#',
+    'f-sharp': 'F#',
+    'c++': 'C++',
+    'cpp': 'C++',
+    'objective-c': 'Objective-C',
+    'objc': 'Objective-C',
+}
+# Pattern matches any alias in the free-text query (word boundary aware).
+# Sort longest-first so 'c-sharp' matches before 'c'.
+_LANG_ALIAS_PAT = re.compile(
+    r'\b(' + '|'.join(
+        re.escape(k) for k in sorted(_LANGUAGE_ALIASES, key=len, reverse=True)
+    ) + r')(?=\s|$|[^\w])',
+    re.IGNORECASE,
+)
+
 STOPWORDS = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with',
              'and', 'or', 'is', 'are', 'be', 'by', 'from', 'as', 'that', 'this',
              'about', 'repository', 'repo', 'project', 'projects', 'open',
@@ -3204,6 +3263,73 @@ STOPWORDS = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with',
 # which clears this. Keyed by lowercase q only since both language and
 # license facets pull the same row set.
 _GITHUB_SEARCH_POOL_CACHE: dict = {}
+
+# === WV-FTS5-INIT-2026-06-01 === FTS5 search for repository table
+import sqlite3 as _fts5_sqlite3
+
+_GITHUB_FTS5_TABLE = 'repository_fts'
+_GITHUB_FTS5_COLS = ['full_name', 'name', 'description', 'language', 'topics_text']
+_GITHUB_FTS5_DB = None  # set after app_context init
+
+def _github_fts5_init():
+    global _GITHUB_FTS5_DB
+    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    db_path = db_uri.replace('sqlite:///', '')
+    if not db_path.startswith('/'):
+        db_path = os.path.join(app.instance_path, db_path)
+    _GITHUB_FTS5_DB = db_path
+    try:
+        conn = _fts5_sqlite3.connect(db_path, timeout=30)
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (_GITHUB_FTS5_TABLE,))
+        if not cur.fetchone():
+            cols_str = ', '.join(_GITHUB_FTS5_COLS)
+            print(f"[FTS5] Creating {_GITHUB_FTS5_TABLE} from repository...")
+            cur.execute(
+                f"CREATE VIRTUAL TABLE {_GITHUB_FTS5_TABLE} USING fts5("
+                f"  {cols_str},"
+                f"  content=repository, content_rowid=id,"
+                f"  tokenize='porter unicode61 remove_diacritics 2'"
+                f")"
+            )
+            cur.execute(f"INSERT INTO {_GITHUB_FTS5_TABLE}({_GITHUB_FTS5_TABLE}) VALUES('rebuild')")
+            conn.commit()
+            cur.execute(f"SELECT COUNT(*) FROM {_GITHUB_FTS5_TABLE}")
+            cnt = cur.fetchone()[0]
+            print(f"[FTS5] Indexed {cnt} rows into {_GITHUB_FTS5_TABLE}")
+        else:
+            print(f"[FTS5] {_GITHUB_FTS5_TABLE} already exists, skipping rebuild.")
+        conn.close()
+    except Exception as e:
+        print(f"[FTS5] github init error: {e}")
+
+
+def _github_fts5_search(q, limit=2000):
+    """FTS5 first-pass: returns set of repository IDs matching q via BM25."""
+    if not _GITHUB_FTS5_DB or not q or not q.strip():
+        return None
+    clean = re.sub(r'["\'():*^{}\[\]!@#$%&;,<>]', ' ', q)
+    tokens = [t.strip() for t in clean.split() if t.strip() and len(t.strip()) >= 2]
+    if not tokens:
+        return None
+    fts_q = ' '.join(f'"{t}"' for t in tokens)
+    try:
+        conn = _fts5_sqlite3.connect(_GITHUB_FTS5_DB, timeout=5)
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT rowid FROM {_GITHUB_FTS5_TABLE} "
+            f"WHERE {_GITHUB_FTS5_TABLE} MATCH ? "
+            f"ORDER BY bm25({_GITHUB_FTS5_TABLE}) LIMIT ?",
+            (fts_q, limit),
+        )
+        ids = set(r[0] for r in cur.fetchall())
+        conn.close()
+        return ids if ids else None
+    except Exception as e:
+        print(f"[FTS5] github search error: {e}")
+        return None
+# === end WV-FTS5-INIT-2026-06-01 ===
 
 
 def _repo_haystack(r):
@@ -3303,7 +3429,9 @@ def _parse_github_qualifiers(q):
             kept.append(tok)
             continue
         if key in ('language', 'lang', 'l'):
-            filters['language'] = val.strip('"').strip("'")
+            _lval = val.strip('"').strip("'")
+            # === WV-CSHARP-FIX-2026-06-01 === Resolve language aliases in qualifier values
+            filters['language'] = _LANGUAGE_ALIASES.get(_lval.lower(), _lval)
         elif key == 'stars':
             _apply_numeric('stars', val, filters, 'min_stars', 'max_stars')
         elif key == 'forks':
@@ -3312,6 +3440,9 @@ def _parse_github_qualifiers(q):
             _apply_date(val, filters, 'created_after', 'created_before')
         elif key in ('pushed', 'updated'):
             _apply_date(val, filters, 'updated_after', 'updated_before')
+        # === wv-search-fix-2026-06-01-gh === G4: parse owner:/user: qualifiers
+        elif key in ('owner', 'user'):
+            filters['owner'] = val.strip('"').strip("'")
         elif key == 'topic':
             filters['topic'] = val.strip('"').strip("'")
         elif key == 'license':
@@ -3376,8 +3507,16 @@ def _apply_repo_filters(query_obj, extra=None):
         query_obj = query_obj.filter(Repository.forks_count <= max_forks)
 
     license_f = (extra.get('license') or request.args.get('license', '').strip())
+    # === wv-search-fix-2026-06-01-gh === G3: tolerate 'Apache 2.0' / 'apache 2.0' / 'Apache-2.0'
     if license_f:
-        query_obj = query_obj.filter(Repository.license.ilike(f'%{license_f}%'))
+        _lic_alt = license_f.replace(' ', '-')
+        if _lic_alt != license_f:
+            query_obj = query_obj.filter(or_(
+                Repository.license.ilike(f'%{license_f}%'),
+                Repository.license.ilike(f'%{_lic_alt}%'),
+            ))
+        else:
+            query_obj = query_obj.filter(Repository.license.ilike(f'%{license_f}%'))
 
     topic_f = (extra.get('topic') or request.args.get('topic', '').strip())
     if topic_f:
@@ -3445,6 +3584,15 @@ def _apply_repo_filters(query_obj, extra=None):
     if owner_type:
         query_obj = query_obj.filter(Repository.owner_type == owner_type)
 
+    # === wv-search-fix-2026-06-01-gh === G4: owner: qualifier joins User and filters by username
+    owner_f = (extra.get('owner') or request.args.get('owner', '').strip())
+    if owner_f:
+        _u = User.query.filter(User.username.ilike(owner_f)).first()
+        if _u is not None:
+            query_obj = query_obj.filter(Repository.owner_id == _u.id)
+        else:
+            query_obj = query_obj.filter(Repository.full_name.ilike(f'{owner_f}/%'))
+
     return query_obj
 
 
@@ -3477,6 +3625,14 @@ def search():
     # created:>2024-01-01, pushed:>2024-01-01, sort:stars-desc, type:...)
     # from the raw q string before scoring.
     q, parsed = _parse_github_qualifiers(raw_q)
+    # === WV-CSHARP-FIX-2026-06-01 === Expand language aliases in free text
+    # Run AFTER qualifier parsing so language:csharp is handled by the parser.
+    # Only bare "c#"/"csharp" in free text triggers alias expansion here.
+    _alias_match = _LANG_ALIAS_PAT.search(q)
+    if _alias_match and 'language' not in parsed:
+        parsed['language'] = _LANGUAGE_ALIASES[_alias_match.group(1).lower()]
+        q = _LANG_ALIAS_PAT.sub('', q).strip()
+        q = re.sub(r'\s+', ' ', q).strip()
     # type: qualifier overrides URL param if present
     search_type = parsed.get('type') or request.args.get('type', 'repositories')
     page = request.args.get('page', 1, type=int)
@@ -3508,6 +3664,20 @@ def search():
                     Repository.language.ilike(_pat),
                 ))
         candidates = base.limit(2000).all()
+        # === WV-FTS5-INIT-2026-06-01 === FTS5 first-pass: narrow candidates
+        _fts5_ids = _github_fts5_search(q, limit=2000) if q else None
+        if _fts5_ids is not None:
+            _fts5_candidates = [r for r in candidates if r.id in _fts5_ids]
+            if _fts5_candidates:
+                candidates = _fts5_candidates
+        # === end WV-FTS5-INIT-2026-06-01 ===
+        # === wv-search-fix-2026-06-01-gh === G1: snapshot true SQL total for filter-only queries
+        _wv_filtered_total = None
+        if not q:
+            try:
+                _wv_filtered_total = base.with_entities(db.func.count(Repository.id)).scalar()
+            except Exception:
+                _wv_filtered_total = None
         if q:
             tokens = [t.lower() for t in re.findall(r'[a-z0-9][\w-]*', q.lower())
                       if t and t not in STOPWORDS and len(t) >= 2]
@@ -3547,6 +3717,9 @@ def search():
         start = (page - 1) * per_page
         end = start + per_page
         page_items = results[start:end]
+        # === wv-search-fix-2026-06-01-gh === G1: prefer SQL-filtered count when q empty (avoids LIMIT 2000 undercount)
+        if not q and _wv_filtered_total is not None:
+            total = _wv_filtered_total
         repos = _PaginatedList(page_items, page=page, per_page=per_page, total=total)
     elif search_type == 'users' and q:
         users = User.query.filter(
@@ -3618,13 +3791,16 @@ def search():
                     return False
                 if eff_license and eff_license.lower() not in (r.license or '').lower():
                     return False
-                if _url_min_stars is not None and r.stars_count < _url_min_stars:
+                # === wv-search-fix-2026-06-01-gh === G2: coerce None→0 to avoid TypeError 500
+                _sc = r.stars_count or 0
+                _fc = r.forks_count or 0
+                if _url_min_stars is not None and _sc < _url_min_stars:
                     return False
-                if _url_max_stars is not None and r.stars_count > _url_max_stars:
+                if _url_max_stars is not None and _sc > _url_max_stars:
                     return False
-                if _url_min_forks is not None and r.forks_count < _url_min_forks:
+                if _url_min_forks is not None and _fc < _url_min_forks:
                     return False
-                if _url_max_forks is not None and r.forks_count > _url_max_forks:
+                if _url_max_forks is not None and _fc > _url_max_forks:
                     return False
                 if eff_topic and f'"{eff_topic}"' not in (r.topics_text or ''):
                     return False
@@ -9402,62 +9578,71 @@ def create_app():
 with app.app_context():
     try:
         db.create_all()
-        seed_database()
-        seed_benchmark_users()
-        seed_extra_repos()
-        c0 = seed_extra_issues() or 0
-        seed_extra_issue_comments()
-        seed_extra_stars()
-        seed_extra_watches()
-        c1 = seed_extra_commits() or 0
-        c2 = seed_extra_pulls() or 0
-        # R4
-        c3 = seed_r4_org_repos() or 0
-        c4 = seed_r4_discussions() or 0
-        c5 = seed_r4_sponsorships() or 0
-        c6 = seed_r4_project_boards() or 0
-        c7 = seed_r4_packages() or 0
-        c8 = seed_r4_teams() or 0
-        # R5
-        c9 = seed_r5_user_repos() or 0
-        c1b = seed_extra_commits() or 0
-        c10 = seed_r5_topup_commits() or 0
-        c11 = seed_r5_extra_pulls() or 0
-        # R6
-        c12 = seed_r6_edge_repos() or 0
-        c13 = seed_r6_user_repos() or 0
-        c1c = seed_extra_commits() or 0
-        # R7
-        c14 = seed_r7_user_repos() or 0
-        c1d = seed_extra_commits() or 0
-        c15 = seed_r7_topup_commits() or 0
-        # R8
-        c16 = seed_r8_user_repos() or 0
-        c1e = seed_extra_commits() or 0
-        # R9
-        c17 = seed_r9_user_repos() or 0
-        c1f = seed_extra_commits() or 0
-        # R10
-        c18 = seed_r10_user_repos() or 0
-        c1g = seed_extra_commits() or 0
-        ct = post_seed_tweaks() or 0
-        # R11: marketing pages → DB
-        cm = _seed_marketing_pages_impl(
-            db, MarketingPage, MarketingPageSection) or 0
-        normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18
-                   + ct + cm) > 0)
-        ct = post_seed_tweaks() or 0
-        normalize_seed_db_layout(
-            dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
+        # === WV-FTS5-INIT-2026-06-01 === build FTS5 index
+        _github_fts5_init()
+        # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+        # Each seed_extra_* function has its own gate, but checking 25 gates
+        # over a 50k-row catalog DB costs ~19s. control_server.wait_ready
+        # routinely times out on warm restart. Skip the whole bundle when
+        # the catalog is already populated.
+        _needs_full_bootstrap = (Repository.query.count() < 5000)
+        if _needs_full_bootstrap:
+            seed_database()
+            seed_benchmark_users()
+            seed_extra_repos()
+            c0 = seed_extra_issues() or 0
+            seed_extra_issue_comments()
+            seed_extra_stars()
+            seed_extra_watches()
+            c1 = seed_extra_commits() or 0
+            c2 = seed_extra_pulls() or 0
+            # R4
+            c3 = seed_r4_org_repos() or 0
+            c4 = seed_r4_discussions() or 0
+            c5 = seed_r4_sponsorships() or 0
+            c6 = seed_r4_project_boards() or 0
+            c7 = seed_r4_packages() or 0
+            c8 = seed_r4_teams() or 0
+            # R5
+            c9 = seed_r5_user_repos() or 0
+            c1b = seed_extra_commits() or 0
+            c10 = seed_r5_topup_commits() or 0
+            c11 = seed_r5_extra_pulls() or 0
+            # R6
+            c12 = seed_r6_edge_repos() or 0
+            c13 = seed_r6_user_repos() or 0
+            c1c = seed_extra_commits() or 0
+            # R7
+            c14 = seed_r7_user_repos() or 0
+            c1d = seed_extra_commits() or 0
+            c15 = seed_r7_topup_commits() or 0
+            # R8
+            c16 = seed_r8_user_repos() or 0
+            c1e = seed_extra_commits() or 0
+            # R9
+            c17 = seed_r9_user_repos() or 0
+            c1f = seed_extra_commits() or 0
+            # R10
+            c18 = seed_r10_user_repos() or 0
+            c1g = seed_extra_commits() or 0
+            ct = post_seed_tweaks() or 0
+            # R11: marketing pages → DB
+            cm = _seed_marketing_pages_impl(
+                db, MarketingPage, MarketingPageSection) or 0
+            normalize_seed_db_layout(
+                dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
+                       + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18
+                       + ct + cm) > 0)
+            ct = post_seed_tweaks() or 0
+            normalize_seed_db_layout(
+                dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
         # Perf — composite indexes declared in __table_args__ above were never
         # materialised on the existing seed DB (db.create_all() skips existing
         # tables, so newly-added Index() in __table_args__ is silently ignored
         # — see perf-optimize SKILL.md §H). Explicit create + ANALYZE so the
         # planner uses (is_public, stars_count) for the / + /explore +
         # /trending hot path. instance_seed/*.db is left untouched so byte-id
-        # reset still passes.
+        # reset still passes. Cheap (checkfirst=True), so leave outside gate.
         try:
             db.Index('ix_repository_public_stars',
                      Repository.is_public, Repository.stars_count
@@ -9855,3 +10040,30 @@ def _add_static_cache_headers(resp):
     return resp
 # --- end perf ---
 
+
+
+# === WVFIT AUTO-LOGIN (2026-05-31) ===
+# Auto-login middleware: before every request, if no user is authenticated,
+# silently log in user id=1 (the seed demo user). This gives the CUA a
+# stable signed-in session without exposing a fake login flow that fails
+# bcrypt password checks.
+try:
+    from flask_login import login_user as _wvfit_login_user, current_user as _wvfit_current_user
+
+    @app.before_request
+    def _wvfit_autologin():
+        # Skip static & login routes; let real login flow work if user actively visits.
+        from flask import request as _req
+        if _req.path.startswith('/static/') or _req.path == '/login' or _req.path == '/logout':
+            return
+        try:
+            if not _wvfit_current_user.is_authenticated:
+                _seed_user = User.query.get(1)
+                if _seed_user is not None:
+                    _wvfit_login_user(_seed_user, remember=False)
+        except Exception:
+            pass  # never break the request flow over autologin
+except Exception as _e:
+    import sys as _sys
+    print(f"[WVFIT autologin] init failed: {_e}", file=_sys.stderr)
+# === END WVFIT AUTO-LOGIN ===

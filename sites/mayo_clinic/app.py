@@ -466,6 +466,29 @@ def auto_login():
             login_user(alice)
 
 
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 @app.context_processor
 def inject_globals():
     return {
@@ -714,6 +737,8 @@ def find_doctor():
     specialty = request.args.get("specialty", "")
     location = request.args.get("location", "")
     language = request.args.get("language", "")
+    # WV-MAYO-ACCEPTS-NEW-MAIN-2026-06-04: accepts_new facet on main /find-a-doctor.
+    accepts_new = request.args.get("accepts_new", "")
     q = Doctor.query.order_by(Doctor.name)
     if specialty:
         q = q.filter(Doctor.dept_slug == specialty)
@@ -721,6 +746,10 @@ def find_doctor():
         q = q.filter(Doctor.locations.contains(location))
     if language:
         q = q.filter(Doctor.languages.contains(language))
+    if accepts_new == "yes":
+        q = q.filter(Doctor.accepts_appointments == True)
+    elif accepts_new == "no":
+        q = q.filter(Doctor.accepts_appointments == False)
     docs = q.all()
     if name_q:
         docs = scored_search(name_q, docs, ["name", "specialty", "focus_areas"])
@@ -728,6 +757,7 @@ def find_doctor():
     return render_template("find_doctor.html",
                            doctors=docs, departments=depts,
                            q=name_q, specialty=specialty, location=location, language=language,
+                           accepts_new=accepts_new,
                            LOCATIONS=["Rochester", "Jacksonville", "Phoenix"],
                            LANGUAGE_LIST=["English","Spanish","French","German","Mandarin","Cantonese","Arabic","Hindi","Vietnamese","Russian","Portuguese","Italian","Korean","Japanese","Tagalog","Polish"])
 
@@ -1819,17 +1849,31 @@ def portal_messages():
         # Send message to provider
         slug = request.form.get("doctor_slug", "")
         doc = Doctor.query.filter_by(slug=slug).first()
+        subject = request.form.get("subject", "")
+        body = request.form.get("body", "")
         code = "MSG-" + hashlib.md5(
-            (str(current_user.id) + request.form.get("subject", "")).encode()
+            (str(current_user.id) + subject).encode()
         ).hexdigest()[:8].upper()
         pm = ProviderMessage(
             user_id=current_user.id,
             doctor_slug=slug,
-            subject=request.form.get("subject", ""),
-            body=request.form.get("body", ""),
+            subject=subject,
+            body=body,
             confirmation_code=code,
         )
         db.session.add(pm)
+        # WV-MAYO-PORTAL-MESSAGES-UNIFIED-2026-06-04: also mirror into
+        # PortalMessage so legacy `inbox=PortalMessage` view surfaces sent
+        # messages and any conversation thread is consistent across tables.
+        twin = PortalMessage(
+            user_id=current_user.id,
+            direction="to_provider",
+            provider_name=(doc.name if doc else slug),
+            subject=subject,
+            body=body,
+            is_read=True,
+        )
+        db.session.add(twin)
         db.session.commit()
         flash(f"Message sent to {doc.name if doc else 'provider'}. Confirmation: {code}.", "success")
         return redirect(url_for("portal_messages"))

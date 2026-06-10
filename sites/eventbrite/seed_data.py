@@ -1185,6 +1185,31 @@ def seed_database():
             ))
     db.session.commit()
 
+    # 4a) Wire events to real category-themed photos on disk. The events table
+    # holds image_path = 'images/evt_<category>_<NNN>.jpg' picked via a
+    # deterministic md5(slug) hash from the pool of files under static/images/
+    # named evt_<category_slug>_*.jpg. This guarantees per-event diversity at
+    # the DB level (queryable) while staying stable across seeds.
+    import os, hashlib
+    from collections import defaultdict
+    img_dir = os.path.join(os.path.dirname(__file__), 'static', 'images')
+    by_cat = defaultdict(list)
+    if os.path.isdir(img_dir):
+        for fn in sorted(os.listdir(img_dir)):
+            if fn.startswith('evt_') and fn.endswith('.jpg'):
+                cat = fn[len('evt_'):].rsplit('_', 1)[0]
+                by_cat[cat].append(fn)
+    if by_cat:
+        fallback_pool = sum(by_cat.values(), [])
+        for ev in Event.query.all():
+            pool = by_cat.get(ev.category_slug) or fallback_pool
+            if not pool:
+                continue
+            h = int(hashlib.md5((ev.slug or '').encode()).hexdigest(), 16)
+            ev.image_path = 'images/' + pool[h % len(pool)]
+        db.session.commit()
+        print(f"[seed] wired image_path on {Event.query.count()} events to disk photos")
+
     # 4) Help articles
     for (slug, title, section, body) in _HELP_ARTICLES:
         if HelpArticle.query.filter_by(slug=slug).first():

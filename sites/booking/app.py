@@ -195,6 +195,7 @@ class DestCategory(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     icon = db.Column(db.String(50))
+    image_path = db.Column(db.String(200), default="")
 
 
 class PropertyType(db.Model):
@@ -203,6 +204,7 @@ class PropertyType(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     icon = db.Column(db.String(50))
+    image_path = db.Column(db.String(200), default="")
 
 
 class Property(db.Model):
@@ -676,6 +678,7 @@ class GeniusReward(db.Model):
     description = db.Column(db.String(400))
     discount_pct = db.Column(db.Integer, default=0)
     icon = db.Column(db.String(40))
+    image_path = db.Column(db.String(200), default="")
 
 
 # =====================================================================
@@ -744,6 +747,39 @@ class ReviewForm(FlaskForm):
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="demo@booking.example").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
 
 def derive_amenity_flags(amenities_list):
     """Map an amenities list (or iterable of strings) to boolean flags
@@ -1817,6 +1853,10 @@ def search():
     children = request.args.get('children', 0, type=int)
     rooms = request.args.get('rooms', 1, type=int)
 
+    # WV-BOOKING-SEARCH-PAGINATION-2026-06-01
+    search_page = request.args.get('page', 1, type=int)
+    search_per_page = 20
+
     min_rating = request.args.get('min_rating', type=float)
     min_stars = request.args.get('min_stars', type=int)
     max_price = request.args.get('max_price', type=float)
@@ -2015,13 +2055,26 @@ def search():
         # Sort: defined distances first (ascending), then undefined at end.
         candidates.sort(key=lambda p: (p.miles_from_beach is None,
                                        p.miles_from_beach if p.miles_from_beach is not None else 0.0))
-        results = candidates[:60]
+        _search_total = len(candidates)
+        _search_pages = (_search_total + search_per_page - 1) // search_per_page
+        _start = (search_page - 1) * search_per_page
+        results = candidates[_start:_start + search_per_page]
     else:
-        results = query.limit(60).all()
+        _pagination = query.paginate(page=search_page, per_page=search_per_page, error_out=False)
+        results = _pagination.items
+        _search_total = _pagination.total
+        _search_pages = _pagination.pages
 
     # Default (empty query, no filters) → show a rating-sorted snapshot
     if not (term or city_id or city_slug or near or country) and not results:
         results = Property.query.order_by(Property.rating.desc()).limit(20).all()
+        _search_total = len(results)
+        _search_pages = 1
+
+    # Ensure pagination vars are defined for all code paths
+    if '_search_total' not in dir():
+        _search_total = len(results)
+        _search_pages = 1
 
     all_cities = City.query.all()
 
@@ -2120,7 +2173,10 @@ def search():
                            miles_label_name=miles_label_name,
                            miles_label_subway=miles_label_subway,
                            show_beach_sort=show_beach_sort,
-                           sort=sort)
+                           sort=sort,
+                           search_page=search_page,
+                           search_pages=_search_pages,
+                           search_total=_search_total)
 
 
 # =====================================================================
@@ -3159,6 +3215,126 @@ def api_cities():
         {'id': c.id, 'display': c.display, 'slug': c.slug, 'country': c.country}
         for c in cities
     ])
+
+
+# WV-BOOKING-AUTOCOMPLETE-FIX-2026-06-04
+# Destination autocomplete for the `name="ss"` field on /, /searchresults.html
+# (mirrors real booking.com's typeahead). Returns a flat `items` list of {kind,
+# label, sublabel, value} entries, ranked exact-prefix > prefix > substring.
+# Cities first (most search intent), then properties. Capped at `limit` total.
+# Frontend lives in static/js/destination_autocomplete.js.
+@app.route('/api/destination-suggest')
+def api_destination_suggest():
+    q = (request.args.get('q') or '').strip()
+    try:
+        limit = int(request.args.get('limit', 15))
+    except (TypeError, ValueError):
+        limit = 15
+    limit = max(1, min(limit, 50))
+    if len(q) < 1:
+        return jsonify({'q': q, 'items': []})
+
+    q_lower = q.lower()
+    like_prefix = q_lower + '%'
+    like_anywhere = '%' + q_lower + '%'
+
+    # --- Cities (display, country) ---
+    # ranked: exact (case-insensitive) > display-prefix > country-prefix > substring
+    city_rows = (City.query
+                 .filter(db.or_(
+                     db.func.lower(City.display).like(like_anywhere),
+                     db.func.lower(City.country).like(like_anywhere),
+                 ))
+                 .limit(60)
+                 .all())
+
+    def _city_rank(c):
+        dl = (c.display or '').lower()
+        cl = (c.country or '').lower()
+        if dl == q_lower:
+            return 0
+        if dl.startswith(q_lower):
+            return 1
+        if cl == q_lower:
+            return 2
+        if cl.startswith(q_lower):
+            return 3
+        return 4
+
+    city_rows.sort(key=lambda c: (_city_rank(c), len(c.display or '')))
+    city_items = []
+    for c in city_rows:
+        label = c.display or ''
+        sublabel = c.country or ''
+        # Canonical value to drop into the `ss` field — mirrors search.html's
+        # handling: search() resolves `q` against both city + property name.
+        value = label
+        if sublabel and sublabel.lower() not in label.lower():
+            value = f'{label}, {sublabel}'
+        city_items.append({
+            'kind': 'City',
+            'label': label,
+            'sublabel': sublabel,
+            'value': value,
+            'slug': c.slug,
+            'id': c.id,
+        })
+
+    # --- Properties (name) ---
+    # Skip junk names (frankentitle pool the v4 generator filters out too)
+    # so suggestions look real. `WV-BOOKING-AUTOCOMPLETE-CLEAN-2026-06-04`
+    # Filter mirrors site_facets.py's `anchor_filter` for booking: drop
+    # '#' (Host/Plus/Signature templates with #NNNN ids), '—' (suites-with-
+    # suffix template), ':' (Plus X:/Boutique X:/Curated X: template), and
+    # 2+ commas (...in Neighborhood, City, State frankentitle).
+    prop_rows = (Property.query
+                 .filter(db.func.lower(Property.name).like(like_anywhere))
+                 .filter(~Property.name.like('%#%'))
+                 .filter(~Property.name.like('%—%'))
+                 .filter(~Property.name.like('%:%'))
+                 .filter(
+                     db.func.length(Property.name)
+                     - db.func.length(db.func.replace(Property.name, ',', ''))
+                     <= 1
+                 )
+                 .limit(60)
+                 .all())
+
+    def _prop_rank(p):
+        nl = (p.name or '').lower()
+        if nl == q_lower:
+            return 0
+        if nl.startswith(q_lower):
+            return 1
+        return 2
+
+    prop_rows.sort(key=lambda p: (_prop_rank(p), -(p.rating or 0)))
+    prop_items = []
+    for p in prop_rows:
+        city = City.query.get(p.city_id) if p.city_id else None
+        sublabel = None
+        if city:
+            sublabel = f'{city.display}, {city.country}' if city.country else city.display
+        prop_items.append({
+            'kind': 'Property',
+            'label': p.name,
+            'sublabel': sublabel,
+            'value': p.name,
+            'slug': p.slug,
+            'id': p.id,
+            # WV-BOOKING-AUTOCOMPLETE-FIX-R2-2026-06-04
+            # Emit the OWNING city id so the JS can populate the search form's
+            # hidden city_id field on selection. The R1 payload reused `id` for
+            # both kinds — that confused the JS into setting city_id to the
+            # property id. Now `id` stays property-id (for downstream consumers)
+            # and `city_id` is the city the JS should narrow to.
+            'city_id': p.city_id,
+        })
+
+    # Cities up front (they're the canonical destination search), then a few
+    # property hits. Cap at `limit`.
+    items = (city_items + prop_items)[:limit]
+    return jsonify({'q': q, 'items': items})
 
 
 # =====================================================================
@@ -6405,6 +6581,14 @@ def _migrate_schema():
             if 'nearest_beach_lng' not in ccols:
                 with db.engine.begin() as conn:
                     conn.execute(text('ALTER TABLE city ADD COLUMN nearest_beach_lng FLOAT'))
+        # image_path column added after initial seed DB ship; SELECTs from the
+        # homepage fail otherwise. Idempotent.
+        for tbl in ('dest_category', 'property_type'):
+            if tbl in insp.get_table_names():
+                tcols = {c['name'] for c in insp.get_columns(tbl)}
+                if 'image_path' not in tcols:
+                    with db.engine.begin() as conn:
+                        conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN image_path VARCHAR(200) DEFAULT ''"))
         # Populate review_scores_json for properties that don't have it yet
         missing = Property.query.filter(
             or_(Property.review_scores_json.is_(None), Property.review_scores_json == '')
@@ -6739,10 +6923,18 @@ else:
     # Ensure DB is created and seeded when imported (e.g. by run_tasks.py)
     with app.app_context():
         db.create_all()
+        # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+        # _migrate_schema is run every boot (it's idempotent and inspects the
+        # schema first — fast enough). The expensive parts (seed_database +
+        # seed_benchmark_users + _normalize_seed_db_layout) are gated on a row
+        # count so warm restarts skip the ~60s of wasted work that would
+        # otherwise exceed control_server.wait_ready.
         _migrate_schema()
-        seed_database()
-        seed_benchmark_users()
-        _normalize_seed_db_layout()
+        _needs_full_bootstrap = (Property.query.count() < 1000)
+        if _needs_full_bootstrap:
+            seed_database()
+            seed_benchmark_users()
+            _normalize_seed_db_layout()
         # Perf 2026-05-28: Ensure the two composite indexes that accelerate
         # the homepage filter+sort patterns exist on the running instance DB.
         # `db.create_all()` skips the existing table, so __table_args__ Index
@@ -6773,4 +6965,53 @@ def _add_static_cache_headers(resp):
         pass
     return resp
 # --- end perf ---
+
+
+# ---------------------------------------------------------------------------
+# WV-FILTER-CHIP-URL-FIX-2026-06-04
+# Expose chip_url(set={...}, unset=[...]) helper to Jinja templates.
+# Used by filter "chips" on search/category pages so each chip's href is the
+# current URL with one filter toggled. Drops `page` on change to reset
+# pagination when result set narrows.
+# ---------------------------------------------------------------------------
+@app.context_processor
+def _inject_filter_chip_url():
+    from urllib.parse import urlencode
+
+    def chip_url(set=None, unset=None, drop_page=True, **kwargs):
+        # `set` is the conventional Jinja kwarg name; accept it but don't
+        # shadow the builtin set() inside the body.
+        set_params = kwargs.get("set_params", set)
+        unset_keys = unset
+        try:
+            args = request.args.lists()  # list of (k, [v, v, ...])
+        except Exception:
+            return request.path
+        pairs = []
+        skip = []
+        if set_params:
+            skip.extend(set_params.keys())
+        if unset_keys:
+            skip.extend(unset_keys)
+        if drop_page:
+            skip.append("page")
+        skip_lookup = {k: True for k in skip}
+        for k, vs in args:
+            if k in skip_lookup:
+                continue
+            for v in vs:
+                pairs.append((k, v))
+        if set_params:
+            for k, v in set_params.items():
+                if v is None or v == "":
+                    continue
+                if isinstance(v, (list, tuple)):
+                    for x in v:
+                        pairs.append((k, str(x)))
+                else:
+                    pairs.append((k, str(v)))
+        qs = urlencode(pairs)
+        return (request.path + "?" + qs) if qs else request.path
+
+    return {"chip_url": chip_url}
 

@@ -349,7 +349,17 @@ def _list_images_for_category(cat_slug):
 
 def event_image_filename(ev):
     """Deterministically choose a static/images/ filename for ev based on
-    category + slug hash. Falls back to '' if no images on disk."""
+    category + slug hash. Prefers the persisted ev.image_path when present
+    (set during seed by tools/bulk_api/* — gives a stable mapping queryable
+    from the DB). Falls back to '' if no images on disk."""
+    persisted = (getattr(ev, 'image_path', '') or '').strip()
+    if persisted:
+        # image_path is stored as e.g. 'images/evt_music_017.jpg' — return
+        # just the basename so the existing url_for('static', filename='images/'+fn)
+        # call in event_image_url still produces the right URL.
+        fn = persisted.split('/')[-1]
+        if os.path.isfile(os.path.join(_IMAGES_DIR, fn)):
+            return fn
     pool = _list_images_for_category(ev.category_slug)
     if not pool:
         return ''

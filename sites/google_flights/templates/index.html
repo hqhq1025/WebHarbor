@@ -47,33 +47,93 @@
         <input type="text" name="to" class="search-field search-field-to" placeholder="Where to? (e.g. LAX or Los Angeles)" value="" list="airport-list" required>
       </div>
       <div class="search-dates">
-        <input type="text" name="depart" class="search-field" value="" placeholder="Departure" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkin" required>
-        <input type="text" name="return" class="search-field" data-return-field value="" placeholder="Return (optional)" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkout">
+        <input type="text" name="depart" class="search-field" value="" placeholder="YYYY-MM-DD or M/D/YYYY" autocomplete="off" required>  <!-- WV-GFLIGHTS-FORM-FIX-2026-06-01 -->
+        <input type="text" name="return" class="search-field" data-return-field value="" placeholder="YYYY-MM-DD or M/D/YYYY" autocomplete="off">
       </div>
     </div>
     <datalist id="airport-list">
       {% for city, iatas in multi_city_groups %}<option value="{{ city }}">{{ city }} (all airports — {{ iatas|join(', ') }})</option>{% endfor %}
       {% for a in all_airports %}<option value="{{ a.iata }}">{{ a.city }} ({{ a.iata }})</option>{% endfor %}
     </datalist>
-    <div class="search-secondary">
-      <select name="passengers" class="search-select">
-        <option value="1">1 adult</option>
-        <option value="2">2 adults</option>
-        <option value="3">3 adults</option>
-        <option value="4">4 adults</option>
-      </select>
-      <select name="class" class="search-select">
-        <option value="Economy">Economy</option>
-        <option value="Premium">Premium economy</option>
-        <option value="Business">Business</option>
-        <option value="First">First class</option>
-      </select>
-      <select name="sort" class="search-select">
-        <option value="best">Best</option>
-        <option value="price">Cheapest</option>
-        <option value="duration">Fastest</option>
-      </select>
+    <div class="search-secondary" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+      <!-- Passengers pill group -->
+      <fieldset style="border:none;padding:0;margin:0;display:flex;align-items:center;gap:0;">
+        <legend style="font-size:12px;font-weight:500;color:#5f6368;margin-bottom:4px;display:block;width:100%;">Passengers</legend>
+        <input type="hidden" name="passengers" id="pill-passengers" value="1">
+        <div style="display:flex;gap:0;" role="radiogroup" aria-label="Number of passengers">
+          <button type="button" class="wv-pill wv-pill-active" data-pill-group="passengers" data-pill-value="1"
+            style="padding:6px 14px;border:1px solid #dadce0;background:#e8f0fe;color:#1a73e8;font-weight:500;font-size:13px;cursor:pointer;border-radius:20px 0 0 20px;"
+            aria-pressed="true">1 adult</button>
+          <button type="button" class="wv-pill" data-pill-group="passengers" data-pill-value="2"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;"
+            aria-pressed="false">2 adults</button>
+          <button type="button" class="wv-pill" data-pill-group="passengers" data-pill-value="3"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;border-radius:0 20px 20px 0;"
+            aria-pressed="false">3 adults</button>
+        </div>
+      </fieldset>
+      <!-- Cabin class pill group -->
+      <fieldset style="border:none;padding:0;margin:0;display:flex;align-items:center;gap:0;">
+        <legend style="font-size:12px;font-weight:500;color:#5f6368;margin-bottom:4px;display:block;width:100%;">Cabin</legend>
+        <input type="hidden" name="class" id="pill-class" value="Economy">
+        <div style="display:flex;gap:0;" role="radiogroup" aria-label="Cabin class">
+          <button type="button" class="wv-pill wv-pill-active" data-pill-group="class" data-pill-value="Economy"
+            style="padding:6px 14px;border:1px solid #dadce0;background:#e8f0fe;color:#1a73e8;font-weight:500;font-size:13px;cursor:pointer;border-radius:20px 0 0 20px;"
+            aria-pressed="true">Economy</button>
+          <button type="button" class="wv-pill" data-pill-group="class" data-pill-value="Business"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;"
+            aria-pressed="false">Business</button>
+          <button type="button" class="wv-pill" data-pill-group="class" data-pill-value="First"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;border-radius:0 20px 20px 0;"
+            aria-pressed="false">First</button>
+        </div>
+      </fieldset>
+      <!-- Sort pill group -->
+      <fieldset style="border:none;padding:0;margin:0;display:flex;align-items:center;gap:0;">
+        <legend style="font-size:12px;font-weight:500;color:#5f6368;margin-bottom:4px;display:block;width:100%;">Sort by</legend>
+        <input type="hidden" name="sort" id="pill-sort" value="best">
+        <div style="display:flex;gap:0;" role="radiogroup" aria-label="Sort flights by">
+          <button type="button" class="wv-pill wv-pill-active" data-pill-group="sort" data-pill-value="best"
+            style="padding:6px 14px;border:1px solid #dadce0;background:#e8f0fe;color:#1a73e8;font-weight:500;font-size:13px;cursor:pointer;border-radius:20px 0 0 20px;"
+            aria-pressed="true">Best</button>
+          <button type="button" class="wv-pill" data-pill-group="sort" data-pill-value="price"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;"
+            aria-pressed="false">Cheapest</button>
+          <button type="button" class="wv-pill" data-pill-group="sort" data-pill-value="duration"
+            style="padding:6px 14px;border:1px solid #dadce0;border-left:none;background:#fff;color:#3c4043;font-size:13px;cursor:pointer;border-radius:0 20px 20px 0;"
+            aria-pressed="false">Fastest</button>
+        </div>
+      </fieldset>
     </div>
+    <script>
+    /* Pill button logic for CUA-friendly dropdowns */
+    (function(){
+      document.querySelectorAll('.wv-pill').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var group = btn.getAttribute('data-pill-group');
+          var value = btn.getAttribute('data-pill-value');
+          var hidden = document.getElementById('pill-' + group);
+          if (hidden) hidden.value = value;
+          /* Update visual state for all pills in this group */
+          document.querySelectorAll('.wv-pill[data-pill-group="' + group + '"]').forEach(function(p){
+            if (p === btn) {
+              p.classList.add('wv-pill-active');
+              p.setAttribute('aria-pressed', 'true');
+              p.style.background = '#e8f0fe';
+              p.style.color = '#1a73e8';
+              p.style.fontWeight = '500';
+            } else {
+              p.classList.remove('wv-pill-active');
+              p.setAttribute('aria-pressed', 'false');
+              p.style.background = '#fff';
+              p.style.color = '#3c4043';
+              p.style.fontWeight = 'normal';
+            }
+          });
+        });
+      });
+    })();
+    </script>
     <button type="submit" class="search-submit">
       <span class="material-symbols-outlined">search</span>Search flights
     </button>

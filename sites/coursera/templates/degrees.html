@@ -1,3 +1,4 @@
+<!-- WV-SEARCH-LOOP-2026-06-03-COURSERA -->
 {% extends "base.html" %}
 {% block title %}Online Degrees | Coursera{% endblock %}
 {% block content %}
@@ -46,7 +47,7 @@
             {{ d.partner.name if d.partner else '' }}
           </div>
           <h3>{{ d.title }}</h3>
-          <p>{{ d.description[:120] }}...</p>
+          <p>{{ (d.description or '')[:120] }}...</p>
           <div class="degree-meta">
             <span>&#128337; {{ d.duration_text }}</span>
             <span>&#127979; {{ d.category }}</span>

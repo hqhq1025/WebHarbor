@@ -140,11 +140,26 @@
             </button>
         </form>
         {% else %}
-        <form method="POST" action="{{ url_for('api_reading_list_add') }}" style="display:inline">
+        {# WV-SEARCH-LOOP-2026-06-03-BBC_NEWS — expose folder + note so 'save to X folder with note Y' is a single submit. #}
+        <form method="POST" action="{{ url_for('api_reading_list_add') }}" style="display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="article_id" value="{{ article.id }}">
-            <input type="hidden" name="folder" value="Read Later">
-            <button type="submit" class="article-action-btn">
+            <select name="folder" aria-label="Reading list folder" style="font-size:12px; padding:3px 6px; max-width:140px;">
+                <option value="Read Later" selected>Read Later</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Science">Science</option>
+                <option value="Technology">Technology</option>
+                <option value="Health">Health</option>
+                <option value="Business">Business</option>
+                <option value="Sport">Sport</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Environment">Environment</option>
+                <option value="World News">World News</option>
+                <option value="Later reading">Later reading</option>
+            </select>
+            <input type="text" name="note" placeholder="Optional note" maxlength="500" aria-label="Reading list note" style="font-size:12px; padding:3px 6px; max-width:180px;">
+            <button type="submit" class="article-action-btn" name="rl_submit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                 <span class="rl-label">Save to list</span>
             </button>

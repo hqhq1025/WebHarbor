@@ -1331,8 +1331,17 @@ def deepen_app(app, db, Title, Person, Genre, Credit, Review, UserRating,
     models = _register_models(db)
     with app.app_context():
         db.create_all()
+        # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+        # _normalize_seed_db_layout DROPs/RECREATEs all ix_*, rebuilds the
+        # title_genre M2M, then VACUUMs. Costs ~4s on a warm restart for no
+        # gain (DB already byte-stable from instance_seed). Gate it on whether
+        # seed_r2 actually has work to do — check the Poll marker count BEFORE
+        # calling seed_r2.
+        Poll = models['Poll']
+        _needs_full_bootstrap = (db.session.query(Poll).count() == 0)
         seed_r2(db, models, Title, Person, User, Review)
-        _normalize_seed_db_layout(db)
+        if _needs_full_bootstrap:
+            _normalize_seed_db_layout(db)
     _register_routes(app, db, models, Title, Person, Genre, Credit, Review,
                      UserRating, WatchlistItem, User, NewsItem)
     return models

@@ -1,3 +1,4 @@
+<!-- WV-SEARCH-LOOP-2026-06-03-COURSERA -->
 {% extends "base.html" %}
 {% block title %}{{ course.title }} | Coursera{% endblock %}
 {# ─── R7 SEO: schema.org/Course JSON-LD with provider, courseCode,
@@ -31,7 +32,7 @@
         </div>
         <div class="cd-type-badge">{{ course.course_type }}</div>
         <h1>{{ course.title }}</h1>
-        <p class="cd-subtitle">{{ course.description[:200] }}{% if course.description|length > 200 %}...{% endif %}</p>
+        <p class="cd-subtitle">{{ (course.description or '')[:200] }}{% if (course.description or '')|length > 200 %}...{% endif %}</p>
         <div class="cd-meta-row">
           {% if course.partner %}
           <span class="cd-partner">

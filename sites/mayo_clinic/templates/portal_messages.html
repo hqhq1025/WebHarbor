@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}My Messages{% endblock %}
 {% block content %}
+{# WV-MAYO-PORTAL-MESSAGES-UNIFIED-2026-06-04: inbox sidebar now shows outbound twins (direction=to_provider). #}
 <section class="container">
   <h1>Patient Portal Messages</h1>
 
@@ -33,11 +34,12 @@
     </div>
     <aside class="sidebar">
       <div class="sidebar-card">
-        <h4>Inbox</h4>
+        <h4>Inbox &amp; thread</h4>
         {% if inbox %}
           {% for m in inbox %}
-            <div>
-              <strong>{{ m.subject }}</strong><br>
+            <div data-message-direction="{{ m.direction or 'to_patient' }}" style="border-left:3px solid {% if m.direction == 'to_provider' %}#00396b{% else %}#9ab{% endif %};padding-left:8px;margin:6px 0;">
+              <strong>{{ m.subject }}</strong>
+              {% if m.direction == 'to_provider' %}<span style="font-size:11px;color:#00396b;"> (you → {{ m.provider_name }})</span>{% endif %}<br>
               <small class="muted">{{ m.provider_name }}</small>
               <p style="font-size:13px;">{{ m.body[:120] }}</p>
             </div>

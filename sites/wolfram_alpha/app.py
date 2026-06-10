@@ -265,6 +265,39 @@ def load_gallery(slug):
             return json.load(f).get(slug, [])
     return []
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
@@ -1088,6 +1121,310 @@ def _passes_specifier_gate(comp, query):
     return True
 
 
+
+# === WV-WOLFRAM-FUZZY-MATCH-2026-06-01 ===
+# Minimal stemmer for fuzzy exact-match: strips common English suffixes
+# so "tracking" matches "track", "computed" matches "compute", etc.
+_STEM_SUFFIXES = ('ing', 'tion', 'ment', 'ness', 'able', 'ible', 'ful',
+                  'less', 'ous', 'ive', 'ity', 'ence', 'ance', 'er', 'or',
+                  'ed', 'ly', 'al', 'es', 's')
+
+def _stem_token(t):
+    """Reduce a token to a crude stem for fuzzy matching."""
+    t = t.lower().strip()
+    if len(t) <= 3:
+        return t
+    for sfx in _STEM_SUFFIXES:
+        if t.endswith(sfx) and len(t) - len(sfx) >= 3:
+            return t[:-len(sfx)]
+    return t
+
+def _token_set_match(query, candidate):
+    """Return True if stemmed-token sets have >=80% overlap (Jaccard-ish).
+    Also returns True if query tokens are a superset or subset of candidate tokens.
+    """
+    qt = set(_stem_token(t) for t in re.findall(r"[a-zA-Z0-9][-a-zA-Z0-9]*", query or ''))
+    ct = set(_stem_token(t) for t in re.findall(r"[a-zA-Z0-9][-a-zA-Z0-9]*", candidate or ''))
+    if not qt or not ct:
+        return False
+    # Superset/subset
+    if qt <= ct or ct <= qt:
+        return True
+    # Jaccard overlap >= 0.8
+    inter = len(qt & ct)
+    union = len(qt | ct)
+    return (inter / union) >= 0.8 if union > 0 else False
+# === end WV-WOLFRAM-FUZZY-MATCH-2026-06-01 ===
+
+
+# === WV-WOLFRAM-NORMALIZER-2026-06-02 ===
+# Wolfram human-math query normalizer + alias generator + arithmetic guard.
+# See memory/wolfram-fuzzy-guard-2026-06-02.md and
+# .claude/workspace/wolfram-audit/normalizer.py for the failure-corpus that
+# drove these rules.
+_WV_MATHWORD_RX = re.compile(
+    r'\b(?:evaluate|solve|convert|integral|integrate|antiderivative|derivative|'
+    r'differentiate|factor|factorization|factorial|simplify|expand|matrix|'
+    r'determinant|det|eigenvalue|eigenvalues|plot|graph|sqrt|square|squared|log|'
+    r'ln|sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|compound|interest|mortgage|'
+    r'projectile|kinematics|moles|mole|probability|binomial|normal|poisson|'
+    r'distribution|mean|median|stdev|variance|product|distance|tip|prime|gcd|lcm|'
+    r'inverse|transpose|shm|harmonic|pdf|cdf|random|hexagon|pentagon|circle|'
+    r'triangle|polygon|rectangle|area|volume|perimeter|fibonacci|tracking|track|'
+    r'package|shipment|energy|kinetic|potential|wavelength|frequency|velocity|'
+    r'acceleration|force|pressure|celsius|fahrenheit|kelvin|compute|calculate|'
+    r'find|what|how|why|where|roots|root|curve|minimum|maximum|min|max|arc|'
+    r'length|angle|degrees|radians|radius|diameter|side|logarithm|exponent|'
+    r'exponential|limit|series|sequence|permutation|combination|binary|hex|'
+    r'hexadecimal|octal|decimal|conj|conjugate|abs|floor|ceiling|mod|round|bond|'
+    r'elo|stock|usd|jpy|cny|eur|gbp|inr|krw|sgd|aud|cad|nzd|sek|mxn|chf|brl|hp|'
+    r'watts|joules|miles|km|kg|mph|hours|years|months|days|grams|liters|pounds|'
+    r'saved|queries|query|store|series|with|from|when|f\(x\)|p\(x|x~|n\(|n=|p=|'
+    r'f=|c=|y=)\b',
+    re.IGNORECASE,
+)
+
+# Short ISO/SI units that follow a number. NOTE: 'in' (inch) deliberately
+# omitted — collides with the preposition ("moles of HF in 5g").
+_WV_UNIT_WORDS = {
+    'g','mg','kg','t','lb','lbs','oz','mm','cm','m','km','mi','ft','yd','au',
+    'nm','um','pm','s','ms','us','ns','min','h','hr','hrs','d','y','yr','yrs',
+    'mo','hz','khz','mhz','ghz','k','c','f','j','kj','mj','cal','kcal','ev',
+    'kev','mev','w','kw','mw','hp','v','kv','a','ma','n','pa','kpa','mpa',
+    'bar','atm','psi','mol','mmol','usd','jpy','cny','eur','gbp','inr','krw',
+    'sgd','aud','cad','nzd','sek','mxn','chf','brl','rub','zar','thb','php',
+    'idr','myr','vnd','twd','hkd','mph','kph','rpm',
+}
+_WV_UNIT_PATTERN = '|'.join(sorted(_WV_UNIT_WORDS, key=len, reverse=True))
+
+_WV_UNIT_LONG = {
+    'grams':'g','gram':'g','kilograms':'kg','kilogram':'kg','milligrams':'mg',
+    'milligram':'mg','pounds':'lb','pound':'lb','ounces':'oz','ounce':'oz',
+    'meters':'m','meter':'m','kilometers':'km','kilometer':'km','miles':'mi',
+    'mile':'mi','centimeters':'cm','centimeter':'cm','millimeters':'mm',
+    'millimeter':'mm','feet':'ft','foot':'ft','inches':'in','inch':'in',
+    'yards':'yd','yard':'yd','seconds':'s','second':'s','minutes':'min',
+    'minute':'min','hours':'h','hour':'h','days':'d','day':'d','years':'y',
+    'year':'y','months':'mo','month':'mo','joules':'j','joule':'j','watts':'w',
+    'watt':'w','horsepower':'hp','kilowatts':'kw','kilowatt':'kw',
+    'calories':'cal','calorie':'cal','kilocalories':'kcal','kilocalorie':'kcal',
+    'celsius':'c','fahrenheit':'f','kelvin':'k','kelvins':'k','pascals':'pa',
+    'pascal':'pa','newtons':'n','newton':'n',
+}
+
+def _wv_strip_mathematica(s):
+    sl = s.strip()
+    m = re.match(r'^solve\[(.+?)\s*,\s*\{?\s*x\s*\}?\s*\]$', sl, flags=re.IGNORECASE)
+    if m:
+        return 'solve ' + m.group(1).strip().replace('==', '=')
+    m = re.match(r'^det\[(.+)\]$', sl, flags=re.IGNORECASE)
+    if m:
+        return 'det of ' + m.group(1).strip()
+    m = re.match(r'^eigenvalues\[(.+)\]$', sl, flags=re.IGNORECASE)
+    if m:
+        return 'matrix ' + m.group(1).strip() + ' eigenvalues'
+    m = re.match(r'^integrate\[(.+?),\s*\{\s*x\s*,\s*([^,]+?)\s*,\s*([^}]+?)\s*\}\s*\]$',
+                 sl, flags=re.IGNORECASE)
+    if m:
+        return f'integral of {m.group(1).strip()} from {m.group(2).strip()} to {m.group(3).strip()}'
+    m = re.match(r'^d\[(.+?)\s*,\s*x\s*\]$', sl, flags=re.IGNORECASE)
+    if m:
+        return 'derivative of ' + m.group(1).strip()
+    return s
+
+def _wv_replace_unicode(s):
+    repl = {'×':'*','⋅':'*','·':'*','−':'-','—':'-',
+            '–':'-','‐':'-','‑':'-',
+            '→':' to ','∞':'infinity','°':' degrees ',
+            '²':'^2','³':'^3','⁴':'^4','⁵':'^5','⁶':'^6',
+            '⁷':'^7','⁸':'^8','⁹':'^9','¹':'^1','⁰':'^0',
+            '½':'1/2','⅓':'1/3','¼':'1/4','¾':'3/4','⅔':'2/3',
+            '“':'"','”':'"','’':"'",'‘':"'"}
+    for k, v in repl.items():
+        s = s.replace(k, v)
+    return s
+
+def _wv_normalize_human_math(s):
+    """Canonical form for a Wolfram query. Two strings that should map to
+    the same anchor must produce identical normalized strings."""
+    if not s:
+        return ''
+    s = s.strip().rstrip('?').strip()
+    s = _wv_replace_unicode(s)
+    s = s.lower()
+    s = _wv_strip_mathematica(s)
+    # Brace -> bracket (matrix notation)
+    s = s.replace('{{', '[[').replace('}}', ']]').replace('{', '[').replace('}', ']')
+    s = re.sub(r'\bdeterminant\s+of\s+(?:matrix\s+)?', 'det of ', s)
+    s = re.sub(r'\beigenvalues\s+of\s+(?:the\s+)?matrix\s+', 'matrix ', s)
+    s = re.sub(r'\beigenvalues\s+of\s+(\[\[.+?\]\])', r'matrix \1 eigenvalues', s)
+    # Function-call brackets: sin[x] -> sin(x). Only known math fn names so
+    # we don't corrupt matrix [[...]] notation set up above.
+    s = re.sub(r'\b(sin|cos|tan|sec|csc|cot|log|ln|exp|sqrt|abs|arcsin|arccos|'
+               r'arctan)\[([^\]]*)\]', r'\1(\2)', s)
+    s = re.sub(r'^integrate\s+', 'integral of ', s)
+    m = re.match(r'^integral\s+from\s+(\S+)\s+to\s+(\S+)\s+of\s+(.+?)(\s+dx)?$', s)
+    if m:
+        s = f'integral of {m.group(3).strip()} from {m.group(1)} to {m.group(2)}'
+    s = re.sub(r'\s+dx\s+from\s+', ' from ', s)
+    s = re.sub(r'\s+dx\s*$', '', s)
+    s = re.sub(r'\s+from\s+x=(\S+)\s+to\s+x=(\S+)$', r' from \1 to \2', s)
+    s = re.sub(r'^antiderivative\s+of\s+', 'integral of ', s)
+    s = re.sub(r'^factorization\s+of\s+', 'factor ', s)
+    m = re.match(r'^roots?\s+of\s+(.+)$', s)
+    if m:
+        s = 'solve ' + m.group(1).strip() + '=0'
+    s = re.sub(r'\s*/\.\s*x\s*->\s*(-?\d+\.?\d*)', r' at x=\1', s)
+    s = re.sub(r'^convert\s+', '', s)
+    s = s.replace('==', '=')
+    s = re.sub(r'\bfor\s+(x\s*=)', r'at \1', s)
+    s = re.sub(r'\bwhen\s+(x\s*=)', r'at \1', s)
+    s = re.sub(r'\s*,\s*(x\s*=)', r' at \1', s)
+    s = re.sub(r'\+\s*-\s*', '-', s)
+    s = re.sub(r'\+\s*\+\s*', '+', s)
+    def _long(m):
+        d, w = m.group(1), m.group(2).lower()
+        short = _WV_UNIT_LONG.get(w)
+        return d + ' ' + short if short else m.group(0)
+    s = re.sub(r'(\d(?:\.\d+)?)\s+([a-z]+)\b', _long, s)
+    s = re.sub(r'\bspring\s+constant\s*=?\s*', 'k=', s)
+    s = re.sub(r'\bmass\s*=?\s*', 'mass=', s)
+    s = re.sub(r'\bamplitude\s*=?\s*', 'amplitude=', s)
+    s = re.sub(r'\bsimple\s+harmonic\s+(?:motion|oscillator)(?:\s+with)?\s+', 'shm ', s)
+    s = re.sub(r'\baustralia\s+post\b', 'australia-post', s)
+    s = re.sub(r'(\d)\s*\*\s*([a-z])', r'\1\2', s)
+    s = re.sub(r'(\d|\))\s*\*\s*\(', r'\1(', s)
+    s = re.sub(r'\s*([=^,()])\s*', r'\1', s)
+    s = re.sub(r'\s*\+\s*', '+', s)
+    s = re.sub(r'\s*([*/])\s*', r'\1', s)
+    s = re.sub(r'([\w\)])\s*-\s*(?=[\w\(])', r'\1-', s)
+    s = re.sub(r'(\d(?:\.\d+)?)\s+(' + _WV_UNIT_PATTERN + r')\b', r'\1\2', s)
+    s = re.sub(r'(?<![\w.])1(x)(?![\w.])', r'\1', s)
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s
+
+def _wv_alias_forms(norm):
+    out = [norm]
+    m = re.match(r'^evaluate\s+(.+\s+at\s+x=-?\d+\.?\d*)$', norm)
+    if m:
+        out.append(m.group(1))
+    if (' at x=' in norm) and not norm.startswith('evaluate'):
+        out.append('evaluate ' + norm)
+    m = re.match(r'^moles\s+of\s+(\S+)\s+in\s+(\d+\.?\d*)([a-z]*)$', norm)
+    if m:
+        sub, n, u = m.group(1), m.group(2), m.group(3) or 'g'
+        out += [f'{n}{u} {sub} to moles', f'{n}{u} {sub} in moles',
+                f'{n}{u} {sub} to mol', f'{n}{u} {sub} in mol']
+    m = re.match(r'^(\d+\.?\d*)([a-z]*)\s+(\S+)\s+(?:to|in)\s+(?:moles|mol)$', norm)
+    if m:
+        n, u, sub = m.group(1), m.group(2) or 'g', m.group(3)
+        out.append(f'moles of {sub} in {n}{u}')
+    m = re.match(r'^matrix\s+(\[\[.+?\]\])\s+eigenvalues$', norm)
+    if m:
+        out += [f'{m.group(1)} eigenvalues', f'eigenvalues of {m.group(1)}',
+                f'eigenvalues of matrix {m.group(1)}']
+    m = re.match(r'^(\[\[.+?\]\])\s+eigenvalues$', norm)
+    if m:
+        out.append(f'matrix {m.group(1)} eigenvalues')
+    m = re.match(r'^eigenvalues\s+of\s+(\[\[.+?\]\])$', norm)
+    if m:
+        out += [f'matrix {m.group(1)} eigenvalues', f'{m.group(1)} eigenvalues']
+    m = re.match(r'^tip\s+(\d+%)\s+(on\s+.+)$', norm)
+    if m:
+        out.append(f'{m.group(1)} tip {m.group(2)}')
+    m = re.match(r'^(\d+%)\s+tip\s+(on\s+.+)$', norm)
+    if m:
+        out.append(f'tip {m.group(1)} {m.group(2)}')
+    m = re.match(r'^solve\s+(.+)=0$', norm)
+    if m:
+        out += [m.group(1) + '=0', 'roots of ' + m.group(1)]
+    m = re.match(r'^(.+)=0$', norm)
+    if m and not norm.startswith('solve'):
+        out.append('solve ' + norm)
+    if re.match(r'^\d', norm) and ' to ' in norm and not norm.startswith('convert'):
+        out.append('convert ' + norm)
+    m = re.match(r'^det\s+of\s+(\[\[.+?\]\])$', norm)
+    if m:
+        out.append(f'determinant of {m.group(1)}')
+    if norm.startswith('kinematics '):
+        c = re.sub(r'\s+with\s+', ',', norm)
+        if c != norm:
+            out.append(c)
+        w = re.sub(r',u=', ' with u=', norm, count=1)
+        if w != norm:
+            out.append(w)
+    m = re.match(r'^(?:australia-post|fedex|usps|ups|dhl)\s+track\s+(\S+)$', norm)
+    if m:
+        out += [f'track {m.group(1)}', m.group(1)]
+    seen = set(); uniq = []
+    for x in out:
+        if x and x not in seen:
+            seen.add(x); uniq.append(x)
+    return uniq
+
+def _wv_is_bare_arithmetic(q):
+    """True for pure digit/operator expressions ('60', '3^2-3+4', '5*3')
+    with no math-word context. The mirror MUST NOT fuzzy-match such queries
+    to lookup-table rows — the agent is computing on their own."""
+    if not q:
+        return False
+    if _WV_MATHWORD_RX.search(q):
+        return False
+    stripped = re.sub(r"[\d\s+\-*/^().,=!%$xX]", '', q)
+    for c in '²³⁴⁵⁶⁷⁸⁹×−°√':
+        stripped = stripped.replace(c, '')
+    return len(stripped) <= 1
+# === end WV-WOLFRAM-NORMALIZER-2026-06-02 ===
+
+# === WV-WOLFRAM-NORMALIZER-2026-06-02-LOOKUP ===
+_WV_NORM_INDEX = None  # dict[str, int]   alias_norm -> ComputationResult.id
+_WV_LITERAL_INDEX = None  # dict[str, int]  lower(input_query) -> id
+
+def _wv_build_indexes():
+    """Build (and cache) the alias-normalized index over all computation rows."""
+    global _WV_NORM_INDEX, _WV_LITERAL_INDEX
+    if _WV_NORM_INDEX is not None:
+        return _WV_NORM_INDEX, _WV_LITERAL_INDEX
+    snaps = _cached_computation_snapshots()
+    norm = {}
+    lit = {}
+    for s in snaps:
+        iq = (s.input_query or '').strip()
+        if iq:
+            lit.setdefault(iq.lower(), s.id)
+        for src in (s.input_query, s.parsed_input):
+            if not src:
+                continue
+            n = _wv_normalize_human_math(src)
+            if n and n not in norm:
+                norm[n] = s.id
+            for alias in _wv_alias_forms(n):
+                if alias and alias not in norm:
+                    norm[alias] = s.id
+    _WV_NORM_INDEX = norm
+    _WV_LITERAL_INDEX = lit
+    return norm, lit
+
+def _wv_lookup_normalized(query):
+    """Return a hydrated ComputationResult for `query` via the normalizer,
+    or None if no exact / alias match in the index."""
+    if not query:
+        return None
+    nq = _wv_normalize_human_math(query)
+    if not nq:
+        return None
+    norm, _lit = _wv_build_indexes()
+    cid = norm.get(nq)
+    if cid is None:
+        for alias in _wv_alias_forms(nq):
+            cid = norm.get(alias)
+            if cid is not None:
+                break
+    if cid is None:
+        return None
+    return _hydrate_computation(cid)
+# === end WV-WOLFRAM-NORMALIZER-2026-06-02-LOOKUP ===
+
 def _find_best_computation(query):
     """Scored relevance match; normalized-substring + smart tiebreakers.
 
@@ -1101,6 +1438,67 @@ def _find_best_computation(query):
     all_comps = _cached_computation_snapshots()
     if not all_comps:
         return None
+
+    # === wv-search-fix-2026-06-01 (sync of 2026-05-31 fix) ===
+    # (0) Literal exact match on input_query / parsed_input, case-insensitive,
+    #     BEFORE the specifier gate. Generators emit anchor queries verbatim;
+    #     mirror is a lookup table, not a real solver — when the agent types
+    #     the anchor string we MUST always return the canonical row, even if
+    #     the gate would otherwise reject it.
+    #     See memory/wolfram-exact-match-fix.md.
+    ql_exact = (query or '').strip().lower()
+    if ql_exact:
+        for c in all_comps:
+            if (c.input_query or '').strip().lower() == ql_exact:
+                return _hydrate_computation(c.id)
+            if (c.parsed_input or '').strip().lower() == ql_exact:
+                return _hydrate_computation(c.id)
+    # === end wv-search-fix-2026-06-01 ===
+
+    # === WV-WOLFRAM-NORMALIZER-2026-06-02-PROLOGUE ===
+    # (0d) Normalized lookup via _wv_normalize_human_math + alias forms.
+    #      Catches "evaluate 5x^2+4x+2 at x=3" -> "evaluate 5x²+4x+2 at x=3",
+    #      "50 JPY to INR" -> "convert 50 JPY to INR",
+    #      "moles of HF in 5 g" -> "moles of HF in 5g", Mathematica syntax,
+    #      brace/bracket swap, etc.  See memory/wolfram-fuzzy-guard-2026-06-02.md.
+    _wv_hit = _wv_lookup_normalized(query)
+    if _wv_hit is not None:
+        return _wv_hit
+
+    # (0e) Arithmetic guard: bare digit/operator expressions ("60", "3^2-3+4",
+    #      "sqrt(2)") with no math-word context must NOT fuzzy-match a lookup
+    #      row.  The agent is computing on their own — let UI show "no result"
+    #      so they stop the variation loop.
+    if _wv_is_bare_arithmetic(query):
+        return None
+    # === end WV-WOLFRAM-NORMALIZER-2026-06-02-PROLOGUE ===
+# === WV-WOLFRAM-FUZZY-MATCH-2026-06-01 ===
+    # (0b) Suffix match: query is a suffix of input_query (handles dropped
+    #      prefix like "probe healthz v66" -> agent types "healthz v66").
+    if ql_exact:
+        for c in all_comps:
+            iq_low = (c.input_query or '').strip().lower()
+            if iq_low and iq_low != ql_exact and iq_low.endswith(ql_exact):
+                return _hydrate_computation(c.id)
+            pi_low = (c.parsed_input or '').strip().lower()
+            if pi_low and pi_low != ql_exact and pi_low.endswith(ql_exact):
+                return _hydrate_computation(c.id)
+
+    # (0c) Token-set fuzzy match: "tracking" matches "track" via stemming,
+    #      superset/subset match handles extra/missing words.
+    #      Score by input_query length similarity to prefer closest match.
+    if ql_exact:
+        fuzzy_hits = []
+        for c in all_comps:
+            iq = (c.input_query or '').strip().lower()
+            if iq and _token_set_match(ql_exact, iq):
+                # Prefer matches with similar length (penalize big length diff)
+                len_diff = abs(len(ql_exact) - len(iq))
+                fuzzy_hits.append((len_diff, c))
+        if fuzzy_hits:
+            fuzzy_hits.sort(key=lambda x: x[0])
+            return _hydrate_computation(fuzzy_hits[0][1].id)
+    # === end WV-WOLFRAM-FUZZY-MATCH-2026-06-01 ===
 
     eligible = [c for c in all_comps if _passes_specifier_gate(c, query)]
     if not eligible:
@@ -6350,6 +6748,28 @@ def r11_mathworld_entry(entry):
 # === R11 GUI deepen END ===
 
 
+
+# === WV-MEDIUM-PERF-2026-06-03-wolfram-warm ===
+# Pre-build the normalized-input lookup index in a daemon thread on module
+# import, so the first /input request from a fresh-restart worker does not
+# pay the ~4s _wv_build_indexes() cold cost while a chromium screenshot is
+# waiting on it. Idempotent: _wv_build_indexes() short-circuits if cached.
+def _wv_warm_in_background():
+    import threading
+    def _run():
+        try:
+            with app.app_context():
+                _wv_build_indexes()
+        except Exception as _e:
+            # Best-effort warm-up; first request will rebuild lazily on miss
+            print(f"[wv-warm-wolfram] background warm failed: {_e!r}", flush=True)
+    t = threading.Thread(target=_run, name="wv-warm-wolfram", daemon=True)
+    t.start()
+
+
+_wv_warm_in_background()
+# === /WV-MEDIUM-PERF-2026-06-03-wolfram-warm ===
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
@@ -6370,3 +6790,7 @@ def _add_static_cache_headers(resp):
     return resp
 # --- end perf ---
 
+
+
+# # === wv-search-fix-2026-06-01 ===
+# (sync flag — actual edits in _find_best_computation above)

@@ -5,14 +5,23 @@
   <h1 style="font-size:40px;font-weight:700;">Configure your {{ product.name }}</h1>
   <p style="color:#6e6e73;font-size:19px;margin:12px 0 24px;">{{ product.subtitle }}</p>
 
-  <!-- R5 — step indicator -->
+  {# R5 — step indicator: only render steps for dimensions that actually exist for this product.
+     Previously a hardcoded 5-step indicator (Pick model / Color / Storage / Keyboard / Review)
+     was always shown, even for products like Apple Watch where only Color is configurable.
+     Agents read "Step 1 done / Step 2 Color active" and looped trying to click the non-existent
+     "Pick model" step. See memory/apple-configure-nav-loop.md. #}
+  {% set _real_steps = [] %}
+  {% if product.get_colors() %}{% set _ = _real_steps.append('Color') %}{% endif %}
+  {% if upgrades %}{% for dim_key in upgrades.keys() %}{% set _ = _real_steps.append(dim_key|replace('_',' ')|capitalize) %}{% endfor %}{% endif %}
+  {% if keyboards %}{% set _ = _real_steps.append('Keyboard') %}{% endif %}
+  {% if _real_steps|length >= 2 %}
   <nav class="r5-step-indicator" id="r5-step-indicator" aria-label="Configuration steps">
-    <div class="step done"  data-step="1">1. Pick model</div>
-    <div class="step active" data-step="2">2. Color</div>
-    <div class="step"        data-step="3">3. Storage / Memory</div>
-    <div class="step"        data-step="4">4. Keyboard</div>
-    <div class="step"        data-step="5">5. Review</div>
+    {% for label in _real_steps %}
+    <div class="step {% if loop.first %}active{% endif %}" data-step="{{ loop.index }}">{{ loop.index }}. {{ label }}</div>
+    {% endfor %}
+    <div class="step" data-step="{{ _real_steps|length + 1 }}">{{ _real_steps|length + 1 }}. Review</div>
   </nav>
+  {% endif %}
 
   <div class="config-summary" style="background:#f5f5f7;border-radius:18px;padding:22px 26px;margin-bottom:28px;">
     <p style="margin:0 0 6px 0;"><strong>Base price:</strong> <span id="base-price" data-base="{{ product.price }}">${{ "%.2f"|format(product.price) }}</span></p>
@@ -83,7 +92,11 @@
   </table>
   {% endif %}
 
-  <!-- R5 — back / forward navigation between configuration sections -->
+  {# R5 — back / forward navigation between configuration sections.
+     Hidden when only a single section exists (e.g. Apple Watch with only a Color picker).
+     Otherwise the buttons appear interactive but resolve to no-op clicks, sending CUA
+     agents into a navigation loop. #}
+  {% if _real_steps|length >= 2 %}
   <div class="r5-config-nav" style="margin:24px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;">
     <button type="button" id="r5-step-back"
             style="padding:10px 18px;border-radius:980px;border:1px solid #d2d2d7;background:#fff;cursor:pointer;"
@@ -92,6 +105,7 @@
             style="padding:10px 18px;border-radius:980px;border:1px solid #d2d2d7;background:#fff;cursor:pointer;"
             aria-label="Next configuration step">Continue &rarr;</button>
   </div>
+  {% endif %}
 
   <!-- R5 — sticky CTA bar with live price + Add to Bag -->
   <div class="r5-sticky-cta" id="r5-sticky-cta" role="region" aria-label="Add to bag">

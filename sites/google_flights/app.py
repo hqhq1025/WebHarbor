@@ -367,6 +367,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 def make_pnr():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
@@ -821,6 +854,36 @@ _PHRASE_TO_IATA = {
     'osaka kansai': 'KIX',
     'punta cana': 'PUJ',
     'san juan': 'SJU',
+    # === wv-search-fix-2026-06-01-gf === F2: extra aliases
+    'nyc': 'JFK',
+    'new york city': 'JFK',
+    'bombay': 'BOM',
+    'peking': 'PEK',
+    'munich': 'MUC',
+    'münchen': 'MUC',
+    'cologne': 'CGN',
+    'köln': 'CGN',
+    'koeln': 'CGN',
+    'frankfurt': 'FRA',
+    'düsseldorf': 'DUS',
+    'duesseldorf': 'DUS',
+    'dusseldorf': 'DUS',
+    'zürich': 'ZRH',
+    'zurich': 'ZRH',
+    'vienna': 'VIE',
+    'wien': 'VIE',
+    'rome': 'FCO',
+    'roma': 'FCO',
+    'milan': 'MXP',
+    'milano': 'MXP',
+    'moscow': 'SVO',
+    'seoul': 'ICN',
+    'shanghai': 'PVG',
+    'shenzhen': 'SZX',
+    'taipei': 'TPE',
+    'singapore': 'SIN',
+    'sydney': 'SYD',
+    'melbourne': 'MEL',
 }
 
 
@@ -864,10 +927,14 @@ def _resolve_airport_ids(query_str):
                 return a, ids
 
     # 4) Any 3-letter token in the query matching an IATA (e.g. "Lisbon LIS")
+    # === wv-search-fix-2026-06-01-gf === F1: don't let 'New' (NEW=KNEW=New Orleans Lakefront), 'Old', 'Las', 'Los', 'San', 'Sao', 'Hong' bleed.
     import re
     tokens = [t for t in re.split(r'[\s,()/\-]+', q) if t]
+    _CITY_WORD_PREFIXES = {'new', 'old', 'las', 'los', 'san', 'sao', 'hong', 'rio', 'tel', 'abu', 'cape', 'punta', 'buenos', 'mexico', 'kuala', 'tokyo', 'paris', 'london'}
     for t in tokens:
         if len(t) == 3 and t.isalpha():
+            if len(tokens) > 1 and t.lower() in _CITY_WORD_PREFIXES:
+                continue  # defer to step 5 city-ilike
             a = Airport.query.filter(Airport.iata == t.upper()).first()
             if a:
                 siblings = Airport.query.filter_by(city_slug=a.city_slug).all()
@@ -884,6 +951,21 @@ def _resolve_airport_ids(query_str):
             Airport.name.ilike(ql),
         )
     ).all()
+
+    # === wv-search-fix-2026-06-01-gf === F3: accent-fold ASCII fallback before multi-token scoring
+    if not hits:
+        from unicodedata import normalize, combining
+        _ascii_q = ''.join(c for c in normalize('NFKD', q) if not combining(c))
+        if _ascii_q != q:
+            ql2 = f"%{_ascii_q}%"
+            hits = Airport.query.filter(
+                or_(
+                    Airport.iata.ilike(_ascii_q.upper()),
+                    Airport.city.ilike(ql2),
+                    Airport.city_slug.ilike(f"%{_ascii_q.lower().replace(' ', '-')}%"),
+                    Airport.name.ilike(ql2),
+                )
+            ).all()
 
     # 6) Multi-token fallback: gather airports that match ANY meaningful token
     # in city/name/slug/country. Rank by number of tokens matched so that
@@ -944,6 +1026,36 @@ def _shift_flight_year(flight, dep_target, ret_target):
         flight.return_date = _replace_year(flight.return_date, target.year if target else None)
 
 
+
+# === WV-GFLIGHTS-FORM-FIX-2026-06-01 ===
+def _parse_date_flexible(s):
+    """Parse a date string in multiple formats: YYYY-MM-DD, M/D/YYYY, MM/DD/YYYY, MM-DD-YYYY."""
+    from datetime import datetime as _dt
+    if not s or not s.strip():
+        return None, None
+    s = s.strip()
+    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%m-%d-%Y', '%Y/%m/%d', '%d/%m/%Y'):
+        try:
+            d = _dt.strptime(s, fmt).date()
+            return d, d.isoformat()
+        except ValueError:
+            continue
+    # Last resort: try dateutil-style loose parsing
+    # Handle "8/1/2024" style (1 or 2 digit month/day)
+    import re as _re
+    m = _re.match(r'^(\d{1,2})/(\d{1,2})/(\d{4})$', s)
+    if m:
+        mo, dy, yr = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if 1 <= mo <= 12 and 1 <= dy <= 31:
+            try:
+                from datetime import date as _date
+                d = _date(yr, mo, dy)
+                return d, d.isoformat()
+            except ValueError:
+                pass
+    return None, None
+# === end WV-GFLIGHTS-FORM-FIX-2026-06-01 ===
+
 @app.route('/flights')
 def flights_list():
     origin_query = request.args.get('from', '')
@@ -979,20 +1091,22 @@ def flights_list():
     # Parse dates up-front so subsequent checks can compare them.
     dep_d = None
     if depart:
-        try:
-            dep_d = datetime.strptime(depart, '%Y-%m-%d').date()
-        except ValueError:
+        dep_d, depart_normalized = _parse_date_flexible(depart)
+        if dep_d is None:
             validation_errors.append(
-                f"Invalid departure date '{depart}'. Use the format YYYY-MM-DD."
+                f"Invalid departure date '{depart}'. Use YYYY-MM-DD or M/D/YYYY."
             )
+        else:
+            depart = depart_normalized  # normalize to YYYY-MM-DD for downstream
     ret_d = None
     if ret:
-        try:
-            ret_d = datetime.strptime(ret, '%Y-%m-%d').date()
-        except ValueError:
+        ret_d, ret_normalized = _parse_date_flexible(ret)
+        if ret_d is None:
             validation_errors.append(
-                f"Invalid return date '{ret}'. Use the format YYYY-MM-DD."
+                f"Invalid return date '{ret}'. Use YYYY-MM-DD or M/D/YYYY."
             )
+        else:
+            ret = ret_normalized  # normalize to YYYY-MM-DD for downstream
 
     if dep_d and ret_d and ret_d < dep_d:
         validation_errors.append(
@@ -2213,7 +2327,14 @@ def price_alerts():
             flash(f'Alert created for {origin_iata} - {dest_iata}', 'success')
         return redirect(url_for('price_alerts'))
     items = current_user.alerts.order_by(PriceAlert.created_at.desc()).all()
-    return render_template('alerts.html', alerts=items)
+    # WV-SEARCH-LOOP-2026-06-03-GFLIGHTS — pass ?origin/?dest/?threshold to template for one-click prefill
+    return render_template(
+        'alerts.html',
+        alerts=items,
+        prefill_origin=(request.args.get('origin', '') or '').upper().strip(),
+        prefill_dest=(request.args.get('dest', '') or '').upper().strip(),
+        prefill_threshold=(request.args.get('threshold', '') or '').strip(),
+    )
 
 
 @app.route('/alerts/<int:alert_id>/delete', methods=['POST'])
@@ -7134,3 +7255,30 @@ def _add_static_cache_headers(resp):
     return resp
 # --- end perf ---
 
+
+
+# === WVFIT AUTO-LOGIN (2026-05-31) ===
+# Auto-login middleware: before every request, if no user is authenticated,
+# silently log in user id=1 (the seed demo user). This gives the CUA a
+# stable signed-in session without exposing a fake login flow that fails
+# bcrypt password checks.
+try:
+    from flask_login import login_user as _wvfit_login_user, current_user as _wvfit_current_user
+
+    @app.before_request
+    def _wvfit_autologin():
+        # Skip static & login routes; let real login flow work if user actively visits.
+        from flask import request as _req
+        if _req.path.startswith('/static/') or _req.path == '/login' or _req.path == '/logout':
+            return
+        try:
+            if not _wvfit_current_user.is_authenticated:
+                _seed_user = User.query.get(1)
+                if _seed_user is not None:
+                    _wvfit_login_user(_seed_user, remember=False)
+        except Exception:
+            pass  # never break the request flow over autologin
+except Exception as _e:
+    import sys as _sys
+    print(f"[WVFIT autologin] init failed: {_e}", file=_sys.stderr)
+# === END WVFIT AUTO-LOGIN ===

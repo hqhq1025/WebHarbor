@@ -226,6 +226,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 @app.context_processor
 def inject_csrf():
     return dict(csrf_token=generate_csrf)
@@ -793,12 +826,19 @@ def init_db():
     """Create tables and seed data."""
     db.create_all()
     _migrate_news_comments_parent_id()
-    from seed_data import seed_all
-    seed_all(db, Genre, Movie, Person, MovieCast, CriticReview, AudienceReview,
-             User, UserRating, WatchlistItem)
-    from seed_extras_runner import seed_extras
-    seed_extras(db, _BASE_MODELS, _EXT_MODELS)
-    _finalize_byte_identical_layout()
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # _finalize_byte_identical_layout DROPs/RECREATEs every index + VACUUM.
+    # On a warm restart (DB already populated from instance_seed via /reset),
+    # this costs tens of seconds for no benefit and pushes control_server's
+    # wait_ready past timeout. Skip everything when the DB is already seeded.
+    _needs_full_bootstrap = (Movie.query.count() < 50)
+    if _needs_full_bootstrap:
+        from seed_data import seed_all
+        seed_all(db, Genre, Movie, Person, MovieCast, CriticReview, AudienceReview,
+                 User, UserRating, WatchlistItem)
+        from seed_extras_runner import seed_extras
+        seed_extras(db, _BASE_MODELS, _EXT_MODELS)
+        _finalize_byte_identical_layout()
 
 
 def _migrate_news_comments_parent_id():

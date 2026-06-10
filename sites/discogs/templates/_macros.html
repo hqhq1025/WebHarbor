@@ -9,8 +9,14 @@
 {% endmacro %}
 
 {% macro avatar(u, size='sm') %}
-  <span class="avatar{% if size == 'md' %} avatar-md{% endif %}"
-        style="background: {{ u.avatar_color }}">{{ u.username[0]|upper }}</span>
+  {% if u.avatar_path %}
+    <img class="avatar{% if size == 'md' %} avatar-md{% endif %}"
+         src="{{ url_for('static', filename=u.avatar_path) }}"
+         alt="{{ u.username }}" loading="lazy">
+  {% else %}
+    <span class="avatar{% if size == 'md' %} avatar-md{% endif %}"
+          style="background: {{ u.avatar_color }}">{{ u.username[0]|upper }}</span>
+  {% endif %}
 {% endmacro %}
 
 {% macro pagination(pag, endpoint, params=None) %}

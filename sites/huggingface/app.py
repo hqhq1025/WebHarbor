@@ -542,6 +542,39 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ------------------------------------------------------------
 # Forms
 # ------------------------------------------------------------
@@ -687,8 +720,23 @@ STOPWORDS = {
 
 
 def _tokenize(q: str):
-    return [t for t in re.findall(r"[a-z0-9.+-]+", (q or "").lower())
-            if len(t) >= 2 and t not in STOPWORDS]
+    # === wv-search-fix-2026-06-01 ===
+    # Was: r"[a-z0-9.+-]+" — stripped ALL non-ASCII. Switched to \w+ (UNICODE)
+    # so CJK / accented chars survive and Chinese / Japanese / French queries
+    # actually filter results instead of returning the global trending list.
+    # We still allow .+ - inside ASCII tokens (e.g. "llama.cpp") by splitting
+    # on whitespace-or-non-word-or-non-.-+- chars.
+    raw = (q or "").lower()
+    parts = re.findall(r"[\w.+\-]+", raw, flags=re.UNICODE)
+    out = []
+    for t in parts:
+        if len(t) < 2:
+            continue
+        if t in STOPWORDS:
+            continue
+        out.append(t)
+    return out
+    # === end wv-search-fix-2026-06-01 ===
 
 
 def _repo_haystack(r: "Repository") -> str:
@@ -721,19 +769,71 @@ def _apply_text_prefilter(query, q: str):
     free-text tokens before LIMIT/sort. Without this, long-tail repos with low
     trending scores get cut off by the SQL LIMIT before scoring sees them."""
     tokens = _tokenize(q or "")
+    # === wv-search-fix-2026-06-01 ===
+    # Non-ASCII detection: the per-connection accent-fold `lower()`
+    # registered at the top of this module collapses every non-ASCII
+    # char to "", which means `col.ilike("%中文%")` is compiled to
+    # `lower(col) LIKE lower("%中文%")` -> `... LIKE "%%"` -> matches
+    # everything. Bypass ilike for any token that contains non-ASCII
+    # and use the case-sensitive `like()` (or .op("LIKE")) so the
+    # pattern is preserved verbatim. ASCII tokens still use ilike()
+    # to preserve case-insensitive behaviour.
+    def _is_ascii(s):
+        try:
+            s.encode("ascii")
+            return True
+        except UnicodeEncodeError:
+            return False
     if not tokens:
+        # Non-tokenizable q (punctuation-only, very short) — fall
+        # back to a single substring filter on the raw string so we
+        # never silently return the global top-2000 trending repos.
+        raw = (q or "").strip().lower()
+        if raw and len(raw) >= 1:
+            from sqlalchemy import or_ as _or
+            pat = f"%{raw}%"
+            cond = Repository.slug.like(pat) if not _is_ascii(raw) else Repository.slug.ilike(pat)
+            if _is_ascii(raw):
+                return query.filter(_or(
+                    Repository.slug.ilike(pat),
+                    Repository.name.ilike(pat),
+                    Repository.description.ilike(pat),
+                    Repository.readme.ilike(pat),
+                    Repository.tags_json.ilike(pat),
+                ))
+            return query.filter(_or(
+                Repository.slug.like(pat),
+                Repository.name.like(pat),
+                Repository.description.like(pat),
+                Repository.readme.like(pat),
+                Repository.tags_json.like(pat),
+            ))
         return query
     from sqlalchemy import or_
     clauses = []
     for t in tokens:
         pat = f"%{t}%"
-        clauses += [
-            Repository.slug.ilike(pat),
-            Repository.name.ilike(pat),
-            Repository.description.ilike(pat),
-            Repository.tags_json.ilike(pat),
-        ]
+        if _is_ascii(t):
+            clauses += [
+                Repository.slug.ilike(pat),
+                Repository.name.ilike(pat),
+                Repository.description.ilike(pat),
+                Repository.tags_json.ilike(pat),
+                Repository.readme.ilike(pat),
+            ]
+        else:
+            # Non-ASCII token — use case-sensitive LIKE to bypass
+            # the buggy accent-fold lower() override. Also include
+            # readme (where most CJK content lives).
+            clauses += [
+                Repository.slug.like(pat),
+                Repository.name.like(pat),
+                Repository.description.like(pat),
+                Repository.tags_json.like(pat),
+                Repository.readme.like(pat),
+            ]
     return query.filter(or_(*clauses))
+    # === end wv-search-fix-2026-06-01 ===
 
 
 def _apply_repo_filters(query, args):
@@ -3038,10 +3138,29 @@ def search():
     candidates = query.limit(2000).all()
     if q:
         tokens = _tokenize(q)
-        min_req = max(1, len(tokens) // 2) if tokens else 0
-        scored = [(s, r) for r in candidates if (s := _score_repo(r, tokens)) >= min_req]
-        scored.sort(key=lambda x: -x[0])
-        results = [r for _, r in scored][:120]
+        # === wv-search-fix-2026-06-01 ===
+        ql_raw = (q or "").strip().lower()
+        if not tokens and ql_raw:
+            # Non-tokenizable q (CJK / accented / very short): score
+            # by raw-substring overlap on repo haystack so the SERP
+            # actually narrows. min_req=1 so only matching repos pass.
+            scored = []
+            for r in candidates:
+                hay = _repo_haystack(r)
+                if ql_raw in hay:
+                    scored.append((1, r))
+            scored.sort(key=lambda x: -x[0])
+            results = [r for _, r in scored][:120]
+            if not results:
+                # Last-resort: keep the prefiltered candidates so we
+                # never render the global trending list under a typed q.
+                results = candidates[:60]
+        else:
+            min_req = max(1, len(tokens) // 2) if tokens else 0
+            scored = [(s, r) for r in candidates if (s := _score_repo(r, tokens)) >= min_req]
+            scored.sort(key=lambda x: -x[0])
+            results = [r for _, r in scored][:120]
+        # === end wv-search-fix-2026-06-01 ===
     else:
         results = candidates[:60]
     return render_template(

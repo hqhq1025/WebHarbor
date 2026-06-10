@@ -59,8 +59,11 @@
                         <input type="hidden" name="item_id" value="{{ item.id }}">
                         <button type="submit">Remove</button>
                     </form>
-                    <form method="POST" action="{{ url_for('reading_list_update_item', item_id=item.id) }}" style="display:inline; margin-left:4px">
+                    {# WV-SEARCH-LOOP-2026-06-03-BBC_NEWS — note input + explicit Save button so an agent can attach/edit a note. #}
+                    <form method="POST" action="{{ url_for('reading_list_update_item', item_id=item.id) }}" style="display:inline-flex; flex-wrap:wrap; gap:4px; margin-left:4px; align-items:center;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="note" value="{{ item.note or '' }}" placeholder="Add note" maxlength="500" aria-label="Reading list item note" style="font-size:12px; padding:3px 6px; max-width:180px;">
+                        <button type="submit" name="note_submit" style="font-size:12px; padding:3px 8px;">Save note</button>
                         <select name="folder" onchange="this.form.submit()" style="font-size:12px; padding:3px 6px;">
                             <option value="">Move to folder…</option>
                             {% for folder_name, _ in folders %}

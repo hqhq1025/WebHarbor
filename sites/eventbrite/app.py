@@ -166,6 +166,7 @@ class Event(db.Model):
     start_dt        = db.Column(db.DateTime, nullable=False, index=True)
     end_dt          = db.Column(db.DateTime, nullable=False)
     image_token     = db.Column(db.String(40), default='gradient-1')   # used to pick CSS gradient
+    image_path      = db.Column(db.String(200), default='')             # real poster image (relative to static/)
     refund_policy   = db.Column(db.String(20), default='moderate')
     language        = db.Column(db.String(20), default='English')
     format          = db.Column(db.String(30), default='Class')  # Class, Conference, Festival, Networking, Party, Performance, Seminar, Tour
@@ -346,6 +347,39 @@ def load_user(uid):
     return User.query.get(int(uid))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ─── Utilities ────────────────────────────────────────────────────────────────
 
 def slugify(s, maxlen=120):
@@ -473,8 +507,34 @@ _load_module('seed_data.py')
 _load_module('routes_more.py')
 
 
+def _migrate_schema():
+    """Idempotent ALTER TABLEs for schema drift between ORM and seeded DB.
+
+    Added 2026-06-01: pre-auth auto_login() hook + event listings query Event
+    on every request; eventbrite's seeded DB predates the image_path column,
+    so SQLAlchemy raises OperationalError("no such column: events.image_path")
+    → 500 on every page.
+    """
+    _drifts = [
+        ("events", "image_path", "TEXT DEFAULT ''"),
+    ]
+    for table, col, decl in _drifts:
+        try:
+            db.session.execute(db.text(f"ALTER TABLE {table} ADD COLUMN {col} {decl}"))
+            db.session.commit()
+            print(f"[eventbrite] migrated: {table}.{col} added")
+        except Exception as e:
+            db.session.rollback()
+            msg = str(e).lower()
+            if "duplicate column" in msg or "already exists" in msg:
+                pass  # already migrated
+            else:
+                print(f"[eventbrite] migrate {table}.{col} skipped: {e}")
+
+
 with app.app_context():
     db.create_all()
+    _migrate_schema()
     seed_database()
     seed_benchmark_users()
     seed_extra()

@@ -390,6 +390,39 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    # (no username column in User model — skip step 1)
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # ---------------------------------------------------------------------------
 # Context processor - inject cart count into all templates
 # ---------------------------------------------------------------------------
@@ -664,12 +697,18 @@ def _cached_catalog_render(route: str) -> str:
     html = _CATALOG_HTML_CACHE.get(key)
     if html is None:
         products, categories = _catalog_data(route)
+        # WV-MEDIUM-RENDER-APPLE-2026-06-03: cap rendered product count.
+        # Full catalog (5526 / 4902) produced a 5 MB DOM with 5584 lazy
+        # <img> nodes, which times out chromium screenshot at 60 s under
+        # 200-way concurrency.  Top-200 by score covers every category.
+        _SHOP_RENDER_CAP = 200
+        _vis_products = list(products)[:_SHOP_RENDER_CAP]
         if route == 'shop':
             html = render_template(
-                'shop.html', products=products, categories=categories)
+                'shop.html', products=_vis_products, categories=categories)
         else:
             html = render_template(
-                'accessories.html', products=products)
+                'accessories.html', products=_vis_products)
         _CATALOG_HTML_CACHE[key] = html
     return html
 
@@ -1630,7 +1669,15 @@ def search(apple_query=''):
                     articles.append(art)
 
     results = _apply_sort(results, request.args.get('sort', ''))
-    return render_template('search.html', query=q, results=results, articles=articles)
+    # WV-MEDIUM-RENDER-APPLE-2026-06-03: cap visible search results.
+    # Broad queries (`iPhone`, `Vision Pro`) returned ~2 MB DOM; top-120
+    # by score is already sorted by FTS5+token scorer.
+    _total_results = len(results)
+    _SEARCH_RENDER_CAP = 120
+    if _total_results > _SEARCH_RENDER_CAP:
+        results = results[:_SEARCH_RENDER_CAP]
+    return render_template('search.html', query=q, results=results, articles=articles,
+                           total_results=_total_results)
 
 
 # ---------------------------------------------------------------------------
@@ -12312,17 +12359,22 @@ def normalize_seed_db_layout():
 
 with app.app_context():
     db.create_all()
-    pinned = _pin_created_at_defaults()
-    try:
-        seed_database()
-        _seed_extra_products()
-        seed_benchmark_users()
-        seed_reviews_and_wishlist()
-    finally:
-        _restore_defaults(pinned)
-    # Only normalize on the first build (when we just populated tables);
-    # safe to always run since DROP/CREATE INDEX on the same name is idempotent.
-    normalize_seed_db_layout()
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # _seed_extra_products scans every Product row (idempotency check), and
+    # normalize_seed_db_layout DROPs/RECREATEs all ix_* + VACUUM. On warm
+    # restart that costs ~12s for no benefit — control_server.wait_ready
+    # routinely times out. Gate behind row-count.
+    _needs_full_bootstrap = (Product.query.count() < 50)
+    if _needs_full_bootstrap:
+        pinned = _pin_created_at_defaults()
+        try:
+            seed_database()
+            _seed_extra_products()
+            seed_benchmark_users()
+            seed_reviews_and_wishlist()
+        finally:
+            _restore_defaults(pinned)
+        normalize_seed_db_layout()
 
 
 # === R2-R3 backfill BEGIN — auto-generated, do not hand-edit between markers ===

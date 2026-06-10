@@ -125,14 +125,14 @@
         {% if place.accessibility_warning %}
         <div class="pd-banner pd-banner-a11y" role="alert"
              style="margin:12px 16px;padding:12px 14px;border-radius:8px;background:#e8f0fe;color:#174ea6;border-left:4px solid #4285f4;font-size:13px;">
-            <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">accessibility_new</span>
+            ♿
             <strong>Accessibility notice:</strong> {{ place.accessibility_warning }}
         </div>
         {% endif %}
 
         <div class="pd-hero">
             <a href="{{ url_for('category_page', slug=place.category.slug) }}" class="pd-back" title="Back">
-                <span class="material-icons-outlined">arrow_back</span>
+                ←
             </a>
             <img loading="lazy" decoding="async" src="{{ place.hero_image }}" alt="{{ place.name }}"
                  onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #e8f0fe, #fde7f3)';">
@@ -167,9 +167,9 @@
             <div class="pd-meta">
                 <span class="rating">{{ "%.1f"|format(place.rating) }}</span>
                 <span class="stars" style="color:#fbbc04;">
-                    {% for i in range(place.stars_full) %}<span class="material-icons" style="font-size:16px;">star</span>{% endfor %}
-                    {% if place.stars_half %}<span class="material-icons" style="font-size:16px;">star_half</span>{% endif %}
-                    {% for i in range(place.stars_empty) %}<span class="material-icons" style="font-size:16px;">star_outline</span>{% endfor %}
+                    {% for i in range(place.stars_full) %}★{% endfor %}
+                    {% if place.stars_half %}⯪{% endif %}
+                    {% for i in range(place.stars_empty) %}☆{% endfor %}
                 </span>
                 <span>({{ "{:,}".format(place.review_count) }})</span>
                 <span>•</span>
@@ -190,19 +190,19 @@
                 {% for kind, icon, label in ambient %}
                 <span class="pd-ambient-chip" data-ambient-kind="{{ kind }}"
                       style="background:{% if kind == 'mask' %}#fce8e6;color:#c5221f{% elif kind == 'noise' %}#fff7e0;color:#b86e00{% else %}#e8f0fe;color:#174ea6{% endif %};border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
-                    <span class="material-icons-outlined" style="font-size:14px;">{{ icon }}</span>{{ label }}
+                    {{ {'bookmark': '🔖', 'bookmark_border': '🔖', 'star': '★', 'star_border': '☆', 'favorite': '♥', 'favorite_border': '♡', 'place': '📍', 'location_on': '📍', 'label': '🏷', 'directions': '🧭', 'schedule': '🕐', 'explore': '🧭', 'hotel': '🏨', 'restaurant': '🍽', 'local_cafe': '☕', 'local_bar': '🍸', 'local_gas_station': '⛽', 'shopping_cart': '🛒', 'luggage': '🧳', 'map': '🗺', 'commute': '🚌', 'menu': '☰', 'search': '🔍', 'share': '↗', 'phone': '📞', 'info': 'ℹ', 'edit': '✎', 'delete': '🗑', 'home': '🏠', 'work': '🏢'}.get(icon, '🔖') }}{{ label }}
                 </span>
                 {% endfor %}
                 {% if place.indoor_zone_type %}
                 <span class="pd-ambient-chip" data-ambient-kind="indoor-zone"
                       style="background:#e6f4ea;color:#137333;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
-                    <span class="material-icons-outlined" style="font-size:14px;">domain</span>{{ place.indoor_zone_type.replace('-', ' ').capitalize() }}
+                    🏢{{ place.indoor_zone_type.replace('-', ' ').capitalize() }}
                 </span>
                 {% endif %}
                 {% if place.floor_number %}
                 <span class="pd-ambient-chip" data-ambient-kind="floor"
                       style="background:#f1f3f4;color:#202124;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
-                    <span class="material-icons-outlined" style="font-size:14px;">layers</span>Floor {{ place.floor_number }}
+                    ⧉Floor {{ place.floor_number }}
                 </span>
                 {% endif %}
             </div>
@@ -211,7 +211,7 @@
 
         <div class="pd-actions">
             <a href="{{ url_for('directions', to=place.name) }}" class="pd-action primary">
-                <div class="ico"><span class="material-icons-outlined">directions</span></div>
+                <div class="ico">🧭</div>
                 <span class="lbl">Directions</span>
             </a>
             {% if current_user.is_authenticated %}
@@ -221,38 +221,73 @@
                 <input type="hidden" name="list_id" value="{{ user_lists[0].id }}">
                 {% endif %}
                 <button type="submit" class="pd-action {% if is_saved %}saved{% endif %}">
-                    <div class="ico"><span class="material-icons-outlined">{% if is_saved %}bookmark{% else %}bookmark_border{% endif %}</span></div>
+                    <div class="ico">{% if is_saved %}🔖{% else %}🔖{% endif %}</div>
                     <span class="lbl">{% if is_saved %}Saved{% else %}Save{% endif %}</span>
                 </button>
             </form>
             {% else %}
             <button onclick="toggleSave({{ place.id }}, this)" class="pd-action {% if is_saved %}saved{% endif %}" type="button">
-                <div class="ico"><span class="material-icons-outlined">{% if is_saved %}bookmark{% else %}bookmark_border{% endif %}</span></div>
+                <div class="ico">{% if is_saved %}🔖{% else %}🔖{% endif %}</div>
                 <span class="lbl">{% if is_saved %}Saved{% else %}Save{% endif %}</span>
             </button>
             {% endif %}
             <a href="#nearby" class="pd-action">
-                <div class="ico"><span class="material-icons-outlined">near_me</span></div>
+                <div class="ico">📍</div>
                 <span class="lbl">Nearby</span>
             </a>
             <button class="pd-action" type="button" onclick="var m=document.getElementById('share-modal'); if(m){m.scrollIntoView({behavior:'smooth',block:'center'}); var i=document.getElementById('share-url-input'); if(i){i.focus(); i.select();}}">
-                <div class="ico"><span class="material-icons-outlined">share</span></div>
+                <div class="ico">↗</div>
                 <span class="lbl">Share</span>
             </button>
             <a href="{{ url_for('place_qr', slug=place.slug) }}" class="pd-action" aria-label="Show QR code">
-                <div class="ico"><span class="material-icons-outlined">qr_code_2</span></div>
+                <div class="ico">[QR]</div>
                 <span class="lbl">QR</span>
             </a>
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('place_checkin', slug=place.slug) }}" style="display:inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="pd-action" type="submit">
-                    <div class="ico"><span class="material-icons-outlined">location_on</span></div>
+                    <div class="ico">📍</div>
                     <span class="lbl">Check in</span>
                 </button>
             </form>
             {% endif %}
         </div>
+
+{# WV-SEARCH-LOOP-2026-06-03-GMAP — visible per-list save buttons (CUA-friendly) #}
+{% if current_user.is_authenticated and user_lists and user_lists|length > 0 %}
+<div class="pd-list-picker"
+     role="group" aria-label="Save to a specific list"
+     style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;
+            align-items:center;">
+    <span style="font-size:12px;color:#5f6368;font-weight:500;
+                 margin-right:4px;">Save to list:</span>
+    {% for sl in user_lists %}
+    <form method="POST"
+          action="{{ url_for('save_place_to_list', place_id=place.id) }}"
+          style="display:inline;margin:0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="list_id" value="{{ sl.id }}">
+        <button type="submit" class="pd-list-btn"
+                title="Save {{ place.name }} to {{ sl.name }}"
+                aria-label="Save to list: {{ sl.name }}"
+                style="display:inline-flex;align-items:center;gap:4px;
+                       padding:4px 10px;border:1px solid #dadce0;
+                       background:#fff;color:#1a73e8;border-radius:14px;
+                       font-size:12px;font-weight:500;cursor:pointer;
+                       white-space:nowrap;">
+            🔖 {{ sl.name }}
+        </button>
+    </form>
+    {% endfor %}
+    <a href="{{ url_for('list_create') }}"
+       style="display:inline-flex;align-items:center;gap:4px;
+              padding:4px 10px;border:1px dashed #dadce0;color:#5f6368;
+              border-radius:14px;font-size:12px;text-decoration:none;">
+        + New list
+    </a>
+</div>
+{% endif %}
 
         <div class="share-url" id="share-modal" style="margin:8px 16px 12px; padding:12px 14px; background:#f1f3f4; border:1px solid #dadce0; border-radius:8px; font-size:13px; color:#202124;">
             {% set share_url = google_maps_place_url(place) %}
@@ -266,11 +301,11 @@
 
         <div class="pd-block">
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">place</span></div>
+                <div class="row-icon">📍</div>
                 <div class="row-content">{{ place.address }}</div>
             </div>
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">schedule</span></div>
+                <div class="row-icon">🕐</div>
                 <div class="row-content">
                     {% if '24' in place.hours %}
                         <span style="color:#34a853; font-weight:500;">Open 24 hours</span>
@@ -282,28 +317,28 @@
                 </div>
             </div>
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">phone</span></div>
+                <div class="row-icon">📞</div>
                 <div class="row-content">{{ place.phone }}</div>
             </div>
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">language</span></div>
+                <div class="row-icon">🌐</div>
                 {% set website_url = display_place_website(place) %}
                 <div class="row-content"><a href="{{ website_url }}" target="_blank" rel="noopener">{{ website_url|replace('https://', '') }}</a></div>
             </div>
             {% if place.parking_info %}
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">local_parking</span></div>
+                <div class="row-icon">🅿</div>
                 <div class="row-content">{{ place.parking_info }}</div>
             </div>
             {% elif place.has_parking_lot %}
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">local_parking</span></div>
+                <div class="row-icon">🅿</div>
                 <div class="row-content">Parking lot available</div>
             </div>
             {% endif %}
             {% if place.delivery_available %}
             <div class="pd-row">
-                <div class="row-icon"><span class="material-icons-outlined">delivery_dining</span></div>
+                <div class="row-icon">🍜</div>
                 <div class="row-content">Delivery available</div>
             </div>
             {% endif %}
@@ -319,7 +354,7 @@
             <div class="pd-svc-row" style="display:flex;flex-wrap:wrap;gap:8px;">
                 {% for label in svc_yes %}
                 <span class="pd-svc-chip" style="background:#e6f4ea;color:#137333;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;">
-                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-2px;">check</span> {{ label }}
+                    ✓ {{ label }}
                 </span>
                 {% endfor %}
             </div>
@@ -384,7 +419,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
                 {% for label in acc_yes %}
                 <span style="background:#e8f0fe;color:#174ea6;border-radius:14px;padding:4px 10px;font-size:12px;">
-                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-2px;">accessible</span> {{ label }}
+                    ♿ {{ label }}
                 </span>
                 {% endfor %}
             </div>
@@ -483,7 +518,7 @@
         {% if place.accepts_reservations %}
         <div class="pd-block" id="reservation-cta" style="background:#fff7e0;border:1px solid #fce8b2;border-radius:8px;padding:14px 16px;">
             <div style="display:flex;align-items:center;gap:10px;">
-                <span class="material-icons-outlined" style="color:#bf8a00;">event_seat</span>
+                💺
                 <div style="flex:1;">
                     <div style="font-weight:500;color:#202124;font-size:14px;">Reservations recommended</div>
                     <div style="font-size:12px;color:#5f6368;">Book ahead to avoid wait at peak times.</div>
@@ -505,7 +540,7 @@
                     {% set pct_rd = (cnt * 100 // total_rd) if total_rd else 0 %}
                 <li style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">
                     <span style="width:18px;color:#5f6368;">{{ star }}</span>
-                    <span class="material-icons" style="font-size:14px;color:#fbbc04;">star</span>
+                    ★
                     <div style="flex:1;height:8px;background:#f1f3f4;border-radius:4px;overflow:hidden;">
                         <div style="width:{{ pct_rd }}%;height:100%;background:#fbbc04;"></div>
                     </div>
@@ -550,7 +585,7 @@
             <ul class="pd-amenities-list" style="list-style:none; padding:0; margin:0;">
                 {% for a in amenity_items %}
                 <li class="pd-amenity-row" style="display:flex; align-items:center; gap:10px; padding:6px 0; font-size:14px;">
-                    <span class="material-icons-outlined" style="font-size:18px; color:#34a853;">check_circle</span>
+                    ✓
                     <span>{{ a }}</span>
                 </li>
                 {% endfor %}
@@ -564,7 +599,7 @@
             <ul class="pd-accessibility-list" style="list-style:none; padding:0; margin:0;">
                 {% for a in accessibility_items %}
                 <li class="pd-accessibility-row" style="display:flex; align-items:center; gap:10px; padding:6px 0; font-size:14px;">
-                    <span class="material-icons-outlined" style="font-size:18px; color:#1a73e8;">accessible</span>
+                    ♿
                     <span>{{ a }}</span>
                 </li>
                 {% endfor %}
@@ -602,14 +637,14 @@
                             data-carousel-action="prev"
                             data-carousel-target="{{ loop.index0 }}"
                             style="position:absolute;left:4px;top:50%;transform:translateY(-50%);background:#fff;border:1px solid var(--divider);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                        <span class="material-icons-outlined">chevron_left</span>
+                        ‹
                     </button>
                     <button type="button" class="carousel-next"
                             aria-label="Next photo"
                             data-carousel-action="next"
                             data-carousel-target="{{ loop.index0 }}"
                             style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:#fff;border:1px solid var(--divider);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                        <span class="material-icons-outlined">chevron_right</span>
+                        ›
                     </button>
                 </div>
             </section>
@@ -641,7 +676,7 @@
                         <input type="hidden" name="reason" value="inappropriate">
                         <button type="submit" title="Report photo"
                                 style="background:#fff8;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;">
-                            <span class="material-icons-outlined" style="font-size:14px;">flag</span>
+                            🚩
                         </button>
                     </form>
                     {% endif %}
@@ -655,7 +690,7 @@
                 <input type="text" name="caption" placeholder="Caption (optional)"
                        style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
                 <button type="submit" class="btn ghost btn-sm">
-                    <span class="material-icons-outlined" style="font-size:16px;">add_a_photo</span> Add photo
+                    📷 Add photo
                 </button>
             </form>
             {% endif %}
@@ -670,7 +705,7 @@
                 <input type="text" name="caption" placeholder="Caption (optional)"
                        style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
                 <button type="submit" class="btn ghost btn-sm">
-                    <span class="material-icons-outlined" style="font-size:16px;">add_a_photo</span> Add photo
+                    📷 Add photo
                 </button>
             </form>
         </div>
@@ -684,12 +719,12 @@
             <div class="qa-item" data-qid="{{ q.id }}"
                  style="border-top:1px solid #f1f3f4;padding:10px 0;">
                 <div class="qa-q" style="font-size:14px;">
-                    <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;color:#1a73e8;">help_outline</span>
+                    ?
                     {{ q.body }}
                 </div>
                 {% for a in q.answers %}
                 <div class="qa-a" style="padding:6px 0 0 20px;font-size:13px;color:#3c4043;">
-                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-3px;color:#34a853;">check_circle</span>
+                    ✓
                     {{ a.body }}
                 </div>
                 {% endfor %}
@@ -783,8 +818,8 @@
                         </div>
                     </div>
                     <div class="review-stars">
-                        {% for i in range(s.rating|int) %}<span class="material-icons" style="font-size:16px; color:#fbbc04;">star</span>{% endfor %}
-                        {% for i in range(5 - (s.rating|int)) %}<span class="material-icons" style="font-size:16px;">star_outline</span>{% endfor %}
+                        {% for i in range(s.rating|int) %}★{% endfor %}
+                        {% for i in range(5 - (s.rating|int)) %}☆{% endfor %}
                     </div>
                     <div class="review-body">{{ s.text }}</div>
                 </div>
@@ -800,8 +835,8 @@
                     </div>
                 </div>
                 <div class="review-stars">
-                    {% for i in range(r.rating) %}<span class="material-icons" style="font-size:16px;">star</span>{% endfor %}
-                    {% for i in range(5 - r.rating) %}<span class="material-icons" style="font-size:16px;">star_outline</span>{% endfor %}
+                    {% for i in range(r.rating) %}★{% endfor %}
+                    {% for i in range(5 - r.rating) %}☆{% endfor %}
                 </div>
                 {% if r.title %}<div class="review-title">{{ r.title }}</div>{% endif %}
                 <div class="review-body">{{ r.body }}</div>

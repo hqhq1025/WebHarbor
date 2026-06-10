@@ -12,7 +12,7 @@
         <div class="panel-section">
             <div style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
                 <div class="list-ico" style="background:{{ saved_list.color }}; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;">
-                    <span class="material-icons-outlined">{{ saved_list.icon }}</span>
+                    {{ {'bookmark': '🔖', 'bookmark_border': '🔖', 'star': '★', 'star_border': '☆', 'favorite': '♥', 'favorite_border': '♡', 'place': '📍', 'location_on': '📍', 'label': '🏷', 'directions': '🧭', 'schedule': '🕐', 'explore': '🧭', 'hotel': '🏨', 'restaurant': '🍽', 'local_cafe': '☕', 'local_bar': '🍸', 'local_gas_station': '⛽', 'shopping_cart': '🛒', 'luggage': '🧳', 'map': '🗺', 'commute': '🚌', 'menu': '☰', 'search': '🔍', 'share': '↗', 'phone': '📞', 'info': 'ℹ', 'edit': '✎', 'delete': '🗑', 'home': '🏠', 'work': '🏢'}.get(saved_list.icon, '🔖') }}
                 </div>
                 <div style="flex:1;">
                     <h2 style="margin-bottom:2px;">{{ saved_list.name }}</h2>
@@ -34,6 +34,31 @@
             </div>
         </div>
 
+{# WV-SEARCH-LOOP-2026-06-03-GMAP — quick-add input for adding places without leaving the list #}
+<div class="panel-section list-quick-add"
+     style="padding:12px 16px;border-top:1px solid var(--divider);
+            background:#f8f9fa;">
+    <form method="POST"
+          action="{{ url_for('list_quick_add', list_id=saved_list.id) }}"
+          style="display:flex;gap:6px;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="place_query" required
+               placeholder="Add a place by name (e.g. Eiffel Tower)…"
+               aria-label="Add a place to this list by name"
+               style="flex:1;padding:6px 10px;border:1px solid #dadce0;
+                      border-radius:6px;font-size:13px;background:#fff;">
+        <button type="submit" class="btn btn-sm"
+                style="padding:6px 12px;font-size:13px;">
+            + Add
+        </button>
+    </form>
+    <div style="font-size:11px;color:#5f6368;margin-top:6px;">
+        Or open any place page and click
+        "🔖 {{ saved_list.name }}" under the Save button.
+    </div>
+</div>
+
+
         {% if saved %}
             {% for sp in saved %}
                 <div style="position:relative;">
@@ -46,7 +71,7 @@
             {% endfor %}
         {% else %}
             <div class="empty-state">
-                <div class="empty-ico"><span class="material-icons-outlined">bookmark_border</span></div>
+                <div class="empty-ico">🔖</div>
                 <h3>This list is empty</h3>
                 <p>Save places to this list by tapping the bookmark icon.</p>
                 <a href="{{ url_for('explore') }}" class="btn">Discover places</a>

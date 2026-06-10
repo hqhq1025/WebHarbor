@@ -13,9 +13,40 @@
   <p>Tap a body region below to see related symptoms, or use the <a href="{{ url_for('symptom_checker') }}">step-by-step wizard</a>.</p>
 
   <div class="body-map-wrap">
-    <div class="body-map-img">
-      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body map">
-      <p class="muted">Click a region in the list to start.</p>
+    <!-- WV-MAYO-BODYMAP-CLICK-2026-06-04: clickable overlay hotspots over silhouette -->
+    <div class="body-map-img" style="position:relative;display:inline-block;max-width:320px;">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body map" usemap="#bodymap" style="width:100%;height:auto;display:block;">
+      <map name="bodymap">
+        <area shape="rect" coords="120,8,200,72"  href="{{ url_for('symptom_checker', region='head') }}" alt="Head region" title="Head &amp; face">
+        <area shape="rect" coords="100,72,220,170" href="{{ url_for('symptom_checker', region='chest') }}" alt="Chest region" title="Chest">
+        <area shape="rect" coords="100,170,220,250" href="{{ url_for('symptom_checker', region='abdomen') }}" alt="Abdomen region" title="Abdomen">
+        <area shape="rect" coords="100,250,220,310" href="{{ url_for('symptom_checker', region='back') }}" alt="Back region" title="Back &amp; pelvis">
+        <area shape="rect" coords="20,80,100,260"   href="{{ url_for('symptom_checker', region='limbs') }}" alt="Limbs region (arm)" title="Limbs (arm)">
+        <area shape="rect" coords="220,80,300,260"  href="{{ url_for('symptom_checker', region='limbs') }}" alt="Limbs region (other arm)" title="Limbs (arm)">
+        <area shape="rect" coords="100,310,220,420" href="{{ url_for('symptom_checker', region='limbs') }}" alt="Limbs region (legs)" title="Limbs (legs)">
+      </map>
+      <!-- Visible button-style overlays for keyboard / no-imagemap clients -->
+      <div class="bodymap-hotspots" style="position:absolute;inset:0;pointer-events:none;">
+        {% for label, region, top, left in [
+            ('Head', 'head', '2%', '38%'),
+            ('Chest', 'chest', '20%', '37%'),
+            ('Abdomen', 'abdomen', '40%', '37%'),
+            ('Back &amp; pelvis', 'back', '60%', '37%'),
+            ('Limbs', 'limbs', '78%', '37%'),
+            ('Skin', 'skin', '5%', '76%'),
+            ('Urinary', 'urinary', '50%', '76%'),
+            ('General', 'general', '78%', '76%'),
+        ] %}
+          <a href="{{ url_for('symptom_checker', region=region) }}"
+             data-region="{{ region }}"
+             aria-label="Open symptoms for {{ region }}"
+             class="bodymap-hotspot bodymap-hotspot-{{ region }}"
+             style="position:absolute;top:{{ top }};left:{{ left }};pointer-events:auto;background:rgba(0,57,123,0.85);color:#fff;padding:4px 10px;border-radius:14px;font-size:12px;text-decoration:none;white-space:nowrap;">
+            {{ label|safe }}
+          </a>
+        {% endfor %}
+      </div>
+      <p class="muted" style="margin-top:8px;">Click a region badge on the silhouette, or pick from the list to the right.</p>
     </div>
 
     <div>

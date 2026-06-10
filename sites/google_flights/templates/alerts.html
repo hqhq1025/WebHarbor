@@ -13,19 +13,21 @@
     <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-bottom:12px;">Create a new alert</h2>
     <form method="POST" action="{{ url_for('price_alerts') }}" class="auth-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {# WV-SEARCH-LOOP-2026-06-03-GFLIGHTS pre-fill From/To/Threshold from ?origin=&dest=&threshold= so the
+         sidebar "Set price alert for X→Y" link lands a one-click ready form. #}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="form-field">
           <label for="origin_iata">From (IATA)</label>
-          <input type="text" name="origin_iata" id="origin_iata" maxlength="4" placeholder="JFK" required>
+          <input type="text" name="origin_iata" id="origin_iata" maxlength="4" placeholder="JFK" value="{{ prefill_origin or '' }}" required>
         </div>
         <div class="form-field">
           <label for="destination_iata">To (IATA)</label>
-          <input type="text" name="destination_iata" id="destination_iata" maxlength="4" placeholder="CDG" required>
+          <input type="text" name="destination_iata" id="destination_iata" maxlength="4" placeholder="CDG" value="{{ prefill_dest or '' }}" required>
         </div>
       </div>
       <div class="form-field">
         <label for="threshold_price">Notify me when price drops below ($)</label>
-        <input type="number" name="threshold_price" id="threshold_price" placeholder="500" step="10" min="0" required>
+        <input type="number" name="threshold_price" id="threshold_price" placeholder="500" step="10" min="0" value="{{ prefill_threshold or '' }}" required>
       </div>
       <button type="submit" class="btn btn-primary">Create alert</button>
     </form>

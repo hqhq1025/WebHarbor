@@ -7,6 +7,17 @@
   <div class="section-header">
     <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;">Tracked flights</h1>
     <p style="color:var(--g-grey-700);">Get notified when prices change on your saved flights.</p>
+    {# WV-SEARCH-LOOP-2026-06-03-GFLIGHTS Tracked vs Price-alert disambiguation banner.
+       /tracked == bookmark a specific flight by id. /alerts == price-threshold
+       alert for a from→to route. Tasks asking to "set a price alert" routinely
+       land on /tracked first; link them through. #}
+    <div role="note" aria-label="Price alerts link" style="margin-top:14px;padding:12px 16px;background:#e8f0fe;border:1px solid #d2e3fc;border-radius:8px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:22px;line-height:1;">🔔</span>
+      <div style="flex:1;font-size:14px;color:#1a73e8;">
+        Want a <strong>price alert</strong> with a custom dollar threshold (e.g. notify me when JFK→CDG drops below $500)? Tracked flights only watch one specific itinerary.
+      </div>
+      <a href="{{ url_for('price_alerts') }}" class="btn btn-primary" style="white-space:nowrap;">Create price alert</a>
+    </div>
   </div>
 
   {% if items %}
@@ -50,7 +61,11 @@
       <span class="material-symbols-outlined" style="font-size:80px;color:var(--g-grey-500);">bookmark</span>
       <h3>No tracked flights</h3>
       <p>Browse flights and click the bookmark icon to track their prices.</p>
-      <a href="{{ url_for('index') }}" class="btn btn-primary">Find flights</a>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Find flights</a>
+        {# WV-SEARCH-LOOP-2026-06-03-GFLIGHTS second CTA for the actual price-alert page #}
+        <a href="{{ url_for('price_alerts') }}" class="btn btn-outline">Set a price alert</a>
+      </div>
     </div>
   {% endif %}
 </div>

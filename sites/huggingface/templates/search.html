@@ -35,32 +35,36 @@
                 <option value="created" {% if active_sort == 'created' %}selected{% endif %}>Recently created</option>
             </select>
         </form>
-        <form method="get" style="display:flex;gap:8px;align-items:center;">
-            <input type="hidden" name="q" value="{{ q }}">
-            <input type="hidden" name="type" value="{{ kind }}">
-            <input type="hidden" name="sort" value="{{ active_sort }}">
-            {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
-            <label class="muted" style="font-size:12px;">License:</label>
-            <select name="license" onchange="this.form.submit()" aria-label="License filter" class="form-control form-control-sm">
-                <option value="">Any license</option>
-                {% for lic in licenses %}
-                <option value="{{ lic[0] }}" {% if active_license == lic[0] %}selected{% endif %}>{{ lic[1] }}</option>
-                {% endfor %}
-            </select>
-        </form>
-        <form method="get" style="display:flex;gap:8px;align-items:center;">
-            <input type="hidden" name="q" value="{{ q }}">
-            <input type="hidden" name="type" value="{{ kind }}">
-            <input type="hidden" name="sort" value="{{ active_sort }}">
-            {% if active_license %}<input type="hidden" name="license" value="{{ active_license }}">{% endif %}
-            <label class="muted" style="font-size:12px;">Library:</label>
-            <select name="library" onchange="this.form.submit()" aria-label="Library filter" class="form-control form-control-sm">
-                <option value="">Any library</option>
-                {% for lib in libraries %}
-                <option value="{{ lib }}" {% if active_library == lib %}selected{% endif %}>{{ lib }}</option>
-                {% endfor %}
-            </select>
-        </form>
+        {# WV-LOOP-HOTSPOT-2026-06-03-H1 — license pills (CUA-friendly, replaces native <select>) #}
+        <details style="display:inline-block;">
+          <summary style="cursor:pointer;font-size:12px;color:#475569;padding:6px 10px;border:1px solid var(--border,#e5e7eb);border-radius:6px;background:#fff;list-style:none;">
+            License: <strong>{% if active_license %}{% for lic in licenses %}{% if lic[0] == active_license %}{{ lic[1] }}{% endif %}{% endfor %}{% else %}Any{% endif %}</strong> &#x25BE;
+          </summary>
+          <div style="position:absolute;background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px;margin-top:4px;max-width:520px;display:flex;flex-wrap:wrap;gap:6px;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            {% set _lic_prefix = '?q=' ~ (q or '') ~ '&type=' ~ (kind or 'all') ~ '&sort=' ~ (active_sort or 'trending') ~ ('&library=' ~ active_library if active_library else '') ~ '&license=' %}
+            <a href="?q={{ q }}&type={{ kind }}&sort={{ active_sort }}{% if active_library %}&library={{ active_library }}{% endif %}"
+               style="padding:6px 12px;border:1px solid #cbd5e1;border-radius:14px;font-size:12px;text-decoration:none;{% if not active_license %}background:#dbeafe;color:#1e40af;border-color:#1e40af;font-weight:600;{% else %}background:#fff;color:#475569;{% endif %}">Any</a>
+            {% for lic in licenses %}
+            <a href="{{ _lic_prefix }}{{ lic[0]|urlencode }}"
+               style="padding:6px 12px;border:1px solid #cbd5e1;border-radius:14px;font-size:12px;text-decoration:none;{% if active_license == lic[0] %}background:#dbeafe;color:#1e40af;border-color:#1e40af;font-weight:600;{% else %}background:#fff;color:#475569;{% endif %}">{{ lic[1] }}</a>
+            {% endfor %}
+          </div>
+        </details>
+        {# WV-LOOP-HOTSPOT-2026-06-03-H1 — library pills (CUA-friendly, replaces native <select>) #}
+        <details style="display:inline-block;">
+          <summary style="cursor:pointer;font-size:12px;color:#475569;padding:6px 10px;border:1px solid var(--border,#e5e7eb);border-radius:6px;background:#fff;list-style:none;">
+            Library: <strong>{{ active_library or 'Any' }}</strong> &#x25BE;
+          </summary>
+          <div style="position:absolute;background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px;margin-top:4px;max-width:520px;display:flex;flex-wrap:wrap;gap:6px;z-index:30;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            {% set _lib_prefix = '?q=' ~ (q or '') ~ '&type=' ~ (kind or 'all') ~ '&sort=' ~ (active_sort or 'trending') ~ ('&license=' ~ active_license if active_license else '') ~ '&library=' %}
+            <a href="?q={{ q }}&type={{ kind }}&sort={{ active_sort }}{% if active_license %}&license={{ active_license }}{% endif %}"
+               style="padding:6px 12px;border:1px solid #cbd5e1;border-radius:14px;font-size:12px;text-decoration:none;{% if not active_library %}background:#dbeafe;color:#1e40af;border-color:#1e40af;font-weight:600;{% else %}background:#fff;color:#475569;{% endif %}">Any</a>
+            {% for lib in libraries %}
+            <a href="{{ _lib_prefix }}{{ lib|urlencode }}"
+               style="padding:6px 12px;border:1px solid #cbd5e1;border-radius:14px;font-size:12px;text-decoration:none;{% if active_library == lib %}background:#dbeafe;color:#1e40af;border-color:#1e40af;font-weight:600;{% else %}background:#fff;color:#475569;{% endif %}">{{ lib }}</a>
+            {% endfor %}
+          </div>
+        </details>
         {% if active_license or active_library %}
         <a class="muted" href="?q={{ q }}&type={{ kind }}&sort={{ active_sort }}" style="font-size:12px;">Clear filters</a>
         {% endif %}

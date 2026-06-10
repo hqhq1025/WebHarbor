@@ -654,6 +654,39 @@ def load_user(uid):
     return db.session.get(User, int(uid))
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice — no real auth needed in this benchmark environment."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not current_user.is_authenticated:
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            login_user(alice)
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only: switch session to a specific user. Used by P4 runner pre-task.
+
+    Tries username column, then email, then per-site username→email rewrite.
+    Returns JSON 200 on success, 404 if user not found.
+    """
+    from flask import jsonify
+    u = None
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        # rewrite: alice_j → alice.j@<domain>  (covers carol_d, bob_c, david_k, etc.)
+        parts = username.rsplit("_", 1)
+        cand = f"{parts[0]}.{parts[1]}@test.com"
+        u = User.query.filter_by(email=cand).first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    logout_user()
+    login_user(u)
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 # =======================================================================
 # SEED DATA
 # =======================================================================
@@ -1556,6 +1589,43 @@ def new_export_id() -> str:
 # Search helpers — scored relevance + filters + sorts
 # -----------------------------------------------------------------------
 
+# === wv-search-fix-2026-06-01 ===
+# ASCII-fold for diacritic-insensitive matching (Schölkopf -> scholkopf etc.).
+_WV_FOLD_TABLE = str.maketrans({
+    "ä":"a","á":"a","à":"a","â":"a","ã":"a","å":"a","ā":"a","ă":"a","ą":"a",
+    "Ä":"a","Á":"a","À":"a","Â":"a","Ã":"a","Å":"a","Ā":"a","Ă":"a","Ą":"a",
+    "ç":"c","ć":"c","č":"c","ĉ":"c","ċ":"c",
+    "Ç":"c","Ć":"c","Č":"c","Ĉ":"c","Ċ":"c",
+    "ð":"d","đ":"d","ď":"d","Ð":"d","Đ":"d","Ď":"d",
+    "ë":"e","é":"e","è":"e","ê":"e","ē":"e","ė":"e","ę":"e","ě":"e",
+    "Ë":"e","É":"e","È":"e","Ê":"e","Ē":"e","Ė":"e","Ę":"e","Ě":"e",
+    "ğ":"g","ġ":"g","ģ":"g","ĝ":"g","Ğ":"g","Ġ":"g","Ģ":"g","Ĝ":"g",
+    "ĥ":"h","ħ":"h","Ĥ":"h","Ħ":"h",
+    "ï":"i","í":"i","ì":"i","î":"i","ī":"i","į":"i","ı":"i",
+    "Ï":"i","Í":"i","Ì":"i","Î":"i","Ī":"i","Į":"i","İ":"i",
+    "ĵ":"j","Ĵ":"j","ķ":"k","Ķ":"k",
+    "ł":"l","ĺ":"l","ļ":"l","ľ":"l","ŀ":"l",
+    "Ł":"l","Ĺ":"l","Ļ":"l","Ľ":"l","Ŀ":"l",
+    "ñ":"n","ń":"n","ň":"n","ņ":"n","ŋ":"n",
+    "Ñ":"n","Ń":"n","Ň":"n","Ņ":"n","Ŋ":"n",
+    "ö":"o","ó":"o","ò":"o","ô":"o","õ":"o","ø":"o","ō":"o","ő":"o",
+    "Ö":"o","Ó":"o","Ò":"o","Ô":"o","Õ":"o","Ø":"o","Ō":"o","Ő":"o",
+    "ŕ":"r","ř":"r","ŗ":"r","Ŕ":"r","Ř":"r","Ŗ":"r",
+    "ś":"s","š":"s","ş":"s","ŝ":"s","ș":"s","ß":"ss",
+    "Ś":"s","Š":"s","Ş":"s","Ŝ":"s","Ș":"s",
+    "ť":"t","ţ":"t","ț":"t","ŧ":"t","Ť":"t","Ţ":"t","Ț":"t","Ŧ":"t",
+    "ü":"u","ú":"u","ù":"u","û":"u","ū":"u","ů":"u","ű":"u","ų":"u",
+    "Ü":"u","Ú":"u","Ù":"u","Û":"u","Ū":"u","Ů":"u","Ű":"u","Ų":"u",
+    "ŵ":"w","Ŵ":"w","ý":"y","ÿ":"y","ŷ":"y","Ý":"y","Ÿ":"y","Ŷ":"y",
+    "ź":"z","ž":"z","ż":"z","Ź":"z","Ž":"z","Ż":"z",
+    "æ":"ae","œ":"oe","Æ":"ae","Œ":"oe",
+})
+def _wv_fold(s):
+    if not s: return s
+    return s.translate(_WV_FOLD_TABLE)
+# === /wv-search-fix-2026-06-01 ===
+
+
 STOPWORDS = {
     "the", "a", "an", "of", "in", "on", "at", "to", "for", "with",
     "and", "or", "is", "are", "be", "by", "from", "as", "that", "this",
@@ -1566,7 +1636,9 @@ STOPWORDS = {
 
 
 def _score_paper(paper: "Paper", tokens: list) -> int:
-    haystack = " ".join([
+    # === wv-search-fix-2026-06-01 === score = token-count + bigram +1000 exact title phrase
+    title_h = _wv_fold((paper.title or "").lower())
+    haystack = _wv_fold(" ".join([
         (paper.title or "").lower(),
         (paper.abstract or "").lower(),
         (paper.authors_json or "").lower(),
@@ -1577,12 +1649,24 @@ def _score_paper(paper: "Paper", tokens: list) -> int:
         (paper.journal_ref or "").lower(),
         (paper.comments or "").lower(),
         (paper.arxiv_id or "").lower(),
-    ])
-    return sum(1 for t in tokens if t in haystack)
+    ]))
+    score = sum(1 for t in tokens if t in haystack)
+    for i in range(len(tokens) - 1):
+        bg = tokens[i] + " " + tokens[i + 1]
+        if bg in haystack: score += 5
+        if bg in title_h:  score += 5
+    if len(tokens) >= 2:
+        phrase = " ".join(tokens)
+        if phrase in title_h:    score += 1000
+        elif phrase in haystack: score += 200
+    return score
+    # === /wv-search-fix-2026-06-01 ===
 
 
 def _tokenize_query(q: str) -> list:
-    tokens = [t.lower() for t in re.findall(r"[a-z0-9]+", (q or "").lower())]
+    # === wv-search-fix-2026-06-01 === ASCII-fold so "Schölkopf" -> "scholkopf"
+    q_folded = _wv_fold((q or "").lower())
+    tokens = [t.lower() for t in re.findall(r"[a-z0-9]+", q_folded)]
     return [t for t in tokens if t and t not in STOPWORDS and len(t) >= 2]
 
 
@@ -2277,6 +2361,48 @@ def help_page_sub(page):
     return render_template("help.html", section=page)
 
 
+
+# === WV-FTS5-INIT-2026-06-01 ===
+def _fts5_search_papers(q, field="all", limit=200):
+    """Run FTS5 query on papers_fts. Returns list of Paper objects or None."""
+    try:
+        import sqlite3 as _s3
+        db_path = str(DB_DIR / "arxiv.db")
+        conn = _s3.connect(db_path)
+        if conn.execute("SELECT count(*) FROM sqlite_master WHERE name='papers_fts'").fetchone()[0] == 0:
+            conn.close()
+            return None
+        fts_q = q.strip()
+        if not fts_q:
+            conn.close()
+            return None
+        import re as _r
+        toks = [t for t in _r.findall(r"[a-zA-Z0-9]+", fts_q) if len(t) >= 2]
+        toks = [t for t in toks if t.lower() not in STOPWORDS]
+        if not toks:
+            conn.close()
+            return None
+        fts_query = " ".join('"' + t + '"' for t in toks)
+        if field == "title":
+            fts_query = "title:(" + fts_query + ")"
+        elif field == "abstract":
+            fts_query = "abstract:(" + fts_query + ")"
+        rows = conn.execute(
+            "SELECT rowid, bm25(papers_fts) FROM papers_fts "
+            "WHERE papers_fts MATCH ? ORDER BY bm25(papers_fts) LIMIT ?",
+            (fts_query, limit)
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return None
+        rowids = [r[0] for r in rows]
+        papers = Paper.query.filter(Paper.id.in_(rowids)).all()
+        pm = {p.id: p for p in papers}
+        return [pm[rid] for rid in rowids if rid in pm]
+    except Exception:
+        return None
+# === /WV-FTS5-INIT-2026-06-01 ===
+
 @app.route("/search/")
 @app.route("/search")
 def search():
@@ -2301,7 +2427,13 @@ def search():
         if field == "title":
             query_obj = query_obj.filter(Paper.title.ilike(f"%{q.lower()}%"))
         elif field == "author":
-            query_obj = query_obj.filter(Paper.authors_json.ilike(f"%{q.lower()}%"))
+            # === wv-search-fix-2026-06-01 ===
+            # DB stores ASCII-folded names ("Scholkopf"), but user types
+            # "Schölkopf". Fold the query first, then SQL-ILIKE — SQLite's
+            # byte-literal LIKE then matches the ASCII haystack.
+            query_obj = query_obj.filter(
+                Paper.authors_json.ilike(f"%{_wv_fold(q.lower())}%"))
+            # === /wv-search-fix-2026-06-01 ===
         elif field == "abstract":
             query_obj = query_obj.filter(Paper.abstract.ilike(f"%{q.lower()}%"))
         elif field == "id":
@@ -2331,14 +2463,18 @@ def search():
     if q:
         tokens = _tokenize_query(q)
         if field == "title":
-            phrase = q.lower()
-            results = [p for p in candidates if phrase in (p.title or "").lower()]
+            # === wv-search-fix-2026-06-01 === fold both sides
+            phrase = _wv_fold(q.lower())
+            results = [p for p in candidates if phrase in _wv_fold((p.title or "").lower())]
         elif field == "author":
-            phrase = q.lower()
-            results = [p for p in candidates if phrase in (p.authors_json or "").lower()]
+            # === wv-search-fix-2026-06-01 === fold both sides
+            phrase = _wv_fold(q.lower())
+            results = [p for p in candidates
+                       if phrase in _wv_fold((p.authors_json or "").lower())]
         elif field == "abstract":
-            phrase = q.lower()
-            results = [p for p in candidates if phrase in (p.abstract or "").lower()]
+            # === wv-search-fix-2026-06-01 === fold both sides
+            phrase = _wv_fold(q.lower())
+            results = [p for p in candidates if phrase in _wv_fold((p.abstract or "").lower())]
         elif field == "id":
             phrase = q.lower()
             results = [p for p in candidates if phrase in (p.arxiv_id or "").lower()]
@@ -2347,7 +2483,54 @@ def search():
             results = [p for p in candidates if phrase in (p.journal_ref or "").lower()]
         else:  # all — scored relevance
             if tokens:
-                min_required = max(1, len(tokens) // 2)
+                # === WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+                _fts5_results = _fts5_search_papers(q, field="all", limit=100)
+                # === /WV-FTS5-INIT-2026-06-01-FIRSTPASS ===
+                # === WV-MEDIUM-PERF-2026-06-03-arxiv-fts5-short-circuit ===
+                # When FTS5 (bm25-ranked) already gave us a dense result set,
+                # skip the two extra Python-side LIKE scans (ex1/ex2). Each
+                # ex* scan is a 100k-row LIKE that costs ~150-300ms warm on
+                # unique long queries; FTS5 already covers prefix/AND/phrase
+                # via the porter+unicode61 tokenizer. We only short-circuit
+                # ex1/ex2 (the augmentation) — final scoring + fallback merge
+                # still runs unchanged.
+                _wv_skip_extra_like = bool(_fts5_results) and len(_fts5_results) >= 1
+                # === /WV-MEDIUM-PERF-2026-06-03-arxiv-fts5-short-circuit ===
+                # === wv-search-fix-2026-06-01 ===
+                # Augment candidate pool with two extras: (a) literal raw-query
+                # substring in title — catches exact-title queries truncated by
+                # the longest-token candidate cap, e.g.
+                # "Bilinear Exponential Family of MDPs" against a 7787-row
+                # "exponential" pool that hid the target at position 4258;
+                # (b) ALL tokens AND-matched in title — for multi-token queries
+                # where the title contains every keyword but the order/words
+                # don't match the longest-token candidate cut.
+                from sqlalchemy import and_ as _wv_and, or_ as _wv_or
+                extra_ids = {p.id for p in candidates}
+                extras = []
+                if (not _wv_skip_extra_like) and len(q.strip()) >= 4:
+                    try:
+                        ex1 = (_apply_paper_filters(Paper.query)
+                               .filter(Paper.title.ilike(f"%{q.lower()}%"))
+                               .limit(200).all())
+                        for p in ex1:
+                            if p.id not in extra_ids:
+                                extras.append(p); extra_ids.add(p.id)
+                    except Exception:
+                        pass
+                if (not _wv_skip_extra_like) and len(tokens) >= 2:
+                    try:
+                        and_terms = [Paper.title.ilike(f"%{t}%") for t in tokens]
+                        ex2 = (_apply_paper_filters(Paper.query)
+                               .filter(_wv_and(*and_terms))
+                               .limit(200).all())
+                        for p in ex2:
+                            if p.id not in extra_ids:
+                                extras.append(p); extra_ids.add(p.id)
+                    except Exception:
+                        pass
+                candidates = list(candidates) + extras
+                min_required = 1  # was max(1, n//2) — over-filtered short queries
                 scored = []
                 for p in candidates:
                     s = _score_paper(p, tokens)
@@ -2355,6 +2538,23 @@ def search():
                         scored.append((s, p))
                 scored.sort(key=lambda x: -x[0])
                 results = [p for _, p in scored]
+                # === WV-FTS5-INIT-2026-06-01-MERGE ===
+                if _fts5_results:
+                    _scored_ids = {p.id for p in results}
+                    _extra = [p for p in _fts5_results if p.id not in _scored_ids]
+                    if not results:
+                        results = list(_fts5_results)
+                    elif _extra:
+                        results = results + _extra[:50]
+                # === /WV-FTS5-INIT-2026-06-01-MERGE ===
+                if not results:
+                    results = (Paper.query
+                               .order_by(Paper.submitted_year.desc(),
+                                         Paper.submitted_month.desc(),
+                                         Paper.submitted_day.desc(),
+                                         Paper.arxiv_id.desc())
+                               .limit(20).all())
+                # === /wv-search-fix-2026-06-01 ===
             else:
                 results = candidates
 
@@ -2415,6 +2615,43 @@ def search():
 
 @app.route("/search/advanced", methods=["GET", "POST"])
 def advanced_search():
+    # WV-SEARCH-LOOP-2026-06-03-ARXIV — accept GET-with-params as form submission so direct URL navigation works
+    if request.method == "GET" and (
+        request.args.get("terms") or request.args.get("subject")
+        or request.args.get("start_date") or request.args.get("end_date")
+        or request.args.get("date_range") or request.args.get("field")
+        or request.args.get("sort")
+    ):
+        _adv_args = request.args
+        terms = (_adv_args.get("terms") or "").strip()
+        field = (_adv_args.get("field") or "all").strip()
+        subject = (_adv_args.get("subject") or _adv_args.get("category") or "").strip()
+        date_range = (_adv_args.get("date_range") or "").strip()
+        sort_key = (_adv_args.get("sort") or "").strip()
+        start_date = (_adv_args.get("start_date") or "").strip()
+        end_date = (_adv_args.get("end_date") or "").strip()
+        params = {"query": terms}
+        if field and field != "all":
+            params["searchtype"] = field
+            params["field"] = field
+        if subject:
+            params["category"] = subject
+        if date_range:
+            dr_days = {"past_2_days": 2, "past_week": 7, "week": 7,
+                       "past_month": 30, "month": 30,
+                       "past_year": 365, "year": 365}.get(date_range)
+            if dr_days:
+                params["last_days"] = dr_days
+            else:
+                params["date_range"] = date_range
+        if start_date:
+            params["date_from"] = start_date
+        if end_date:
+            params["date_to"] = end_date
+        if sort_key and sort_key != "relevance":
+            params["sort"] = sort_key
+        return redirect(url_for("search", **params))
+
     if request.method == "POST":
         terms = (request.form.get("terms") or "").strip()
         field = (request.form.get("field") or "all").strip()
@@ -6330,38 +6567,84 @@ def seed_visual_assets():
               f"tail synthesised at request time)")
 
 
+
+# === WV-FTS5-STARTUP ===
+def _ensure_fts5_papers():
+    """Create papers_fts if missing. Runs at startup + survives /reset."""
+    import sqlite3 as _s3
+    db_path = str(DB_DIR / "arxiv.db")
+    conn = _s3.connect(db_path, timeout=60)
+    cur = conn.cursor()
+    cur.execute("SELECT count(*) FROM sqlite_master WHERE name='papers_fts'")
+    if cur.fetchone()[0] > 0:
+        try:
+            n = cur.execute("SELECT count(*) FROM papers_fts").fetchone()[0]
+            if n > 0:
+                conn.close()
+                return
+        except:
+            cur.execute("DROP TABLE IF EXISTS papers_fts")
+            conn.commit()
+    cur.execute("""
+        CREATE VIRTUAL TABLE papers_fts USING fts5(
+            title, primary_subject, abstract,
+            content='papers', content_rowid='id',
+            tokenize='porter unicode61 remove_diacritics 2'
+        )
+    """)
+    conn.commit()
+    cur.execute("""
+        INSERT INTO papers_fts(rowid, title, primary_subject, abstract)
+        SELECT id, COALESCE(title,''), COALESCE(primary_subject,''), COALESCE(abstract,'')
+        FROM papers
+    """)
+    conn.commit()
+    print(f"  [+] papers_fts created ({cur.execute('SELECT count(*) FROM papers_fts').fetchone()[0]} rows)")
+    conn.close()
+# === /WV-FTS5-STARTUP ===
+
 with app.app_context():
     db.create_all()
+    _ensure_fts5_papers()
     ensure_affiliation_column()
     # Ensure the SVG asset pool exists on disk *before* anything else may
     # serve a template that references images/figures/*. This is idempotent
     # (returns {'cached': True} when the sentinel file is in place) so warm
     # restarts pay nothing.
     visual_assets.bootstrap()
-    # `random.seed` makes the per-row randint() calls in seed_database() and
-    # seed_benchmark_users() reproducible. Column defaults that wrap
-    # datetime.utcnow() are pinned by passing explicit created_at / added_at
-    # arguments inside the seed functions themselves.
-    random.seed(20260415)
-    seed_database()
-    seed_benchmark_users()
-    seed_community_extras()
-    backfill_paper_gaps()
-    normalize_paper_metadata()
-    backfill_affiliations()
-    backfill_provenance_fields()
-    seed_visual_assets()
-    normalize_seed_db_layout()
-    # Perf — composite (primary_subject_code, submitted_date) and
-    # (primary_category_code, submitted_date) indexes already exist; run
-    # ANALYZE so the planner picks them over the bare single-column index
-    # for /list/<code>/recent filter+sort queries. Without ANALYZE SQLite
-    # falls back to ix_papers_primary_subject_code + TEMP B-TREE sort.
-    try:
-        db.session.execute(db.text("ANALYZE"))
-        db.session.commit()
-    except Exception:
-        pass
+    # --- FAST WARM-RESTART GATE (added 2026-05-31) ---
+    # On warm restart (DB already populated via /reset's copy-from-instance_seed
+    # or already populated from a previous build), the per-row backfill_* and
+    # normalize_seed_db_layout (DROP+CREATE 21 indexes + VACUUM on a 1 GB
+    # SQLite file) cost ~150 s for no gain. control_server.wait_ready defaults
+    # to 30 s, so the worker is declared dead and restarted, which retriggers
+    # the same 150 s work in a cascade. Gate the heavy work behind a row count.
+    _needs_full_bootstrap = (Paper.query.count() < 1000)
+    if _needs_full_bootstrap:
+        # `random.seed` makes the per-row randint() calls in seed_database()
+        # and seed_benchmark_users() reproducible. Column defaults that wrap
+        # datetime.utcnow() are pinned by passing explicit created_at /
+        # added_at arguments inside the seed functions themselves.
+        random.seed(20260415)
+        seed_database()
+        seed_benchmark_users()
+        seed_community_extras()
+        backfill_paper_gaps()
+        normalize_paper_metadata()
+        backfill_affiliations()
+        backfill_provenance_fields()
+        seed_visual_assets()
+        normalize_seed_db_layout()
+        # Perf — composite (primary_subject_code, submitted_date) and
+        # (primary_category_code, submitted_date) indexes already exist; run
+        # ANALYZE so the planner picks them over the bare single-column index
+        # for /list/<code>/recent filter+sort queries. Without ANALYZE SQLite
+        # falls back to ix_papers_primary_subject_code + TEMP B-TREE sort.
+        try:
+            db.session.execute(db.text("ANALYZE"))
+            db.session.commit()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

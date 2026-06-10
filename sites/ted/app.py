@@ -441,6 +441,31 @@ def current_user():
     return db.session.get(User, uid) if uid else None
 
 
+@app.before_request
+def auto_login():
+    """Always serve as alice_j (sessionless — set session["user_id"] directly)."""
+    if request.endpoint and request.endpoint.startswith("logout"):
+        return
+    if not session.get("user_id"):
+        alice = User.query.filter_by(email="alice.j@test.com").first()
+        if alice:
+            session["user_id"] = alice.id
+
+@app.route("/dev/login/<username>", methods=["GET", "POST"])
+def dev_login(username):
+    """Test-only sessionless variant: set session["user_id"] = u.id."""
+    from flask import jsonify
+    u = User.query.filter_by(username=username).first()
+    if u is None:
+        u = User.query.filter_by(email=username).first()
+    if u is None and "_" in username and "@" not in username:
+        parts = username.rsplit("_", 1)
+        u = User.query.filter_by(email=f"{parts[0]}.{parts[1]}@test.com").first()
+    if u is None:
+        return jsonify(ok=False, error=f"no user named {username}"), 404
+    session["user_id"] = u.id
+    return jsonify(ok=True, username=username, id=u.id), 200
+
 def require_login():
     if not current_user():
         flash("Please sign in to continue.", "info")

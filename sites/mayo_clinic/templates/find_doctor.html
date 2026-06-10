@@ -40,6 +40,15 @@
         {% endfor %}
       </select>
     </div>
+    <!-- WV-MAYO-ACCEPTS-NEW-MAIN-2026-06-04: accepts_new facet (matches Advanced) -->
+    <div class="form-row" style="margin:0;">
+      <label>Accepting new patients</label>
+      <select name="accepts_new">
+        <option value="">Any</option>
+        <option value="yes" {{ 'selected' if accepts_new == 'yes' else '' }}>Yes</option>
+        <option value="no" {{ 'selected' if accepts_new == 'no' else '' }}>No</option>
+      </select>
+    </div>
     <div class="form-row" style="margin:0;display:flex;align-items:end;">
       <button class="btn-primary" type="submit">Search</button>
     </div>
@@ -60,6 +69,9 @@
         <div class="meta">Department: {% if d.department %}<a href="{{ url_for('department_detail', slug=d.department.slug) }}">{{ d.department.name }}</a>{% else %}{{ d.dept_slug }}{% endif %}</div>
         <div class="meta">Locations: {{ d.locations.replace(',', ', ') }}</div>
         <div class="meta">Languages: {{ d.languages.replace(',', ', ') }}</div>
+        <div class="meta accepts-new" data-accepts-new="{{ '1' if d.accepts_appointments else '0' }}">
+          {% if d.accepts_appointments %}<span style="color:#216c2a;">✓ Accepting new patients</span>{% else %}<span style="color:#a04040;">Not currently accepting new patients</span>{% endif %}
+        </div>
         <div class="pills">
           {% for f in d.focus_areas.split(',')[:4] %}<span class="pill">{{ f.strip() }}</span>{% endfor %}
         </div>

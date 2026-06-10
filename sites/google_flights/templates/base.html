@@ -92,6 +92,12 @@
           <a href="{{ url_for('tracked_flights') }}" class="gbar-icon-btn" title="Tracked flights">
             <span class="material-symbols-outlined">bookmark</span>
           </a>
+          {# WV-SEARCH-LOOP-2026-06-03-GFLIGHTS price-alert nav icon (was missing → agents
+             couldn't find /alerts from non-footer pages, looped on /tracked) #}
+          <a href="{{ url_for('price_alerts') }}" class="gbar-icon-btn" title="Price alerts">
+            <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+            <span class="sr-only">Price alerts</span>
+          </a>
           <a href="{{ url_for('account') }}" class="gbar-avatar" title="{{ current_user.full_name }}">
             {{ current_user.full_name[0]|upper }}
           </a>

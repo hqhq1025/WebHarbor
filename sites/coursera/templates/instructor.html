@@ -1,3 +1,4 @@
+<!-- WV-SEARCH-LOOP-2026-06-03-COURSERA -->
 {% extends "base.html" %}
 {% block title %}{{ name }} | Instructor on Coursera{% endblock %}
 {% block content %}
@@ -38,7 +39,7 @@
             ({{ '{:,}'.format(c.review_count) }} reviews)
             &middot; {{ c.enrolled_display() }} enrolled
           </div>
-          <p class="instructor-course-desc">{{ c.description[:180] }}{% if c.description|length > 180 %}...{% endif %}</p>
+          <p class="instructor-course-desc">{{ (c.description or '')[:180] }}{% if (c.description or '')|length > 180 %}...{% endif %}</p>
           <div class="instructor-course-tags">
             <span class="tag-level">{{ c.level }}</span>
             <span class="tag-duration">{{ c.duration_text }}</span>

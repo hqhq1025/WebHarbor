@@ -1,12 +1,155 @@
 {% extends "base.html" %}
 {% block title %}Search{% if query %}: {{ query }}{% endif %}{% endblock %}
 {% block content %}
+{# WV-FILTER-CHIP-URL-FIX-2026-06-04 — chip anchors carry filter state in the URL #}
+<style>
+.wv-filter-chip {
+    display: inline-block;
+    padding: 7px 12px;
+    margin: 3px 4px 3px 0;
+    border: 1px solid #d0d0d0;
+    border-radius: 16px;
+    background: #fff;
+    color: #2b2b2b;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 0.1s, border-color 0.1s;
+}
+.wv-filter-chip:hover { background: #fbf3e1; border-color: #c4a667; }
+.wv-filter-chip.wv-chip-active {
+    background: #fbf3e1;
+    border-color: #c4a667;
+    color: #5a3a14;
+    font-weight: 600;
+}
+.wv-filter-chip.wv-chip-active::before { content: "\2713 "; }
+.wv-filter-row { display: flex; flex-wrap: wrap; gap: 0; margin: 4px 0; align-items: center; }
+.wv-filter-row > h4 { margin: 0 8px 0 0; font-size: 13px; font-weight: 700; color: #444; min-width: 90px; }
+.wv-filter-panel { background: #fff; border: 1px solid #e7e2d3; border-radius: 8px; padding: 14px 16px; margin: 14px 0 18px 0; }
+</style>
 <div class="search-page">
     <h1>Search Recipes</h1>
     <form action="{{ url_for('search') }}" method="GET">
         <input type="text" name="q" class="search-input-large" placeholder="Search for recipes, ingredients, cuisines..."
                value="{{ query }}" autofocus>
+        {# carry chip filters across re-search so typing a new query keeps refinements #}
+        {% for k in ['cuisine','dish_type','meal_type','max_total_mins','min_rating','sort'] %}
+            {% if request.args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ request.args.get(k) }}">{% endif %}
+        {% endfor %}
     </form>
+
+    {# ---- Filter chip panel — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
+    <div class="wv-filter-panel" role="region" aria-label="Recipe filters">
+        {% set cur_cuisine = request.args.get('cuisine','') %}
+        <div class="wv-filter-row">
+            <h4>Cuisine</h4>
+            {% for code, label in [
+                ('italian','Italian'),('mexican','Mexican'),('asian','Asian'),
+                ('indian','Indian'),('french','French'),('thai','Thai'),
+                ('chinese','Chinese'),('japanese','Japanese'),('mediterranean','Mediterranean'),
+                ('american','American'),('greek','Greek')
+            ] %}
+                {% set on = cur_cuisine|lower == code %}
+                <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                   href="{{ chip_url(set={'cuisine': ('' if on else code)}, unset=(['cuisine'] if on else None)) }}"
+                   role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                   data-filter-key="cuisine" data-filter-value="{{ code }}">{{ label }}</a>
+            {% endfor %}
+            {% if cur_cuisine %}
+                <a class="wv-filter-chip"
+                   href="{{ chip_url(unset=['cuisine']) }}"
+                   role="button" data-filter-key="cuisine" data-filter-value="">Any cuisine</a>
+            {% endif %}
+        </div>
+
+        {% set cur_dish = request.args.get('dish_type','')|lower %}
+        <div class="wv-filter-row">
+            <h4>Dish type</h4>
+            {% for code, label in [
+                ('main','Main'),('dessert','Dessert'),('appetizer','Appetizer'),
+                ('salad','Salad'),('soup','Soup'),('breakfast','Breakfast'),
+                ('bread','Bread'),('snack','Snack')
+            ] %}
+                {% set on = cur_dish == code %}
+                <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                   href="{{ chip_url(set={'dish_type': ('' if on else code)}, unset=(['dish_type'] if on else None)) }}"
+                   role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                   data-filter-key="dish_type" data-filter-value="{{ code }}">{{ label }}</a>
+            {% endfor %}
+            {% if cur_dish %}
+                <a class="wv-filter-chip"
+                   href="{{ chip_url(unset=['dish_type']) }}"
+                   role="button" data-filter-key="dish_type" data-filter-value="">Any dish</a>
+            {% endif %}
+        </div>
+
+        {% set cur_meal = request.args.get('meal_type','')|lower %}
+        <div class="wv-filter-row">
+            <h4>Meal type</h4>
+            {% for code, label in [
+                ('breakfast','Breakfast'),('lunch','Lunch'),('dinner','Dinner'),('snack','Snack')
+            ] %}
+                {% set on = cur_meal == code %}
+                <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                   href="{{ chip_url(set={'meal_type': ('' if on else code)}, unset=(['meal_type'] if on else None)) }}"
+                   role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                   data-filter-key="meal_type" data-filter-value="{{ code }}">{{ label }}</a>
+            {% endfor %}
+            {% if cur_meal %}
+                <a class="wv-filter-chip"
+                   href="{{ chip_url(unset=['meal_type']) }}"
+                   role="button" data-filter-key="meal_type" data-filter-value="">Any meal</a>
+            {% endif %}
+        </div>
+
+        {% set cur_total = request.args.get('max_total_mins','') %}
+        <div class="wv-filter-row">
+            <h4>Total time</h4>
+            {% for v, label in [
+                ('15','15 min or less'),('30','30 min or less'),('60','1 hr or less'),('120','2 hr or less')
+            ] %}
+                {% set on = cur_total|string == v %}
+                <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                   href="{{ chip_url(set={'max_total_mins': ('' if on else v)}, unset=(['max_total_mins'] if on else None)) }}"
+                   role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                   data-filter-key="max_total_mins" data-filter-value="{{ v }}">{{ label }}</a>
+            {% endfor %}
+            {% if cur_total %}
+                <a class="wv-filter-chip"
+                   href="{{ chip_url(unset=['max_total_mins']) }}"
+                   role="button" data-filter-key="max_total_mins" data-filter-value="">Any time</a>
+            {% endif %}
+        </div>
+
+        {% set cur_rating = request.args.get('min_rating','') %}
+        <div class="wv-filter-row">
+            <h4>Min rating</h4>
+            {% for v, label in [('4.5','4.5+ stars'),('4','4+ stars'),('3.5','3.5+ stars'),('3','3+ stars')] %}
+                {% set on = cur_rating|string == v %}
+                <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                   href="{{ chip_url(set={'min_rating': ('' if on else v)}, unset=(['min_rating'] if on else None)) }}"
+                   role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                   data-filter-key="min_rating" data-filter-value="{{ v }}">{{ label }}</a>
+            {% endfor %}
+            {% if cur_rating %}
+                <a class="wv-filter-chip"
+                   href="{{ chip_url(unset=['min_rating']) }}"
+                   role="button" data-filter-key="min_rating" data-filter-value="">Any rating</a>
+            {% endif %}
+        </div>
+
+        {% if request.args.get('cuisine') or request.args.get('dish_type') or request.args.get('meal_type') or request.args.get('max_total_mins') or request.args.get('min_rating') %}
+        <div class="wv-filter-row" style="margin-top:6px;">
+            <a class="wv-filter-chip"
+               style="border-color:#c0392b;color:#c0392b;"
+               href="{{ chip_url(unset=['cuisine','dish_type','meal_type','max_total_mins','min_rating']) }}"
+               role="button" data-filter-key="clear" data-filter-value="all">Clear all filters</a>
+        </div>
+        {% endif %}
+    </div>
+
     {% if query %}
     <p class="search-count">{{ count }} result{{ 's' if count != 1 }} for "{{ query }}"</p>
     {% endif %}

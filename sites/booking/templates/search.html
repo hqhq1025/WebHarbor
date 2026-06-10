@@ -1,18 +1,51 @@
 {% extends "base.html" %}
-{% block title %}Search results — Booking{% endblock %}
+{% block title %}Search results — Booking
+<style>
+/* WV-FILTER-CHIP-URL-FIX-2026-06-04 — large click target chip anchors */
+.wv-filter-chip {
+    display: inline-block;
+    padding: 7px 12px;
+    margin: 2px 4px 2px 0;
+    border: 1px solid #d0d0d0;
+    border-radius: 16px;
+    background: #fff;
+    color: #262626;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 0.1s, border-color 0.1s;
+}
+.wv-filter-chip:hover { background: #f0f6ff; border-color: #006ce4; }
+.wv-filter-chip.wv-chip-active {
+    background: #e8f0fe;
+    border-color: #006ce4;
+    color: #003580;
+    font-weight: 600;
+}
+.wv-filter-chip.wv-chip-active::before { content: "\2713 "; }
+.wv-filter-chip-row { display: flex; flex-wrap: wrap; gap: 0; margin: 4px 0 6px 0; }
+.wv-filter-chip-block { display: block; width: 100%; margin: 3px 0; }
+/* WV-SELECT-FIX-2026-06-01 pill button styles */
+.wv-sort-pill:hover { background: #f0f6ff !important; border-color: #006ce4 !important; }
+.wv-sort-active { background: #e8f0fe !important; border-color: #006ce4 !important; font-weight: 600 !important; color: #003580 !important; }
+.wv-sort-active::before { content: "\2713 "; }
+</style>
+{% endblock %}
 {% block content %}
 <div class="container">
     <h1 class="page-title">Search results</h1>
     {% if empty_destination %}
     <p class="page-subtitle"><strong>0</strong> properties found</p>
+    {# WV-BOOKING-SEARCH-PAGINATION-2026-06-01 #}
     {% elif query %}
-    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found for "<strong>{{ query }}</strong>"</p>
+    <p class="page-subtitle"><strong>{{ search_total }}</strong> properties found for "<strong>{{ query }}</strong>"{% if search_pages > 1 %} &mdash; page {{ search_page }} of {{ search_pages }}{% endif %}</p>
     {% else %}
-    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found</p>
+    <p class="page-subtitle"><strong>{{ search_total }}</strong> properties found{% if search_pages > 1 %} &mdash; page {{ search_page }} of {{ search_pages }}{% endif %}</p>
     {% endif %}
 
     {% if empty_destination %}
-    <div class="empty-state" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:32px;text-align:center;color:#5d666e;font-size:15px;margin-bottom:20px;">
+    <div class="empty-state" role="status" aria-live="polite" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:32px;text-align:center;color:#5d666e;font-size:15px;margin-bottom:20px;">
         <h2 style="margin:0 0 8px 0;font-size:18px;color:#262626;">Please enter a destination to start your search.</h2>
         <p style="margin:0;">Type a city, property name or landmark in the search box above and press Search.</p>
     </div>
@@ -24,19 +57,29 @@
     {% set q_checkout = args.get('checkout','') %}
 
     <form method="get" id="searchForm" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e7e7e7;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
-        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+        <div class="form-group" style="margin:0;flex:1;min-width:220px;">
             <label>Keyword / destination</label>
-            <input type="text" name="ss" value="{{ query }}" placeholder="Property, city or landmark" required minlength="2">
+            <input type="text" name="ss" value="{{ query }}" placeholder="Property, city or landmark" required minlength="2" data-destination-autocomplete autocomplete="off"><!-- WV-BOOKING-AUTOCOMPLETE-FIX-R2-2026-06-04 -->
+            {# WV-BOOKING-AUTOCOMPLETE-FIX-R2-2026-06-04
+               The previous <select name="city_id"> with 350+ <option> rows was
+               unusable for CUA agents — they hammered native type-to-search
+               letter-jump and timed out (see _0203 "Ember Rio…": `keypress R`
+               cycled Rotterdam→Rio forever; _0178: "jumped to Ohio"). Replaced
+               with a hidden input populated by the destination autocomplete on
+               selection, plus a small visible chip showing the active city
+               filter and a clear-link. Backend honours city_id unchanged. #}
+            <input type="hidden" name="city_id" value="{{ args.get('city_id','') }}">
         </div>
-        <div class="form-group" style="margin:0;flex:1;min-width:160px;">
-            <label>City</label>
-            <select name="city_id">
-                <option value="">Any</option>
-                {% for c in all_cities %}
-                <option value="{{ c.id }}" {% if args.get('city_id')|string == c.id|string %}selected{% endif %}>{{ c.display }}, {{ c.country }}</option>
-                {% endfor %}
-            </select>
+        {% if args.get('city_id') %}
+        {% set _selected_city = all_cities | selectattr('id', 'equalto', args.get('city_id')|int) | list | first %}
+        <div class="form-group" style="margin:0;min-width:180px;display:flex;flex-direction:column;gap:4px;">
+            <label>City filter</label>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#e8f0fe;border:1px solid #c4d7f7;border-radius:18px;padding:8px 12px;font-size:13px;height:40px;box-sizing:border-box;">
+                <span>{% if _selected_city %}{{ _selected_city.display }}, {{ _selected_city.country }}{% else %}city #{{ args.get('city_id') }}{% endif %}</span>
+                <a href="{{ url_for('search', ss=query, checkin=q_checkin, checkout=q_checkout, adults=adults, rooms=rooms) }}" aria-label="Clear city filter" style="color:#5d666e;text-decoration:none;font-weight:600;line-height:1;">×</a>
+            </div>
         </div>
+        {% endif %}
         <div class="form-group" style="margin:0;min-width:130px;max-width:170px;">
             <label>Check-in</label>
             <input type="text" name="checkin" value="{{ q_checkin }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkin">
@@ -80,21 +123,42 @@
                 <h3 style="font-size:15px;margin:0 0 10px 0;">Filter by</h3>
 
                 {# ---- Sort dropdown ---- #}
+                {# WV-SELECT-FIX-2026-06-01 — sort pills replace native <select> for CUA compatibility #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <label style="font-weight:600;font-size:13px;display:block;margin-bottom:6px;">Sort results by</label>
                     {% set cur_sort = args.get('sort','') %}
-                    <select name="sort" onchange="document.getElementById('filterForm').submit()" style="width:100%;padding:6px;border:1px solid #d0d0d0;border-radius:4px;">
-                        <option value="" {% if not cur_sort %}selected{% endif %}>Our top picks</option>
-                        <option value="review_score_desc" {% if cur_sort in ['review_score_desc','best_reviewed','review_score','rating'] %}selected{% endif %}>Best reviewed (review score)</option>
-                        <option value="price_asc" {% if cur_sort in ['price_asc','price_low'] %}selected{% endif %}>Price (lowest first)</option>
-                        <option value="price_desc" {% if cur_sort in ['price_desc','price_high'] %}selected{% endif %}>Price (highest first)</option>
-                        <option value="stars" {% if cur_sort == 'stars' %}selected{% endif %}>Property rating (stars)</option>
-                        <option value="distance" {% if cur_sort == 'distance' %}selected{% endif %}>Distance from city centre</option>
-                        {% if show_beach_sort %}<option value="distance_beach" {% if cur_sort == 'distance_beach' %}selected{% endif %}>Distance From Beach</option>{% endif %}
-                    </select>
+                    <input type="hidden" name="sort" id="sortHidden" value="{{ cur_sort }}">
+                    <div class="wv-sort-pills" style="display:flex;flex-direction:column;gap:4px;">
+                        {% set sort_options = [
+                            ('', 'Our top picks'),
+                            ('review_score_desc', 'Best reviewed'),
+                            ('price_asc', 'Price (lowest first)'),
+                            ('price_desc', 'Price (highest first)'),
+                            ('stars', 'Property rating (stars)'),
+                            ('distance', 'Distance from centre'),
+                        ] %}
+                        {% for val, label in sort_options %}
+                        <button type="button"
+                                class="wv-sort-pill{% if cur_sort == val or (not cur_sort and val == '') or (cur_sort in ['best_reviewed','review_score','rating'] and val == 'review_score_desc') or (cur_sort == 'price_low' and val == 'price_asc') or (cur_sort == 'price_high' and val == 'price_desc') %} wv-sort-active{% endif %}"
+                                data-sort-value="{{ val }}"
+                                onclick="document.getElementById('sortHidden').value=this.dataset.sortValue;this.parentElement.querySelectorAll('.wv-sort-pill').forEach(function(b){b.classList.remove('wv-sort-active')});this.classList.add('wv-sort-active');document.getElementById('filterForm').submit();"
+                                style="display:block;width:100%;text-align:left;padding:7px 10px;border:1px solid #d0d0d0;border-radius:4px;background:#fff;color:#262626;font-size:13px;cursor:pointer;transition:background 0.1s,border-color 0.1s;">
+                            {{ label }}
+                        </button>
+                        {% endfor %}
+                        {% if show_beach_sort %}
+                        <button type="button"
+                                class="wv-sort-pill{% if cur_sort == 'distance_beach' %} wv-sort-active{% endif %}"
+                                data-sort-value="distance_beach"
+                                onclick="document.getElementById('sortHidden').value=this.dataset.sortValue;this.parentElement.querySelectorAll('.wv-sort-pill').forEach(function(b){b.classList.remove('wv-sort-active')});this.classList.add('wv-sort-active');document.getElementById('filterForm').submit();"
+                                style="display:block;width:100%;text-align:left;padding:7px 10px;border:1px solid #d0d0d0;border-radius:4px;background:#fff;color:#262626;font-size:13px;cursor:pointer;">
+                            Distance From Beach
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
 
-                {# ---- Popular filters (amenities / cancellation / breakfast) ---- #}
+                {# ---- Popular filters (amenities) — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Popular filters</h4>
                     {% set amenity_filters = [
@@ -110,20 +174,22 @@
                         ('air_conditioning','Air conditioning'),
                         ('bicycle','Bicycle rental'),
                     ] %}
+                    <div class="wv-filter-chip-row">
                     {% for key, label in amenity_filters %}
-                    <label style="display:block;font-size:13px;margin:4px 0;cursor:pointer;">
-                        <input type="checkbox" name="{{ key }}" value="1"
-                               {% if args.get(key) in ['1','true','on','yes'] %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        {{ label }}
-                    </label>
+                        {% set on = args.get(key) in ['1','true','on','yes'] %}
+                        <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={key: ('' if on else '1')}, unset=([key] if on else None)) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="{{ key }}">{{ label }}</a>
                     {% endfor %}
+                    </div>
                 </div>
 
-                {# ---- Star rating selector ---- #}
+                {# ---- Property type chips — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property type</h4>
-                    {# Real upstream booking.com `ht_id` property-type filter from harvest /searchresults Paris #}
+                    {% set cur_ht = args.getlist('ht_id') %}
+                    <div class="wv-filter-chip-row">
                     {% for code, label, cnt in [
                         ('204','Hotels',806),
                         ('201','Apartments',1320),
@@ -135,87 +201,103 @@
                         ('222','Homestays',8),
                         ('214','Campgrounds',1)
                     ] %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="checkbox" name="ht_id" value="{{ code }}"
-                               {% if args.getlist('ht_id') and code in args.getlist('ht_id') %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
-                    </label>
+                        {% set on = code in cur_ht %}
+                        {% set remaining = cur_ht | reject('equalto', code) | list %}
+                        {% set new_list = remaining if on else (remaining + [code]) %}
+                        <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={'ht_id': new_list}, unset=['ht_id']) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="ht_id" data-filter-value="{{ code }}">
+                           {{ label }} <span style="color:#888;font-weight:400;">({{ cnt }})</span>
+                        </a>
                     {% endfor %}
+                    </div>
                 </div>
 
+                {# ---- Bed preference chips — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Bed preference</h4>
+                    {% set cur_tdb = args.getlist('tdb') %}
+                    <div class="wv-filter-chip-row">
                     {% for v, label, cnt in [
                         ('3','Double bed',1124),('5','Queen bed',939),('2','Twin beds',491),('6','King bed',300)
                     ] %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="checkbox" name="tdb" value="{{ v }}"
-                               onchange="document.getElementById('filterForm').submit()">
-                        {{ label }} <span style="color:#888;">({{ cnt }})</span>
-                    </label>
+                        {% set on = v in cur_tdb %}
+                        {% set remaining = cur_tdb | reject('equalto', v) | list %}
+                        {% set new_list = remaining if on else (remaining + [v]) %}
+                        <a class="wv-filter-chip{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={'tdb': new_list}, unset=['tdb']) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="tdb" data-filter-value="{{ v }}">
+                           {{ label }} <span style="color:#888;font-weight:400;">({{ cnt }})</span>
+                        </a>
                     {% endfor %}
+                    </div>
                 </div>
 
-                {# ---- Star rating selector ---- #}
+                {# ---- Star rating chips — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property star rating</h4>
                     {% set cur_stars = args.get('min_stars','') %}
+                    <div class="wv-filter-chip-row" style="flex-direction:column;">
                     {% for s in [5,4,3,2,1] %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="radio" name="min_stars" value="{{ s }}"
-                               {% if cur_stars|string == s|string %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        {% for i in range(s) %}&#9733;{% endfor %} ({{ s }}+ stars)
-                    </label>
+                        {% set on = cur_stars|string == s|string %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={'min_stars': s}) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="min_stars" data-filter-value="{{ s }}">
+                           {% for i in range(s) %}&#9733;{% endfor %} ({{ s }}+ stars)
+                        </a>
                     {% endfor %}
-                    <label style="display:block;font-size:12px;margin:3px 0;color:#666;cursor:pointer;">
-                        <input type="radio" name="min_stars" value=""
-                               {% if not cur_stars %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        Any
-                    </label>
+                        {% set on_any = not cur_stars %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on_any %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(unset=['min_stars']) }}"
+                           role="button" aria-pressed="{{ 'true' if on_any else 'false' }}"
+                           data-filter-key="min_stars" data-filter-value="">Any star rating</a>
+                    </div>
                 </div>
 
-                {# ---- Minimum review score slider ---- #}
+                {# ---- Review-score chips — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Review score</h4>
                     {% set cur_rating = args.get('min_rating','') %}
+                    <div class="wv-filter-chip-row" style="flex-direction:column;">
                     {% for r, rlabel in [('9','Superb: 9+'),('8','Very good: 8+'),('7','Good: 7+'),('6','Pleasant: 6+')] %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="radio" name="min_rating" value="{{ r }}"
-                               {% if cur_rating|string == r|string %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        {{ rlabel }}
-                    </label>
+                        {% set on = cur_rating|string == r|string %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={'min_rating': r}) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="min_rating" data-filter-value="{{ r }}">{{ rlabel }}</a>
                     {% endfor %}
-                    <label style="display:block;font-size:12px;margin:3px 0;color:#666;cursor:pointer;">
-                        <input type="radio" name="min_rating" value=""
-                               {% if not cur_rating %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        Any
-                    </label>
+                        {% set on_any = not cur_rating %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on_any %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(unset=['min_rating']) }}"
+                           role="button" aria-pressed="{{ 'true' if on_any else 'false' }}"
+                           data-filter-key="min_rating" data-filter-value="">Any review score</a>
+                    </div>
                 </div>
 
-                {# ---- Brand filter ---- #}
+                {# ---- Brand chips — WV-FILTER-CHIP-URL-FIX-2026-06-04 ---- #}
                 {% if brand_counts %}
                 <div class="filter-group" style="margin-bottom:14px;">
                     <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Brand</h4>
                     {% set cur_brand = args.get('brand','') %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="radio" name="brand" value=""
-                               {% if not cur_brand %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        Any brand
-                    </label>
+                    <div class="wv-filter-chip-row" style="flex-direction:column;">
+                        {% set on_any = not cur_brand %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on_any %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(unset=['brand']) }}"
+                           role="button" aria-pressed="{{ 'true' if on_any else 'false' }}"
+                           data-filter-key="brand" data-filter-value="">Any brand</a>
                     {% for b, cnt in brand_counts %}
-                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
-                        <input type="radio" name="brand" value="{{ b }}"
-                               {% if cur_brand == b %}checked{% endif %}
-                               onchange="document.getElementById('filterForm').submit()">
-                        {{ b }} <span style="color:#888;">({{ cnt }})</span>
-                    </label>
+                        {% set on = cur_brand == b %}
+                        <a class="wv-filter-chip wv-filter-chip-block{% if on %} wv-chip-active{% endif %}"
+                           href="{{ chip_url(set={'brand': b}) }}"
+                           role="button" aria-pressed="{{ 'true' if on else 'false' }}"
+                           data-filter-key="brand" data-filter-value="{{ b }}">
+                           {{ b }} <span style="color:#888;font-weight:400;">({{ cnt }})</span>
+                        </a>
                     {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
 
@@ -330,10 +412,25 @@
                 </div>
             </div>
             {% endfor %}
+
+            {# =========== PAGINATION =========== #}
+            {% if search_pages > 1 %}
+            <div style="text-align:center;margin:24px 0 8px 0;padding:16px;background:#fff;border:1px solid #e7e7e7;border-radius:8px;">
+                {% if search_page > 1 %}
+                <a class="btn-secondary" href="?{{ request.query_string.decode().replace('&page=' ~ search_page, '').replace('page=' ~ search_page, '') }}&page={{ search_page - 1 }}" style="margin-right:8px;">&larr; Previous</a>
+                {% endif %}
+                <span style="padding:8px 16px;font-size:14px;color:#262626;">Page <strong>{{ search_page }}</strong> of <strong>{{ search_pages }}</strong> ({{ search_total }} properties)</span>
+                {% if search_page < search_pages %}
+                <a class="btn-secondary" href="?{{ request.query_string.decode().replace('&page=' ~ search_page, '').replace('page=' ~ search_page, '') }}&page={{ search_page + 1 }}" style="margin-left:8px;">Next &rarr;</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% elif not empty_destination %}
-            <div class="empty-state">
-                <h2>No properties found</h2>
-                <p>Try a different keyword or browse all <a href="{{ url_for('stays') }}">stays</a>.</p>
+            <div class="empty-state" role="status" aria-live="polite"
+                 style="padding:40px;text-align:center;background:#fafafa;border:1px solid #e7e7e7;border-radius:8px;margin:20px 0;">
+                <h2 style="margin:0 0 10px 0;font-size:20px;color:#262626;">No properties found{% if query %} for "{{ query }}"{% endif %}</h2>
+                <p style="margin:0;color:#666;font-size:14px;">Try a different city/keyword, clear amenity or rating filters, or <a href="{{ url_for('stays') }}">browse all stays</a> and <a href="{{ url_for('index') }}">return to the Booking homepage</a> for trending destinations.</p>
             </div>
             {% endif %}
         </div>

@@ -5,19 +5,20 @@
 <h1>Advanced Search</h1>
 <p class="muted">Search arXiv with multiple fields and filters.</p>
 
+{# WV-SEARCH-LOOP-2026-06-03-ARXIV — native <select> for CUA compatibility (replaces custom dropdown widgets) #}
 <form method="post" action="{{ url_for('advanced_search') }}" class="dash-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <div class="form-row">
-        <label>Search terms</label>
-        <input type="text" name="terms" placeholder='e.g. "neural network" or Smith, J.' required>
+        <label for="advTerms">Search terms</label>
+        <input id="advTerms" type="text" name="terms" placeholder='e.g. "neural network" or Smith, J.' required>
         <p class="form-hint">Enclose phrases in quotes. Separate multiple authors with a semicolon.</p>
     </div>
 
     <div class="form-row">
-        <label>Field</label>
-        <select name="field">
-            <option value="all">All fields</option>
+        <label for="advField">Field</label>
+        <select id="advField" name="field" style="min-width:220px;padding:6px 8px;font-size:13px;">
+            <option value="all" selected>All fields</option>
             <option value="title">Title</option>
             <option value="author">Author(s)</option>
             <option value="abstract">Abstract</option>
@@ -37,14 +38,16 @@
     </div>
 
     <div class="form-row">
-        <label>Subject area</label>
-        <select name="subject">
-            <option value="">Any subject</option>
+        <label for="advSubject">Subject area</label>
+        <select id="advSubject" name="subject" style="min-width:260px;padding:6px 8px;font-size:13px;">
+            <option value="" selected>Any subject</option>
+            {% if main_categories %}
             <optgroup label="Main archives">
             {% for c in main_categories %}
                 <option value="{{ c.code }}">{{ c.name }} ({{ c.code }})</option>
             {% endfor %}
             </optgroup>
+            {% endif %}
             {% if subcategories %}
             <optgroup label="Subcategories">
             {% for s in subcategories %}
@@ -53,12 +56,13 @@
             </optgroup>
             {% endif %}
         </select>
+        <p class="form-hint">Pick a single archive (e.g. cs) or a fine-grained subcategory (e.g. cs.LG).</p>
     </div>
 
     <div class="form-row">
-        <label>Date range (announcement)</label>
-        <select name="date_range">
-            <option value="">Any time</option>
+        <label for="advDateRange">Date range (announcement)</label>
+        <select id="advDateRange" name="date_range" style="min-width:180px;padding:6px 8px;font-size:13px;">
+            <option value="" selected>Any time</option>
             <option value="past_2_days">Past 2 days</option>
             <option value="past_week">Past week</option>
             <option value="past_month">Past month</option>
@@ -69,26 +73,26 @@
     <div class="form-row">
         <label>Custom date range (optional)</label>
         <div style="display:flex; gap:8px; align-items:center;">
-            <input type="date" name="start_date" placeholder="Start date">
+            <input type="text" name="start_date" placeholder="YYYY-MM-DD" maxlength="10" pattern="\d{4}-\d{2}-\d{2}" inputmode="numeric" autocomplete="off" style="width:130px;">
             <span>to</span>
-            <input type="date" name="end_date" placeholder="End date">
+            <input type="text" name="end_date" placeholder="YYYY-MM-DD" maxlength="10" pattern="\d{4}-\d{2}-\d{2}" inputmode="numeric" autocomplete="off" style="width:130px;">
         </div>
-        <p class="form-hint">If set, overrides the Date range dropdown above.</p>
+        <p class="form-hint">If set, overrides the Date range selection above.</p>
     </div>
 
     <div class="form-row">
-        <label>Sort results by</label>
-        <select name="sort">
-            <option value="relevance">Relevance</option>
-            <option value="date">Announcement date (newest first)</option>
-            <option value="date_asc">Announcement date (oldest first)</option>
-            <option value="submitted_date_desc">Submission date (newest first)</option>
-            <option value="submitted_date_asc">Submission date (oldest first)</option>
+        <label for="advSort">Sort results by</label>
+        <select id="advSort" name="sort" style="min-width:200px;padding:6px 8px;font-size:13px;">
+            <option value="relevance" selected>Relevance</option>
+            <option value="date">Newest first</option>
+            <option value="date_asc">Oldest first</option>
+            <option value="submitted_date_desc">Submitted (newest)</option>
+            <option value="submitted_date_asc">Submitted (oldest)</option>
         </select>
     </div>
 
     <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Search</button>
+        <button type="submit" class="btn btn-primary" style="padding:8px 18px;font-size:14px;">Search</button>
         <a href="{{ url_for('search') }}" class="btn">Basic Search</a>
     </div>
 </form>
@@ -101,6 +105,8 @@
         <li>Enclose phrases in double quotes for exact matches in title, abstract, and comments.</li>
         <li>Specific journal references can be matched with or without wildcards.</li>
         <li>Combine multiple author names with semicolons.</li>
+        <li><strong>Category prefix</strong>: In the basic search bar, type <code>cat:stat.ML neural</code> to filter by subcategory.</li>
+        <li><strong>Direct URL</strong>: <code>/search/advanced?terms=intrinsic+motivation&amp;subject=cs.LG&amp;start_date=2021-01-01&amp;end_date=2021-12-31</code> jumps straight to filtered results.</li>
     </ul>
 </div>
 

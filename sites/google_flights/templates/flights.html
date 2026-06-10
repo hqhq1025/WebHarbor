@@ -11,8 +11,8 @@
     <form action="{{ url_for('flights_list') }}" method="GET" class="search-form" style="width:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:center;">
       <input type="text" name="from" class="search-field" placeholder="From (IATA or city)" value="{{ origin_input or origin_iata }}" list="airport-list">
       <input type="text" name="to" class="search-field" placeholder="To (IATA or city)" value="{{ dest_input or dest_iata }}" list="airport-list">
-      <input type="text" name="depart" class="search-field" value="{{ depart }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkin" required>
-      <input type="text" name="return" class="search-field" value="{{ return_date }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkout">
+      <input type="text" name="depart" class="search-field" value="{{ depart }}" placeholder="YYYY-MM-DD or M/D/YYYY" autocomplete="off" required>  <!-- WV-GFLIGHTS-FORM-FIX-2026-06-01 -->
+      <input type="text" name="return" class="search-field" value="{{ return_date }}" placeholder="YYYY-MM-DD or M/D/YYYY" autocomplete="off">
       <button type="submit" class="search-submit"><span class="material-symbols-outlined">search</span>Search</button>
       <datalist id="airport-list">
         {% for city, iatas in multi_city_groups %}<option value="{{ city }}">{{ city }} (all airports — {{ iatas|join(', ') }})</option>{% endfor %}
@@ -56,13 +56,21 @@
         <!-- Cabin Class -->
         <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
           <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Cabin class</legend>
-          <select name="class" class="search-select" style="width:100%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
-            <option value="" {% if not cabin %}selected{% endif %}>Any</option>
-            <option value="Economy" {% if cabin|lower == 'economy' %}selected{% endif %}>Economy</option>
-            <option value="Premium" {% if cabin|lower in ['premium','premium economy'] %}selected{% endif %}>Premium economy</option>
-            <option value="Business" {% if cabin|lower == 'business' %}selected{% endif %}>Business</option>
-            <option value="First" {% if cabin|lower == 'first' %}selected{% endif %}>First class</option>
-          </select>
+          <input type="hidden" name="class" id="filter-pill-class" value="{{ cabin }}">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;" role="radiogroup" aria-label="Cabin class">
+            <button type="button" class="wv-fpill" data-fpill-group="class" data-fpill-value=""
+              style="padding:4px 10px;border:1px solid #dadce0;border-radius:16px;font-size:12px;cursor:pointer;{% if not cabin %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}"
+              aria-pressed="{% if not cabin %}true{% else %}false{% endif %}">Any</button>
+            <button type="button" class="wv-fpill" data-fpill-group="class" data-fpill-value="Economy"
+              style="padding:4px 10px;border:1px solid #dadce0;border-radius:16px;font-size:12px;cursor:pointer;{% if cabin|lower == 'economy' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}"
+              aria-pressed="{% if cabin|lower == 'economy' %}true{% else %}false{% endif %}">Economy</button>
+            <button type="button" class="wv-fpill" data-fpill-group="class" data-fpill-value="Business"
+              style="padding:4px 10px;border:1px solid #dadce0;border-radius:16px;font-size:12px;cursor:pointer;{% if cabin|lower == 'business' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}"
+              aria-pressed="{% if cabin|lower == 'business' %}true{% else %}false{% endif %}">Business</button>
+            <button type="button" class="wv-fpill" data-fpill-group="class" data-fpill-value="First"
+              style="padding:4px 10px;border:1px solid #dadce0;border-radius:16px;font-size:12px;cursor:pointer;{% if cabin|lower == 'first' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}"
+              aria-pressed="{% if cabin|lower == 'first' %}true{% else %}false{% endif %}">First</button>
+          </div>
         </fieldset>
 
         <!-- Price Range -->
@@ -75,14 +83,27 @@
         </fieldset>
 
         <!-- Airlines -->
+        {# WV-LOOP-HOTSPOT-2026-06-03-F1 — replace native <select> with click-pill row.
+           Each pill is an <a> with a pre-built href that mirrors the current
+           filter form (route/date/class/stops/sort + the new airline value),
+           so a single click navigates with the filter applied. Native <select>
+           is unreliable for CUA: arrow-key / type-to-jump don't work and
+           clicking individual <option> dispatches no change event. #}
         <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
           <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Airline</legend>
-          <select name="airline" class="search-select" style="width:100%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
-            <option value="">Any airline</option>
+          {% set _qs_prefix = '?from=' ~ (request.args.get('from') or '') ~ '&to=' ~ (request.args.get('to') or '') ~ '&depart=' ~ (request.args.get('depart') or '') ~ '&return=' ~ (request.args.get('return') or '') ~ '&passengers=' ~ (request.args.get('passengers') or '1') ~ '&sort=' ~ (request.args.get('sort') or 'best') ~ '&max_stops=' ~ (request.args.get('max_stops') or '') ~ '&class=' ~ (request.args.get('class') or '') ~ '&min_price=' ~ (request.args.get('min_price') or '') ~ '&max_price=' ~ (request.args.get('max_price') or '') ~ '&airline=' %}
+          <div role="radiogroup" aria-label="Airline" style="display:flex;flex-wrap:wrap;gap:6px;">
+            <a href="{{ _qs_prefix }}" class="wv-airline-pill" data-airline=""
+               role="radio" aria-checked="{{ 'true' if not airline else 'false' }}"
+               style="padding:6px 12px;border:1px solid #dadce0;border-radius:16px;font-size:12px;text-decoration:none;display:inline-block;{% if not airline %}background:#e8f0fe;color:#1a73e8;font-weight:600;border-color:#1a73e8;{% else %}background:#fff;color:#3c4043;{% endif %}">Any airline</a>
             {% for a in airline_options %}
-              <option value="{{ a }}" {% if airline == a %}selected{% endif %}>{{ a }}</option>
+            <a href="{{ _qs_prefix }}{{ a|urlencode }}" class="wv-airline-pill" data-airline="{{ a }}"
+               role="radio" aria-checked="{{ 'true' if airline == a else 'false' }}"
+               style="padding:6px 12px;border:1px solid #dadce0;border-radius:16px;font-size:12px;text-decoration:none;display:inline-block;{% if airline == a %}background:#e8f0fe;color:#1a73e8;font-weight:600;border-color:#1a73e8;{% else %}background:#fff;color:#3c4043;{% endif %}">{{ a }}</a>
             {% endfor %}
-          </select>
+          </div>
+          {# hidden input keeps Apply-Filters button submitting the current selection if the agent uses it #}
+          <input type="hidden" name="airline" value="{{ airline or '' }}">
         </fieldset>
 
         <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;">Apply filters</button>
@@ -93,6 +114,11 @@
       {% if origin_iata and dest_iata %}
         <a href="{{ url_for('price_graph', **{'from': origin_input or origin_iata, 'to': dest_input or dest_iata, 'depart': depart, 'months': 2}) }}" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--g-blue);">
           <span class="material-symbols-outlined" style="font-size:18px;">insights</span>View price graph
+        </a>
+        {# WV-SEARCH-LOOP-2026-06-03-GFLIGHTS direct route-prefilled link to /alerts so agents
+           don't need to leave search results, go to /tracked, then guess /alerts #}
+        <a href="{{ url_for('price_alerts', origin=origin_iata, dest=dest_iata, threshold=(max_price or '')) }}" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--g-blue);margin-top:6px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">notifications</span>Set price alert for {{ origin_iata }}-{{ dest_iata }}
         </a>
       {% endif %}
     </aside>
@@ -135,16 +161,13 @@
         </div>
         <div class="flights-sort" style="display:flex;align-items:center;gap:8px;">
           <label for="sort-by-select" style="font-size:13px;color:var(--g-grey-700);">Sort by</label>
-          <select id="sort-by-select" name="sort-by"
-                  onchange="window.location.href=this.options[this.selectedIndex].dataset.href"
-                  style="padding:6px 8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;font-size:13px;background:white;">
-            <option data-href="{{ _qs_base }}&sort=best"      {% if sort not in ['price','duration','departure','arrival','emissions','co2'] %}selected{% endif %}>Top flights</option>
-            <option data-href="{{ _qs_base }}&sort=price"     {% if sort == 'price' %}selected{% endif %}>Price (low to high)</option>
-            <option data-href="{{ _qs_base }}&sort=duration"  {% if sort == 'duration' %}selected{% endif %}>Duration</option>
-            <option data-href="{{ _qs_base }}&sort=departure" {% if sort == 'departure' %}selected{% endif %}>Departure time</option>
-            <option data-href="{{ _qs_base }}&sort=arrival"   {% if sort == 'arrival' %}selected{% endif %}>Arrival time</option>
-            <option data-href="{{ _qs_base }}&sort=emissions" {% if sort in ['emissions','co2'] %}selected{% endif %}>Emissions</option>
-          </select>
+          <div style="display:flex;gap:0;" role="radiogroup" aria-label="Sort flights">
+            <a href="{{ _qs_base }}&sort=best" class="wv-spill" style="padding:4px 10px;border:1px solid #dadce0;border-radius:16px 0 0 16px;font-size:12px;text-decoration:none;{% if sort not in ['price','duration','departure','arrival','emissions','co2'] %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}">Best</a>
+            <a href="{{ _qs_base }}&sort=price" class="wv-spill" style="padding:4px 10px;border:1px solid #dadce0;border-left:none;font-size:12px;text-decoration:none;{% if sort == 'price' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}">Cheapest</a>
+            <a href="{{ _qs_base }}&sort=duration" class="wv-spill" style="padding:4px 10px;border:1px solid #dadce0;border-left:none;font-size:12px;text-decoration:none;{% if sort == 'duration' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}">Fastest</a>
+            <a href="{{ _qs_base }}&sort=departure" class="wv-spill" style="padding:4px 10px;border:1px solid #dadce0;border-left:none;font-size:12px;text-decoration:none;{% if sort == 'departure' %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}">Departure</a>
+            <a href="{{ _qs_base }}&sort=emissions" class="wv-spill" style="padding:4px 10px;border:1px solid #dadce0;border-left:none;border-radius:0 16px 16px 0;font-size:12px;text-decoration:none;{% if sort in ['emissions','co2'] %}background:#e8f0fe;color:#1a73e8;font-weight:500;{% else %}background:#fff;color:#3c4043;{% endif %}">Emissions</a>
+          </div>
         </div>
       </div>
 
@@ -202,4 +225,33 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- wv-fpill-js-bound -->
+<script>
+(function(){
+  document.querySelectorAll('.wv-fpill').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var group = btn.getAttribute('data-fpill-group');
+      var value = btn.getAttribute('data-fpill-value');
+      var hidden = document.getElementById('filter-pill-' + group);
+      if (hidden) hidden.value = value;
+      document.querySelectorAll('.wv-fpill[data-fpill-group="' + group + '"]').forEach(function(p){
+        if (p === btn) {
+          p.style.background = '#e8f0fe';
+          p.style.color = '#1a73e8';
+          p.style.fontWeight = '500';
+          p.setAttribute('aria-pressed', 'true');
+        } else {
+          p.style.background = '#fff';
+          p.style.color = '#3c4043';
+          p.style.fontWeight = 'normal';
+          p.setAttribute('aria-pressed', 'false');
+        }
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

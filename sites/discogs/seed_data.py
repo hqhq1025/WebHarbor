@@ -178,6 +178,133 @@ def _release_image_exists(rid):
     return os.path.exists(os.path.join(BASE_DIR, "static", "images", "release", f"{rid}.jpg"))
 
 
+# ───────────────────────────────────────────────────────────────
+# Image-path filler: makes every artist/release/user reference an
+# on-disk file. Real jpgs are used when present; missing entities
+# get a deterministic SVG generated under the same dirs.
+# ───────────────────────────────────────────────────────────────
+import hashlib as _hashlib
+
+def _svg_initial(text, hue, size=400):
+    initials = ''.join(w[0] for w in (text or '?').split()[:2]).upper() or '?'
+    h = hue % 360
+    bg1 = f"hsl({h},55%,40%)"
+    bg2 = f"hsl({(h+40)%360},60%,55%)"
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {sz} {sz}" '
+            'width="{sz}" height="{sz}"><defs><linearGradient id="g" x1="0" y1="0" '
+            'x2="1" y2="1"><stop offset="0%" stop-color="{b1}"/>'
+            '<stop offset="100%" stop-color="{b2}"/></linearGradient></defs>'
+            '<rect width="{sz}" height="{sz}" fill="url(#g)"/>'
+            '<text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" '
+            'font-family="Helvetica,Arial,sans-serif" font-weight="700" '
+            'font-size="{fs}" fill="#fff" opacity="0.92">{txt}</text></svg>').format(
+        sz=size, b1=bg1, b2=bg2, fs=int(size*0.42), txt=initials)
+
+
+def _svg_release_cover(title, artist, hue, size=500):
+    title = (title or '').strip() or 'Untitled'
+    artist = (artist or '').strip()
+    words = title.split()
+    line1 = ''; line2 = ''
+    for w in words:
+        if len(line1) + len(w) + 1 <= 14:
+            line1 = (line1 + ' ' + w).strip()
+        elif len(line2) + len(w) + 1 <= 14:
+            line2 = (line2 + ' ' + w).strip()
+        else:
+            break
+    if len(line2) >= 14:
+        line2 = line2[:13] + '...'
+    h = hue % 360
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {sz} {sz}" '
+            'width="{sz}" height="{sz}"><defs><linearGradient id="g" x1="0" y1="0" '
+            'x2="1" y2="1"><stop offset="0%" stop-color="hsl({h},45%,18%)"/>'
+            '<stop offset="100%" stop-color="hsl({h2},55%,45%)"/></linearGradient></defs>'
+            '<rect width="{sz}" height="{sz}" fill="url(#g)"/>'
+            '<circle cx="{cx}" cy="{cy}" r="{r1}" fill="none" '
+            'stroke="hsl({h3},75%,60%)" stroke-width="3" opacity="0.4"/>'
+            '<circle cx="{cx}" cy="{cy}" r="{r2}" fill="hsl({h3},75%,60%)" opacity="0.65"/>'
+            '<text x="50%" y="{y1}" text-anchor="middle" '
+            'font-family="Helvetica,Arial,sans-serif" font-weight="700" '
+            'font-size="{fs}" fill="#fff">{l1}</text>'
+            '<text x="50%" y="{y2}" text-anchor="middle" '
+            'font-family="Helvetica,Arial,sans-serif" font-weight="700" '
+            'font-size="{fs}" fill="#fff">{l2}</text>'
+            '<text x="50%" y="{y3}" text-anchor="middle" '
+            'font-family="Helvetica,Arial,sans-serif" font-weight="400" '
+            'font-size="{fs2}" fill="#fff" opacity="0.75">{ar}</text></svg>').format(
+        sz=size, h=h, h2=(h+80)%360, h3=(h+180)%360,
+        cx=size//2, cy=size//2, r1=int(size*0.32), r2=int(size*0.06),
+        y1=int(size*0.78), y2=int(size*0.86), y3=int(size*0.93),
+        fs=int(size*0.07), fs2=int(size*0.045),
+        l1=line1, l2=line2, ar=artist[:24])
+
+
+def _fill_artist_release_images():
+    """Fill image_path on artists/releases. Uses on-disk jpg when present,
+    generates a deterministic SVG otherwise. Idempotent — safe to re-run.
+    """
+    static_dir = os.path.join(BASE_DIR, "static")
+    a_dir = os.path.join(static_dir, "images", "artist")
+    r_dir = os.path.join(static_dir, "images", "release")
+    os.makedirs(a_dir, exist_ok=True)
+    os.makedirs(r_dir, exist_ok=True)
+    a_disk = set(os.listdir(a_dir))
+    r_disk = set(os.listdir(r_dir))
+
+    n_a_real = n_a_svg = 0
+    for a in Artist.query.all():
+        if f"{a.id}.jpg" in a_disk:
+            a.image_path = f"images/artist/{a.id}.jpg"
+            n_a_real += 1
+        else:
+            hue = int(_hashlib.md5((a.name or str(a.id)).encode()).hexdigest()[:6], 16) % 360
+            with open(os.path.join(a_dir, f"{a.id}.svg"), "w", encoding="utf-8") as f:
+                f.write(_svg_initial(a.name or '?', hue, size=400))
+            a.image_path = f"images/artist/{a.id}.svg"
+            n_a_svg += 1
+
+    n_r_real = n_r_svg = 0
+    for r in Release.query.all():
+        did = r.discogs_id
+        if did and f"{did}.jpg" in r_disk:
+            r.image_path = f"images/release/{did}.jpg"
+            n_r_real += 1
+        elif f"{r.id}.jpg" in r_disk:
+            r.image_path = f"images/release/{r.id}.jpg"
+            n_r_real += 1
+        else:
+            key = f"{did}-{r.title or ''}"
+            hue = int(_hashlib.md5(key.encode()).hexdigest()[:6], 16) % 360
+            artist_name = r.artist.name if r.artist else ''
+            with open(os.path.join(r_dir, f"{did or r.id}.svg"), "w", encoding="utf-8") as f:
+                f.write(_svg_release_cover(r.title, artist_name, hue, size=500))
+            r.image_path = f"images/release/{did or r.id}.svg"
+            n_r_svg += 1
+
+    db.session.commit()
+    print(f"[seed] images: artists {n_a_real} real + {n_a_svg} svg, "
+          f"releases {n_r_real} real + {n_r_svg} svg")
+
+
+def _fill_user_avatars():
+    """Generate per-user SVG identicons and set users.avatar_path. Idempotent."""
+    static_dir = os.path.join(BASE_DIR, "static")
+    u_dir = os.path.join(static_dir, "images", "users")
+    os.makedirs(u_dir, exist_ok=True)
+    n = 0
+    for u in User.query.all():
+        seed = (u.avatar_seed or u.username or str(u.id))
+        hue = int(_hashlib.md5(seed.encode()).hexdigest()[:6], 16) % 360
+        fn = f"{u.username}.svg"
+        with open(os.path.join(u_dir, fn), "w", encoding="utf-8") as f:
+            f.write(_svg_initial(u.username or '?', hue, size=300))
+        u.avatar_path = f"images/users/{fn}"
+        n += 1
+    db.session.commit()
+    print(f"[seed] generated {n} user identicon SVGs")
+
+
 def seed_database():
     if Release.query.count() > 0:
         return
@@ -386,6 +513,11 @@ def seed_database():
         a.in_collection = a.releases.count()
     db.session.commit()
 
+    # Fill image_path for every artist + release. Real jpgs on disk are used
+    # when present (images/artist/<id>.jpg, images/release/<discogs_id>.jpg);
+    # missing entities get a deterministic SVG generated under the same dirs.
+    _fill_artist_release_images()
+
     print(f"[seed] inserted {Release.query.count()} releases / {Artist.query.count()} artists "
           f"/ {Label.query.count()} labels / {Master.query.count()} masters")
 
@@ -453,6 +585,7 @@ def seed_benchmark_users():
         )
         db.session.add(u)
     db.session.commit()
+    _fill_user_avatars()
 
 
 # ──────────────────────────────────────────────
